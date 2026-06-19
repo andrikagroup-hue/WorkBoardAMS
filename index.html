@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WorkBoard AMS — Manajemen Harian Perusahaan</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+/* ============================================
+   WorkBoard — Stylesheet
+   ============================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --nav-w: 230px;
+  --accent: #3B82F6;
+  --accent2: #F59E0B;
+  --success: #22C55E;
+  --danger: #EF4444;
+  --bg: #F8FAFC;
+  --bg2: #F1F5F9;
+  --bg3: #E2E8F0;
+  --surface: #FFFFFF;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text1: #0F172A;
+  --text2: #475569;
+  --text3: #94A3B8;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text1); }
+
+/* ── App shell ─────────────────────────────── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── Sidebar ───────────────────────────────── */
+.sidebar {
+  width: var(--nav-w); background: var(--surface);
+  border-right: 0.5px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
+}
+.sb-header { padding: 18px 16px 12px; border-bottom: 0.5px solid var(--border); }
+.sb-logo { font-size: 15px; font-weight: 600; color: var(--text1); letter-spacing: -0.3px; display: flex; align-items: center; gap: 7px; }
+.sb-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.sb-date { font-size: 11px; color: var(--text2); margin-top: 8px; padding: 4px 8px; background: var(--bg2); border-radius: 6px; display: inline-block; }
+.sb-user { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 5px 8px; background: #EFF6FF; border-radius: 6px; }
+.sb-user-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+.sb-user-name { font-size: 11px; color: #1D4ED8; font-weight: 500; }
+.nav-section { padding: 10px 8px 4px; }
+.nav-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; padding: 0 8px; margin-bottom: 3px; }
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 12px; border-radius: var(--radius);
+  cursor: pointer; font-size: 13px; color: var(--text2);
+  border: none; background: none; width: 100%; text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+.nav-item:hover { background: var(--bg2); color: var(--text1); }
+.nav-item.active { background: #EFF6FF; color: #1D4ED8; font-weight: 500; }
+.nav-item i { font-size: 16px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; font-size: 10px; padding: 1px 6px;
+  border-radius: 10px; font-weight: 500; min-width: 20px; text-align: center;
+}
+.badge-blue { background: #DBEAFE; color: #1D4ED8; }
+.badge-amber { background: #FEF3C7; color: #92400E; }
+.badge-red { background: #FEE2E2; color: #991B1B; }
+
+.sb-progress { padding: 12px 16px; margin-top: auto; border-top: 0.5px solid var(--border); }
+.prog-label { font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+.prog-bar { height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+.prog-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.4s; }
+.prog-val { font-size: 11px; color: var(--text3); margin-top: 3px; text-align: right; }
+
+/* ── Main ──────────────────────────────────── */
+.main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-width: 0; }
+.top-bar {
+  background: var(--surface); border-bottom: 0.5px solid var(--border);
+  padding: 11px 20px; display: flex; align-items: center;
+  justify-content: space-between; flex-shrink: 0; position: sticky; top: 0; z-index: 10;
+}
+.top-title { font-size: 15px; font-weight: 600; color: var(--text1); }
+.top-actions { display: flex; gap: 8px; align-items: center; }
+.btn-sm {
+  font-size: 12px; padding: 5px 12px; border-radius: 6px;
+  border: 0.5px solid var(--border2); background: none; color: var(--text2);
+  cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background 0.12s;
+}
+.btn-sm:hover { background: var(--bg2); }
+.btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+.btn-primary:hover { background: #2563EB; }
+.content { padding: 16px 20px; flex: 1; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Shared form fields ─────────────────────── */
+input, textarea, select {
+  font-family: inherit; font-size: 12px;
+  border: 0.5px solid var(--border2); border-radius: var(--radius);
+  padding: 6px 10px; background: var(--surface); color: var(--text1);
+  outline: none; transition: border-color 0.15s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { resize: vertical; }
+.form-box {
+  background: var(--surface); border: 0.5px solid var(--border2);
+  border-radius: var(--radius-lg); padding: 14px; margin-bottom: 14px;
+}
+.form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.form-row input, .form-row select, .form-row textarea { flex: 1; min-width: 100px; }
+.form-row textarea { min-height: 60px; }
+.form-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+
+/* ── Section title ─────────────────────────── */
+.section-title {
+  font-size: 10px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.7px; margin: 12px 0 8px;
+}
+.empty-msg {
+  font-size: 12px; color: var(--text3); padding: 20px;
+  text-align: center; border: 0.5px dashed var(--border2); border-radius: var(--radius);
+}
+.loading-msg {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+  color: var(--text3); padding: 16px; justify-content: center;
+}
+
+/* ── Delete / small buttons ────────────────── */
+.ev-del {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  padding: 1px 3px; font-size: 12px; border-radius: 4px;
+  transition: color 0.12s, background 0.12s; line-height: 1;
+}
+.ev-del:hover { color: var(--danger); background: #FEE2E2; }
+
+/* ── Schedule ──────────────────────────────── */
+.sched-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.sched-grid { display: grid; grid-template-columns: 60px 1fr; }
+.time-label {
+  font-size: 10px; color: var(--text3); padding: 8px 10px 8px 0;
+  text-align: right; border-right: 1.5px solid var(--border);
+  position: relative;
+}
+.time-label::after {
+  content: ''; position: absolute; right: -4px; top: 14px;
+  width: 7px; height: 7px; border-radius: 50%; background: var(--border2);
+}
+.time-event { padding: 8px 0 8px 14px; min-height: 50px; border-bottom: 0.5px solid var(--border); }
+.event-card {
+  padding: 6px 10px; border-radius: var(--radius); font-size: 12px;
+  border-left: 3px solid; margin-bottom: 4px; position: relative;
+}
+.ev-blue { background: #EFF6FF; border-color: #3B82F6; color: #1E40AF; }
+.ev-amber { background: #FFFBEB; border-color: #F59E0B; color: #92400E; }
+.ev-green { background: #F0FDF4; border-color: #22C55E; color: #166534; }
+.ev-purple { background: #FAF5FF; border-color: #A855F7; color: #6B21A8; }
+.ev-red { background: #FEF2F2; border-color: #EF4444; color: #991B1B; }
+.ev-title { font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
+.ev-meta { font-size: 10px; opacity: 0.7; margin-top: 2px; display: flex; align-items: center; gap: 3px; }
+
+/* ── Tracker ───────────────────────────────── */
+.tracker-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.stat-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
+.stat-label { font-size: 10px; color: var(--text2); margin-bottom: 3px; }
+.stat-val { font-size: 22px; font-weight: 600; color: var(--text1); }
+.stat-sub { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.task-table { width: 100%; border-collapse: collapse; }
+.task-table th { font-size: 10px; color: var(--text2); text-align: left; padding: 6px 10px; border-bottom: 0.5px solid var(--border); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.task-table td { font-size: 12px; padding: 8px 10px; border-bottom: 0.5px solid var(--border); color: var(--text1); }
+.task-table tr:hover td { background: var(--bg2); }
+.status-pill { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.s-done { background: #DCFCE7; color: #166534; }
+.s-prog { background: #DBEAFE; color: #1D4ED8; }
+.s-wait { background: #FEF3C7; color: #92400E; }
+.s-late { background: #FEE2E2; color: #991B1B; }
+.task-prog-bar { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-top: 3px; }
+.task-prog-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+.tracker-add { background: var(--bg2); border-radius: var(--radius); padding: 12px; margin-top: 12px; }
+
+/* ── Logbook ───────────────────────────────── */
+.logbook-list { display: flex; flex-direction: column; gap: 8px; }
+.log-entry { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; }
+.log-header { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; flex-wrap: wrap; }
+.log-type { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.lt-meeting { background: #EDE9FE; color: #5B21B6; }
+.lt-report { background: #DBEAFE; color: #1D4ED8; }
+.lt-note { background: #DCFCE7; color: #166534; }
+.lt-issue { background: #FEE2E2; color: #991B1B; }
+.log-time { font-size: 10px; color: var(--text3); margin-left: auto; }
+.log-title { font-size: 13px; font-weight: 500; color: var(--text1); }
+.log-body { font-size: 12px; color: var(--text2); margin-top: 4px; line-height: 1.6; }
+.log-tags { display: flex; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
+.tag { font-size: 10px; padding: 2px 7px; border-radius: 6px; background: var(--bg2); color: var(--text2); }
+
+/* ── Notes ─────────────────────────────────── */
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.note-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 12px; }
+.note-card.pinned { border-color: #F59E0B; background: #FFFBEB; }
+.note-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 6px; }
+.note-title { font-size: 13px; font-weight: 500; color: var(--text1); }
+.note-cat { font-size: 10px; padding: 2px 7px; border-radius: 8px; white-space: nowrap; }
+.nc-finance { background: #FEF3C7; color: #92400E; }
+.nc-ops { background: #DBEAFE; color: #1D4ED8; }
+.nc-hr { background: #EDE9FE; color: #5B21B6; }
+.nc-strat { background: #DCFCE7; color: #166534; }
+.note-body { font-size: 11px; color: var(--text2); line-height: 1.6; }
+.note-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 0.5px solid var(--border); }
+
+/* ── To Do ─────────────────────────────────── */
+.todo-filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.filter-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 0.5px solid var(--border2); background: none; color: var(--text2); cursor: pointer; transition: background 0.12s; }
+.filter-btn:hover { background: var(--bg2); }
+.filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+.todo-add { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.todo-add input, .todo-add select { font-size: 12px; }
+.todo-add input:first-child { flex: 2; min-width: 160px; }
+.todo-list { display: flex; flex-direction: column; gap: 6px; }
+.todo-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); }
+.todo-item.done-item { opacity: 0.5; }
+.todo-check {
+  width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border2);
+  flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  background: none; transition: all 0.15s;
+}
+.todo-check.checked { background: var(--success); border-color: var(--success); color: white; }
+.todo-text { flex: 1; font-size: 13px; color: var(--text1); }
+.done-item .todo-text { text-decoration: line-through; }
+.todo-meta { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.prio-high { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #FEE2E2; color: #991B1B; }
+.prio-med { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #FEF3C7; color: #92400E; }
+.prio-low { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #DBEAFE; color: #1D4ED8; }
+.todo-due { font-size: 10px; color: var(--text3); }
+.todo-del { background: none; border: none; color: var(--text3); cursor: pointer; padding: 2px; font-size: 14px; line-height: 1; }
+.todo-del:hover { color: var(--danger); }
+
+/* ── Result ─────────────────────────────────── */
+.result-header { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.res-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; border-left: 3px solid; }
+.rc-blue { border-color: #3B82F6; }
+.rc-green { border-color: #22C55E; }
+.rc-amber { border-color: #F59E0B; }
+.rc-purple { border-color: #A855F7; }
+.res-label { font-size: 10px; color: var(--text2); margin-bottom: 2px; }
+.res-val { font-size: 20px; font-weight: 600; color: var(--text1); }
+.res-trend { font-size: 10px; color: var(--text3); margin-top: 2px; }
+.chart-section { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 12px; }
+.chart-title { font-size: 12px; font-weight: 600; color: var(--text1); margin-bottom: 10px; }
+.bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; padding-top: 4px; }
+.bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.bar { border-radius: 4px 4px 0 0; width: 100%; }
+.bar-label { font-size: 9px; color: var(--text3); }
+.bar-val { font-size: 9px; color: var(--text2); }
+.activity-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid var(--border); font-size: 12px; }
+.activity-row:last-child { border-bottom: none; }
+.act-left { color: var(--text1); flex-shrink: 0; margin-right: 8px; }
+.act-pct { font-size: 11px; color: var(--text2); flex-shrink: 0; margin-left: 8px; }
+.act-bar-wrap { flex: 1; height: 4px; background: var(--bg2); border-radius: 2px; overflow: hidden; }
+.act-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+
+/* ── Animations ─────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 768px) {
+  :root { --nav-w: 200px; }
+  .tracker-cards { grid-template-columns: 1fr 1fr; }
+  .result-header { grid-template-columns: 1fr 1fr; }
+  .notes-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .sidebar { display: none; }
+  .main { width: 100%; }
+}
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Sidebar ────────────────────────────── -->
+  <div class="sidebar">
+    <div class="sb-header">
+      <div class="sb-logo">
+        <i class="ti ti-layout-dashboard" style="font-size:18px;color:#3B82F6" aria-hidden="true"></i>
+        WorkBoard
+      </div>
+      <div class="sb-sub">Manajemen Harian Perusahaan</div>
+      <div class="sb-date" id="sidebar-date">—</div>
+      <div class="sb-user">
+        <div class="sb-user-dot"></div>
+        <span class="sb-user-name" id="user-name">—</span>
+        <button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#1D4ED8;font-size:11px" onclick="changeUser()" title="Ganti nama">✎</button>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Harian</div>
+      <button class="nav-item active" onclick="switchPanel('schedule',this)">
+        <i class="ti ti-calendar-event" aria-hidden="true"></i> Daily Schedule
+        <span class="nav-badge badge-blue" id="badge-sched">0</span>
+      </button>
+      <button class="nav-item" onclick="switchPanel('tracker',this)">
+        <i class="ti ti-clock" aria-hidden="true"></i> Time Plan Tracker
+        <span class="nav-badge badge-amber" id="badge-track">0</span>
+      </button>
+      <button class="nav-item" onclick="switchPanel('logbook',this)">
+        <i class="ti ti-book" aria-hidden="true"></i> Logbook
+        <span class="nav-badge badge-blue" id="badge-log">0</span>
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Catatan</div>
+      <button class="nav-item" onclick="switchPanel('notes',this)">
+        <i class="ti ti-notes" aria-hidden="true"></i> Notes
+        <span class="nav-badge badge-blue" id="badge-notes">0</span>
+      </button>
+      <button class="nav-item" onclick="switchPanel('todo',this)">
+        <i class="ti ti-checkbox" aria-hidden="true"></i> To Do
+        <span class="nav-badge badge-red" id="badge-todo">0</span>
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Laporan</div>
+      <button class="nav-item" onclick="switchPanel('result',this)">
+        <i class="ti ti-chart-bar" aria-hidden="true"></i> Result
+        <span class="nav-badge badge-blue">bulan ini</span>
+      </button>
+    </div>
+
+    <div class="sb-progress">
+      <div class="prog-label">Progress Tracker Hari Ini</div>
+      <div class="prog-bar"><div class="prog-fill" id="daily-prog" style="width:0%"></div></div>
+      <div class="prog-val" id="daily-prog-val">0%</div>
+    </div>
+  </div>
+
+  <!-- ── Main ───────────────────────────────── -->
+  <div class="main">
+    <div class="top-bar">
+      <div class="top-title" id="panel-title">Daily Schedule</div>
+      <div class="top-actions">
+        <button class="btn-sm" onclick="exportData()">
+          <i class="ti ti-download" aria-hidden="true"></i> Export JSON
+        </button>
+        <button class="btn-sm btn-primary" onclick="handleAdd()">
+          <i class="ti ti-plus" aria-hidden="true"></i> Tambah
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── Daily Schedule ─────────────────── -->
+      <div class="panel active" id="panel-schedule">
+        <div class="sched-controls">
+          <label style="font-size:12px;color:var(--text2)">Tanggal:</label>
+          <input type="date" id="sched-date" class="input-today" onchange="renderSchedule()" style="font-size:12px" />
+        </div>
+
+        <div class="form-box" id="sched-form" style="display:none">
+          <div class="form-row">
+            <input id="sched-time" type="time" value="08:00" style="max-width:110px" />
+            <input id="sched-title" placeholder="Judul kegiatan..." style="flex:2" />
+            <input id="sched-loc" placeholder="Lokasi / platform" />
+            <select id="sched-cat">
+              <option value="blue">🔵 Umum</option>
+              <option value="amber">🟡 Penting</option>
+              <option value="green">🟢 Selesai</option>
+              <option value="purple">🟣 Meeting</option>
+              <option value="red">🔴 Darurat</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="btn-sm" onclick="document.getElementById('sched-form').style.display='none'">Batal</button>
+            <button class="btn-sm btn-primary" onclick="saveSchedule()">Simpan</button>
+          </div>
+        </div>
+
+        <div class="sched-grid" id="sched-grid">
+          <div class="loading-msg" style="grid-column:1/-1">
+            <i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat jadwal...
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Time Plan Tracker ──────────────── -->
+      <div class="panel" id="panel-tracker">
+        <div class="sched-controls">
+          <label style="font-size:12px;color:var(--text2)">Tanggal:</label>
+          <input type="date" id="tracker-date" class="input-today" onchange="renderTracker()" style="font-size:12px" />
+        </div>
+
+        <div class="tracker-cards" id="tracker-stats">
+          <div class="stat-card"><div class="stat-label">Total Kegiatan</div><div class="stat-val">—</div></div>
+          <div class="stat-card"><div class="stat-label">Selesai</div><div class="stat-val">—</div></div>
+          <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-val">—</div></div>
+          <div class="stat-card"><div class="stat-label">Terlambat</div><div class="stat-val">—</div></div>
+        </div>
+
+        <div class="section-title">Rencana & Realisasi Waktu</div>
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th>Kegiatan</th>
+              <th>Rencana</th>
+              <th>Realisasi</th>
+              <th>Oleh</th>
+              <th>Status</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody id="tracker-tbody">
+            <tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Memuat...</td></tr>
+          </tbody>
+        </table>
+
+        <div class="tracker-add">
+          <div class="section-title">Tambah Kegiatan</div>
+          <div class="form-row">
+            <input id="trk-name" placeholder="Nama kegiatan..." style="flex:2" />
+            <input id="trk-plan" placeholder="Rencana (mis: 2j)" />
+            <input id="trk-actual" placeholder="Realisasi (mis: 2j 10m)" />
+            <select id="trk-status">
+              <option value="wait">Menunggu</option>
+              <option value="prog">Berjalan</option>
+              <option value="done">Selesai</option>
+              <option value="late">Terlambat</option>
+            </select>
+            <input id="trk-pct" type="number" min="0" max="100" placeholder="%" style="max-width:70px" />
+            <button class="btn-sm btn-primary" onclick="addTrackerItem()">Tambah</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Logbook ─────────────────────────── -->
+      <div class="panel" id="panel-logbook">
+        <div class="form-box" id="log-form" style="display:none">
+          <div class="form-row">
+            <input id="log-title" placeholder="Judul catatan logbook..." style="flex:2" />
+            <select id="log-type">
+              <option value="meeting">Rapat</option>
+              <option value="report">Laporan</option>
+              <option value="note">Catatan</option>
+              <option value="issue">Masalah</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <textarea id="log-body" placeholder="Isi catatan, hasil keputusan, tindak lanjut, notulensi..."></textarea>
+          </div>
+          <div class="form-row">
+            <input id="log-tags-in" placeholder="Tag (pisahkan koma — contoh: keuangan, ops, hr)" />
+          </div>
+          <div class="form-actions">
+            <button class="btn-sm" onclick="document.getElementById('log-form').style.display='none'">Batal</button>
+            <button class="btn-sm btn-primary" onclick="saveLog()">Simpan ke Logbook</button>
+          </div>
+        </div>
+        <div class="logbook-list" id="logbook-list">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat logbook...</div>
+        </div>
+      </div>
+
+      <!-- ── Notes ─────────────────────────────── -->
+      <div class="panel" id="panel-notes">
+        <div class="form-box" id="note-form" style="display:none">
+          <div class="form-row">
+            <input id="note-title-in" placeholder="Judul catatan..." style="flex:2" />
+            <select id="note-cat-in">
+              <option value="finance">Keuangan</option>
+              <option value="ops">Operasional</option>
+              <option value="hr">SDM / HR</option>
+              <option value="strat">Strategi</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <textarea id="note-body-in" placeholder="Isi catatan penting perusahaan..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn-sm" onclick="document.getElementById('note-form').style.display='none'">Batal</button>
+            <button class="btn-sm btn-primary" onclick="saveNote()">Simpan Note</button>
+          </div>
+        </div>
+        <div class="notes-grid" id="notes-grid">
+          <div class="loading-msg" style="grid-column:1/-1"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat catatan...</div>
+        </div>
+      </div>
+
+      <!-- ── To Do ─────────────────────────────── -->
+      <div class="panel" id="panel-todo">
+        <div class="todo-filters">
+          <button class="filter-btn active" onclick="filterTodo('all',this)">Semua</button>
+          <button class="filter-btn" onclick="filterTodo('high',this)">🔴 Prioritas Tinggi</button>
+          <button class="filter-btn" onclick="filterTodo('med',this)">🟡 Sedang</button>
+          <button class="filter-btn" onclick="filterTodo('low',this)">🔵 Rendah</button>
+          <button class="filter-btn" onclick="filterTodo('done',this)">✅ Selesai</button>
+        </div>
+        <div class="todo-add">
+          <input id="todo-input" placeholder="Tambah tugas baru..." onkeydown="if(event.key==='Enter')addTodo()" />
+          <select id="todo-prio">
+            <option value="high">Prioritas Tinggi</option>
+            <option value="med" selected>Sedang</option>
+            <option value="low">Rendah</option>
+          </select>
+          <input id="todo-due" type="date" title="Deadline" />
+          <input id="todo-assign" placeholder="Ditugaskan ke..." style="max-width:140px" />
+          <button class="btn-sm btn-primary" onclick="addTodo()">Tambah</button>
+        </div>
+        <div class="todo-list" id="todo-list">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat tugas...</div>
+        </div>
+      </div>
+
+      <!-- ── Result ─────────────────────────────── -->
+      <div class="panel" id="panel-result">
+        <div class="result-header" id="result-stats">
+          <div class="res-card rc-blue"><div class="res-label">Jadwal</div><div class="res-val">—</div></div>
+          <div class="res-card rc-green"><div class="res-label">Tugas Selesai</div><div class="res-val">—</div></div>
+          <div class="res-card rc-amber"><div class="res-label">Log Minggu Ini</div><div class="res-val">—</div></div>
+          <div class="res-card rc-purple"><div class="res-label">Notes</div><div class="res-val">—</div></div>
+        </div>
+        <div class="chart-section">
+          <div class="chart-title">Aktivitas Tracker — 7 Hari Terakhir</div>
+          <div class="bar-chart" id="weekly-chart"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="chart-section">
+            <div class="chart-title">Distribusi Status Tracker</div>
+            <div id="activity-dist"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div></div>
+          </div>
+          <div class="chart-section">
+            <div class="chart-title">Distribusi Kategori Notes</div>
+            <div id="notes-summary"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="js/supabase.js"></script>
+<script src="js/app.js"></script>
+<script>
+function changeUser() {
+  const name = prompt('Masukkan nama kamu:', getUser());
+  if (name && name.trim()) {
+    localStorage.setItem('wb_user', name.trim());
+    document.getElementById('user-name').textContent = name.trim();
+  }
+}
+</script>
+<script>
+// ============================================
+// js/supabase.js — Konfigurasi Supabase
+// WorkBoard AMS - Andrika Mitra Solusi
+// ============================================
+
+const SUPABASE_URL = 'https://xcmpsmydlgtvegqtokez.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_OKoAvU3BeWDoPmRGPhEylA_VWaxcyJW';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Helper: format tanggal ke YYYY-MM-DD
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// Helper: format waktu HH:MM
+function nowTime() {
+  const d = new Date();
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+// Helper: nama pengguna dari localStorage
+function getUser() {
+  return localStorage.getItem('wb_user') || 'Pengguna';
+}
+// ============================================
+// js/app.js — Logic utama WorkBoard
+// ============================================
+
+// ── State ─────────────────────────────────
+let currentPanel = 'schedule';
+let todoFilter = 'all';
+let scheduleDate = todayStr();
+
+const DAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+// ── Init ───────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  // Cek nama pengguna
+  let user = localStorage.getItem('wb_user');
+  if (!user) {
+    user = prompt('Masukkan nama kamu untuk WorkBoard:') || 'Pengguna';
+    localStorage.setItem('wb_user', user);
+  }
+  document.getElementById('user-name').textContent = user;
+
+  // Tampilkan tanggal
+  const now = new Date();
+  document.getElementById('sidebar-date').textContent =
+    DAYS[now.getDay()] + ', ' + now.getDate() + ' ' + MONTHS[now.getMonth()] + ' ' + now.getFullYear();
+
+  // Set default tanggal input
+  const todayInputs = document.querySelectorAll('.input-today');
+  todayInputs.forEach(el => { el.value = todayStr(); });
+
+  await renderSchedule();
+  updateDailyProgress();
+});
+
+// ── Panel switching ────────────────────────
+async function switchPanel(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  el.classList.add('active');
+  currentPanel = id;
+
+  const titles = {
+    schedule: 'Daily Schedule',
+    tracker: 'Time Plan Tracker',
+    logbook: 'Logbook',
+    notes: 'Notes',
+    todo: 'To Do',
+    result: 'Result — Laporan'
+  };
+  document.getElementById('panel-title').textContent = titles[id] || id;
+  hideAllForms();
+
+  if (id === 'schedule') await renderSchedule();
+  else if (id === 'tracker') await renderTracker();
+  else if (id === 'logbook') await renderLogbook();
+  else if (id === 'notes') await renderNotes();
+  else if (id === 'todo') await renderTodo();
+  else if (id === 'result') await renderResult();
+}
+
+function hideAllForms() {
+  ['sched-form','log-form','note-form'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+function handleAdd() {
+  const formMap = {
+    schedule: 'sched-form',
+    logbook: 'log-form',
+    notes: 'note-form'
+  };
+  const formId = formMap[currentPanel];
+  if (formId) {
+    const el = document.getElementById(formId);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+}
+
+// ── Loading state ──────────────────────────
+function setLoading(containerId, loading) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (loading) el.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="font-size:18px;animation:spin 1s linear infinite"></i> Memuat data...</div>';
+}
+
+// ── DAILY SCHEDULE ─────────────────────────
+async function renderSchedule() {
+  setLoading('sched-grid', true);
+  const dateInput = document.getElementById('sched-date');
+  if (dateInput) scheduleDate = dateInput.value || todayStr();
+
+  const { data, error } = await sb
+    .from('schedule_events')
+    .select('*')
+    .eq('event_date', scheduleDate)
+    .order('time_start');
+
+  const hours = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'];
+  let html = '';
+  hours.forEach(h => {
+    const evs = (data || []).filter(e => e.time_start && e.time_start.substring(0,5) === h);
+    html += `<div class="time-label">${h}</div><div class="time-event">`;
+    evs.forEach(e => {
+      html += `<div class="event-card ev-${e.category}" data-id="${e.id}">
+        <div class="ev-title">${e.title}
+          <button class="ev-del" onclick="delSchedule('${e.id}')" aria-label="Hapus"><i class="ti ti-x" aria-hidden="true"></i></button>
+        </div>
+        ${e.location ? `<div class="ev-meta"><i class="ti ti-map-pin" aria-hidden="true"></i> ${e.location}</div>` : ''}
+        <div class="ev-meta"><i class="ti ti-user" aria-hidden="true"></i> ${e.created_by || '-'}</div>
+      </div>`;
+    });
+    if (!evs.length) html += '<div style="height:8px"></div>';
+    html += '</div>';
+  });
+  document.getElementById('sched-grid').innerHTML = html;
+  document.getElementById('badge-sched').textContent = (data || []).length;
+}
+
+async function saveSchedule() {
+  const title = document.getElementById('sched-title').value.trim();
+  if (!title) return alert('Judul tidak boleh kosong!');
+  const { error } = await sb.from('schedule_events').insert({
+    event_date: document.getElementById('sched-date').value || todayStr(),
+    time_start: document.getElementById('sched-time').value,
+    title,
+    location: document.getElementById('sched-loc').value,
+    category: document.getElementById('sched-cat').value,
+    created_by: getUser()
+  });
+  if (error) return alert('Gagal menyimpan: ' + error.message);
+  document.getElementById('sched-title').value = '';
+  document.getElementById('sched-loc').value = '';
+  document.getElementById('sched-form').style.display = 'none';
+  await renderSchedule();
+  updateDailyProgress();
+}
+
+async function delSchedule(id) {
+  if (!confirm('Hapus jadwal ini?')) return;
+  await sb.from('schedule_events').delete().eq('id', id);
+  await renderSchedule();
+  updateDailyProgress();
+}
+
+// ── TIME PLAN TRACKER ──────────────────────
+async function renderTracker() {
+  const dateVal = document.getElementById('tracker-date')?.value || todayStr();
+  const { data } = await sb
+    .from('tracker_items')
+    .select('*')
+    .eq('item_date', dateVal)
+    .order('created_at');
+
+  const items = data || [];
+  const done = items.filter(t => t.status === 'done').length;
+  const total = items.length;
+  const prog = total ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('tracker-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Kegiatan</div><div class="stat-val">${total}</div><div class="stat-sub">hari ini</div></div>
+    <div class="stat-card"><div class="stat-label">Selesai</div><div class="stat-val">${done}</div><div class="stat-sub">dari ${total}</div></div>
+    <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-val">${prog}%</div><div class="stat-sub">completion rate</div></div>
+    <div class="stat-card"><div class="stat-label">Terlambat</div><div class="stat-val">${items.filter(t => t.status === 'late').length}</div><div class="stat-sub">perlu perhatian</div></div>
+  `;
+  document.getElementById('badge-track').textContent = items.filter(t => t.status === 'prog' || t.status === 'wait').length;
+
+  const stClass = {done:'s-done',prog:'s-prog',wait:'s-wait',late:'s-late'};
+  const stLabel = {done:'Selesai',prog:'Berjalan',wait:'Menunggu',late:'Terlambat'};
+  const tbody = document.getElementById('tracker-tbody');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--color-text-tertiary);font-size:12px">Belum ada kegiatan hari ini</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(t => `
+    <tr>
+      <td>${t.name}</td>
+      <td>${t.plan_time || '-'}</td>
+      <td>${t.actual_time || '-'}</td>
+      <td>${t.created_by || '-'}</td>
+      <td><span class="status-pill ${stClass[t.status]}">${stLabel[t.status]}</span></td>
+      <td style="min-width:90px">
+        <div style="font-size:10px;color:var(--color-text-secondary)">${t.progress_pct}%</div>
+        <div class="task-prog-bar"><div class="task-prog-fill" style="width:${t.progress_pct}%"></div></div>
+        <button class="ev-del" onclick="delTracker('${t.id}')" style="margin-top:2px" aria-label="Hapus"><i class="ti ti-x" aria-hidden="true"></i></button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function addTrackerItem() {
+  const name = document.getElementById('trk-name').value.trim();
+  if (!name) return;
+  const { error } = await sb.from('tracker_items').insert({
+    item_date: document.getElementById('tracker-date')?.value || todayStr(),
+    name,
+    plan_time: document.getElementById('trk-plan').value,
+    actual_time: document.getElementById('trk-actual').value,
+    status: document.getElementById('trk-status').value,
+    progress_pct: parseInt(document.getElementById('trk-pct').value) || 0,
+    created_by: getUser()
+  });
+  if (error) return alert('Gagal: ' + error.message);
+  document.getElementById('trk-name').value = '';
+  document.getElementById('trk-plan').value = '';
+  document.getElementById('trk-actual').value = '';
+  document.getElementById('trk-pct').value = '';
+  await renderTracker();
+}
+
+async function delTracker(id) {
+  await sb.from('tracker_items').delete().eq('id', id);
+  await renderTracker();
+}
+
+// ── LOGBOOK ────────────────────────────────
+async function renderLogbook() {
+  setLoading('logbook-list', true);
+  const { data } = await sb
+    .from('logbook_entries')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  document.getElementById('badge-log').textContent = (data || []).length;
+  const typeClass = {meeting:'lt-meeting',report:'lt-report',note:'lt-note',issue:'lt-issue'};
+  const typeLabel = {meeting:'Rapat',report:'Laporan',note:'Catatan',issue:'Masalah'};
+
+  if (!data || !data.length) {
+    document.getElementById('logbook-list').innerHTML = '<div class="empty-msg">Belum ada catatan logbook.</div>';
+    return;
+  }
+  document.getElementById('logbook-list').innerHTML = data.map(l => `
+    <div class="log-entry">
+      <div class="log-header">
+        <span class="log-type ${typeClass[l.type]}">${typeLabel[l.type]}</span>
+        <span class="log-time">${l.entry_date || ''} ${l.created_at ? new Date(l.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : ''}</span>
+        <span style="font-size:10px;color:var(--color-text-tertiary);margin-left:4px">oleh ${l.created_by || '-'}</span>
+        <button class="ev-del" onclick="delLog('${l.id}')" aria-label="Hapus"><i class="ti ti-x" aria-hidden="true"></i></button>
+      </div>
+      <div class="log-title">${l.title}</div>
+      <div class="log-body">${l.body || ''}</div>
+      <div class="log-tags">${(l.tags || []).map(t => `<span class="tag">#${t}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+async function saveLog() {
+  const title = document.getElementById('log-title').value.trim();
+  if (!title) return alert('Judul tidak boleh kosong!');
+  const tagsRaw = document.getElementById('log-tags-in').value;
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+  const { error } = await sb.from('logbook_entries').insert({
+    entry_date: todayStr(),
+    type: document.getElementById('log-type').value,
+    title,
+    body: document.getElementById('log-body').value,
+    tags,
+    created_by: getUser()
+  });
+  if (error) return alert('Gagal: ' + error.message);
+  document.getElementById('log-title').value = '';
+  document.getElementById('log-body').value = '';
+  document.getElementById('log-tags-in').value = '';
+  document.getElementById('log-form').style.display = 'none';
+  await renderLogbook();
+}
+
+async function delLog(id) {
+  if (!confirm('Hapus entri logbook ini?')) return;
+  await sb.from('logbook_entries').delete().eq('id', id);
+  await renderLogbook();
+}
+
+// ── NOTES ──────────────────────────────────
+async function renderNotes() {
+  const { data } = await sb.from('notes').select('*').order('is_pinned', { ascending: false }).order('created_at', { ascending: false });
+  document.getElementById('badge-notes').textContent = (data || []).length;
+  const catClass = {finance:'nc-finance',ops:'nc-ops',hr:'nc-hr',strat:'nc-strat'};
+  const catLabel = {finance:'Keuangan',ops:'Operasional',hr:'SDM/HR',strat:'Strategi'};
+
+  if (!data || !data.length) {
+    document.getElementById('notes-grid').innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Belum ada catatan.</div>';
+    return;
+  }
+  document.getElementById('notes-grid').innerHTML = data.map(n => `
+    <div class="note-card${n.is_pinned ? ' pinned' : ''}">
+      <div class="note-top">
+        <div class="note-title">${n.is_pinned ? '📌 ' : ''}${n.title}</div>
+        <span class="note-cat ${catClass[n.category]}">${catLabel[n.category]}</span>
+      </div>
+      <div class="note-body">${n.body || ''}</div>
+      <div class="note-footer">
+        <span style="font-size:10px;color:var(--color-text-tertiary)">${n.created_by || ''}</span>
+        <div style="display:flex;gap:4px">
+          <button class="ev-del" onclick="togglePin('${n.id}',${n.is_pinned})" title="${n.is_pinned?'Unpin':'Pin'}"><i class="ti ti-pin" aria-hidden="true"></i></button>
+          <button class="ev-del" onclick="delNote('${n.id}')" aria-label="Hapus"><i class="ti ti-x" aria-hidden="true"></i></button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function saveNote() {
+  const title = document.getElementById('note-title-in').value.trim();
+  if (!title) return alert('Judul tidak boleh kosong!');
+  const { error } = await sb.from('notes').insert({
+    title,
+    category: document.getElementById('note-cat-in').value,
+    body: document.getElementById('note-body-in').value,
+    created_by: getUser()
+  });
+  if (error) return alert('Gagal: ' + error.message);
+  document.getElementById('note-title-in').value = '';
+  document.getElementById('note-body-in').value = '';
+  document.getElementById('note-form').style.display = 'none';
+  await renderNotes();
+}
+
+async function togglePin(id, currentPin) {
+  await sb.from('notes').update({ is_pinned: !currentPin }).eq('id', id);
+  await renderNotes();
+}
+
+async function delNote(id) {
+  if (!confirm('Hapus catatan ini?')) return;
+  await sb.from('notes').delete().eq('id', id);
+  await renderNotes();
+}
+
+// ── TO DO ──────────────────────────────────
+async function renderTodo() {
+  let query = sb.from('todos').select('*').order('is_done').order('created_at', { ascending: false });
+  if (todoFilter === 'done') query = query.eq('is_done', true);
+  else if (todoFilter !== 'all') query = query.eq('priority', todoFilter).eq('is_done', false);
+
+  const { data } = await query.limit(100);
+  const all = data || [];
+
+  const pending = all.filter(t => !t.is_done).length;
+  document.getElementById('badge-todo').textContent = pending;
+
+  const prioClass = {high:'prio-high',med:'prio-med',low:'prio-low'};
+  const prioLabel = {high:'Tinggi',med:'Sedang',low:'Rendah'};
+
+  if (!all.length) {
+    document.getElementById('todo-list').innerHTML = '<div class="empty-msg">Tidak ada tugas di kategori ini.</div>';
+    return;
+  }
+  document.getElementById('todo-list').innerHTML = all.map(t => `
+    <div class="todo-item${t.is_done ? ' done-item' : ''}">
+      <button class="todo-check${t.is_done ? ' checked' : ''}" onclick="toggleTodo('${t.id}',${t.is_done})" aria-label="Tandai selesai">
+        ${t.is_done ? '<i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i>' : ''}
+      </button>
+      <div>
+        <div class="todo-text">${t.text}</div>
+        ${t.assigned_to ? `<div style="font-size:10px;color:var(--color-text-tertiary)">Ditugaskan ke: ${t.assigned_to}</div>` : ''}
+      </div>
+      <div class="todo-meta">
+        <span class="${prioClass[t.priority]}">${prioLabel[t.priority]}</span>
+        ${t.due_date ? `<span class="todo-due">${t.due_date}</span>` : ''}
+        <span style="font-size:10px;color:var(--color-text-tertiary)">${t.created_by || ''}</span>
+      </div>
+      <button class="todo-del" onclick="delTodo('${t.id}')" aria-label="Hapus"><i class="ti ti-x" aria-hidden="true"></i></button>
+    </div>
+  `).join('');
+}
+
+async function addTodo() {
+  const text = document.getElementById('todo-input').value.trim();
+  if (!text) return;
+  const { error } = await sb.from('todos').insert({
+    text,
+    priority: document.getElementById('todo-prio').value,
+    due_date: document.getElementById('todo-due').value || null,
+    assigned_to: document.getElementById('todo-assign').value || null,
+    created_by: getUser()
+  });
+  if (error) return alert('Gagal: ' + error.message);
+  document.getElementById('todo-input').value = '';
+  document.getElementById('todo-assign').value = '';
+  await renderTodo();
+}
+
+async function toggleTodo(id, isDone) {
+  await sb.from('todos').update({ is_done: !isDone, done_at: !isDone ? new Date().toISOString() : null }).eq('id', id);
+  await renderTodo();
+  updateDailyProgress();
+}
+
+async function delTodo(id) {
+  await sb.from('todos').delete().eq('id', id);
+  await renderTodo();
+}
+
+function filterTodo(f, el) {
+  todoFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTodo();
+}
+
+// ── RESULT ─────────────────────────────────
+async function renderResult() {
+  const [sched, tracker, logs, notes, todos] = await Promise.all([
+    sb.from('schedule_events').select('*').eq('event_date', todayStr()),
+    sb.from('tracker_items').select('*').eq('item_date', todayStr()),
+    sb.from('logbook_entries').select('*').gte('entry_date', getWeekStart()),
+    sb.from('notes').select('*'),
+    sb.from('todos').select('*')
+  ]);
+
+  const sd = sched.data || [], tr = tracker.data || [], ld = logs.data || [], nd = notes.data || [], td = todos.data || [];
+  const doneTodo = td.filter(t => t.is_done).length;
+  const doneTrk = tr.filter(t => t.status === 'done').length;
+
+  document.getElementById('result-stats').innerHTML = `
+    <div class="res-card rc-blue"><div class="res-label">Jadwal Hari Ini</div><div class="res-val">${sd.length}</div><div class="res-trend">agenda terjadwal</div></div>
+    <div class="res-card rc-green"><div class="res-label">Tugas Selesai</div><div class="res-val">${doneTodo}/${td.length}</div><div class="res-trend">${td.length ? Math.round(doneTodo/td.length*100) : 0}% completion</div></div>
+    <div class="res-card rc-amber"><div class="res-label">Log Minggu Ini</div><div class="res-val">${ld.length}</div><div class="res-trend">catatan tersimpan</div></div>
+    <div class="res-card rc-purple"><div class="res-label">Notes Aktif</div><div class="res-val">${nd.length}</div><div class="res-trend">dokumen catatan</div></div>
+  `;
+
+  // Weekly tracker chart (last 7 days)
+  const weekDays = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    weekDays.push({ label: DAYS[d.getDay()].substring(0,3), date: d.toISOString().split('T')[0] });
+  }
+  const { data: weekTrk } = await sb.from('tracker_items').select('item_date, status').gte('item_date', weekDays[0].date);
+  const weekCounts = weekDays.map(d => ({ ...d, count: (weekTrk || []).filter(t => t.item_date === d.date).length }));
+  const maxC = Math.max(...weekCounts.map(w => w.count), 1);
+  const todayD = todayStr();
+  document.getElementById('weekly-chart').innerHTML = weekCounts.map(w => `
+    <div class="bar-wrap">
+      <div class="bar-val">${w.count}</div>
+      <div class="bar" style="height:${Math.round(w.count/maxC*60)}px;background:${w.date===todayD?'#3B82F6':'#BFDBFE'}"></div>
+      <div class="bar-label">${w.label}</div>
+    </div>
+  `).join('');
+
+  // Activity distribution from tracker
+  const statCounts = {done:0,prog:0,wait:0,late:0};
+  tr.forEach(t => { statCounts[t.status]++; });
+  const total = tr.length || 1;
+  document.getElementById('activity-dist').innerHTML = [
+    {name:'Selesai',key:'done',color:'#22C55E'},
+    {name:'Berjalan',key:'prog',color:'#3B82F6'},
+    {name:'Menunggu',key:'wait',color:'#F59E0B'},
+    {name:'Terlambat',key:'late',color:'#EF4444'},
+  ].map(a => `
+    <div class="activity-row">
+      <div class="act-left">${a.name}</div>
+      <div class="act-bar-wrap"><div class="act-bar-fill" style="width:${Math.round(statCounts[a.key]/total*100)}%;background:${a.color}"></div></div>
+      <div class="act-pct">${statCounts[a.key]}</div>
+    </div>
+  `).join('');
+
+  // Notes by category
+  const catCount = {};
+  nd.forEach(n => { catCount[n.category] = (catCount[n.category] || 0) + 1; });
+  const catLabel = {finance:'Keuangan',ops:'Operasional',hr:'SDM/HR',strat:'Strategi'};
+  const total2 = nd.length || 1;
+  document.getElementById('notes-summary').innerHTML = Object.entries(catCount).map(([k,v]) => `
+    <div class="activity-row">
+      <div class="act-left">${catLabel[k] || k}</div>
+      <div class="act-bar-wrap"><div class="act-bar-fill" style="width:${Math.round(v/total2*100)}%;background:#A855F7"></div></div>
+      <div class="act-pct">${v}</div>
+    </div>
+  `).join('');
+}
+
+function getWeekStart() {
+  const d = new Date(); d.setDate(d.getDate() - 6);
+  return d.toISOString().split('T')[0];
+}
+
+// ── Progress harian ────────────────────────
+async function updateDailyProgress() {
+  const { data } = await sb.from('tracker_items').select('status').eq('item_date', todayStr());
+  const items = data || [];
+  const done = items.filter(t => t.status === 'done').length;
+  const prog = items.length ? Math.round(done / items.length * 100) : 0;
+  document.getElementById('daily-prog').style.width = prog + '%';
+  document.getElementById('daily-prog-val').textContent = prog + '%';
+}
+
+// ── Export ─────────────────────────────────
+async function exportData() {
+  const [s, t, l, n, td] = await Promise.all([
+    sb.from('schedule_events').select('*').eq('event_date', todayStr()),
+    sb.from('tracker_items').select('*').eq('item_date', todayStr()),
+    sb.from('logbook_entries').select('*').gte('entry_date', getWeekStart()),
+    sb.from('notes').select('*'),
+    sb.from('todos').select('*').eq('is_done', false)
+  ]);
+  const exportData = {
+    exportDate: new Date().toISOString(),
+    schedule: s.data, tracker: t.data, logbook: l.data, notes: n.data, todos: td.data
+  };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'workboard-' + todayStr() + '.json';
+  a.click();
+}
+
+// ── Realtime updates ───────────────────────
+function setupRealtime() {
+  sb.channel('workboard-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'schedule_events' }, () => {
+      if (currentPanel === 'schedule') renderSchedule();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tracker_items' }, () => {
+      if (currentPanel === 'tracker') renderTracker();
+      updateDailyProgress();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'logbook_entries' }, () => {
+      if (currentPanel === 'logbook') renderLogbook();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, () => {
+      if (currentPanel === 'notes') renderNotes();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'todos' }, () => {
+      if (currentPanel === 'todo') renderTodo();
+    })
+    .subscribe();
+}
+
+// Mulai realtime setelah DOM ready
+window.addEventListener('DOMContentLoaded', () => {
+  setupRealtime();
+});
+function changeUser() {
+  const name = prompt('Masukkan nama kamu:', getUser());
+  if (name && name.trim()) {
+    localStorage.setItem('wb_user', name.trim());
+    document.getElementById('user-name').textContent = name.trim();
+  }
+}
+</script>
+</body>
+</html>
