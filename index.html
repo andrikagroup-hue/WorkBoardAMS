@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WorkBoard — Manajemen Harian Perusahaan</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Sidebar ────────────────────────────── -->
+  <div class="sidebar">
+    <div class="sb-header">
+      <div class="sb-logo">
+        <i class="ti ti-layout-dashboard" style="font-size:18px;color:#3B82F6" aria-hidden="true"></i>
+        WorkBoard
+      </div>
+      <div class="sb-sub">Manajemen Harian Perusahaan</div>
+      <div class="sb-date" id="sidebar-date">—</div>
+      <div class="sb-user">
+        <div class="sb-user-dot"></div>
+        <span class="sb-user-name" id="user-name">—</span>
+        <button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#1D4ED8;font-size:11px" onclick="changeUser()" title="Ganti nama">✎</button>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Harian</div>
+      <button class="nav-item active" onclick="switchPanel('schedule',this)">
+        <i class="ti ti-calendar-event" aria-hidden="true"></i> Daily Schedule
+        <span class="nav-badge badge-blue" id="badge-sched">0</span>
+      </button>
+      <button class="nav-item" onclick="switchPanel('tracker',this)">
+        <i class="ti ti-clock" aria-hidden="true"></i> Time Plan Tracker
+        <span class="nav-badge badge-amber" id="badge-track">0</span>
+      </button>
+      <button class="nav-item" onclick="switchPanel('logbook',this)">
+        <i class="ti ti-book" aria-hidden="true"></i> Logbook
+        <span class="nav-badge badge-blue" id="badge-log">0</span>
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Catatan</div>
+      <button class="nav-item" onclick="switchPanel('notes',this)">
+        <i class="ti ti-notes" aria-hidden="true"></i> Notes
+        <span class="nav-badge badge-blue" id="badge-notes">0</span>
+      </button>
+      <button class="nav-item" onclick="switchPanel('todo',this)">
+        <i class="ti ti-checkbox" aria-hidden="true"></i> To Do
+        <span class="nav-badge badge-red" id="badge-todo">0</span>
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Laporan</div>
+      <button class="nav-item" onclick="switchPanel('result',this)">
+        <i class="ti ti-chart-bar" aria-hidden="true"></i> Result
+        <span class="nav-badge badge-blue">bulan ini</span>
+      </button>
+    </div>
+
+    <div class="sb-progress">
+      <div class="prog-label">Progress Tracker Hari Ini</div>
+      <div class="prog-bar"><div class="prog-fill" id="daily-prog" style="width:0%"></div></div>
+      <div class="prog-val" id="daily-prog-val">0%</div>
+    </div>
+  </div>
+
+  <!-- ── Main ───────────────────────────────── -->
+  <div class="main">
+    <div class="top-bar">
+      <div class="top-title" id="panel-title">Daily Schedule</div>
+      <div class="top-actions">
+        <button class="btn-sm" onclick="exportData()">
+          <i class="ti ti-download" aria-hidden="true"></i> Export JSON
+        </button>
+        <button class="btn-sm btn-primary" onclick="handleAdd()">
+          <i class="ti ti-plus" aria-hidden="true"></i> Tambah
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── Daily Schedule ─────────────────── -->
+      <div class="panel active" id="panel-schedule">
+        <div class="sched-controls">
+          <label style="font-size:12px;color:var(--text2)">Tanggal:</label>
+          <input type="date" id="sched-date" class="input-today" onchange="renderSchedule()" style="font-size:12px" />
+        </div>
+
+        <div class="form-box" id="sched-form" style="display:none">
+          <div class="form-row">
+            <input id="sched-time" type="time" value="08:00" style="max-width:110px" />
+            <input id="sched-title" placeholder="Judul kegiatan..." style="flex:2" />
+            <input id="sched-loc" placeholder="Lokasi / platform" />
+            <select id="sched-cat">
+              <option value="blue">🔵 Umum</option>
+              <option value="amber">🟡 Penting</option>
+              <option value="green">🟢 Selesai</option>
+              <option value="purple">🟣 Meeting</option>
+              <option value="red">🔴 Darurat</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="btn-sm" onclick="document.getElementById('sched-form').style.display='none'">Batal</button>
+            <button class="btn-sm btn-primary" onclick="saveSchedule()">Simpan</button>
+          </div>
+        </div>
+
+        <div class="sched-grid" id="sched-grid">
+          <div class="loading-msg" style="grid-column:1/-1">
+            <i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat jadwal...
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Time Plan Tracker ──────────────── -->
+      <div class="panel" id="panel-tracker">
+        <div class="sched-controls">
+          <label style="font-size:12px;color:var(--text2)">Tanggal:</label>
+          <input type="date" id="tracker-date" class="input-today" onchange="renderTracker()" style="font-size:12px" />
+        </div>
+
+        <div class="tracker-cards" id="tracker-stats">
+          <div class="stat-card"><div class="stat-label">Total Kegiatan</div><div class="stat-val">—</div></div>
+          <div class="stat-card"><div class="stat-label">Selesai</div><div class="stat-val">—</div></div>
+          <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-val">—</div></div>
+          <div class="stat-card"><div class="stat-label">Terlambat</div><div class="stat-val">—</div></div>
+        </div>
+
+        <div class="section-title">Rencana & Realisasi Waktu</div>
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th>Kegiatan</th>
+              <th>Rencana</th>
+              <th>Realisasi</th>
+              <th>Oleh</th>
+              <th>Status</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody id="tracker-tbody">
+            <tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Memuat...</td></tr>
+          </tbody>
+        </table>
+
+        <div class="tracker-add">
+          <div class="section-title">Tambah Kegiatan</div>
+          <div class="form-row">
+            <input id="trk-name" placeholder="Nama kegiatan..." style="flex:2" />
+            <input id="trk-plan" placeholder="Rencana (mis: 2j)" />
+            <input id="trk-actual" placeholder="Realisasi (mis: 2j 10m)" />
+            <select id="trk-status">
+              <option value="wait">Menunggu</option>
+              <option value="prog">Berjalan</option>
+              <option value="done">Selesai</option>
+              <option value="late">Terlambat</option>
+            </select>
+            <input id="trk-pct" type="number" min="0" max="100" placeholder="%" style="max-width:70px" />
+            <button class="btn-sm btn-primary" onclick="addTrackerItem()">Tambah</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Logbook ─────────────────────────── -->
+      <div class="panel" id="panel-logbook">
+        <div class="form-box" id="log-form" style="display:none">
+          <div class="form-row">
+            <input id="log-title" placeholder="Judul catatan logbook..." style="flex:2" />
+            <select id="log-type">
+              <option value="meeting">Rapat</option>
+              <option value="report">Laporan</option>
+              <option value="note">Catatan</option>
+              <option value="issue">Masalah</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <textarea id="log-body" placeholder="Isi catatan, hasil keputusan, tindak lanjut, notulensi..."></textarea>
+          </div>
+          <div class="form-row">
+            <input id="log-tags-in" placeholder="Tag (pisahkan koma — contoh: keuangan, ops, hr)" />
+          </div>
+          <div class="form-actions">
+            <button class="btn-sm" onclick="document.getElementById('log-form').style.display='none'">Batal</button>
+            <button class="btn-sm btn-primary" onclick="saveLog()">Simpan ke Logbook</button>
+          </div>
+        </div>
+        <div class="logbook-list" id="logbook-list">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat logbook...</div>
+        </div>
+      </div>
+
+      <!-- ── Notes ─────────────────────────────── -->
+      <div class="panel" id="panel-notes">
+        <div class="form-box" id="note-form" style="display:none">
+          <div class="form-row">
+            <input id="note-title-in" placeholder="Judul catatan..." style="flex:2" />
+            <select id="note-cat-in">
+              <option value="finance">Keuangan</option>
+              <option value="ops">Operasional</option>
+              <option value="hr">SDM / HR</option>
+              <option value="strat">Strategi</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <textarea id="note-body-in" placeholder="Isi catatan penting perusahaan..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn-sm" onclick="document.getElementById('note-form').style.display='none'">Batal</button>
+            <button class="btn-sm btn-primary" onclick="saveNote()">Simpan Note</button>
+          </div>
+        </div>
+        <div class="notes-grid" id="notes-grid">
+          <div class="loading-msg" style="grid-column:1/-1"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat catatan...</div>
+        </div>
+      </div>
+
+      <!-- ── To Do ─────────────────────────────── -->
+      <div class="panel" id="panel-todo">
+        <div class="todo-filters">
+          <button class="filter-btn active" onclick="filterTodo('all',this)">Semua</button>
+          <button class="filter-btn" onclick="filterTodo('high',this)">🔴 Prioritas Tinggi</button>
+          <button class="filter-btn" onclick="filterTodo('med',this)">🟡 Sedang</button>
+          <button class="filter-btn" onclick="filterTodo('low',this)">🔵 Rendah</button>
+          <button class="filter-btn" onclick="filterTodo('done',this)">✅ Selesai</button>
+        </div>
+        <div class="todo-add">
+          <input id="todo-input" placeholder="Tambah tugas baru..." onkeydown="if(event.key==='Enter')addTodo()" />
+          <select id="todo-prio">
+            <option value="high">Prioritas Tinggi</option>
+            <option value="med" selected>Sedang</option>
+            <option value="low">Rendah</option>
+          </select>
+          <input id="todo-due" type="date" title="Deadline" />
+          <input id="todo-assign" placeholder="Ditugaskan ke..." style="max-width:140px" />
+          <button class="btn-sm btn-primary" onclick="addTodo()">Tambah</button>
+        </div>
+        <div class="todo-list" id="todo-list">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat tugas...</div>
+        </div>
+      </div>
+
+      <!-- ── Result ─────────────────────────────── -->
+      <div class="panel" id="panel-result">
+        <div class="result-header" id="result-stats">
+          <div class="res-card rc-blue"><div class="res-label">Jadwal</div><div class="res-val">—</div></div>
+          <div class="res-card rc-green"><div class="res-label">Tugas Selesai</div><div class="res-val">—</div></div>
+          <div class="res-card rc-amber"><div class="res-label">Log Minggu Ini</div><div class="res-val">—</div></div>
+          <div class="res-card rc-purple"><div class="res-label">Notes</div><div class="res-val">—</div></div>
+        </div>
+        <div class="chart-section">
+          <div class="chart-title">Aktivitas Tracker — 7 Hari Terakhir</div>
+          <div class="bar-chart" id="weekly-chart"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="chart-section">
+            <div class="chart-title">Distribusi Status Tracker</div>
+            <div id="activity-dist"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div></div>
+          </div>
+          <div class="chart-section">
+            <div class="chart-title">Distribusi Kategori Notes</div>
+            <div id="notes-summary"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="js/supabase.js"></script>
+<script src="js/app.js"></script>
+<script>
+function changeUser() {
+  const name = prompt('Masukkan nama kamu:', getUser());
+  if (name && name.trim()) {
+    localStorage.setItem('wb_user', name.trim());
+    document.getElementById('user-name').textContent = name.trim();
+  }
+}
+</script>
+</body>
+</html>
