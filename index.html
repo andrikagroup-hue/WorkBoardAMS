@@ -1149,6 +1149,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   await renderSchedule();
   updateDailyProgress();
+  loadChatLastRead();
+  refreshChatUnreadBadge();
 });
 
 // ── Panel switching ────────────────────────
@@ -2208,18 +2210,20 @@ async function updateDailyProgress() {
 
 // ── Export ─────────────────────────────────
 async function exportData() {
-  const [s, t, l, n, td, pt] = await Promise.all([
+  const [s, t, l, n, td, pt, cc, cm] = await Promise.all([
     sb.from('schedule_events').select('*').eq('event_date',todayStr()),
     sb.from('tracker_items').select('*').eq('item_date',todayStr()),
     sb.from('logbook_entries').select('*').gte('entry_date',getWeekStart()),
     sb.from('notes').select('*'),
     sb.from('todos').select('*').eq('is_done',false),
-    sb.from('time_plan_tracker').select('*')
+    sb.from('time_plan_tracker').select('*'),
+    sb.from('chat_channels').select('*'),
+    sb.from('chat_messages').select('*').gte('created_at', getWeekStart())
   ]);
   const exportData = {
     exportDate: new Date().toISOString(),
     schedule: s.data, tracker: t.data, logbook: l.data, notes: n.data, todos: td.data,
-    projectTracker: pt.data
+    projectTracker: pt.data, chatChannels: cc.data, chatMessages: cm.data
   };
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -2259,7 +2263,7 @@ function prettifyExcelKey(k) {
     category: 'Kategori', subject: 'Subjek', assignment: 'PIC',
     start_date: 'Mulai', due_date: 'Tenggat', notes: 'Catatan',
     attachments: 'Lampiran', priority: 'Prioritas', start_time: 'Jam Mulai',
-    end_time: 'Jam Selesai', name: 'Nama'
+    end_time: 'Jam Selesai', name: 'Nama', channel: 'Channel', sender: 'Pengirim'
   };
   return map[k] || (k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '));
 }
@@ -2298,6 +2302,13 @@ function getPanelExportMeta() {
     notes: { title: 'Notes', getRows: () => [...notesCache] },
     todo: { title: 'To_Do', getRows: () => [...todoCache] },
     notepad: { title: 'Notepad', getRows: () => [...notepadCache] },
+    chat: {
+      title: 'Work_Talk', getRows: () => chatMessagesCache.map(m => {
+        const ch = chatChannels.find(c => c.id === m.channel_id);
+        const { channel_id, ...rest } = m;
+        return { ...rest, channel: ch ? chatChannelDisplayName(ch) : '' };
+      })
+    },
     result: { title: 'Result', getRows: null }
   };
 }
@@ -2395,6 +2406,22 @@ function setupRealtime() {
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'todos' }, () => {
       if (currentPanel === 'todo') renderTodo();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_channels' }, () => {
+      if (currentPanel === 'chat') renderChat();
+      else refreshChatUnreadBadge();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+      const row = payload.new;
+      if (!row) return;
+      if (currentPanel === 'chat' && activeChatChannelId === row.channel_id) {
+        chatMessagesCache.push(row);
+        renderChatThread(chatMessagesCache);
+        markChatChannelRead(row.channel_id);
+      } else if (currentPanel === 'chat') {
+        refreshChatChannelUnreadMap().then(renderChatChannelLists);
+      }
+      refreshChatUnreadBadge();
     })
     .subscribe();
 }
@@ -3025,6 +3052,11 @@ const quillNp = new Quill('#np-body-editor', {
       <span>Notepad</span>
       <span class="bn-badge hidden" id="bn-badge-notepad"></span>
     </button>
+    <button class="bn-item" onclick="switchPanelMobile('chat',this)" aria-label="Work Talk">
+      <i class="ti ti-message-circle-2"></i>
+      <span>Work Talk</span>
+      <span class="bn-badge hidden" id="bn-badge-chat"></span>
+    </button>
     <button class="bn-item" onclick="switchPanelMobile('result',this)" aria-label="Result">
       <i class="ti ti-chart-bar"></i>
       <span>Result</span>
@@ -3062,7 +3094,8 @@ function syncBottomNavBadges() {
     'log':     'badge-log',
     'notes':   'badge-notes',
     'todo':    'badge-todo',
-    'notepad': 'badge-notepad'
+    'notepad': 'badge-notepad',
+    'chat':    'badge-chat'
   };
   Object.keys(map).forEach(function(key) {
     var sidebarBadge = document.getElementById(map[key]);
@@ -3081,7 +3114,7 @@ function syncBottomNavBadges() {
 
 // Observe badge changes
 var badgeObserver = new MutationObserver(syncBottomNavBadges);
-['badge-sched','badge-track','badge-log','badge-notes','badge-todo','badge-notepad'].forEach(function(id) {
+['badge-sched','badge-track','badge-log','badge-notes','badge-todo','badge-notepad','badge-chat'].forEach(function(id) {
   var el = document.getElementById(id);
   if (el) badgeObserver.observe(el, { childList: true, subtree: true, characterData: true });
 });
