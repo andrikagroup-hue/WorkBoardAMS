@@ -552,6 +552,30 @@ textarea { resize: vertical; }
 .chat-icon-btn.chat-send { background: var(--accent); color: #fff; border-color: var(--accent); }
 .chat-icon-btn.chat-send:hover { background: #2563EB; }
 .chat-no-channel { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 12.5px; text-align: center; padding: 20px; }
+.cci-hide { opacity: 0.35; font-size: 12px !important; flex-shrink: 0; margin-left: 2px; }
+.cci-hide:hover { opacity: 1; color: var(--danger); }
+.chat-popover {
+  position: absolute; z-index: 200; width: 260px; background: var(--surface);
+  border: 0.5px solid var(--border2); border-radius: var(--radius-lg);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.18); overflow: hidden;
+}
+.chat-popover input { width: 100%; }
+.chat-popover .chat-channel-item { padding: 6px 10px; font-size: 12px; }
+.chat-emoji-popover {
+  position: absolute; bottom: 48px; left: 0; z-index: 200; width: 260px;
+  background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.18); padding: 8px;
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; max-height: 200px; overflow-y: auto;
+}
+.chat-emoji-popover button {
+  border: none; background: none; font-size: 18px; cursor: pointer; padding: 4px;
+  border-radius: 6px; line-height: 1;
+}
+.chat-emoji-popover button:hover { background: var(--bg2); }
+.chat-msg-actions { display: inline-flex; gap: 6px; margin-left: 6px; }
+.chat-msg-actions i { font-size: 11px; opacity: 0.5; cursor: pointer; }
+.chat-msg-actions i:hover { opacity: 1; }
+.chat-edited-tag { font-size: 9px; opacity: 0.7; font-style: italic; }
 @media (max-width: 768px) {
   .chat-wrap { height: calc(100vh - 220px); }
 }
@@ -959,6 +983,12 @@ create index if not exists idx_chat_messages_channel on chat_messages(channel_id
 alter publication supabase_realtime add table chat_channels, chat_messages;</code>
           <button onclick="document.getElementById('chat-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
         </div>
+        <div id="chat-col-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
+          ⚠️ <strong>Setup tambahan diperlukan:</strong> kolom buat fitur edit pesan & sembunyikan chat belum ada. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh halaman:<br>
+          <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_edited boolean DEFAULT false;
+ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]'::jsonb;</code>
+          <button onclick="document.getElementById('chat-col-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
+        </div>
         <div class="chat-wrap" id="chat-wrap">
           <div class="chat-sidebar">
             <div class="chat-sb-section">
@@ -975,7 +1005,7 @@ alter publication supabase_realtime add table chat_channels, chat_messages;</cod
             <div class="chat-sb-section">
               <div class="chat-sb-label">
                 <span>Pesan Pribadi</span>
-                <button class="chat-sb-add" onclick="createChatDM()" title="Mulai chat pribadi baru"><i class="ti ti-plus"></i></button>
+                <button class="chat-sb-add" id="chat-dm-add-btn" onclick="openChatDMPicker()" title="Mulai chat pribadi baru"><i class="ti ti-plus"></i></button>
               </div>
               <div id="chat-list-dm"><div class="chat-empty-list">Memuat...</div></div>
             </div>
@@ -1106,6 +1136,7 @@ let chatChannels = [];
 let activeChatChannelId = null;
 let chatMessagesCache = [];
 let chatAttachments = [];
+let editingChatMessageId = null;
 let chatLastRead = {};
 let chatChannelsLoaded = false;
 
@@ -2263,7 +2294,7 @@ function prettifyExcelKey(k) {
     category: 'Kategori', subject: 'Subjek', assignment: 'PIC',
     start_date: 'Mulai', due_date: 'Tenggat', notes: 'Catatan',
     attachments: 'Lampiran', priority: 'Prioritas', start_time: 'Jam Mulai',
-    end_time: 'Jam Selesai', name: 'Nama', channel: 'Channel', sender: 'Pengirim'
+    end_time: 'Jam Selesai', name: 'Nama', channel: 'Channel', sender: 'Pengirim', is_edited: 'Diedit'
   };
   return map[k] || (k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '));
 }
@@ -2411,14 +2442,21 @@ function setupRealtime() {
       if (currentPanel === 'chat') renderChat();
       else refreshChatUnreadBadge();
     })
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-      const row = payload.new;
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, (payload) => {
+      const row = payload.new || payload.old;
       if (!row) return;
-      if (currentPanel === 'chat' && activeChatChannelId === row.channel_id) {
-        chatMessagesCache.push(row);
+      const inActiveChannel = currentPanel === 'chat' && activeChatChannelId === row.channel_id;
+      if (inActiveChannel) {
+        if (payload.eventType === 'DELETE') {
+          chatMessagesCache = chatMessagesCache.filter(m => m.id !== row.id);
+        } else if (payload.eventType === 'UPDATE') {
+          chatMessagesCache = chatMessagesCache.map(m => m.id === row.id ? payload.new : m);
+        } else {
+          chatMessagesCache.push(row);
+          markChatChannelRead(row.channel_id);
+        }
         renderChatThread(chatMessagesCache);
-        markChatChannelRead(row.channel_id);
-      } else if (currentPanel === 'chat') {
+      } else if (currentPanel === 'chat' && payload.eventType === 'INSERT') {
         refreshChatChannelUnreadMap().then(renderChatChannelLists);
       }
       refreshChatUnreadBadge();
@@ -2656,6 +2694,10 @@ function hideChatMigrationBanner() {
   const b = document.getElementById('chat-migration-banner');
   if (b) b.style.display = 'none';
 }
+function showChatColumnMigrationBanner() {
+  const b = document.getElementById('chat-col-migration-banner');
+  if (b) b.style.display = 'block';
+}
 
 // Pastikan channel "Umum" selalu ada (dibuat otomatis sekali kalau belum ada)
 async function ensureUmumChannel() {
@@ -2756,9 +2798,10 @@ async function renderChat() {
 
 function renderChatChannelLists() {
   const user = getUser();
+  const notHidden = c => !(c.hidden_by || []).includes(user);
   const umum = chatChannels.filter(c => c.type === 'umum');
-  const bagian = chatChannels.filter(c => c.type === 'bagian');
-  const dm = chatChannels.filter(c => c.type === 'dm' && (c.participants || []).includes(user));
+  const bagian = chatChannels.filter(c => c.type === 'bagian' && notHidden(c));
+  const dm = chatChannels.filter(c => c.type === 'dm' && (c.participants || []).includes(user) && notHidden(c));
 
   document.getElementById('chat-list-umum').innerHTML = umum.map(renderChatChannelItem).join('') || '<div class="chat-empty-list">Tidak ada.</div>';
   document.getElementById('chat-list-bagian').innerHTML = bagian.length
@@ -2786,11 +2829,12 @@ function chatChannelIcon(c) {
 function renderChatChannelItem(c) {
   const unread = chatMessagesCacheUnread[c.id] || 0;
   const active = c.id === activeChatChannelId ? ' active' : '';
-  return `<button class="chat-channel-item${active}" onclick="openChatChannel('${c.id}',true)">
+  return `<div class="chat-channel-item${active}" role="button" tabindex="0" onclick="openChatChannel('${c.id}',true)">
     <i class="ti ${chatChannelIcon(c)}"></i>
     <span class="cci-name">${escHtml(chatChannelDisplayName(c))}</span>
     ${unread ? `<span class="cci-badge">${unread > 99 ? '99+' : unread}</span>` : ''}
-  </button>`;
+    ${c.type !== 'umum' ? `<i class="ti ti-x cci-hide" title="Sembunyikan dari daftar saya" onclick="event.stopPropagation();hideChatChannelForMe('${c.id}')"></i>` : ''}
+  </div>`;
 }
 
 // Buka satu channel: load pesan, render thread + compose box
@@ -2809,20 +2853,25 @@ async function openChatChannel(channelId, isUserClick) {
     <div class="chat-thread-header">
       <button class="chat-back" onclick="closeChatThreadMobile()" title="Kembali"><i class="ti ti-chevron-left"></i></button>
       <i class="ti ${chatChannelIcon(c)}"></i> ${escHtml(chatChannelDisplayName(c))}
-      ${c.type === 'bagian' ? `<button class="chat-icon-btn" style="width:28px;height:28px;margin-left:auto" title="Hapus channel" onclick="deleteChatChannel('${c.id}')"><i class="ti ti-trash" style="font-size:13px"></i></button>` : ''}
+      ${c.type !== 'umum' ? `<button class="chat-icon-btn" style="width:28px;height:28px;margin-left:auto" title="Hapus permanen" onclick="deleteChatChannel('${c.id}')"><i class="ti ti-trash" style="font-size:13px"></i></button>` : ''}
     </div>
     <div class="chat-thread" id="chat-thread"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat pesan...</div></div>
     <div class="chat-compose-wrap">
       <div class="chat-attach-preview" id="chat-attach-preview"></div>
-      <div class="chat-compose">
+      <div id="chat-edit-indicator" style="display:none;font-size:11px;color:var(--accent);padding:4px 12px 0;align-items:center;gap:6px">
+        <i class="ti ti-pencil"></i> Mengedit pesan — <a href="javascript:void(0)" onclick="cancelChatEdit()" style="color:var(--accent)">Batal</a>
+      </div>
+      <div class="chat-compose" style="position:relative">
         <input type="file" id="chat-file-input" multiple style="display:none" onchange="onChatFilesPicked(event)" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv">
         <button class="chat-icon-btn" title="Lampirkan file" onclick="document.getElementById('chat-file-input').click()"><i class="ti ti-paperclip"></i></button>
+        <button class="chat-icon-btn" title="Emoji" id="chat-emoji-btn" onclick="toggleChatEmojiPicker(event)"><i class="ti ti-mood-smile"></i></button>
         <textarea id="chat-input" rows="1" placeholder="Tulis pesan... (Enter kirim, Shift+Enter baris baru)" onkeydown="onChatInputKeydown(event)"></textarea>
         <button class="chat-icon-btn chat-send" title="Kirim" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
       </div>
     </div>
   `;
   chatAttachments = [];
+  editingChatMessageId = null;
   await loadChatMessages(channelId);
 }
 
@@ -2865,11 +2914,16 @@ function renderChatThread(messages) {
       <div class="chat-attach-list">
         ${m.attachments.map(a => `<a class="chat-attach-chip" href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" title="Unduh ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
       </div>` : '';
+    const actionsHtml = own ? `
+      <span class="chat-msg-actions">
+        <i class="ti ti-pencil" title="Edit" onclick="editChatMessage('${m.id}')"></i>
+        <i class="ti ti-trash" title="Hapus" onclick="deleteChatMessage('${m.id}')"></i>
+      </span>` : '';
     return `<div class="chat-bubble-row ${own ? 'own' : 'other'}">
       ${!own ? `<div class="chat-sender">${escHtml(m.sender || 'Pengguna')}</div>` : ''}
       ${m.body ? `<div class="chat-bubble">${renderBody(m.body)}</div>` : ''}
       ${attachHtml}
-      <div class="chat-time">${time}</div>
+      <div class="chat-time">${time}${m.is_edited ? ' · <span class="chat-edited-tag">diedit</span>' : ''}${actionsHtml}</div>
     </div>`;
   }).join('');
   wrap.scrollTop = wrap.scrollHeight;
@@ -2905,9 +2959,26 @@ function renderChatAttachPreview() {
 async function sendChatMessage() {
   const input = document.getElementById('chat-input');
   const text = (input.value || '').trim();
-  if (!text && !chatAttachments.length) return;
   if (!activeChatChannelId) return;
 
+  // ── Mode edit pesan ──
+  if (editingChatMessageId) {
+    if (!text) return alert('Isi pesan tidak boleh kosong.');
+    const { error } = await sb.from('chat_messages')
+      .update({ body: text, is_edited: true }).eq('id', editingChatMessageId);
+    if (error) {
+      if ((error.message || '').toLowerCase().includes('is_edited')) showChatColumnMigrationBanner();
+      alert('Gagal menyimpan edit: ' + error.message);
+      return;
+    }
+    input.value = '';
+    cancelChatEdit();
+    await loadChatMessages(activeChatChannelId);
+    return;
+  }
+
+  // ── Kirim pesan baru ──
+  if (!text && !chatAttachments.length) return;
   let uploaded = [];
   if (chatAttachments.length) {
     uploaded = await uploadFilesToStorage(chatAttachments, 'chat');
@@ -2932,6 +3003,64 @@ async function sendChatMessage() {
   await loadChatMessages(activeChatChannelId);
 }
 
+// Masuk mode edit — isi ulang kotak teks dengan pesan lama (lampiran lama tetap dipertahankan)
+function editChatMessage(id) {
+  const m = chatMessagesCache.find(x => x.id === id);
+  if (!m) return;
+  editingChatMessageId = id;
+  const input = document.getElementById('chat-input');
+  if (input) { input.value = m.body || ''; input.focus(); }
+  const ind = document.getElementById('chat-edit-indicator');
+  if (ind) ind.style.display = 'flex';
+}
+function cancelChatEdit() {
+  editingChatMessageId = null;
+  const input = document.getElementById('chat-input');
+  if (input) input.value = '';
+  const ind = document.getElementById('chat-edit-indicator');
+  if (ind) ind.style.display = 'none';
+}
+
+async function deleteChatMessage(id) {
+  if (!confirm('Hapus pesan ini? Tindakan ini tidak bisa dibatalkan.')) return;
+  const { error } = await sb.from('chat_messages').delete().eq('id', id);
+  if (error) return alert('Gagal menghapus pesan: ' + error.message);
+  if (editingChatMessageId === id) cancelChatEdit();
+  await loadChatMessages(activeChatChannelId);
+}
+
+// ── Emoji picker sederhana (vanilla, tanpa library eksternal) ──
+const CHAT_EMOJIS = ['😀','😂','😅','😊','😍','😘','🤔','😎','😢','😭','😡','😱','🥳','👍','👎','🙏','👏','🙌','💪','🤝','❤️','🔥','✅','❌','⚠️','🎉','📌','📎','⏰','📅','💬','👀','😴','🤣','😉','😇','🙃','😬','🥺','🤗','💯','🚀','🎯','📢','🛠️','💡','✍️','🙇'];
+function toggleChatEmojiPicker(e) {
+  e.stopPropagation();
+  const existing = document.getElementById('chat-emoji-popover');
+  if (existing) { existing.remove(); document.removeEventListener('click', closeChatEmojiOnOutsideClick); return; }
+  const pop = document.createElement('div');
+  pop.id = 'chat-emoji-popover';
+  pop.className = 'chat-emoji-popover';
+  pop.innerHTML = CHAT_EMOJIS.map(em => `<button onclick="insertChatEmoji('${em}')">${em}</button>`).join('');
+  document.querySelector('.chat-compose').appendChild(pop);
+  setTimeout(() => document.addEventListener('click', closeChatEmojiOnOutsideClick), 0);
+}
+function closeChatEmojiOnOutsideClick(e) {
+  const pop = document.getElementById('chat-emoji-popover');
+  const btn = document.getElementById('chat-emoji-btn');
+  if (pop && !pop.contains(e.target) && e.target !== btn) {
+    pop.remove();
+    document.removeEventListener('click', closeChatEmojiOnOutsideClick);
+  }
+}
+function insertChatEmoji(emoji) {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  const start = input.selectionStart || input.value.length;
+  const end = input.selectionEnd || input.value.length;
+  input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+  const pos = start + emoji.length;
+  input.focus();
+  input.setSelectionRange(pos, pos);
+}
+
 // Buat channel bagian/lembaga baru (terbuka untuk semua orang lihat, sama seperti panel lain)
 async function createChatChannel() {
   const name = prompt('Nama channel bagian/lembaga baru (contoh: HR, Operasional, Direksi):');
@@ -2949,11 +3078,16 @@ async function createChatChannel() {
   await openChatChannel(data.id, true);
 }
 
+// Hapus permanen — untuk channel Bagian (semua orang) atau DM (akan hilang utk 2 pihak)
 async function deleteChatChannel(id) {
-  if (!confirm('Hapus channel ini beserta semua pesannya? Tindakan ini tidak bisa dibatalkan.')) return;
+  const c = chatChannels.find(x => x.id === id);
+  const msg = c && c.type === 'dm'
+    ? 'Hapus chat pribadi ini beserta semua riwayatnya? Ini akan menghapus untuk KEDUA pihak, tidak bisa dibatalkan.'
+    : 'Hapus channel ini beserta semua pesannya? Tindakan ini tidak bisa dibatalkan.';
+  if (!confirm(msg)) return;
   const { error } = await sb.from('chat_channels').delete().eq('id', id);
   if (error) return alert('Gagal menghapus: ' + error.message);
-  chatChannels = chatChannels.filter(c => c.id !== id);
+  chatChannels = chatChannels.filter(x => x.id !== id);
   if (activeChatChannelId === id) {
     activeChatChannelId = null;
     document.getElementById('chat-main').innerHTML = '<div class="chat-no-channel"><div>👈 Pilih ruang obrolan, atau buat baru via tombol <strong>+</strong> di samping.</div></div>';
@@ -2961,21 +3095,118 @@ async function deleteChatChannel(id) {
   renderChatChannelLists();
 }
 
-// Mulai (atau buka) chat pribadi dengan orang lain — dicari/dibuat by nama (tanpa login asli)
-async function createChatDM() {
-  const target = prompt('Mau chat pribadi dengan siapa? (ketik nama persis seperti yang dia pakai di WorkBoard)');
-  if (!target || !target.trim()) return;
-  const targetName = target.trim();
+// Sembunyikan dari daftar SAYA saja (tidak menghapus utk pihak lain) — buat DM/Bagian
+// yang nggak relevan lagi tapi sayang riwayatnya dihapus permanen.
+async function hideChatChannelForMe(id, e) {
+  if (e) e.stopPropagation();
   const user = getUser();
-  if (targetName.toLowerCase() === user.toLowerCase()) { alert('Tidak bisa membuat chat pribadi dengan diri sendiri.'); return; }
+  if (!confirm('Sembunyikan ruang ini dari daftar kamu? Riwayat chat tetap aman, bisa dimunculkan lagi lewat tombol + dengan nama yang sama.')) return;
+  const c = chatChannels.find(x => x.id === id);
+  if (!c) return;
+  const hidden = Array.from(new Set([...(c.hidden_by || []), user]));
+  const { error } = await sb.from('chat_channels').update({ hidden_by: hidden }).eq('id', id);
+  if (error) {
+    if ((error.message || '').toLowerCase().includes('hidden_by')) showChatColumnMigrationBanner();
+    alert('Gagal menyembunyikan: ' + error.message);
+    return;
+  }
+  c.hidden_by = hidden;
+  if (activeChatChannelId === id) {
+    activeChatChannelId = null;
+    document.getElementById('chat-main').innerHTML = '<div class="chat-no-channel"><div>👈 Pilih ruang obrolan, atau buat baru via tombol <strong>+</strong> di samping.</div></div>';
+  }
+  renderChatChannelLists();
+}
 
-  const sortedKey = [user, targetName].map(s => s.toLowerCase()).sort().join('|');
+// Kumpulkan nama-nama yang pernah aktif di WorkBoard (dari berbagai tabel), buat dipilih
+// saat mau mulai chat pribadi — biar nggak perlu menebak ejaan nama orang.
+async function getKnownUserNames() {
+  const me = getUser().toLowerCase();
+  const queries = [
+    sb.from('schedule_events').select('created_by'),
+    sb.from('tracker_items').select('created_by'),
+    sb.from('time_plan_tracker').select('created_by'),
+    sb.from('logbook_entries').select('created_by'),
+    sb.from('notes').select('created_by'),
+    sb.from('todos').select('created_by'),
+    sb.from('notepad_items').select('created_by'),
+    sb.from('chat_channels').select('created_by'),
+    sb.from('chat_messages').select('sender')
+  ];
+  const results = await Promise.all(queries.map(q => q.then(r => r.data || []).catch(() => [])));
+  const seen = new Map(); // key: lowercase, value: nama asli (tampilan)
+  results.flat().forEach(row => {
+    const n = (row.created_by || row.sender || '').trim();
+    if (!n) return;
+    const key = n.toLowerCase();
+    if (key === me) return;
+    if (!seen.has(key)) seen.set(key, n);
+  });
+  return Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
+}
+
+// Buka panel pemilihan nama buat mulai chat pribadi baru
+async function openChatDMPicker() {
+  closeChatDMPicker();
+  const btn = document.getElementById('chat-dm-add-btn');
+  const pop = document.createElement('div');
+  pop.id = 'chat-dm-picker';
+  pop.className = 'chat-popover';
+  pop.innerHTML = `
+    <div style="padding:8px 10px 4px;font-size:11px;color:var(--text2);font-weight:600">Pilih nama, atau ketik manual</div>
+    <input id="chat-dm-search" placeholder="Cari nama..." style="margin:0 10px 6px;width:calc(100% - 20px)" oninput="filterChatDMPicker()">
+    <div id="chat-dm-picker-list" style="max-height:180px;overflow-y:auto;padding:0 4px"><div class="chat-empty-list">Memuat nama...</div></div>
+    <div style="display:flex;gap:6px;padding:8px 10px;border-top:0.5px solid var(--border)">
+      <input id="chat-dm-manual" placeholder="...atau ketik nama baru" style="flex:1">
+      <button class="btn-sm btn-primary" onclick="startChatDM(document.getElementById('chat-dm-manual').value)">Mulai</button>
+    </div>`;
+  document.body.appendChild(pop);
+  const r = btn.getBoundingClientRect();
+  pop.style.top = (r.bottom + window.scrollY + 4) + 'px';
+  pop.style.left = Math.max(8, r.right + window.scrollX - 260) + 'px';
+
+  const names = await getKnownUserNames();
+  chatDMPickerNames = names;
+  renderChatDMPickerList(names);
+  document.addEventListener('click', closeChatDMPickerOnOutsideClick);
+}
+let chatDMPickerNames = [];
+function renderChatDMPickerList(names) {
+  const list = document.getElementById('chat-dm-picker-list');
+  if (!list) return;
+  if (!names.length) { list.innerHTML = '<div class="chat-empty-list">Belum ada nama lain yang tercatat.</div>'; return; }
+  list.innerHTML = names.map(n => `<button class="chat-channel-item" onclick="startChatDM('${n.replace(/'/g, "\\'")}')"><i class="ti ti-user"></i><span class="cci-name">${escHtml(n)}</span></button>`).join('');
+}
+function filterChatDMPicker() {
+  const q = (document.getElementById('chat-dm-search').value || '').toLowerCase();
+  renderChatDMPickerList(chatDMPickerNames.filter(n => n.toLowerCase().includes(q)));
+}
+function closeChatDMPickerOnOutsideClick(e) {
+  const pop = document.getElementById('chat-dm-picker');
+  const btn = document.getElementById('chat-dm-add-btn');
+  if (pop && !pop.contains(e.target) && e.target !== btn) closeChatDMPicker();
+}
+function closeChatDMPicker() {
+  const pop = document.getElementById('chat-dm-picker');
+  if (pop) pop.remove();
+  document.removeEventListener('click', closeChatDMPickerOnOutsideClick);
+}
+
+// Mulai (atau buka) chat pribadi dengan orang lain — by nama (tanpa login asli)
+async function startChatDM(targetRaw) {
+  const target = (targetRaw || '').trim();
+  if (!target) return;
+  const user = getUser();
+  if (target.toLowerCase() === user.toLowerCase()) { alert('Tidak bisa membuat chat pribadi dengan diri sendiri.'); return; }
+  closeChatDMPicker();
+
+  const sortedKey = [user, target].map(s => s.toLowerCase()).sort().join('|');
   let existing = chatChannels.find(c => c.type === 'dm' &&
     (c.participants || []).map(p => p.toLowerCase()).sort().join('|') === sortedKey);
 
   if (!existing) {
     const { data, error } = await sb.from('chat_channels')
-      .insert({ type: 'dm', name: 'DM', participants: [user, targetName], created_by: user })
+      .insert({ type: 'dm', name: 'DM', participants: [user, target], created_by: user })
       .select().single();
     if (error) {
       if ((error.message || '').toLowerCase().includes('does not exist')) showChatMigrationBanner();
@@ -2984,6 +3215,11 @@ async function createChatDM() {
     }
     existing = data;
     chatChannels.push(existing);
+  } else if ((existing.hidden_by || []).includes(user)) {
+    // Channel ini sebelumnya disembunyikan oleh saya — munculkan lagi
+    const newHidden = (existing.hidden_by || []).filter(n => n !== user);
+    await sb.from('chat_channels').update({ hidden_by: newHidden }).eq('id', existing.id);
+    existing.hidden_by = newHidden;
   }
   renderChatChannelLists();
   await openChatChannel(existing.id, true);
