@@ -475,6 +475,94 @@ textarea { resize: vertical; }
 .sn-tape-sage    { background: #A8C8A0; }
 .sn-tape-cream   { background: #E8D890; }
 .sn-tape-el { display: block; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 36px; height: 14px; border-radius: 3px; opacity: 0.65; z-index: 1; }
+
+/* ── Work Talk (Chat) ───────────────────────── */
+.chat-wrap {
+  display: flex; height: calc(100vh - 132px); min-height: 420px;
+  border: 0.5px solid var(--border2); border-radius: var(--radius-lg);
+  overflow: hidden; background: var(--surface);
+}
+.chat-sidebar {
+  width: 230px; flex-shrink: 0; background: var(--bg);
+  border-right: 0.5px solid var(--border); overflow-y: auto;
+  display: flex; flex-direction: column; padding: 10px 0;
+}
+.chat-sb-section { padding: 6px 10px; }
+.chat-sb-label {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 10px; color: var(--text3); text-transform: uppercase;
+  letter-spacing: 0.6px; padding: 4px 4px; margin-top: 4px;
+}
+.chat-sb-add {
+  border: none; background: none; color: var(--accent); cursor: pointer;
+  font-size: 15px; line-height: 1; padding: 0 2px;
+}
+.chat-channel-item {
+  display: flex; align-items: center; gap: 7px; width: 100%; text-align: left;
+  border: none; background: none; cursor: pointer; color: var(--text2);
+  font-size: 12.5px; padding: 7px 8px; border-radius: 6px; position: relative;
+}
+.chat-channel-item:hover { background: var(--bg2); }
+.chat-channel-item.active { background: #EFF6FF; color: #1D4ED8; font-weight: 500; }
+.chat-channel-item i { font-size: 14px; flex-shrink: 0; opacity: 0.7; }
+.chat-channel-item .cci-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.cci-badge {
+  background: #EF4444; color: #fff; font-size: 10px; font-weight: 700;
+  min-width: 16px; height: 16px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; padding: 0 4px; flex-shrink: 0;
+}
+.chat-empty-list { font-size: 11px; color: var(--text3); padding: 4px 8px 10px; }
+.chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--surface); }
+.chat-thread-header {
+  padding: 10px 14px; border-bottom: 0.5px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text1);
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.chat-back { display: none; border: none; background: none; cursor: pointer; font-size: 17px; color: var(--text2); }
+.chat-thread { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.chat-bubble-row { display: flex; flex-direction: column; max-width: 72%; }
+.chat-bubble-row.own { align-self: flex-end; align-items: flex-end; }
+.chat-bubble-row.other { align-self: flex-start; align-items: flex-start; }
+.chat-sender { font-size: 10.5px; color: var(--text3); margin-bottom: 2px; padding: 0 4px; font-weight: 500; }
+.chat-bubble { padding: 8px 12px; border-radius: 14px; font-size: 12.5px; line-height: 1.55; word-break: break-word; white-space: pre-wrap; }
+.chat-bubble-row.own .chat-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.chat-bubble-row.other .chat-bubble { background: var(--bg2); color: var(--text1); border-bottom-left-radius: 4px; }
+.chat-bubble a { color: inherit; text-decoration: underline; }
+.chat-time { font-size: 9.5px; color: var(--text3); margin-top: 3px; padding: 0 4px; }
+.chat-attach-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.chat-attach-chip {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 10px;
+  border-radius: 5px; padding: 2px 6px; text-decoration: none;
+}
+.chat-bubble-row.own .chat-attach-chip { background: rgba(255,255,255,0.22); color: #fff; }
+.chat-bubble-row.other .chat-attach-chip { background: rgba(0,0,0,0.06); color: inherit; }
+.chat-compose-wrap { border-top: 0.5px solid var(--border); flex-shrink: 0; }
+.chat-attach-preview { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 0; }
+.chat-compose { display: flex; gap: 8px; align-items: flex-end; padding: 10px 12px; }
+.chat-compose textarea {
+  flex: 1; resize: none; max-height: 90px; min-height: 36px;
+  font-size: 12.5px; font-family: inherit; line-height: 1.5;
+}
+.chat-icon-btn {
+  border: 0.5px solid var(--border2); background: none; color: var(--text2);
+  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.chat-icon-btn:hover { background: var(--bg2); }
+.chat-icon-btn.chat-send { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chat-icon-btn.chat-send:hover { background: #2563EB; }
+.chat-no-channel { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 12.5px; text-align: center; padding: 20px; }
+@media (max-width: 768px) {
+  .chat-wrap { height: calc(100vh - 220px); }
+}
+@media (max-width: 560px) {
+  .chat-wrap { height: calc(100vh - 250px); border-radius: var(--radius); position: relative; }
+  .chat-sidebar { position: absolute; inset: 0; width: 100%; z-index: 2; }
+  .chat-main { position: absolute; inset: 0; z-index: 1; display: none; }
+  .chat-wrap.mobile-show-thread .chat-sidebar { display: none; }
+  .chat-wrap.mobile-show-thread .chat-main { display: flex; z-index: 2; }
+  .chat-back { display: inline-flex; align-items: center; justify-content: center; }
+}
   </style>
 </head>
 <body>
@@ -527,6 +615,14 @@ textarea { resize: vertical; }
       <button class="nav-item" onclick="switchPanel('notepad',this)">
         <i class="ti ti-notebook" aria-hidden="true"></i> Notepad
         <span class="nav-badge badge-blue" id="badge-notepad">0</span>
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Komunikasi</div>
+      <button class="nav-item" onclick="switchPanel('chat',this)">
+        <i class="ti ti-message-circle-2" aria-hidden="true"></i> Work Talk
+        <span class="nav-badge badge-red" id="badge-chat">0</span>
       </button>
     </div>
 
@@ -839,6 +935,59 @@ textarea { resize: vertical; }
         </div>
       </div>
 
+      <!-- ── Work Talk (Chat) ──────────────────── -->
+      <div class="panel" id="panel-chat">
+        <div id="chat-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
+          ⚠️ <strong>Setup diperlukan:</strong> Tabel chat belum ada di database. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh halaman:<br>
+          <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">create table if not exists chat_channels (
+  id uuid primary key default gen_random_uuid(),
+  type text not null check (type in ('umum','bagian','dm')),
+  name text not null,
+  participants jsonb,
+  created_by text,
+  created_at timestamptz default now()
+);
+create table if not exists chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  channel_id uuid references chat_channels(id) on delete cascade,
+  sender text not null,
+  body text,
+  attachments jsonb default '[]'::jsonb,
+  created_at timestamptz default now()
+);
+create index if not exists idx_chat_messages_channel on chat_messages(channel_id, created_at);
+alter publication supabase_realtime add table chat_channels, chat_messages;</code>
+          <button onclick="document.getElementById('chat-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
+        </div>
+        <div class="chat-wrap" id="chat-wrap">
+          <div class="chat-sidebar">
+            <div class="chat-sb-section">
+              <div class="chat-sb-label"><span>Umum</span></div>
+              <div id="chat-list-umum"><div class="chat-empty-list">Memuat...</div></div>
+            </div>
+            <div class="chat-sb-section">
+              <div class="chat-sb-label">
+                <span>Bagian / Lembaga</span>
+                <button class="chat-sb-add" onclick="createChatChannel()" title="Buat channel bagian/lembaga baru"><i class="ti ti-plus"></i></button>
+              </div>
+              <div id="chat-list-bagian"><div class="chat-empty-list">Memuat...</div></div>
+            </div>
+            <div class="chat-sb-section">
+              <div class="chat-sb-label">
+                <span>Pesan Pribadi</span>
+                <button class="chat-sb-add" onclick="createChatDM()" title="Mulai chat pribadi baru"><i class="ti ti-plus"></i></button>
+              </div>
+              <div id="chat-list-dm"><div class="chat-empty-list">Memuat...</div></div>
+            </div>
+          </div>
+          <div class="chat-main" id="chat-main">
+            <div class="chat-no-channel" id="chat-no-channel">
+              <div>👈 Pilih ruang obrolan, atau buat baru via tombol <strong>+</strong> di samping.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Result ─────────────────────────────── -->
       <div class="panel" id="panel-result">
         <div class="result-header" id="result-stats">
@@ -953,6 +1102,12 @@ let editingLogId = null;
 let logAttachments = [];
 let editingNoteId = null;
 let editingTodoId = null;
+let chatChannels = [];
+let activeChatChannelId = null;
+let chatMessagesCache = [];
+let chatAttachments = [];
+let chatLastRead = {};
+let chatChannelsLoaded = false;
 
 // Helper: muat ulang data panel yang sedang aktif (dipakai setelah ganti nama pengguna,
 // supaya filter privat/publik langsung ter-update sesuai pengguna yang baru)
@@ -964,6 +1119,7 @@ async function refreshCurrentPanel() {
   else if (currentPanel === 'todo') await renderTodo();
   else if (currentPanel === 'result') await renderResult();
   else if (currentPanel === 'notepad') await renderNotepad();
+  else if (currentPanel === 'chat') await renderChat();
   updateDailyProgress();
 }
 let todoFilter = 'all';
@@ -1010,7 +1166,8 @@ async function switchPanel(id, el) {
     notes: 'Notes',
     todo: 'To Do',
     result: 'Result — Laporan',
-    notepad: 'Notepad'
+    notepad: 'Notepad',
+    chat: 'Work Talk'
   };
   document.getElementById('panel-title').textContent = titles[id] || id;
   updateGlobalSearchFilter(id);
@@ -1023,6 +1180,7 @@ async function switchPanel(id, el) {
   else if (id === 'todo') await renderTodo();
   else if (id === 'result') await renderResult();
   else if (id === 'notepad') await renderNotepad();
+  else if (id === 'chat') await renderChat();
 }
 
 // ── GLOBAL SEARCH & FILTER (dinamis per menu) ──────────────
@@ -2444,6 +2602,367 @@ function _renderNoteCards(data) {
 }
 
 // ── QUILL RICH TEXT EDITORS ──────────────────────────────────────
+// ── WORK TALK (CHAT) ───────────────────────────────────────────
+// Channel: 'umum' (1 ruang umum, auto dibuat), 'bagian' (channel per bagian/lembaga,
+// dibuat bebas oleh siapa saja), 'dm' (chat pribadi 2 orang, participants = [namaA, namaB]).
+// CATATAN PENTING: app ini belum pakai Supabase Auth, identitas cuma nama di localStorage
+// (lihat getUser()). Jadi privasi DM di sini bersifat "soft" sama seperti is_private di
+// panel lain — disaring di sisi client, BUKAN dijamin oleh server/RLS.
+
+function loadChatLastRead() {
+  try { chatLastRead = JSON.parse(localStorage.getItem('wb_chat_last_read') || '{}'); }
+  catch (e) { chatLastRead = {}; }
+}
+function saveChatLastRead() {
+  localStorage.setItem('wb_chat_last_read', JSON.stringify(chatLastRead));
+}
+function markChatChannelRead(channelId) {
+  chatLastRead[channelId] = new Date().toISOString();
+  saveChatLastRead();
+}
+
+function showChatMigrationBanner() {
+  const b = document.getElementById('chat-migration-banner');
+  if (b) b.style.display = 'block';
+}
+function hideChatMigrationBanner() {
+  const b = document.getElementById('chat-migration-banner');
+  if (b) b.style.display = 'none';
+}
+
+// Pastikan channel "Umum" selalu ada (dibuat otomatis sekali kalau belum ada)
+async function ensureUmumChannel() {
+  const existing = chatChannels.find(c => c.type === 'umum');
+  if (existing) return existing;
+  const { data, error } = await sb.from('chat_channels')
+    .insert({ type: 'umum', name: 'Umum', created_by: getUser() })
+    .select().single();
+  if (error) { throw error; }
+  chatChannels.push(data);
+  return data;
+}
+
+// Ambil daftar channel (dipanggil saat masuk panel chat & saat realtime update)
+async function loadChatChannels() {
+  const { data, error } = await withTimeout(
+    sb.from('chat_channels').select('*').order('created_at', { ascending: true })
+  );
+  if (error) throw error;
+  chatChannels = data || [];
+  chatChannelsLoaded = true;
+  await ensureUmumChannel();
+  return chatChannels;
+}
+
+// Hitung badge unread total (dipanggil saat awal load app & tiap ada pesan baru via realtime)
+async function refreshChatUnreadBadge() {
+  try {
+    let channels = chatChannels;
+    if (!chatChannelsLoaded) {
+      const { data, error } = await sb.from('chat_channels').select('id,type,participants');
+      if (error) throw error;
+      channels = data || [];
+    }
+    const user = getUser();
+    const relevant = channels.filter(c => c.type !== 'dm' || (c.participants || []).includes(user));
+    if (!relevant.length) { setChatBadgeCount(0); return; }
+    const ids = relevant.map(c => c.id);
+    const { data: msgs, error: msgErr } = await sb.from('chat_messages')
+      .select('channel_id,created_at,sender').in('channel_id', ids);
+    if (msgErr) throw msgErr;
+    let unread = 0;
+    (msgs || []).forEach(m => {
+      if (m.sender === user) return; // pesan sendiri tidak dihitung unread
+      const last = chatLastRead[m.channel_id];
+      if (!last || new Date(m.created_at) > new Date(last)) unread++;
+    });
+    setChatBadgeCount(unread);
+  } catch (e) {
+    // Tabel mungkin belum dibuat — diamkan saja saat startup, banner akan tampil
+    // begitu user benar-benar membuka panel Work Talk.
+    setChatBadgeCount(0);
+  }
+}
+function setChatBadgeCount(n) {
+  const el = document.getElementById('badge-chat');
+  if (el) el.textContent = String(n);
+}
+
+// Cache jumlah unread per channel, diisi ulang oleh refreshChatChannelUnreadMap()
+let chatMessagesCacheUnread = {};
+async function refreshChatChannelUnreadMap() {
+  const user = getUser();
+  const relevant = chatChannels.filter(c => c.type !== 'dm' || (c.participants || []).includes(user));
+  if (!relevant.length) { chatMessagesCacheUnread = {}; return; }
+  const ids = relevant.map(c => c.id);
+  const { data: msgs } = await sb.from('chat_messages').select('channel_id,created_at,sender').in('channel_id', ids);
+  const map = {};
+  (msgs || []).forEach(m => {
+    if (m.sender === user) return;
+    const last = chatLastRead[m.channel_id];
+    if (!last || new Date(m.created_at) > new Date(last)) map[m.channel_id] = (map[m.channel_id] || 0) + 1;
+  });
+  chatMessagesCacheUnread = map;
+}
+
+// Render utama panel Work Talk — dipanggil tiap kali masuk panel ini
+async function renderChat() {
+  try {
+    await loadChatChannels();
+  } catch (e) {
+    if ((e.message || '').toLowerCase().includes('does not exist') || (e.message||'').toLowerCase().includes('chat_')) {
+      showChatMigrationBanner();
+    }
+    document.getElementById('chat-list-umum').innerHTML = '<div class="chat-empty-list" style="color:#e53e3e">⚠️ Gagal memuat.</div>';
+    document.getElementById('chat-list-bagian').innerHTML = '';
+    document.getElementById('chat-list-dm').innerHTML = '';
+    return;
+  }
+  hideChatMigrationBanner();
+  await refreshChatChannelUnreadMap();
+  renderChatChannelLists();
+  if (activeChatChannelId && chatChannels.some(c => c.id === activeChatChannelId)) {
+    await openChatChannel(activeChatChannelId, false);
+  }
+  refreshChatUnreadBadge();
+}
+
+function renderChatChannelLists() {
+  const user = getUser();
+  const umum = chatChannels.filter(c => c.type === 'umum');
+  const bagian = chatChannels.filter(c => c.type === 'bagian');
+  const dm = chatChannels.filter(c => c.type === 'dm' && (c.participants || []).includes(user));
+
+  document.getElementById('chat-list-umum').innerHTML = umum.map(renderChatChannelItem).join('') || '<div class="chat-empty-list">Tidak ada.</div>';
+  document.getElementById('chat-list-bagian').innerHTML = bagian.length
+    ? bagian.map(renderChatChannelItem).join('')
+    : '<div class="chat-empty-list">Belum ada channel. Klik + untuk buat.</div>';
+  document.getElementById('chat-list-dm').innerHTML = dm.length
+    ? dm.map(renderChatChannelItem).join('')
+    : '<div class="chat-empty-list">Belum ada chat pribadi. Klik + untuk mulai.</div>';
+}
+
+function chatChannelDisplayName(c) {
+  if (c.type === 'dm') {
+    const user = getUser();
+    const other = (c.participants || []).find(p => p !== user);
+    return other || 'DM';
+  }
+  return c.name;
+}
+function chatChannelIcon(c) {
+  if (c.type === 'umum') return 'ti-speakerphone';
+  if (c.type === 'dm') return 'ti-user';
+  return 'ti-users';
+}
+
+function renderChatChannelItem(c) {
+  const unread = chatMessagesCacheUnread[c.id] || 0;
+  const active = c.id === activeChatChannelId ? ' active' : '';
+  return `<button class="chat-channel-item${active}" onclick="openChatChannel('${c.id}',true)">
+    <i class="ti ${chatChannelIcon(c)}"></i>
+    <span class="cci-name">${escHtml(chatChannelDisplayName(c))}</span>
+    ${unread ? `<span class="cci-badge">${unread > 99 ? '99+' : unread}</span>` : ''}
+  </button>`;
+}
+
+// Buka satu channel: load pesan, render thread + compose box
+async function openChatChannel(channelId, isUserClick) {
+  activeChatChannelId = channelId;
+  markChatChannelRead(channelId);
+  if (isUserClick) {
+    delete chatMessagesCacheUnread[channelId];
+    renderChatChannelLists();
+    document.getElementById('chat-wrap').classList.add('mobile-show-thread');
+  }
+  const c = chatChannels.find(x => x.id === channelId);
+  if (!c) return;
+
+  document.getElementById('chat-main').innerHTML = `
+    <div class="chat-thread-header">
+      <button class="chat-back" onclick="closeChatThreadMobile()" title="Kembali"><i class="ti ti-chevron-left"></i></button>
+      <i class="ti ${chatChannelIcon(c)}"></i> ${escHtml(chatChannelDisplayName(c))}
+      ${c.type === 'bagian' ? `<button class="chat-icon-btn" style="width:28px;height:28px;margin-left:auto" title="Hapus channel" onclick="deleteChatChannel('${c.id}')"><i class="ti ti-trash" style="font-size:13px"></i></button>` : ''}
+    </div>
+    <div class="chat-thread" id="chat-thread"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat pesan...</div></div>
+    <div class="chat-compose-wrap">
+      <div class="chat-attach-preview" id="chat-attach-preview"></div>
+      <div class="chat-compose">
+        <input type="file" id="chat-file-input" multiple style="display:none" onchange="onChatFilesPicked(event)" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv">
+        <button class="chat-icon-btn" title="Lampirkan file" onclick="document.getElementById('chat-file-input').click()"><i class="ti ti-paperclip"></i></button>
+        <textarea id="chat-input" rows="1" placeholder="Tulis pesan... (Enter kirim, Shift+Enter baris baru)" onkeydown="onChatInputKeydown(event)"></textarea>
+        <button class="chat-icon-btn chat-send" title="Kirim" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
+      </div>
+    </div>
+  `;
+  chatAttachments = [];
+  await loadChatMessages(channelId);
+}
+
+function closeChatThreadMobile() {
+  document.getElementById('chat-wrap').classList.remove('mobile-show-thread');
+}
+
+async function loadChatMessages(channelId) {
+  let data, error;
+  try {
+    ({ data, error } = await withTimeout(
+      sb.from('chat_messages').select('*').eq('channel_id', channelId)
+        .order('created_at', { ascending: true }).limit(300)
+    ));
+  } catch (e) {
+    document.getElementById('chat-thread').innerHTML = '<div class="empty-msg" style="color:#e53e3e">⚠️ ' + e.message + '</div>';
+    return;
+  }
+  if (error) {
+    if ((error.message || '').toLowerCase().includes('does not exist')) showChatMigrationBanner();
+    document.getElementById('chat-thread').innerHTML = '<div class="empty-msg" style="color:#e53e3e">⚠️ Gagal memuat: ' + error.message + '</div>';
+    return;
+  }
+  chatMessagesCache = data || [];
+  renderChatThread(chatMessagesCache);
+}
+
+function renderChatThread(messages) {
+  const wrap = document.getElementById('chat-thread');
+  if (!wrap) return;
+  const user = getUser();
+  if (!messages.length) {
+    wrap.innerHTML = '<div class="empty-msg">Belum ada pesan. Mulai obrolan di bawah 👇</div>';
+    return;
+  }
+  wrap.innerHTML = messages.map(m => {
+    const own = m.sender === user;
+    const time = m.created_at ? new Date(m.created_at).toLocaleString('id-ID', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+    const attachHtml = (m.attachments && m.attachments.length) ? `
+      <div class="chat-attach-list">
+        ${m.attachments.map(a => `<a class="chat-attach-chip" href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" title="Unduh ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
+      </div>` : '';
+    return `<div class="chat-bubble-row ${own ? 'own' : 'other'}">
+      ${!own ? `<div class="chat-sender">${escHtml(m.sender || 'Pengguna')}</div>` : ''}
+      ${m.body ? `<div class="chat-bubble">${renderBody(m.body)}</div>` : ''}
+      ${attachHtml}
+      <div class="chat-time">${time}</div>
+    </div>`;
+  }).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function onChatInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+
+function onChatFilesPicked(e) {
+  chatAttachments = chatAttachments.concat(Array.from(e.target.files));
+  e.target.value = '';
+  renderChatAttachPreview();
+}
+function removeChatAttachment(idx) {
+  chatAttachments.splice(idx, 1);
+  renderChatAttachPreview();
+}
+function renderChatAttachPreview() {
+  const wrap = document.getElementById('chat-attach-preview');
+  if (!wrap) return;
+  wrap.innerHTML = chatAttachments.map((f, idx) => `
+    <span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;font-size:11px">
+      <i class="ti ${fileIconFor(f.name)}"></i> ${escHtml(f.name)}
+      <i class="ti ti-x" style="cursor:pointer;opacity:0.6" onclick="removeChatAttachment(${idx})" title="Hapus"></i>
+    </span>
+  `).join('');
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = (input.value || '').trim();
+  if (!text && !chatAttachments.length) return;
+  if (!activeChatChannelId) return;
+
+  let uploaded = [];
+  if (chatAttachments.length) {
+    uploaded = await uploadFilesToStorage(chatAttachments, 'chat');
+  }
+  const payload = {
+    channel_id: activeChatChannelId,
+    sender: getUser(),
+    body: text,
+    attachments: uploaded
+  };
+  input.value = '';
+  chatAttachments = [];
+  renderChatAttachPreview();
+  const { error } = await sb.from('chat_messages').insert(payload);
+  if (error) {
+    if ((error.message || '').toLowerCase().includes('does not exist')) showChatMigrationBanner();
+    alert('Gagal mengirim pesan: ' + error.message);
+    input.value = text;
+    return;
+  }
+  markChatChannelRead(activeChatChannelId);
+  await loadChatMessages(activeChatChannelId);
+}
+
+// Buat channel bagian/lembaga baru (terbuka untuk semua orang lihat, sama seperti panel lain)
+async function createChatChannel() {
+  const name = prompt('Nama channel bagian/lembaga baru (contoh: HR, Operasional, Direksi):');
+  if (!name || !name.trim()) return;
+  const { data, error } = await sb.from('chat_channels')
+    .insert({ type: 'bagian', name: name.trim(), created_by: getUser() })
+    .select().single();
+  if (error) {
+    if ((error.message || '').toLowerCase().includes('does not exist')) showChatMigrationBanner();
+    alert('Gagal membuat channel: ' + error.message);
+    return;
+  }
+  chatChannels.push(data);
+  renderChatChannelLists();
+  await openChatChannel(data.id, true);
+}
+
+async function deleteChatChannel(id) {
+  if (!confirm('Hapus channel ini beserta semua pesannya? Tindakan ini tidak bisa dibatalkan.')) return;
+  const { error } = await sb.from('chat_channels').delete().eq('id', id);
+  if (error) return alert('Gagal menghapus: ' + error.message);
+  chatChannels = chatChannels.filter(c => c.id !== id);
+  if (activeChatChannelId === id) {
+    activeChatChannelId = null;
+    document.getElementById('chat-main').innerHTML = '<div class="chat-no-channel"><div>👈 Pilih ruang obrolan, atau buat baru via tombol <strong>+</strong> di samping.</div></div>';
+  }
+  renderChatChannelLists();
+}
+
+// Mulai (atau buka) chat pribadi dengan orang lain — dicari/dibuat by nama (tanpa login asli)
+async function createChatDM() {
+  const target = prompt('Mau chat pribadi dengan siapa? (ketik nama persis seperti yang dia pakai di WorkBoard)');
+  if (!target || !target.trim()) return;
+  const targetName = target.trim();
+  const user = getUser();
+  if (targetName.toLowerCase() === user.toLowerCase()) { alert('Tidak bisa membuat chat pribadi dengan diri sendiri.'); return; }
+
+  const sortedKey = [user, targetName].map(s => s.toLowerCase()).sort().join('|');
+  let existing = chatChannels.find(c => c.type === 'dm' &&
+    (c.participants || []).map(p => p.toLowerCase()).sort().join('|') === sortedKey);
+
+  if (!existing) {
+    const { data, error } = await sb.from('chat_channels')
+      .insert({ type: 'dm', name: 'DM', participants: [user, targetName], created_by: user })
+      .select().single();
+    if (error) {
+      if ((error.message || '').toLowerCase().includes('does not exist')) showChatMigrationBanner();
+      alert('Gagal membuat chat pribadi: ' + error.message);
+      return;
+    }
+    existing = data;
+    chatChannels.push(existing);
+  }
+  renderChatChannelLists();
+  await openChatChannel(existing.id, true);
+}
+
+
 const quillToolbar = [
   [{ font: [] }, { size: ['small', false, 'large', 'huge'] }],
   ['bold', 'italic', 'underline', 'strike', 'link'],
