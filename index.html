@@ -547,8 +547,8 @@ textarea { resize: vertical; }
 .chat-attach-preview { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 0; }
 .chat-compose { display: flex; gap: 8px; align-items: flex-end; padding: 10px 12px; }
 .chat-compose textarea {
-  flex: 1; resize: none; max-height: 90px; min-height: 36px;
-  font-size: 12.5px; font-family: inherit; line-height: 1.5;
+  flex: 1; resize: none; max-height: 160px; min-height: 44px;
+  font-size: 13px; font-family: inherit; line-height: 1.5; padding: 10px 12px;
 }
 .chat-icon-btn {
   border: 0.5px solid var(--border2); background: none; color: var(--text2);
@@ -1209,7 +1209,33 @@ window.addEventListener('DOMContentLoaded', async () => {
   updateDailyProgress();
   loadChatLastRead();
   refreshChatUnreadBadge();
+  startChatPolling();
 });
+
+// Realtime kadang putus diam-diam (terutama di HP saat browser di-minimize/layar dikunci).
+// Dua jaring pengaman: (1) saat tab/HP balik aktif, langsung refresh; (2) polling ringan
+// tiap 15 detik selagi panel Work Talk dibuka, jadi pesan baru tetap muncul walau
+// websocket realtime-nya sempat putus.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (currentPanel === 'chat') renderChat();
+    else refreshChatUnreadBadge();
+  }
+});
+let chatPollInterval = null;
+function startChatPolling() {
+  if (chatPollInterval) return;
+  chatPollInterval = setInterval(async () => {
+    if (currentPanel !== 'chat' || !chatChannelsLoaded) return;
+    try {
+      await loadChatChannels();
+      await refreshChatChannelUnreadMap();
+      renderChatChannelLists();
+      if (activeChatChannelId) await loadChatMessages(activeChatChannelId);
+      refreshChatUnreadBadge();
+    } catch (e) { /* diamkan, coba lagi di polling berikutnya */ }
+  }, 15000);
+}
 
 // ── Panel switching ────────────────────────
 async function switchPanel(id, el) {
@@ -2703,6 +2729,15 @@ function _renderNoteCards(data) {
 // (lihat getUser()). Jadi privasi DM di sini bersifat "soft" sama seperti is_private di
 // panel lain — disaring di sisi client, BUKAN dijamin oleh server/RLS.
 
+// Cocokkan nama participant tanpa peduli besar-kecil huruf (orang bisa ngetik beda kapital)
+function isParticipant(participants, user) {
+  return (participants || []).some(p => (p || '').toLowerCase() === (user || '').toLowerCase());
+}
+function otherParticipant(participants, user) {
+  const found = (participants || []).find(p => (p || '').toLowerCase() !== (user || '').toLowerCase());
+  return found || 'DM';
+}
+
 function loadChatLastRead() {
   try { chatLastRead = JSON.parse(localStorage.getItem('wb_chat_last_read') || '{}'); }
   catch (e) { chatLastRead = {}; }
@@ -2762,7 +2797,7 @@ async function refreshChatUnreadBadge() {
       channels = data || [];
     }
     const user = getUser();
-    const relevant = channels.filter(c => c.type !== 'dm' || (c.participants || []).includes(user));
+    const relevant = channels.filter(c => c.type !== 'dm' || isParticipant(c.participants, user));
     if (!relevant.length) { setChatBadgeCount(0); return; }
     const ids = relevant.map(c => c.id);
     const { data: msgs, error: msgErr } = await sb.from('chat_messages')
@@ -2790,7 +2825,7 @@ function setChatBadgeCount(n) {
 let chatMessagesCacheUnread = {};
 async function refreshChatChannelUnreadMap() {
   const user = getUser();
-  const relevant = chatChannels.filter(c => c.type !== 'dm' || (c.participants || []).includes(user));
+  const relevant = chatChannels.filter(c => c.type !== 'dm' || isParticipant(c.participants, user));
   if (!relevant.length) { chatMessagesCacheUnread = {}; return; }
   const ids = relevant.map(c => c.id);
   const { data: msgs } = await sb.from('chat_messages').select('channel_id,created_at,sender').in('channel_id', ids);
@@ -2830,7 +2865,7 @@ function renderChatChannelLists() {
   const notHidden = c => !(c.hidden_by || []).includes(user);
   const umum = chatChannels.filter(c => c.type === 'umum');
   const bagian = chatChannels.filter(c => c.type === 'bagian' && notHidden(c));
-  const dm = chatChannels.filter(c => c.type === 'dm' && (c.participants || []).includes(user) && notHidden(c));
+  const dm = chatChannels.filter(c => c.type === 'dm' && isParticipant(c.participants, user) && notHidden(c));
 
   document.getElementById('chat-list-umum').innerHTML = umum.map(renderChatChannelItem).join('') || '<div class="chat-empty-list">Tidak ada.</div>';
   document.getElementById('chat-list-bagian').innerHTML = bagian.length
@@ -2844,8 +2879,7 @@ function renderChatChannelLists() {
 function chatChannelDisplayName(c) {
   if (c.type === 'dm') {
     const user = getUser();
-    const other = (c.participants || []).find(p => p !== user);
-    return other || 'DM';
+    return otherParticipant(c.participants, user);
   }
   return c.name;
 }
@@ -2894,7 +2928,7 @@ async function openChatChannel(channelId, isUserClick) {
         <input type="file" id="chat-file-input" multiple style="display:none" onchange="onChatFilesPicked(event)" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv">
         <button class="chat-icon-btn" title="Lampirkan file" onclick="document.getElementById('chat-file-input').click()"><i class="ti ti-paperclip"></i></button>
         <button class="chat-icon-btn" title="Emoji" id="chat-emoji-btn" onclick="toggleChatEmojiPicker(event)"><i class="ti ti-mood-smile"></i></button>
-        <textarea id="chat-input" rows="1" placeholder="${window.matchMedia('(pointer: coarse)').matches ? 'Tulis pesan... (ketuk tombol kirim →)' : 'Tulis pesan... (Enter kirim, Shift+Enter baris baru)'}" onkeydown="onChatInputKeydown(event)"></textarea>
+        <textarea id="chat-input" rows="2" placeholder="${window.matchMedia('(pointer: coarse)').matches ? 'Tulis pesan... (ketuk tombol kirim →)' : 'Tulis pesan... (Enter kirim, Shift+Enter baris baru)'}" onkeydown="onChatInputKeydown(event)" oninput="autoGrowChatInput(this)"></textarea>
         <button class="chat-icon-btn chat-send" title="Kirim" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
       </div>
     </div>
@@ -2956,6 +2990,11 @@ function renderChatThread(messages) {
     </div>`;
   }).join('');
   wrap.scrollTop = wrap.scrollHeight;
+}
+
+function autoGrowChatInput(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
 }
 
 function onChatInputKeydown(e) {
@@ -3024,6 +3063,7 @@ async function sendChatMessage() {
     attachments: uploaded
   };
   input.value = '';
+  autoGrowChatInput(input);
   chatAttachments = [];
   renderChatAttachPreview();
   const { error } = await sb.from('chat_messages').insert(payload);
@@ -3043,14 +3083,14 @@ function editChatMessage(id) {
   if (!m) return;
   editingChatMessageId = id;
   const input = document.getElementById('chat-input');
-  if (input) { input.value = m.body || ''; input.focus(); }
+  if (input) { input.value = m.body || ''; input.focus(); autoGrowChatInput(input); }
   const ind = document.getElementById('chat-edit-indicator');
   if (ind) ind.style.display = 'flex';
 }
 function cancelChatEdit() {
   editingChatMessageId = null;
   const input = document.getElementById('chat-input');
-  if (input) input.value = '';
+  if (input) { input.value = ''; autoGrowChatInput(input); }
   const ind = document.getElementById('chat-edit-indicator');
   if (ind) ind.style.display = 'none';
 }
