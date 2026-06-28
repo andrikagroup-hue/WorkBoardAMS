@@ -376,6 +376,34 @@ textarea { resize: vertical; }
 .act-bar-wrap { flex: 1; height: 4px; background: var(--bg2); border-radius: 2px; overflow: hidden; }
 .act-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
 
+/* ── Admin tab navigation ──────────────── */
+.admin-tab {
+  padding: 7px 14px; border: none; background: none; cursor: pointer;
+  font-size: 12.5px; color: var(--text2); border-bottom: 2.5px solid transparent;
+  font-family: inherit; display: flex; align-items: center; gap: 5px;
+  margin-bottom: -1px; transition: color 0.12s, border-color 0.12s;
+}
+.admin-tab:hover { color: var(--text1); }
+.admin-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* ── Admin leave rows ──────────────────── */
+.admin-leave-row {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
+  display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;
+}
+.admin-leave-info { flex: 1; min-width: 180px; }
+.admin-leave-name { font-size: 13px; font-weight: 600; color: var(--text1); }
+.admin-leave-meta { font-size: 11.5px; color: var(--text2); margin-top: 3px; }
+.admin-leave-alasan { font-size: 11.5px; color: var(--text3); margin-top: 4px; font-style: italic; }
+.admin-leave-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
+.alb-pending  { background: #FEF3C7; color: #92400E; }
+.alb-approved { background: #DCFCE7; color: #166534; }
+.alb-rejected { background: #FEE2E2; color: #991B1B; }
+.alb-izin  { background: #EFF6FF; color: #1D4ED8; }
+.alb-sakit { background: #FEF3C7; color: #92400E; }
+.alb-cuti  { background: #F0FDF4; color: #166534; }
+
 /* ── Admin Users panel ─────────────────────── */
 .admin-user-row {
   display:flex;align-items:center;gap:12px;padding:10px 14px;
@@ -1208,10 +1236,34 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
         <!-- ── SEKSI AKTIVITAS KERJA ── -->
         <div class="res-section-title"><i class="ti ti-chart-bar"></i> Aktivitas Kerja</div>
 
-        <div class="chart-section">
-          <div class="chart-title">Aktivitas Tracker — 7 Hari Terakhir</div>
-          <div class="bar-chart" id="weekly-chart"></div>
+        <!-- Grafik Schedule harian -->
+        <div class="chart-section" style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="chart-title" style="margin-bottom:0">Grafik Jadwal Harian (Schedule)</div>
+            <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
+              <span><span style="display:inline-block;width:10px;height:10px;background:#3B82F6;border-radius:2px;margin-right:3px"></span>Ada jadwal</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#E2E8F0;border-radius:2px;margin-right:3px"></span>Kosong</span>
+            </div>
+          </div>
+          <div class="absen-daily-chart" id="sched-daily-chart">
+            <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div>
+          </div>
         </div>
+
+        <!-- Grafik Tracker harian -->
+        <div class="chart-section" style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="chart-title" style="margin-bottom:0">Grafik Aktivitas Tracker Harian</div>
+            <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
+              <span><span style="display:inline-block;width:10px;height:10px;background:#22C55E;border-radius:2px;margin-right:3px"></span>Semua selesai</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#F59E0B;border-radius:2px;margin-right:3px"></span>Ada yg pending</span>
+            </div>
+          </div>
+          <div class="absen-daily-chart" id="tracker-daily-chart">
+            <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div>
+          </div>
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="chart-section">
             <div class="chart-title">Distribusi Status Tracker</div>
@@ -1230,6 +1282,12 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
           ⚠️ <strong>Setup diperlukan:</strong> Tabel absensi belum ada. Jalankan SQL di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh.<br>
           <code id="absen-sql-code" style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;user-select:all;white-space:pre-wrap"></code>
           <button onclick="document.getElementById('absen-setup-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
+        </div>
+        <div id="leave-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">
+          ⚠️ <strong>Update diperlukan:</strong> Kolom baru untuk fitur kelola izin belum ada. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh:<br>
+          <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';</code>
+          <button onclick="document.getElementById('leave-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
         </div>
         <div id="absen-today-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px">
           <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:10px">📋 Status Absen Hari Ini — <span id="absen-today-date"></span></div>
@@ -1280,13 +1338,46 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
           Menghapus user akan menghapus seluruh data kehadiran, leave, jadwal, tracker, dan catatan milik user tersebut. Tindakan ini <strong>tidak dapat dibatalkan</strong>.
         </div>
 
-        <!-- Daftar user aktif (dari online_presence + semua tabel) -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:13px;font-weight:600;color:var(--text1)">👥 Daftar Pengguna Terdaftar</div>
-          <button class="btn-sm" onclick="renderAdminUsers()"><i class="ti ti-refresh"></i> Refresh</button>
+        <!-- Tab navigasi -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0">
+          <button class="admin-tab active" id="admin-tab-users" onclick="switchAdminTab('users')"><i class="ti ti-users"></i> Kelola User</button>
+          <button class="admin-tab" id="admin-tab-leave" onclick="switchAdminTab('leave')"><i class="ti ti-calendar-off"></i> Kelola Izin/Cuti</button>
         </div>
-        <div id="admin-users-list">
-          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat daftar user...</div>
+
+        <!-- Panel: Daftar User -->
+        <div id="admin-section-users">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:600;color:var(--text1)">👥 Daftar Pengguna Terdaftar</div>
+            <button class="btn-sm" onclick="renderAdminUsers()"><i class="ti ti-refresh"></i> Refresh</button>
+          </div>
+          <div id="admin-users-list">
+            <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat daftar user...</div>
+          </div>
+        </div>
+
+        <!-- Panel: Kelola Izin -->
+        <div id="admin-section-leave" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div style="font-size:13px;font-weight:600;color:var(--text1)">📋 Pengajuan Izin / Sakit / Cuti</div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <select id="admin-leave-filter" class="global-filter" style="font-size:12px" onchange="renderAdminLeave()">
+                <option value="all">Semua Status</option>
+                <option value="pending">⏳ Menunggu</option>
+                <option value="approved">✅ Disetujui</option>
+                <option value="rejected">❌ Ditolak</option>
+              </select>
+              <select id="admin-leave-type" class="global-filter" style="font-size:12px" onchange="renderAdminLeave()">
+                <option value="all">Semua Tipe</option>
+                <option value="izin">📝 Izin</option>
+                <option value="sakit">🤒 Sakit</option>
+                <option value="cuti">🏖️ Cuti</option>
+              </select>
+              <button class="btn-sm" onclick="renderAdminLeave()"><i class="ti ti-refresh"></i> Refresh</button>
+            </div>
+          </div>
+          <div id="admin-leave-list">
+            <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat data izin...</div>
+          </div>
         </div>
       </div>
 
@@ -2479,10 +2570,11 @@ async function renderResult() {
   }
 
   // ── Fetch semua data secara paralel ──
+  // Schedule & Tracker diambil range bulan penuh (bukan cuma hari ini)
   const [_sr, _tr, _lr, _nr, _tdr, _absenRes, _leaveRes] = await Promise.all([
-    sb.from('schedule_events').select('*').eq('event_date', todayStr()),
-    sb.from('tracker_items').select('*').eq('item_date', todayStr()),
-    sb.from('logbook_entries').select('*').gte('entry_date', getWeekStart()),
+    sb.from('schedule_events').select('*').gte('event_date', firstDay).lte('event_date', lastDay),
+    sb.from('tracker_items').select('*').gte('item_date', firstDay).lte('item_date', lastDay),
+    sb.from('logbook_entries').select('*').gte('entry_date', firstDay).lte('entry_date', lastDay),
     sb.from('notes').select('*'),
     sb.from('todos').select('*'),
     sb.from('attendance').select('*').gte('tanggal', firstDay).lte('tanggal', lastDay).order('tanggal'),
@@ -2496,11 +2588,13 @@ async function renderResult() {
 
   const doneTodo = td.filter(t => t.is_done).length;
 
-  // ── Kartu ringkasan atas ──
+  // ── Kartu ringkasan atas — data bulan penuh ──
+  const schedDone = sd.filter(e => e.category === 'green').length;
+  const trkDone = tr.filter(t => t.status === 'done').length;
   document.getElementById('result-stats').innerHTML = `
-    <div class="res-card rc-blue"><div class="res-label">Jadwal Hari Ini</div><div class="res-val">${sd.length}</div><div class="res-trend">agenda terjadwal</div></div>
-    <div class="res-card rc-green"><div class="res-label">Tugas Selesai</div><div class="res-val">${doneTodo}/${td.length}</div><div class="res-trend">${td.length ? Math.round(doneTodo/td.length*100) : 0}% completion</div></div>
-    <div class="res-card rc-amber"><div class="res-label">Log Minggu Ini</div><div class="res-val">${ld.length}</div><div class="res-trend">catatan tersimpan</div></div>
+    <div class="res-card rc-blue"><div class="res-label">Jadwal Bulan Ini</div><div class="res-val">${sd.length}</div><div class="res-trend">${schedDone} selesai</div></div>
+    <div class="res-card rc-green"><div class="res-label">Tugas Tracker</div><div class="res-val">${trkDone}/${tr.length}</div><div class="res-trend">${tr.length ? Math.round(trkDone/tr.length*100) : 0}% selesai</div></div>
+    <div class="res-card rc-amber"><div class="res-label">Log Bulan Ini</div><div class="res-val">${ld.length}</div><div class="res-trend">catatan logbook</div></div>
     <div class="res-card rc-purple"><div class="res-label">Notes Aktif</div><div class="res-val">${nd.length}</div><div class="res-trend">dokumen catatan</div></div>
   `;
 
@@ -2624,52 +2718,90 @@ async function renderResult() {
     }).join('');
   }
 
-  // ── Grafik Tracker 7 hari terakhir ──
-  const weekDays = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    weekDays.push({ label: DAYS[d.getDay()].substring(0, 3), date: d.toISOString().split('T')[0] });
+  // ── Grafik Schedule harian dalam bulan ──
+  const schedChartEl = document.getElementById('sched-daily-chart');
+  if (schedChartEl) {
+    const allDays2 = [];
+    for (let d = 1; d <= lastDate; d++) allDays2.push(String(d).padStart(2,'0'));
+    const todayFull2 = todayStr();
+    const maxSchedPerDay = Math.max(...allDays2.map(day => sd.filter(e => e.event_date === selectedMonth+'-'+day).length), 1);
+    schedChartEl.innerHTML = allDays2.map(day => {
+      const ds = selectedMonth + '-' + day;
+      const dayEvents = sd.filter(e => e.event_date === ds);
+      const cnt = dayEvents.length;
+      const isFuture = ds > todayFull2;
+      const isToday = ds === todayFull2;
+      const barH = cnt ? Math.max(8, Math.round(cnt/maxSchedPerDay*60)) : (isFuture ? 0 : 4);
+      const barColor = isFuture ? 'var(--bg3)' : cnt > 0 ? '#3B82F6' : '#E2E8F0';
+      const tip = isFuture ? ds : `${ds}\nJadwal: ${cnt}`;
+      return `<div class="adc-day" title="${tip}">
+        <div class="adc-bar" style="height:${barH}px;background:${barColor};${isToday?'outline:2px solid var(--accent2);':''}"></div>
+        <div class="adc-lbl">${day}</div>
+      </div>`;
+    }).join('');
   }
-  const { data: _wt } = await sb.from('tracker_items').select('item_date, status, created_by, is_private').gte('item_date', weekDays[0].date);
-  const weekTrk = applyPrivacy(_wt);
-  const weekCounts = weekDays.map(d => ({ ...d, count: (weekTrk || []).filter(t => t.item_date === d.date).length }));
-  const maxC = Math.max(...weekCounts.map(w => w.count), 1);
-  const todayD = todayStr();
-  document.getElementById('weekly-chart').innerHTML = weekCounts.map(w => `
-    <div class="bar-wrap">
-      <div class="bar-val">${w.count}</div>
-      <div class="bar" style="height:${Math.round(w.count/maxC*60)}px;background:${w.date===todayD?'#3B82F6':'#BFDBFE'}"></div>
-      <div class="bar-label">${w.label}</div>
-    </div>
-  `).join('');
 
-  // Activity distribution from tracker
-  const statCounts = { done: 0, prog: 0 };
-  tr.forEach(t => { statCounts[t.status]++; });
-  const total = tr.length || 1;
-  document.getElementById('activity-dist').innerHTML = [
+  // ── Grafik Tracker harian dalam bulan ──
+  const trkChartEl = document.getElementById('tracker-daily-chart');
+  if (trkChartEl) {
+    const allDays3 = [];
+    for (let d = 1; d <= lastDate; d++) allDays3.push(String(d).padStart(2,'0'));
+    const todayFull3 = todayStr();
+    const maxTrkPerDay = Math.max(...allDays3.map(day => tr.filter(t => t.item_date === selectedMonth+'-'+day).length), 1);
+    trkChartEl.innerHTML = allDays3.map(day => {
+      const ds = selectedMonth + '-' + day;
+      const dayTrk = tr.filter(t => t.item_date === ds);
+      const cnt = dayTrk.length;
+      const cntDone = dayTrk.filter(t => t.status === 'done').length;
+      const isFuture = ds > todayFull3;
+      const isToday = ds === todayFull3;
+      const barH = cnt ? Math.max(8, Math.round(cnt/maxTrkPerDay*60)) : (isFuture ? 0 : 4);
+      const barColor = isFuture ? 'var(--bg3)' : cntDone===cnt && cnt>0 ? '#22C55E' : cnt>0 ? '#F59E0B' : '#E2E8F0';
+      const tip = isFuture ? ds : `${ds}\nTotal: ${cnt}, Selesai: ${cntDone}`;
+      return `<div class="adc-day" title="${tip}">
+        <div class="adc-bar" style="height:${barH}px;background:${barColor};${isToday?'outline:2px solid var(--accent2);':''}"></div>
+        <div class="adc-lbl">${day}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Distribusi status Tracker bulan ini ──
+  const statCounts = { done: 0, prog: 0, not_started: 0, skipped: 0, on_hold: 0 };
+  tr.forEach(t => { if (statCounts[t.status] !== undefined) statCounts[t.status]++; });
+  const totalTrk = tr.length || 1;
+  const trkStatDefs = [
     { name: 'Selesai', key: 'done', color: '#22C55E' },
     { name: 'Berjalan', key: 'prog', color: '#3B82F6' },
-  ].map(a => `
-    <div class="activity-row">
-      <div class="act-left">${a.name}</div>
-      <div class="act-bar-wrap"><div class="act-bar-fill" style="width:${Math.round(statCounts[a.key]/total*100)}%;background:${a.color}"></div></div>
-      <div class="act-pct">${statCounts[a.key]}</div>
-    </div>
-  `).join('');
+    { name: 'Belum Mulai', key: 'not_started', color: '#94A3B8' },
+    { name: 'Di-hold', key: 'on_hold', color: '#F59E0B' },
+    { name: 'Dilewati', key: 'skipped', color: '#EF4444' },
+  ];
+  const actDistEl = document.getElementById('activity-dist');
+  if (actDistEl) {
+    actDistEl.innerHTML = trkStatDefs.map(a => `
+      <div class="activity-row">
+        <div class="act-left">${a.name}</div>
+        <div class="act-bar-wrap"><div class="act-bar-fill" style="width:${Math.round(statCounts[a.key]/totalTrk*100)}%;background:${a.color}"></div></div>
+        <div class="act-pct">${statCounts[a.key]}</div>
+      </div>
+    `).join('') || '<div style="color:var(--text3);font-size:12px">Tidak ada data tracker bulan ini.</div>';
+  }
 
-  // Notes by category
+  // ── Distribusi kategori Notes ──
   const catCount = {};
   nd.forEach(n => { catCount[n.category] = (catCount[n.category] || 0) + 1; });
   const catLabel = { finance: 'Keuangan', ops: 'Operasional', hr: 'SDM/HR', strat: 'Strategi' };
-  const total2 = nd.length || 1;
-  document.getElementById('notes-summary').innerHTML = Object.entries(catCount).map(([k, v]) => `
-    <div class="activity-row">
-      <div class="act-left">${catLabel[k] || k}</div>
-      <div class="act-bar-wrap"><div class="act-bar-fill" style="width:${Math.round(v/total2*100)}%;background:#A855F7"></div></div>
-      <div class="act-pct">${v}</div>
-    </div>
-  `).join('');
+  const totalNotes = nd.length || 1;
+  const notesSumEl = document.getElementById('notes-summary');
+  if (notesSumEl) {
+    notesSumEl.innerHTML = Object.entries(catCount).map(([k, v]) => `
+      <div class="activity-row">
+        <div class="act-left">${catLabel[k] || k}</div>
+        <div class="act-bar-wrap"><div class="act-bar-fill" style="width:${Math.round(v/totalNotes*100)}%;background:#A855F7"></div></div>
+        <div class="act-pct">${v}</div>
+      </div>
+    `).join('') || '<div style="color:var(--text3);font-size:12px">Belum ada notes.</div>';
+  }
 }
 
 function getWeekStart() {
@@ -3901,7 +4033,8 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   dari_tanggal date NOT NULL,
   sampai_tanggal date NOT NULL,
   alasan text,
-  status text DEFAULT 'approved', -- auto-approved for now
+  status text DEFAULT 'pending', -- pending | approved | rejected
+  catatan_admin text,
   created_at timestamptz DEFAULT now()
 );
 
@@ -3982,6 +4115,15 @@ async function renderAbsen() {
   if (dateEl) {
     const now = new Date();
     dateEl.textContent = now.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  }
+
+  // Cek apakah kolom catatan_admin sudah ada (deteksi migrasi)
+  const { error: leaveColCheck } = await withTimeout(
+    sb.from('leave_requests').select('catatan_admin').limit(1)
+  );
+  const leaveMigBanner = document.getElementById('leave-migration-banner');
+  if (leaveMigBanner) {
+    leaveMigBanner.style.display = (leaveColCheck && leaveColCheck.message?.includes('catatan_admin')) ? 'block' : 'none';
   }
 
   await renderAbsenToday();
@@ -4361,6 +4503,127 @@ async function renderAdminUsers() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Admin Tab switching ────────────────────────────────────────
+function switchAdminTab(tab) {
+  document.getElementById('admin-section-users').style.display = tab === 'users' ? '' : 'none';
+  document.getElementById('admin-section-leave').style.display = tab === 'leave' ? '' : 'none';
+  document.getElementById('admin-tab-users').classList.toggle('active', tab === 'users');
+  document.getElementById('admin-tab-leave').classList.toggle('active', tab === 'leave');
+  if (tab === 'leave') renderAdminLeave();
+}
+
+// ── Admin: Kelola Izin/Cuti ────────────────────────────────────
+async function renderAdminLeave() {
+  const currentUser = getUser();
+  const isAdmin = currentUser.toLowerCase().includes('admin')
+    || currentUser.toLowerCase().includes('bos')
+    || currentUser.toLowerCase().includes('hrd');
+  const listEl = document.getElementById('admin-leave-list');
+  if (!isAdmin) {
+    listEl.innerHTML = '<div class="empty-msg">⛔ Akses ditolak.</div>';
+    return;
+  }
+  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...</div>';
+
+  const filterStatus = document.getElementById('admin-leave-filter')?.value || 'all';
+  const filterType   = document.getElementById('admin-leave-type')?.value || 'all';
+
+  let query = sb.from('leave_requests').select('*').order('created_at', { ascending: false });
+  if (filterStatus !== 'all') query = query.eq('status', filterStatus);
+  if (filterType   !== 'all') query = query.eq('tipe', filterType);
+
+  const { data, error } = await withTimeout(query);
+  if (error) {
+    // Kolom status belum ada → tampilkan petunjuk migrasi
+    if (error.message && (error.message.includes('status') || error.message.includes('column'))) {
+      listEl.innerHTML = `<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:#92400E">
+        ⚠️ <strong>Setup diperlukan:</strong> Kolom <code>status</code> dan <code>catatan_admin</code> belum ada di tabel <code>leave_requests</code>.
+        Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>:<br>
+        <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:8px;margin-top:8px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
+      </div>`;
+    } else {
+      listEl.innerHTML = `<div class="empty-msg">Gagal memuat data: ${error.message}</div>`;
+    }
+    return;
+  }
+
+  if (!data || !data.length) {
+    listEl.innerHTML = '<div class="empty-msg">Tidak ada pengajuan izin untuk filter ini.</div>';
+    return;
+  }
+
+  const tipeIcon  = { izin: '📝', sakit: '🤒', cuti: '🏖️' };
+  const statusLabel = { pending: '⏳ Menunggu', approved: '✅ Disetujui', rejected: '❌ Ditolak' };
+
+  listEl.innerHTML = data.map(lv => {
+    const st = lv.status || 'pending';
+    const tipe = lv.tipe || 'izin';
+    const dari = lv.dari_tanggal || '—';
+    const sampai = lv.sampai_tanggal || '—';
+    const selisih = dari && sampai ? Math.round((new Date(sampai) - new Date(dari)) / 86400000) + 1 : null;
+    const durStr = selisih ? selisih + ' hari' : '';
+    const diajukan = lv.created_at ? new Date(lv.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    return `<div class="admin-leave-row">
+      <div class="admin-leave-info">
+        <div class="admin-leave-name">${escHtml(lv.user_name || '—')}</div>
+        <div class="admin-leave-meta">
+          <span class="admin-leave-badge alb-${tipe}">${tipeIcon[tipe]||''} ${tipe.charAt(0).toUpperCase()+tipe.slice(1)}</span>
+          &nbsp;${dari} s/d ${sampai}${durStr ? ' <span style="color:var(--text3)">(' + durStr + ')</span>' : ''}
+          &nbsp;·&nbsp;Diajukan: ${diajukan}
+        </div>
+        ${lv.alasan ? `<div class="admin-leave-alasan">"${escHtml(lv.alasan)}"</div>` : ''}
+        ${lv.catatan_admin ? `<div style="font-size:11px;margin-top:4px;color:#1D4ED8"><i class="ti ti-message"></i> Catatan admin: ${escHtml(lv.catatan_admin)}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;min-width:110px">
+        <span class="admin-leave-badge alb-${st}">${statusLabel[st] || st}</span>
+        ${st === 'pending' ? `
+          <button class="btn-sm" style="color:var(--success);border-color:var(--success)" onclick="adminUpdateLeaveStatus('${lv.id}','approved')"><i class="ti ti-check"></i> Setujui</button>
+          <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminUpdateLeaveStatus('${lv.id}','rejected')"><i class="ti ti-x"></i> Tolak</button>
+        ` : `
+          <button class="btn-sm" onclick="adminUpdateLeaveStatus('${lv.id}','pending')" title="Reset ke menunggu"><i class="ti ti-refresh"></i> Reset</button>
+        `}
+        <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteLeave('${lv.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function adminUpdateLeaveStatus(id, newStatus) {
+  const currentUser = getUser();
+  const isAdmin = currentUser.toLowerCase().includes('admin')
+    || currentUser.toLowerCase().includes('bos')
+    || currentUser.toLowerCase().includes('hrd');
+  if (!isAdmin) return alert('Akses ditolak.');
+
+  let catatanAdmin = null;
+  if (newStatus === 'rejected') {
+    catatanAdmin = prompt('Alasan penolakan (opsional):') || null;
+  }
+
+  const { error } = await withTimeout(
+    sb.from('leave_requests').update({
+      status: newStatus,
+      ...(catatanAdmin !== null ? { catatan_admin: catatanAdmin } : {})
+    }).eq('id', id)
+  );
+
+  if (error) return alert('Gagal update status: ' + error.message);
+  await renderAdminLeave();
+}
+
+async function adminDeleteLeave(id) {
+  const currentUser = getUser();
+  const isAdmin = currentUser.toLowerCase().includes('admin')
+    || currentUser.toLowerCase().includes('bos')
+    || currentUser.toLowerCase().includes('hrd');
+  if (!isAdmin) return alert('Akses ditolak.');
+  if (!confirm('Hapus pengajuan izin ini? Tindakan tidak dapat dibatalkan.')) return;
+  const { error } = await withTimeout(sb.from('leave_requests').delete().eq('id', id));
+  if (error) return alert('Gagal hapus: ' + error.message);
+  await renderAdminLeave();
 }
 
 // Hapus semua data user dari seluruh tabel
