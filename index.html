@@ -923,6 +923,9 @@ textarea { resize: vertical; }
 
       <!-- ── Time Plan Tracker ──────────────── -->
       <div class="panel" id="panel-tracker">
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--radius);padding:8px 12px;margin-bottom:10px;font-size:11.5px;color:#1E40AF;display:flex;align-items:center;gap:6px">
+          🔒 <strong>Tracker Pribadi</strong> — Hanya kamu yang bisa melihat tracker tugasmu sendiri.
+        </div>
         <div id="tracker-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
           ⚠️ <strong>Setup diperlukan:</strong> Kolom baru belum ada di database. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh halaman:<br>
           <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE tracker_items
@@ -1068,6 +1071,9 @@ textarea { resize: vertical; }
 
       <!-- ── Notes ─────────────────────────────── -->
       <div class="panel" id="panel-notes">
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#1E40AF;display:flex;align-items:center;gap:6px">
+          🔒 <strong>Catatan Pribadi</strong> — Hanya kamu yang bisa melihat catatan milikmu sendiri.
+        </div>
         <div class="form-box" id="note-form" style="display:none">
           <div class="form-row">
             <input id="note-title-in" placeholder="Judul catatan..." style="flex:2" />
@@ -1077,9 +1083,9 @@ textarea { resize: vertical; }
               <option value="hr">SDM / HR</option>
               <option value="strat">Strategi</option>
             </select>
-            <select id="note-privacy" title="Siapa yang bisa lihat data ini">
+            <select id="note-privacy" title="Siapa yang bisa lihat data ini" style="display:none">
               <option value="false">🌐 Publik</option>
-              <option value="true">🔒 Privat</option>
+              <option value="true" selected>🔒 Privat</option>
             </select>
           </div>
           <div class="form-row">
@@ -1098,6 +1104,9 @@ textarea { resize: vertical; }
 
       <!-- ── To Do ─────────────────────────────── -->
       <div class="panel" id="panel-todo">
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#1E40AF;display:flex;align-items:center;gap:6px">
+          🔒 <strong>To Do Pribadi</strong> — Hanya kamu yang bisa melihat daftar tugasmu sendiri.
+        </div>
         <div class="todo-filters">
           <button class="filter-btn active" onclick="filterTodo('all',this)">Semua</button>
           <button class="filter-btn" onclick="filterTodo('high',this)">🔴 Prioritas Tinggi</button>
@@ -1114,9 +1123,9 @@ textarea { resize: vertical; }
           </select>
           <input id="todo-due" type="date" title="Deadline" />
           <input id="todo-assign" placeholder="Ditugaskan ke..." style="max-width:140px" />
-          <select id="todo-privacy" title="Siapa yang bisa lihat data ini">
+          <select id="todo-privacy" title="Siapa yang bisa lihat data ini" style="display:none">
             <option value="false">🌐 Publik</option>
-            <option value="true">🔒 Privat</option>
+            <option value="true" selected>🔒 Privat</option>
           </select>
           <button class="btn-sm" id="todo-cancel-btn" onclick="resetTodoForm()" style="display:none">Batal Edit</button>
           <button class="btn-sm btn-primary" id="todo-save-btn" onclick="addTodo()">Tambah</button>
@@ -1128,6 +1137,9 @@ textarea { resize: vertical; }
 
       <!-- ── Notepad ───────────────────────────── -->
       <div class="panel" id="panel-notepad">
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--radius);padding:8px 12px;margin-bottom:10px;font-size:11.5px;color:#1E40AF;display:flex;align-items:center;gap:6px">
+          🔒 <strong>Notepad Pribadi</strong> — Hanya kamu yang bisa melihat catatan sticky-mu sendiri.
+        </div>
         <div class="notepad-wrap">
           <div class="notepad-toolbar">
             <input id="np-search" placeholder="Cari catatan..." oninput="filterNotepad()" />
@@ -1580,6 +1592,13 @@ function applyPrivacy(data) {
   return (data || []).filter(row =>
     row.is_private === false || row.is_private === null || row.created_by === user
   );
+}
+
+// Filter ketat: HANYA tampilkan data milik pengguna saat ini
+// Dipakai untuk Notes, To Do, Notepad, Tracker — supaya tiap orang hanya lihat milik sendiri
+function applyOwner(data) {
+  const user = getUser();
+  return (data || []).filter(row => !row.created_by || row.created_by === user);
 }
 
 // Wrapper query dengan timeout 10 detik agar tidak loading abadi
@@ -2043,7 +2062,7 @@ async function delSchedule(id) {
 async function renderTracker() {
   try {
     const { data } = await withTimeout(sb.from('time_plan_tracker').select('status, is_private, created_by'));
-    const items = applyPrivacy(data) || [];
+    const items = applyOwner(data) || [];
     const total = items.length;
     const done = items.filter(t => t.status === 'done').length;
     const prog = total ? Math.round(done / total * 100) : 0;
@@ -2503,7 +2522,7 @@ async function renderNotes() {
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
     ));
-    data = applyPrivacy(data);
+    data = applyOwner(data);
   } catch(e) {
     document.getElementById('notes-grid').innerHTML = '<div class="empty-msg" style="color:#e53e3e">⚠️ ' + e.message + '</div>';
     return;
@@ -2528,7 +2547,7 @@ async function saveNote() {
     title,
     category: document.getElementById('note-cat-in').value,
     body: quillNote.root.innerHTML,
-    is_private: document.getElementById('note-privacy').value === 'true',
+    is_private: true,
     created_by: getUser()
   };
   let error;
@@ -2591,7 +2610,7 @@ async function renderTodo() {
   let _td;
   try { ({data:_td} = await withTimeout(query.limit(100))); }
   catch(e) { document.getElementById('todo-list').innerHTML='<div class="empty-msg" style="color:#e53e3e">⚠️ '+e.message+'</div>'; return; }
-  const all = applyPrivacy(_td);
+  const all = applyOwner(_td);
   todoCache = all;
 
   const pending = all.filter(t => !t.is_done).length;
@@ -2637,7 +2656,7 @@ async function addTodo() {
     priority: document.getElementById('todo-prio').value,
     due_date: document.getElementById('todo-due').value || null,
     assigned_to: document.getElementById('todo-assign').value || null,
-    is_private: document.getElementById('todo-privacy').value === 'true',
+    is_private: true,
     created_by: getUser()
   };
   let error;
@@ -3238,7 +3257,7 @@ async function renderNotepad() {
   let _np;
   try { ({data:_np} = await withTimeout(sb.from('notepad_items').select('*').order('is_pinned',{ascending:false}).order('created_at',{ascending:false}))); }
   catch(e) { document.getElementById('notepad-list').innerHTML='<div class="empty-msg" style="color:#e53e3e">⚠️ '+e.message+'</div>'; return; }
-  const data = applyPrivacy(_np);
+  const data = applyOwner(_np);
   notepadCache = data || [];
   document.getElementById('badge-notepad').textContent = (data || []).length;
   displayNotepad(data || []);
@@ -3301,7 +3320,7 @@ async function saveNpItem() {
   const title = document.getElementById('np-title').value.trim();
   const body = quillNp.root.innerHTML.trim();
   if (!title) return alert('Judul tidak boleh kosong!');
-  const payload = { title, body, created_by: getUser(), is_pinned: false };
+  const payload = { title, body, created_by: getUser(), is_pinned: false, is_private: true };
   let error;
   if (editingNpId) {
     ({ error } = await sb.from('notepad_items').update({ title, body }).eq('id', editingNpId));
