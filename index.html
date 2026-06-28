@@ -4552,21 +4552,26 @@ function applyAdminVisibility() {
 
 // Kumpulkan semua nama unik dari berbagai tabel di Supabase
 async function getAllKnownUsers() {
-  const queries = [
-    sb.from('online_presence').select('user_name').then(r => (r.data||[]).map(x=>x.user_name)),
-    sb.from('attendance').select('user_name').then(r => (r.data||[]).map(x=>x.user_name)),
-    sb.from('leave_requests').select('user_name').then(r => (r.data||[]).map(x=>x.user_name)),
-    sb.from('schedule_events').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
-    sb.from('tracker_items').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
-    sb.from('logbook_entries').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
-    sb.from('notes').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
-    sb.from('todos').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
-    sb.from('chat_messages').select('sender').then(r => (r.data||[]).map(x=>x.sender)),
-  ];
-  const results = await Promise.all(queries.map(p => p.catch(() => [])));
-  const onlineRes = await sb.from('online_presence').select('user_name,last_seen').catch(() => ({data:[]}));
+  const safe = q => withTimeout(q, 8000).then(r => (r.data||[]).map(x => x.user_name || x.created_by || x.sender || '')).catch(() => []);
+  const [
+    onlineNames, attendNames, leaveNames,
+    schedNames, trackerNames, logNames,
+    noteNames, todoNames, chatNames
+  ] = await Promise.all([
+    safe(sb.from('online_presence').select('user_name')),
+    safe(sb.from('attendance').select('user_name')),
+    safe(sb.from('leave_requests').select('user_name')),
+    safe(sb.from('schedule_events').select('created_by')),
+    safe(sb.from('tracker_items').select('created_by')),
+    safe(sb.from('logbook_entries').select('created_by')),
+    safe(sb.from('notes').select('created_by')),
+    safe(sb.from('todos').select('created_by')),
+    safe(sb.from('chat_messages').select('sender')),
+  ]);
+  const results = [onlineNames, attendNames, leaveNames, schedNames, trackerNames, logNames, noteNames, todoNames, chatNames];
+  const onlineRes = await withTimeout(sb.from('online_presence').select('user_name,last_seen'), 8000).catch(() => ({data:[]}));
   const onlineMap = {};
-  (onlineRes.data||[]).forEach(u => { onlineMap[u.user_name] = u.last_seen; });
+  ((onlineRes.data)||[]).forEach(u => { onlineMap[u.user_name] = u.last_seen; });
 
   const seen = new Map(); // nama → {count_tables, last_seen}
   results.flat().forEach(name => {
