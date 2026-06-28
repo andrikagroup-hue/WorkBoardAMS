@@ -4043,6 +4043,15 @@ const quillNp = new Quill('#np-body-editor', {
       <i class="ti ti-chart-bar"></i>
       <span>Result</span>
     </button>
+    <button class="bn-item" onclick="switchPanelMobile('links',this)" aria-label="Semua Link">
+      <i class="ti ti-link"></i>
+      <span>Links</span>
+      <span class="bn-badge hidden" id="bn-badge-links"></span>
+    </button>
+    <button class="bn-item" id="bn-admin-users" style="display:none" onclick="switchPanelMobile('adminusers',this)" aria-label="Kelola User">
+      <i class="ti ti-settings"></i>
+      <span>Admin</span>
+    </button>
   </div>
 </nav>
 
@@ -4077,7 +4086,8 @@ function syncBottomNavBadges() {
     'notes':   'badge-notes',
     'todo':    'badge-todo',
     'notepad': 'badge-notepad',
-    'chat':    'badge-chat'
+    'chat':    'badge-chat',
+    'links':   'badge-links'
   };
   Object.keys(map).forEach(function(key) {
     var sidebarBadge = document.getElementById(map[key]);
@@ -4096,7 +4106,7 @@ function syncBottomNavBadges() {
 
 // Observe badge changes
 var badgeObserver = new MutationObserver(syncBottomNavBadges);
-['badge-sched','badge-track','badge-log','badge-notes','badge-todo','badge-notepad','badge-chat'].forEach(function(id) {
+['badge-sched','badge-track','badge-log','badge-notes','badge-todo','badge-notepad','badge-chat','badge-links'].forEach(function(id) {
   var el = document.getElementById(id);
   if (el) badgeObserver.observe(el, { childList: true, subtree: true, characterData: true });
 });
@@ -4548,6 +4558,8 @@ function applyAdminVisibility() {
     || currentUser.toLowerCase().includes('hrd');
   const navEl = document.getElementById('nav-admin-users');
   if (navEl) navEl.style.display = isAdmin ? 'flex' : 'none';
+  const bnAdminEl = document.getElementById('bn-admin-users');
+  if (bnAdminEl) bnAdminEl.style.display = isAdmin ? 'flex' : 'none';
 }
 
 // Kumpulkan semua nama unik dari berbagai tabel di Supabase
