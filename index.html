@@ -1348,6 +1348,11 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
 ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';</code>
           <button onclick="document.getElementById('leave-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
         </div>
+        <div id="attend-keterangan-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">
+          ⚠️ <strong>Update diperlukan:</strong> Kolom <code>keterangan</code> untuk alasan terlambat belum ada. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh:<br>
+          <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE attendance ADD COLUMN IF NOT EXISTS keterangan TEXT;</code>
+          <button onclick="document.getElementById('attend-keterangan-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
+        </div>
         <div id="absen-today-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px">
           <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:10px">📋 Status Absen Hari Ini — <span id="absen-today-date"></span></div>
           <div id="absen-today-info" style="font-size:12px;color:var(--text2)"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...</div>
@@ -4142,6 +4147,7 @@ function syncBottomNavBadges() {
     'todo':    'badge-todo',
     'notepad': 'badge-notepad',
     'chat':    'badge-chat',
+    'absen':   'badge-absen',
     'links':   'badge-links'
   };
   Object.keys(map).forEach(function(key) {
@@ -4161,7 +4167,7 @@ function syncBottomNavBadges() {
 
 // Observe badge changes
 var badgeObserver = new MutationObserver(syncBottomNavBadges);
-['badge-sched','badge-track','badge-log','badge-notes','badge-todo','badge-notepad','badge-chat','badge-links'].forEach(function(id) {
+['badge-sched','badge-track','badge-log','badge-notes','badge-todo','badge-notepad','badge-chat','badge-absen','badge-links'].forEach(function(id) {
   var el = document.getElementById(id);
   if (el) badgeObserver.observe(el, { childList: true, subtree: true, characterData: true });
 });
@@ -4308,6 +4314,15 @@ async function renderAbsen() {
     leaveMigBanner.style.display = (leaveColCheck && leaveColCheck.message?.includes('catatan_admin')) ? 'block' : 'none';
   }
 
+  // Cek apakah kolom keterangan sudah ada di attendance
+  const { error: attendKetCheck } = await withTimeout(
+    sb.from('attendance').select('keterangan').limit(1)
+  );
+  const attendKetBanner = document.getElementById('attend-keterangan-banner');
+  if (attendKetBanner) {
+    attendKetBanner.style.display = (attendKetCheck && attendKetCheck.message?.includes('keterangan')) ? 'block' : 'none';
+  }
+
   await renderAbsenToday();
   await renderAbsenRekap();
 }
@@ -4366,6 +4381,7 @@ async function renderAbsenToday() {
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${absenStatusLabel(data.status)}</span>
           <span>🕐 Masuk: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
+          ${data.keterangan ? `<span style="font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:3px 8px">📝 Alasan: ${escHtml(data.keterangan)}</span>` : ''}
           ${data.lat_in ? `<span style="color:var(--text3);font-size:11px">📍 GPS: ${data.lat_in.toFixed(5)}, ${data.lng_in.toFixed(5)}</span>` : ''}
           ${data.foto_in ? `<img src="${data.foto_in}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;margin-top:4px" />` : ''}
         </div>`;
@@ -4378,6 +4394,7 @@ async function renderAbsenToday() {
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${absenStatusLabel(data.status)}</span>
           <span>🕐 Masuk: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
+          ${data.keterangan ? `<span style="font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:3px 8px">📝 Alasan: ${escHtml(data.keterangan)}</span>` : ''}
           <span>🕔 Pulang: <strong>${absenTimeStr(data.clock_out)}</strong></span>
           <span style="color:var(--text3);font-size:11px">⏱️ Total kerja: ${Math.floor(dur/60)} jam ${dur%60} menit</span>
           ${data.lat_in ? `<span style="color:var(--text3);font-size:11px">📍 Masuk: <a href="https://maps.google.com/?q=${data.lat_in},${data.lng_in}" target="_blank" style="color:var(--accent)">${data.lat_in.toFixed(5)}, ${data.lng_in.toFixed(5)}</a></span>` : ''}
@@ -4401,18 +4418,58 @@ async function doClockIn() {
   const today = absenDateStr(now);
 
   const btnEl = document.getElementById('absen-action-btns');
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Ambil foto selfie...</span>';
 
-  const foto = await takeSelfie();
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Mengambil lokasi GPS...</span>';
-  const gps = await getGPS();
-
-  // Hitung keterlambatan
+  // Hitung keterlambatan DULU sebelum ambil foto
   const jamMasukLimit = new Date(now);
   jamMasukLimit.setHours(JAM_MASUK, 0, 0, 0);
   const terlambatMenit = now > jamMasukLimit ? Math.round((now - jamMasukLimit) / 60000) : 0;
   const status = terlambatMenit > 0 ? 'terlambat' : 'hadir';
 
+  // Kalau terlambat, minta alasan dulu sebelum foto
+  let keterangan = '';
+  if (terlambatMenit > 0) {
+    btnEl.innerHTML = `
+      <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius);padding:12px;width:100%;max-width:340px">
+        <div style="font-size:12px;font-weight:600;color:#92400E;margin-bottom:8px">
+          ⚠️ Kamu terlambat ${terlambatMenit} menit — harap isi alasan:
+        </div>
+        <textarea id="alasan-terlambat-input" rows="3" placeholder="Contoh: Macet, ban bocor, urusan keluarga..." 
+          style="width:100%;border:1px solid #F59E0B;border-radius:6px;padding:8px;font-size:12px;resize:none;box-sizing:border-box"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+          <button onclick="cancelClockIn()" style="padding:5px 14px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);font-size:12px;cursor:pointer">Batal</button>
+          <button onclick="proceedClockIn(${terlambatMenit},'${status}','${today}')" style="padding:5px 14px;background:#F59E0B;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Lanjut Clock In →</button>
+        </div>
+      </div>`;
+    return; // tunggu user isi alasan
+  }
+
+  // Tidak terlambat — langsung foto & GPS
+  await _doClockInProcess(user, now, today, terlambatMenit, status, '');
+}
+
+function cancelClockIn() {
+  const btnEl = document.getElementById('absen-action-btns');
+  btnEl.innerHTML = `<button class="btn-sm btn-primary" onclick="doClockIn()"><i class="ti ti-login"></i> Clock In</button>`;
+}
+
+async function proceedClockIn(terlambatMenit, status, today) {
+  const keterangan = (document.getElementById('alasan-terlambat-input')?.value || '').trim();
+  if (!keterangan) {
+    document.getElementById('alasan-terlambat-input').style.borderColor = '#EF4444';
+    document.getElementById('alasan-terlambat-input').focus();
+    return;
+  }
+  const user = getUser();
+  const now = new Date();
+  await _doClockInProcess(user, now, today, terlambatMenit, status, keterangan);
+}
+
+async function _doClockInProcess(user, now, today, terlambatMenit, status, keterangan) {
+  const btnEl = document.getElementById('absen-action-btns');
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Ambil foto selfie...</span>';
+  const foto = await takeSelfie();
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Mengambil lokasi GPS...</span>';
+  const gps = await getGPS();
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Menyimpan...</span>';
 
   const { error } = await withTimeout(sb.from('attendance').insert({
@@ -4423,11 +4480,13 @@ async function doClockIn() {
     terlambat_menit: terlambatMenit,
     lat_in: gps.lat,
     lng_in: gps.lng,
-    foto_in: foto
+    foto_in: foto,
+    keterangan: keterangan || null
   }));
 
   if (error) {
     alert('Gagal clock in: ' + error.message);
+    cancelClockIn();
   } else {
     await renderAbsen();
   }
@@ -4577,7 +4636,9 @@ async function renderAbsenRekap() {
           ${row.foto_in ? `<img src="${row.foto_in}" style="width:36px;height:36px;border-radius:6px;object-fit:cover" title="Foto Masuk" />` : ''}
           ${row.foto_out ? `<img src="${row.foto_out}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;margin-left:2px" title="Foto Pulang" />` : ''}
         </td>
-        <td style="font-size:11px;color:var(--text2)">${escHtml(row.keterangan || '')}</td>
+        <td style="font-size:11px;color:var(--text2)">
+          ${row.keterangan ? (row.terlambat_menit > 0 ? `<span style="color:#92400E">⚠️ ${escHtml(row.keterangan)}</span>` : escHtml(row.keterangan)) : '—'}
+        </td>
         ${isAdmin ? `<td>
           <button class="btn-sm" style="color:var(--danger);padding:2px 8px" onclick="adminDeleteAbsen('${row.id}','${isLeaveRow ? row._leaveId : ''}')" title="Hapus"><i class="ti ti-trash"></i></button>
         </td>` : ''}
