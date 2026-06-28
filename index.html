@@ -376,6 +376,27 @@ textarea { resize: vertical; }
 .act-bar-wrap { flex: 1; height: 4px; background: var(--bg2); border-radius: 2px; overflow: hidden; }
 .act-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
 
+/* ── Admin Users panel ─────────────────────── */
+.admin-user-row {
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  background:var(--surface);border:0.5px solid var(--border);
+  border-radius:var(--radius);margin-bottom:6px;
+}
+.admin-user-avatar {
+  width:34px;height:34px;border-radius:50%;background:var(--accent);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;flex-shrink:0;
+}
+.admin-user-info { flex:1;min-width:0; }
+.admin-user-name { font-size:13px;font-weight:600;color:var(--text1); }
+.admin-user-meta { font-size:11px;color:var(--text3);margin-top:1px; }
+.admin-user-badge {
+  font-size:10px;padding:2px 7px;border-radius:8px;
+  background:#DBEAFE;color:#1D4ED8;font-weight:500;
+}
+.admin-user-badge.online { background:#DCFCE7;color:#166534; }
+.admin-user-badge.admin { background:#FEF3C7;color:#92400E; }
+
 /* ── Result — Absensi integration ──────────── */
 .result-filter-bar { display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap; }
 .res-section-title {
@@ -734,6 +755,9 @@ textarea { resize: vertical; }
       <button class="nav-item" onclick="switchPanel('absen',this)">
         <i class="ti ti-fingerprint" aria-hidden="true"></i> Absensi
         <span class="nav-badge badge-blue" id="badge-absen"></span>
+      </button>
+      <button class="nav-item" id="nav-admin-users" onclick="switchPanel('adminusers',this)" style="display:none">
+        <i class="ti ti-users-group" aria-hidden="true"></i> Kelola User
       </button>
     </div>
 
@@ -1249,6 +1273,23 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
         </div>
       </div>
 
+      <!-- ── Admin: Kelola User ─────────────────── -->
+      <div class="panel" id="panel-adminusers">
+        <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#92400E">
+          <strong>⚠️ Panel Admin</strong> — Hanya terlihat oleh akun dengan nama mengandung <em>admin</em>, <em>bos</em>, atau <em>hrd</em>.
+          Menghapus user akan menghapus seluruh data kehadiran, leave, jadwal, tracker, dan catatan milik user tersebut. Tindakan ini <strong>tidak dapat dibatalkan</strong>.
+        </div>
+
+        <!-- Daftar user aktif (dari online_presence + semua tabel) -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:600;color:var(--text1)">👥 Daftar Pengguna Terdaftar</div>
+          <button class="btn-sm" onclick="renderAdminUsers()"><i class="ti ti-refresh"></i> Refresh</button>
+        </div>
+        <div id="admin-users-list">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat daftar user...</div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1352,6 +1393,7 @@ let chatChannelsLoaded = false;
 // Helper: muat ulang data panel yang sedang aktif (dipakai setelah ganti nama pengguna,
 // supaya filter privat/publik langsung ter-update sesuai pengguna yang baru)
 async function refreshCurrentPanel() {
+  applyAdminVisibility();
   if (currentPanel === 'schedule') await renderSchedule();
   else if (currentPanel === 'tracker') { await renderTracker(); await renderProjectTracker(); }
   else if (currentPanel === 'logbook') await renderLogbook();
@@ -1360,6 +1402,7 @@ async function refreshCurrentPanel() {
   else if (currentPanel === 'result') await renderResult();
   else if (currentPanel === 'notepad') await renderNotepad();
   else if (currentPanel === 'chat') await renderChat();
+  else if (currentPanel === 'adminusers') await renderAdminUsers();
   updateDailyProgress();
 }
 let todoFilter = 'all';
@@ -1396,6 +1439,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const todayInputs = document.querySelectorAll('.input-today');
   todayInputs.forEach(el => { el.value = todayStr(); });
 
+  applyAdminVisibility(); // tampilkan/sembunyikan menu Kelola User
   await renderSchedule();
   updateDailyProgress();
   loadChatLastRead();
@@ -1454,7 +1498,8 @@ async function switchPanel(id, el) {
     result: 'Result — Laporan',
     notepad: 'Notepad',
     chat: 'Work Talk',
-    absen: 'Absensi'
+    absen: 'Absensi',
+    adminusers: '⚙️ Kelola User'
   };
   document.getElementById('panel-title').textContent = titles[id] || id;
   updateGlobalSearchFilter(id);
@@ -1469,6 +1514,7 @@ async function switchPanel(id, el) {
   else if (id === 'notepad') await renderNotepad();
   else if (id === 'chat') await renderChat();
   else if (id === 'absen') await renderAbsen();
+  else if (id === 'adminusers') await renderAdminUsers();
 }
 
 // ── GLOBAL SEARCH & FILTER (dinamis per menu) ──────────────
@@ -4123,14 +4169,57 @@ async function renderAbsenRekap() {
   container.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat rekap...</div>';
 
   try {
+    // Query attendance (clock in/out)
     let q = sb.from('attendance').select('*').eq('tanggal', filterDate).order('clock_in', {ascending: true});
-    if (filterStatus) q = q.eq('status', filterStatus);
-    const { data, error } = await withTimeout(q);
-    if (error) throw error;
+    if (filterStatus && !['izin','sakit','cuti'].includes(filterStatus)) q = q.eq('status', filterStatus);
+    const { data: attData, error: attErr } = await withTimeout(q);
+    if (attErr) throw attErr;
 
-    absenRekapCache = data || [];
+    // Query leave_requests yang mencakup tanggal ini
+    const { data: leaveData } = await withTimeout(
+      sb.from('leave_requests').select('*').lte('dari_tanggal', filterDate).gte('sampai_tanggal', filterDate)
+    );
 
-    if (!absenRekapCache.length) {
+    // Gabungkan: semua user dari attendance
+    const combined = [...(attData || [])];
+    // Tambahkan user dari leave_requests yang BELUM ada di attendance hari ini
+    for (const lv of (leaveData || [])) {
+      const alreadyInAtt = combined.some(a => a.user_name === lv.user_name);
+      if (!alreadyInAtt) {
+        // Buat virtual row untuk leave
+        combined.push({
+          id: 'leave_' + lv.id,        // prefix supaya bisa dibedakan saat delete
+          _leaveId: lv.id,
+          user_name: lv.user_name,
+          tanggal: filterDate,
+          status: lv.tipe,             // izin | sakit | cuti
+          clock_in: null,
+          clock_out: null,
+          terlambat_menit: 0,
+          lat_in: null, lng_in: null, lat_out: null, lng_out: null,
+          foto_in: null, foto_out: null,
+          keterangan: lv.alasan || '',
+          _isLeave: true
+        });
+      }
+    }
+
+    // Filter status jika perlu (untuk izin/sakit/cuti yang dari leave)
+    const filtered = filterStatus
+      ? combined.filter(r => r.status === filterStatus)
+      : combined;
+
+    // Sort: attendance dulu (ada clock_in), baru leave
+    filtered.sort((a, b) => {
+      if (a.clock_in && b.clock_in) return new Date(a.clock_in) - new Date(b.clock_in);
+      if (a.clock_in) return -1;
+      if (b.clock_in) return 1;
+      return a.user_name.localeCompare(b.user_name);
+    });
+
+    absenRekapCache = filtered;
+
+    if (!filtered.length) {
       container.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:16px 0">Tidak ada data absensi untuk tanggal ini.</div>';
       return;
     }
@@ -4141,19 +4230,20 @@ async function renderAbsenRekap() {
     let html = `<table class="task-table" style="min-width:600px">
       <thead><tr>
         <th>Nama</th><th>Status</th><th>Clock In</th><th>Clock Out</th>
-        <th>Terlambat</th><th>Lokasi</th><th>Foto</th>
+        <th>Terlambat</th><th>Lokasi</th><th>Foto</th><th>Keterangan</th>
         ${isAdmin ? '<th>Aksi</th>' : ''}
       </tr></thead><tbody>`;
 
-    for (const row of absenRekapCache) {
+    for (const row of filtered) {
       const dur = row.clock_in && row.clock_out
         ? Math.round((new Date(row.clock_out) - new Date(row.clock_in)) / 60000)
         : null;
-      html += `<tr>
-        <td style="font-weight:500">${row.user_name}</td>
+      const isLeaveRow = !!row._isLeave;
+      html += `<tr${isLeaveRow ? ' style="background:var(--bg2)"' : ''}>
+        <td style="font-weight:500">${escHtml(row.user_name)}</td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${absenStatusColor(row.status)}22;color:${absenStatusColor(row.status)};font-weight:600">${absenStatusLabel(row.status)}</span></td>
-        <td>${absenTimeStr(row.clock_in)}</td>
-        <td>${absenTimeStr(row.clock_out)}${dur ? `<br><span style="font-size:10px;color:var(--text3)">${Math.floor(dur/60)}j ${dur%60}m</span>` : ''}</td>
+        <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : absenTimeStr(row.clock_in)}</td>
+        <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : (absenTimeStr(row.clock_out) + (dur ? `<br><span style="font-size:10px;color:var(--text3)">${Math.floor(dur/60)}j ${dur%60}m</span>` : ''))}</td>
         <td>${row.terlambat_menit > 0 ? `<span style="color:#F59E0B">${row.terlambat_menit} mnt</span>` : '—'}</td>
         <td style="font-size:10px">
           ${row.lat_in ? `<a href="https://maps.google.com/?q=${row.lat_in},${row.lng_in}" target="_blank" style="color:var(--accent)">📍 Masuk</a>` : '—'}
@@ -4163,7 +4253,10 @@ async function renderAbsenRekap() {
           ${row.foto_in ? `<img src="${row.foto_in}" style="width:36px;height:36px;border-radius:6px;object-fit:cover" title="Foto Masuk" />` : ''}
           ${row.foto_out ? `<img src="${row.foto_out}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;margin-left:2px" title="Foto Pulang" />` : ''}
         </td>
-        ${isAdmin ? `<td><button class="btn-sm" style="color:var(--danger);padding:2px 8px" onclick="adminDeleteAbsen('${row.id}')"><i class="ti ti-trash"></i></button></td>` : ''}
+        <td style="font-size:11px;color:var(--text2)">${escHtml(row.keterangan || '')}</td>
+        ${isAdmin ? `<td>
+          <button class="btn-sm" style="color:var(--danger);padding:2px 8px" onclick="adminDeleteAbsen('${row.id}','${isLeaveRow ? row._leaveId : ''}')" title="Hapus"><i class="ti ti-trash"></i></button>
+        </td>` : ''}
       </tr>`;
     }
     html += '</tbody></table>';
@@ -4173,12 +4266,146 @@ async function renderAbsenRekap() {
   }
 }
 
-// Admin delete absensi
-async function adminDeleteAbsen(id) {
+// Admin delete absensi (attendance row atau leave_request)
+async function adminDeleteAbsen(id, leaveId) {
   if (!confirm('Hapus data absensi ini? (Hanya admin yang bisa melakukan ini)')) return;
-  const { error } = await withTimeout(sb.from('attendance').delete().eq('id', id));
+  let error;
+  if (leaveId) {
+    // Ini adalah leave_request row
+    ({ error } = await withTimeout(sb.from('leave_requests').delete().eq('id', leaveId)));
+  } else {
+    ({ error } = await withTimeout(sb.from('attendance').delete().eq('id', id)));
+  }
   if (error) alert('Gagal hapus: ' + error.message);
   else await renderAbsenRekap();
+}
+
+// ── ADMIN: Kelola User ──────────────────────────────────────
+// Tampilkan/sembunyikan menu Kelola User berdasarkan apakah user adalah admin
+function applyAdminVisibility() {
+  const currentUser = getUser();
+  const isAdmin = currentUser.toLowerCase().includes('admin')
+    || currentUser.toLowerCase().includes('bos')
+    || currentUser.toLowerCase().includes('hrd');
+  const navEl = document.getElementById('nav-admin-users');
+  if (navEl) navEl.style.display = isAdmin ? 'flex' : 'none';
+}
+
+// Kumpulkan semua nama unik dari berbagai tabel di Supabase
+async function getAllKnownUsers() {
+  const queries = [
+    sb.from('online_presence').select('user_name').then(r => (r.data||[]).map(x=>x.user_name)),
+    sb.from('attendance').select('user_name').then(r => (r.data||[]).map(x=>x.user_name)),
+    sb.from('leave_requests').select('user_name').then(r => (r.data||[]).map(x=>x.user_name)),
+    sb.from('schedule_events').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
+    sb.from('tracker_items').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
+    sb.from('logbook_entries').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
+    sb.from('notes').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
+    sb.from('todos').select('created_by').then(r => (r.data||[]).map(x=>x.created_by)),
+    sb.from('chat_messages').select('sender').then(r => (r.data||[]).map(x=>x.sender)),
+  ];
+  const results = await Promise.all(queries.map(p => p.catch(() => [])));
+  const onlineRes = await sb.from('online_presence').select('user_name,last_seen').catch(() => ({data:[]}));
+  const onlineMap = {};
+  (onlineRes.data||[]).forEach(u => { onlineMap[u.user_name] = u.last_seen; });
+
+  const seen = new Map(); // nama → {count_tables, last_seen}
+  results.flat().forEach(name => {
+    if (!name || !name.trim()) return;
+    const n = name.trim();
+    if (!seen.has(n)) seen.set(n, { tables: 0, last_seen: onlineMap[n] || null });
+    seen.get(n).tables++;
+  });
+  return [...seen.entries()].map(([name, info]) => ({ name, ...info })).sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+async function renderAdminUsers() {
+  const currentUser = getUser();
+  const isAdmin = currentUser.toLowerCase().includes('admin')
+    || currentUser.toLowerCase().includes('bos')
+    || currentUser.toLowerCase().includes('hrd');
+  if (!isAdmin) {
+    document.getElementById('admin-users-list').innerHTML = '<div class="empty-msg">⛔ Akses ditolak — hanya admin yang bisa melihat halaman ini.</div>';
+    return;
+  }
+  const listEl = document.getElementById('admin-users-list');
+  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...</div>';
+
+  const users = await getAllKnownUsers();
+  if (!users.length) {
+    listEl.innerHTML = '<div class="empty-msg">Belum ada pengguna terdaftar.</div>';
+    return;
+  }
+
+  const now = Date.now();
+  const ONLINE_CUTOFF_MS = 90 * 1000; // 90 detik
+
+  listEl.innerHTML = users.map(u => {
+    const isOnline = u.last_seen && (now - new Date(u.last_seen).getTime()) < ONLINE_CUTOFF_MS;
+    const isSelf = u.name === currentUser;
+    const isAdminUser = u.name.toLowerCase().includes('admin') || u.name.toLowerCase().includes('bos') || u.name.toLowerCase().includes('hrd');
+    const avatarLetter = u.name.charAt(0).toUpperCase();
+    const lastSeenStr = u.last_seen
+      ? new Date(u.last_seen).toLocaleString('id-ID', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+      : 'Belum pernah login';
+    return `<div class="admin-user-row">
+      <div class="admin-user-avatar">${avatarLetter}</div>
+      <div class="admin-user-info">
+        <div class="admin-user-name">${escHtml(u.name)} ${isSelf ? '<span style="font-size:10px;color:var(--text3)">(Kamu)</span>' : ''}</div>
+        <div class="admin-user-meta">Terakhir online: ${lastSeenStr}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        ${isOnline ? '<span class="admin-user-badge online">🟢 Online</span>' : ''}
+        ${isAdminUser ? '<span class="admin-user-badge admin">⭐ Admin</span>' : ''}
+        ${!isSelf ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteUser('${u.name.replace(/'/g,"\\'")}')" title="Hapus semua data user ini"><i class="ti ti-user-minus"></i> Hapus</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Hapus semua data user dari seluruh tabel
+async function adminDeleteUser(targetName) {
+  const currentUser = getUser();
+  const isAdmin = currentUser.toLowerCase().includes('admin')
+    || currentUser.toLowerCase().includes('bos')
+    || currentUser.toLowerCase().includes('hrd');
+  if (!isAdmin) return alert('Akses ditolak.');
+  if (targetName === currentUser) return alert('Tidak bisa menghapus akun sendiri.');
+
+  if (!confirm(
+    `⚠️ PERINGATAN: Hapus pengguna "${targetName}"?\n\n` +
+    `Ini akan menghapus SEMUA data milik user ini:\n` +
+    `• Data absensi & izin\n• Jadwal & tracker\n• Logbook, Notes, To Do\n• Riwayat chat\n• Status online\n\n` +
+    `Tindakan ini TIDAK DAPAT DIBATALKAN. Lanjutkan?`
+  )) return;
+
+  const listEl = document.getElementById('admin-users-list');
+  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Menghapus data...</div>';
+
+  const deletes = [
+    sb.from('attendance').delete().eq('user_name', targetName),
+    sb.from('leave_requests').delete().eq('user_name', targetName),
+    sb.from('online_presence').delete().eq('user_name', targetName),
+    sb.from('schedule_events').delete().eq('created_by', targetName),
+    sb.from('tracker_items').delete().eq('created_by', targetName),
+    sb.from('time_plan_tracker').delete().eq('created_by', targetName),
+    sb.from('logbook_entries').delete().eq('created_by', targetName),
+    sb.from('notes').delete().eq('created_by', targetName),
+    sb.from('todos').delete().eq('created_by', targetName),
+    sb.from('notepad_items').delete().eq('created_by', targetName),
+    sb.from('chat_messages').delete().eq('sender', targetName),
+  ];
+
+  const results = await Promise.allSettled(deletes);
+  const errors = results.filter(r => r.status === 'rejected' || r.value?.error).map((r,i) => i);
+
+  if (errors.length) {
+    alert(`Sebagian data berhasil dihapus, tapi ada ${errors.length} operasi yang gagal (mungkin tabel belum ada atau RLS aktif). Cek console untuk detail.`);
+    console.warn('adminDeleteUser errors:', results);
+  } else {
+    alert(`✅ Semua data pengguna "${targetName}" berhasil dihapus.`);
+  }
+  await renderAdminUsers();
 }
 
 // ── Export Excel absensi ────────────────────────────────────
@@ -4373,27 +4600,58 @@ async function checkNewChatMessages() {
   } catch(e) {}
 }
 
-function showChatToast(sender, body) {
-  let toast = document.getElementById('chat-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'chat-toast';
-    toast.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:9999;background:#1D4ED8;color:#fff;border-radius:12px;padding:12px 16px;max-width:280px;box-shadow:0 4px 20px rgba(0,0,0,0.25);cursor:pointer;transition:opacity 0.3s;font-size:13px;line-height:1.4';
-    toast.onclick = () => {
-      const chatNav = document.querySelector('.nav-item[onclick*="chat"]');
+// Toast chat — dibuat sekali di DOM, tidak pernah di-remove agar tidak ada race condition
+// Masalah lama: toast di-remove saat fade-out masih berjalan → getElementById mengembalikan
+// null di pemanggilan berikutnya → toast baru dibuat tapi event handler lama masih hidup
+// → dua instance bertabrakan sehingga toast kadang tidak muncul di desktop.
+let _chatToastEl = null;
+let _chatToastTimer = null;
+
+function _getChatToastEl() {
+  if (!_chatToastEl || !document.body.contains(_chatToastEl)) {
+    _chatToastEl = document.createElement('div');
+    _chatToastEl.id = 'chat-toast';
+    _chatToastEl.style.cssText = [
+      'position:fixed', 'bottom:80px', 'right:16px', 'z-index:9999',
+      'background:#1D4ED8', 'color:#fff', 'border-radius:12px',
+      'padding:12px 16px', 'max-width:280px',
+      'box-shadow:0 4px 20px rgba(0,0,0,0.25)', 'cursor:pointer',
+      'transition:opacity 0.3s', 'font-size:13px', 'line-height:1.4',
+      'opacity:0', 'pointer-events:none'
+    ].join(';');
+    _chatToastEl.addEventListener('click', () => {
+      const chatNav = document.querySelector('.nav-item[onclick*="chat"]') ||
+                      document.querySelector('.bn-item[onclick*="chat"]');
       if (chatNav) chatNav.click();
-      toast.style.opacity = '0';
-      setTimeout(() => toast.remove(), 300);
-    };
-    document.body.appendChild(toast);
+      _hideChatToast();
+    });
+    document.body.appendChild(_chatToastEl);
   }
-  toast.innerHTML = '<div style="font-weight:700;font-size:12px;opacity:0.8;margin-bottom:2px">💬 Work Talk</div><strong>' + sender + '</strong>: ' + (body||'').substring(0,60) + (body && body.length > 60 ? '…' : '');
+  return _chatToastEl;
+}
+
+function _hideChatToast() {
+  if (!_chatToastEl) return;
+  _chatToastEl.style.opacity = '0';
+  _chatToastEl.style.pointerEvents = 'none';
+  clearTimeout(_chatToastTimer);
+  _chatToastTimer = null;
+}
+
+function showChatToast(sender, body) {
+  const toast = _getChatToastEl();
+  toast.innerHTML = '<div style="font-weight:700;font-size:12px;opacity:0.8;margin-bottom:2px">💬 Work Talk</div>'
+    + '<strong>' + escHtml(sender) + '</strong>: '
+    + escHtml((body || '').substring(0, 60))
+    + (body && body.length > 60 ? '…' : '');
+  // Force reflow agar transition opacity 0→1 selalu berjalan (bahkan jika toast sudah visible)
+  toast.style.opacity = '0';
+  toast.style.pointerEvents = 'auto';
+  // eslint-disable-next-line no-unused-expressions
+  toast.offsetHeight; // trigger reflow
   toast.style.opacity = '1';
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => {
-    toast.style.opacity = '0';
-    setTimeout(() => { if(toast.parentNode) toast.remove(); }, 300);
-  }, 5000);
+  clearTimeout(_chatToastTimer);
+  _chatToastTimer = setTimeout(_hideChatToast, 5000);
 }
 
 </script>
