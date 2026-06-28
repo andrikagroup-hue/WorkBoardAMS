@@ -376,6 +376,59 @@ textarea { resize: vertical; }
 .act-bar-wrap { flex: 1; height: 4px; background: var(--bg2); border-radius: 2px; overflow: hidden; }
 .act-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
 
+/* ── Result — Absensi integration ──────────── */
+.result-filter-bar { display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap; }
+.res-section-title {
+  font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;
+  letter-spacing:0.7px;margin:18px 0 10px;display:flex;align-items:center;gap:6px;
+  padding-bottom:6px;border-bottom:1.5px solid var(--border2);
+}
+.res-section-title i { font-size:15px;color:var(--accent); }
+.absen-summary-cards {
+  display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;
+}
+.asc-card {
+  background:var(--surface);border-radius:var(--radius-lg);padding:14px 10px;
+  text-align:center;border:0.5px solid var(--border);position:relative;overflow:hidden;
+}
+.asc-card::before {
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+}
+.asc-hadir::before { background:#22C55E; }
+.asc-terlambat::before { background:#F59E0B; }
+.asc-izin::before { background:#3B82F6; }
+.asc-sakit::before { background:#EF4444; }
+.asc-cuti::before { background:#8B5CF6; }
+.asc-icon { font-size:18px;margin-bottom:4px; }
+.asc-val { font-size:24px;font-weight:700;color:var(--text1);line-height:1; }
+.asc-label { font-size:10px;color:var(--text3);margin-top:3px;font-weight:500; }
+
+.absen-daily-chart {
+  display:flex;align-items:flex-end;gap:3px;height:80px;overflow-x:auto;
+  padding:4px 0 2px;scrollbar-width:thin;
+}
+.adc-day {
+  flex:1;min-width:18px;max-width:36px;display:flex;flex-direction:column;
+  align-items:center;gap:2px;cursor:default;
+}
+.adc-bar { width:100%;border-radius:3px 3px 0 0;transition:opacity 0.15s;min-height:4px; }
+.adc-bar:hover { opacity:0.8; }
+.adc-lbl { font-size:8px;color:var(--text3);white-space:nowrap; }
+
+.result-absen-table th { background:var(--bg2); }
+.result-absen-table td { vertical-align:middle; }
+.result-absen-table .nama-cell { font-weight:500;color:var(--text1); }
+.result-absen-table .num-cell { text-align:center;font-weight:600; }
+.result-absen-table .num-0 { color:var(--text3); }
+
+@media (max-width:768px) {
+  .absen-summary-cards { grid-template-columns:repeat(3,1fr); }
+  .result-absen-table { font-size:11px; }
+}
+@media (max-width:560px) {
+  .absen-summary-cards { grid-template-columns:1fr 1fr; }
+}
+
 /* ── Animations ─────────────────────────────── */
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -1057,12 +1110,80 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
 
       <!-- ── Result ─────────────────────────────── -->
       <div class="panel" id="panel-result">
+
+        <!-- Filter bulan -->
+        <div class="result-filter-bar">
+          <label style="font-size:12px;color:var(--text2);font-weight:500">📅 Periode:</label>
+          <input type="month" id="result-month-input" style="font-size:12px" onchange="renderResult()" />
+          <button class="btn-sm" onclick="document.getElementById('result-month-input').value=todayStr().substring(0,7);renderResult()">Bulan Ini</button>
+          <span id="result-period-label" style="font-size:11px;color:var(--text3);margin-left:4px"></span>
+        </div>
+
+        <!-- Kartu ringkasan atas — 4 kolom seperti sebelumnya -->
         <div class="result-header" id="result-stats">
           <div class="res-card rc-blue"><div class="res-label">Jadwal</div><div class="res-val">—</div></div>
           <div class="res-card rc-green"><div class="res-label">Tugas Selesai</div><div class="res-val">—</div></div>
           <div class="res-card rc-amber"><div class="res-label">Log Minggu Ini</div><div class="res-val">—</div></div>
           <div class="res-card rc-purple"><div class="res-label">Notes</div><div class="res-val">—</div></div>
         </div>
+
+        <!-- ── SEKSI ABSENSI ── -->
+        <div class="res-section-title"><i class="ti ti-fingerprint"></i> Rekap Kehadiran Bulanan</div>
+
+        <!-- Kartu ringkasan absensi — 5 kolom -->
+        <div class="absen-summary-cards" id="absen-summary-cards">
+          <div class="asc-card asc-hadir"><div class="asc-icon">✅</div><div class="asc-val" id="asc-hadir">—</div><div class="asc-label">Hadir</div></div>
+          <div class="asc-card asc-terlambat"><div class="asc-icon">⚠️</div><div class="asc-val" id="asc-terlambat">—</div><div class="asc-label">Terlambat</div></div>
+          <div class="asc-card asc-izin"><div class="asc-icon">📝</div><div class="asc-val" id="asc-izin">—</div><div class="asc-label">Izin</div></div>
+          <div class="asc-card asc-sakit"><div class="asc-icon">🤒</div><div class="asc-val" id="asc-sakit">—</div><div class="asc-label">Sakit</div></div>
+          <div class="asc-card asc-cuti"><div class="asc-icon">🏖️</div><div class="asc-val" id="asc-cuti">—</div><div class="asc-label">Cuti</div></div>
+        </div>
+
+        <!-- Grafik kehadiran harian dalam bulan -->
+        <div class="chart-section" style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="chart-title" style="margin-bottom:0">Grafik Kehadiran Harian</div>
+            <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
+              <span><span style="display:inline-block;width:10px;height:10px;background:#22C55E;border-radius:2px;margin-right:3px"></span>Hadir</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#F59E0B;border-radius:2px;margin-right:3px"></span>Terlambat</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#94A3B8;border-radius:2px;margin-right:3px"></span>Tidak Hadir</span>
+            </div>
+          </div>
+          <div class="absen-daily-chart" id="absen-daily-chart">
+            <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div>
+          </div>
+        </div>
+
+        <!-- Tabel rekap per karyawan -->
+        <div class="chart-section" style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="chart-title" style="margin-bottom:0">Rekap Per Karyawan</div>
+            <button class="btn-sm" onclick="exportResultAbsenExcel()"><i class="ti ti-file-spreadsheet"></i> Export Excel</button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="task-table result-absen-table" id="result-absen-table">
+              <thead>
+                <tr>
+                  <th>Karyawan</th>
+                  <th>✅ Hadir</th>
+                  <th>⚠️ Terlambat</th>
+                  <th>📝 Izin</th>
+                  <th>🤒 Sakit</th>
+                  <th>🏖️ Cuti</th>
+                  <th>⏱️ Total Jam</th>
+                  <th>⏰ Rata-rata Terlambat</th>
+                </tr>
+              </thead>
+              <tbody id="result-absen-tbody">
+                <tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3)"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── SEKSI AKTIVITAS KERJA ── -->
+        <div class="res-section-title"><i class="ti ti-chart-bar"></i> Aktivitas Kerja</div>
+
         <div class="chart-section">
           <div class="chart-title">Aktivitas Tracker — 7 Hari Terakhir</div>
           <div class="bar-chart" id="weekly-chart"></div>
@@ -2290,18 +2411,46 @@ function filterTodo(f, el) {
 }
 
 // ── RESULT ─────────────────────────────────
-async function renderResult() {
-  const [_sr,_tr,_lr,_nr,_tdr] = await Promise.all([
-    sb.from('schedule_events').select('*').eq('event_date',todayStr()),
-    sb.from('tracker_items').select('*').eq('item_date',todayStr()),
-    sb.from('logbook_entries').select('*').gte('entry_date',getWeekStart()),
-    sb.from('notes').select('*'),
-    sb.from('todos').select('*')
-  ]);
-  const sd=applyPrivacy(_sr.data),tr=applyPrivacy(_tr.data),ld=applyPrivacy(_lr.data),nd=applyPrivacy(_nr.data),td=applyPrivacy(_tdr.data);
-  const doneTodo = td.filter(t => t.is_done).length;
-  const doneTrk = tr.filter(t => t.status === 'done').length;
+// Cache untuk export Excel dari result panel
+let resultAbsenCache = [];
 
+async function renderResult() {
+  // ── Set default bulan ke bulan ini jika belum dipilih ──
+  const monthInput = document.getElementById('result-month-input');
+  if (monthInput && !monthInput.value) monthInput.value = todayStr().substring(0, 7);
+  const selectedMonth = (monthInput && monthInput.value) ? monthInput.value : todayStr().substring(0, 7);
+  const [selYear, selMon] = selectedMonth.split('-').map(Number);
+
+  // Hitung range tanggal bulan yang dipilih
+  const firstDay = selectedMonth + '-01';
+  const lastDate = new Date(selYear, selMon, 0).getDate(); // hari terakhir bulan
+  const lastDay = selectedMonth + '-' + String(lastDate).padStart(2, '0');
+
+  // Update label periode
+  const periodLabel = document.getElementById('result-period-label');
+  if (periodLabel) {
+    periodLabel.textContent = MONTHS[selMon-1] + ' ' + selYear + ' (' + lastDate + ' hari kerja potensial)';
+  }
+
+  // ── Fetch semua data secara paralel ──
+  const [_sr, _tr, _lr, _nr, _tdr, _absenRes, _leaveRes] = await Promise.all([
+    sb.from('schedule_events').select('*').eq('event_date', todayStr()),
+    sb.from('tracker_items').select('*').eq('item_date', todayStr()),
+    sb.from('logbook_entries').select('*').gte('entry_date', getWeekStart()),
+    sb.from('notes').select('*'),
+    sb.from('todos').select('*'),
+    sb.from('attendance').select('*').gte('tanggal', firstDay).lte('tanggal', lastDay).order('tanggal'),
+    sb.from('leave_requests').select('*').or(`dari_tanggal.lte.${lastDay},sampai_tanggal.gte.${firstDay}`)
+  ]);
+
+  const sd = applyPrivacy(_sr.data), tr = applyPrivacy(_tr.data);
+  const ld = applyPrivacy(_lr.data), nd = applyPrivacy(_nr.data), td = applyPrivacy(_tdr.data);
+  const absenData = _absenRes.data || [];
+  const leaveData = _leaveRes.data || [];
+
+  const doneTodo = td.filter(t => t.is_done).length;
+
+  // ── Kartu ringkasan atas ──
   document.getElementById('result-stats').innerHTML = `
     <div class="res-card rc-blue"><div class="res-label">Jadwal Hari Ini</div><div class="res-val">${sd.length}</div><div class="res-trend">agenda terjadwal</div></div>
     <div class="res-card rc-green"><div class="res-label">Tugas Selesai</div><div class="res-val">${doneTodo}/${td.length}</div><div class="res-trend">${td.length ? Math.round(doneTodo/td.length*100) : 0}% completion</div></div>
@@ -2309,11 +2458,131 @@ async function renderResult() {
     <div class="res-card rc-purple"><div class="res-label">Notes Aktif</div><div class="res-val">${nd.length}</div><div class="res-trend">dokumen catatan</div></div>
   `;
 
-  // Weekly tracker chart (last 7 days)
+  // ── Hitung ringkasan absensi bulan ──
+  const absenBulan = { hadir: 0, terlambat: 0, izin: 0, sakit: 0, cuti: 0 };
+  absenData.forEach(r => {
+    const st = r.status || 'hadir';
+    if (absenBulan[st] !== undefined) absenBulan[st]++;
+  });
+  // Tambahkan dari leave_requests yang ada di rentang bulan
+  leaveData.forEach(lv => {
+    const tipe = lv.tipe;
+    if (!tipe) return;
+    // Hitung berapa hari dalam bulan ini yang tercover leave ini
+    const lvFrom = new Date(Math.max(new Date(lv.dari_tanggal), new Date(firstDay)));
+    const lvTo = new Date(Math.min(new Date(lv.sampai_tanggal), new Date(lastDay)));
+    for (let d = new Date(lvFrom); d <= lvTo; d.setDate(d.getDate() + 1)) {
+      const ds = d.toISOString().split('T')[0];
+      // Jangan double-count jika sudah ada di attendance
+      const alreadyCounted = absenData.some(a => a.user_name === lv.user_name && a.tanggal === ds);
+      if (!alreadyCounted && absenBulan[tipe] !== undefined) absenBulan[tipe]++;
+    }
+  });
+
+  ['hadir','terlambat','izin','sakit','cuti'].forEach(st => {
+    const el = document.getElementById('asc-' + st);
+    if (el) el.textContent = absenBulan[st];
+  });
+
+  // ── Grafik kehadiran harian dalam bulan ──
+  const chartEl = document.getElementById('absen-daily-chart');
+  if (chartEl) {
+    const allDays = [];
+    for (let d = 1; d <= lastDate; d++) {
+      allDays.push(String(d).padStart(2, '0'));
+    }
+    const todayFull = todayStr();
+    chartEl.innerHTML = allDays.map(day => {
+      const ds = selectedMonth + '-' + day;
+      const recs = absenData.filter(a => a.tanggal === ds);
+      const total = recs.length;
+      const hadir = recs.filter(r => r.status === 'hadir').length;
+      const terlambat = recs.filter(r => r.status === 'terlambat').length;
+      const isFuture = ds > todayFull;
+      const isToday = ds === todayFull;
+      // Tinggi bar proporsional terhadap max total hadir di bulan ini
+      const maxTotal = Math.max(...allDays.map(d2 => absenData.filter(a => a.tanggal === selectedMonth+'-'+d2).length), 1);
+      const barH = total ? Math.max(8, Math.round(total/maxTotal*60)) : (isFuture ? 0 : 4);
+      const barColor = isFuture ? 'var(--bg3)' : (terlambat > 0 ? '#F59E0B' : total > 0 ? '#22C55E' : '#E2E8F0');
+      const tooltipText = isFuture ? ds : `${ds}\nHadir: ${hadir}, Terlambat: ${terlambat}, Total: ${total}`;
+      return `<div class="adc-day" title="${tooltipText}">
+        <div class="adc-bar" style="height:${barH}px;background:${barColor};${isToday?'outline:2px solid var(--accent);':''}" ></div>
+        <div class="adc-lbl">${day}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Tabel rekap per karyawan ──
+  // Kumpulkan semua nama unik
+  const allNames = [...new Set([
+    ...absenData.map(r => r.user_name),
+    ...leaveData.map(r => r.user_name)
+  ])].sort();
+
+  resultAbsenCache = []; // reset untuk export
+
+  const tbody = document.getElementById('result-absen-tbody');
+  if (!allNames.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3)">Tidak ada data absensi untuk periode ini.</td></tr>';
+  } else {
+    tbody.innerHTML = allNames.map(name => {
+      const recs = absenData.filter(r => r.user_name === name);
+      const cnt = { hadir: 0, terlambat: 0, izin: 0, sakit: 0, cuti: 0 };
+      recs.forEach(r => { if (cnt[r.status] !== undefined) cnt[r.status]++; });
+
+      // Hitung leave tambahan yang tidak tercatat di attendance
+      leaveData.filter(lv => lv.user_name === name).forEach(lv => {
+        const tipe = lv.tipe;
+        if (!tipe || !cnt[tipe] === undefined) return;
+        const lvFrom = new Date(Math.max(new Date(lv.dari_tanggal), new Date(firstDay)));
+        const lvTo = new Date(Math.min(new Date(lv.sampai_tanggal), new Date(lastDay)));
+        for (let d = new Date(lvFrom); d <= lvTo; d.setDate(d.getDate() + 1)) {
+          const ds = d.toISOString().split('T')[0];
+          const alreadyCounted = recs.some(a => a.tanggal === ds);
+          if (!alreadyCounted && cnt[tipe] !== undefined) cnt[tipe]++;
+        }
+      });
+
+      // Total jam kerja
+      let totalMenit = 0;
+      recs.forEach(r => {
+        if (r.clock_in && r.clock_out) {
+          const diff = (new Date(r.clock_out) - new Date(r.clock_in)) / 60000;
+          if (diff > 0) totalMenit += diff;
+        }
+      });
+      const totalJamStr = totalMenit > 0
+        ? Math.floor(totalMenit / 60) + 'j ' + Math.round(totalMenit % 60) + 'm'
+        : '—';
+
+      // Rata-rata keterlambatan
+      const terlambatRecs = recs.filter(r => r.terlambat_menit > 0);
+      const avgTerlambat = terlambatRecs.length
+        ? Math.round(terlambatRecs.reduce((s, r) => s + (r.terlambat_menit || 0), 0) / terlambatRecs.length)
+        : 0;
+      const avgTerlambatStr = avgTerlambat ? avgTerlambat + ' mnt' : '—';
+
+      resultAbsenCache.push({ nama: name, hadir: cnt.hadir, terlambat: cnt.terlambat, izin: cnt.izin, sakit: cnt.sakit, cuti: cnt.cuti, totalJam: totalJamStr, avgTerlambat: avgTerlambatStr });
+
+      const nc = (n, v) => `<td class="num-cell ${v===0?'num-0':''}">${v||'—'}</td>`;
+      return `<tr>
+        <td class="nama-cell">${escHtml(name)}</td>
+        ${nc('hadir', cnt.hadir)}
+        ${nc('terlambat', cnt.terlambat)}
+        ${nc('izin', cnt.izin)}
+        ${nc('sakit', cnt.sakit)}
+        ${nc('cuti', cnt.cuti)}
+        <td class="num-cell">${totalJamStr}</td>
+        <td class="num-cell" style="${avgTerlambat>0?'color:#F59E0B;font-weight:600':'color:var(--text3)'}">${avgTerlambatStr}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Grafik Tracker 7 hari terakhir ──
   const weekDays = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    weekDays.push({ label: DAYS[d.getDay()].substring(0,3), date: d.toISOString().split('T')[0] });
+    weekDays.push({ label: DAYS[d.getDay()].substring(0, 3), date: d.toISOString().split('T')[0] });
   }
   const { data: _wt } = await sb.from('tracker_items').select('item_date, status, created_by, is_private').gte('item_date', weekDays[0].date);
   const weekTrk = applyPrivacy(_wt);
@@ -2329,12 +2598,12 @@ async function renderResult() {
   `).join('');
 
   // Activity distribution from tracker
-  const statCounts = {done:0,prog:0};
+  const statCounts = { done: 0, prog: 0 };
   tr.forEach(t => { statCounts[t.status]++; });
   const total = tr.length || 1;
   document.getElementById('activity-dist').innerHTML = [
-    {name:'Selesai',key:'done',color:'#22C55E'},
-    {name:'Berjalan',key:'prog',color:'#3B82F6'},
+    { name: 'Selesai', key: 'done', color: '#22C55E' },
+    { name: 'Berjalan', key: 'prog', color: '#3B82F6' },
   ].map(a => `
     <div class="activity-row">
       <div class="act-left">${a.name}</div>
@@ -2346,9 +2615,9 @@ async function renderResult() {
   // Notes by category
   const catCount = {};
   nd.forEach(n => { catCount[n.category] = (catCount[n.category] || 0) + 1; });
-  const catLabel = {finance:'Keuangan',ops:'Operasional',hr:'SDM/HR',strat:'Strategi'};
+  const catLabel = { finance: 'Keuangan', ops: 'Operasional', hr: 'SDM/HR', strat: 'Strategi' };
   const total2 = nd.length || 1;
-  document.getElementById('notes-summary').innerHTML = Object.entries(catCount).map(([k,v]) => `
+  document.getElementById('notes-summary').innerHTML = Object.entries(catCount).map(([k, v]) => `
     <div class="activity-row">
       <div class="act-left">${catLabel[k] || k}</div>
       <div class="act-bar-wrap"><div class="act-bar-fill" style="width:${Math.round(v/total2*100)}%;background:#A855F7"></div></div>
@@ -2360,6 +2629,26 @@ async function renderResult() {
 function getWeekStart() {
   const d = new Date(); d.setDate(d.getDate() - 6);
   return d.toISOString().split('T')[0];
+}
+
+// Export Excel rekap absensi dari panel Result
+function exportResultAbsenExcel() {
+  if (!resultAbsenCache.length) { alert('Tidak ada data untuk di-export.'); return; }
+  const monthInput = document.getElementById('result-month-input');
+  const period = (monthInput && monthInput.value) ? monthInput.value : todayStr().substring(0, 7);
+  const ws = XLSX.utils.json_to_sheet(resultAbsenCache.map(r => ({
+    'Nama Karyawan': r.nama,
+    'Hadir': r.hadir,
+    'Terlambat (hari)': r.terlambat,
+    'Izin': r.izin,
+    'Sakit': r.sakit,
+    'Cuti': r.cuti,
+    'Total Jam Kerja': r.totalJam,
+    'Rata-rata Terlambat': r.avgTerlambat
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Rekap Absensi');
+  XLSX.writeFile(wb, 'Rekap_Absensi_AMS_' + period + '.xlsx');
 }
 
 // ── Progress harian ────────────────────────
