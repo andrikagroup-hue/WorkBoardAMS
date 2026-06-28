@@ -630,6 +630,10 @@ textarea { resize: vertical; }
         <span class="sb-user-name" id="user-name">—</span>
         <button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#1D4ED8;font-size:11px" onclick="changeUser()" title="Ganti nama">✎</button>
       </div>
+      <div id="online-users-wrap" style="margin-top:6px;padding:4px 8px;background:#F0FDF4;border-radius:6px;display:none">
+        <div style="font-size:10px;color:#166534;font-weight:600;margin-bottom:3px">🟢 Sedang Online</div>
+        <div id="online-users-list" style="font-size:10px;color:#166534;line-height:1.7"></div>
+      </div>
     </div>
 
     <div class="nav-section">
@@ -1097,9 +1101,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
             <option value="sakit">🤒 Sakit</option>
             <option value="cuti">🏖️ Cuti</option>
           </select>
-          <button class="btn-sm" onclick="exportAbsenToExcel()"><i class="ti ti-file-spreadsheet"></i> Excel</button>
-          <button class="btn-sm" onclick="exportAbsenToPDF()"><i class="ti ti-file-type-pdf"></i> PDF</button>
-          <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Ajukan Izin</button>
+          <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Ajukan Izin / Sakit / Cuti</button>
         </div>
         <div class="form-box" id="absen-leave-form" style="display:none;margin-bottom:12px">
           <div style="font-size:13px;font-weight:600;margin-bottom:10px">📝 Ajukan Izin / Sakit / Cuti</div>
@@ -1278,6 +1280,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   loadChatLastRead();
   refreshChatUnreadBadge();
   startChatPolling();
+  initOnlinePresence();
+  initChatNotification();
 
   // Daftarkan service worker biar app ini bisa di-"Add to Home Screen" / di-install
   if ('serviceWorker' in navigator) {
@@ -2476,6 +2480,7 @@ function getPanelExportMeta() {
 
 function exportCurrentToExcel() {
   closeExportMenu();
+  if (currentPanel === 'absen') { exportAbsenToExcel(); return; }
   const meta = getPanelExportMeta()[currentPanel];
   if (!meta || !meta.getRows) { alert('Export Excel belum tersedia untuk panel ini. Gunakan Export PDF atau Screenshot PNG.'); return; }
   const rows = meta.getRows();
@@ -2515,6 +2520,7 @@ async function exportCurrentToPNG() {
 
 async function exportCurrentToPDF() {
   closeExportMenu();
+  if (currentPanel === 'absen') { exportAbsenToPDF(); return; }
   const canvas = await captureCurrentPanel();
   const { jsPDF } = window.jspdf;
   const imgData = canvas.toDataURL('image/png');
@@ -3887,69 +3893,89 @@ async function adminDeleteAbsen(id) {
 }
 
 // ── Export Excel absensi ────────────────────────────────────
+// Helper: hitung total jam kerja
+function absenTotalKerja(row) {
+  if (!row.clock_in || !row.clock_out) return '-';
+  const dur = Math.round((new Date(row.clock_out) - new Date(row.clock_in)) / 60000);
+  return Math.floor(dur/60) + ' jam ' + (dur%60) + ' menit';
+}
+function absenGPSText(lat, lng) {
+  if (!lat || !lng) return '-';
+  return lat.toFixed(5) + ', ' + lng.toFixed(5);
+}
+
 function exportAbsenToExcel() {
   if (!absenRekapCache.length) return alert('Tidak ada data untuk di-export.');
+  const filterDate = document.getElementById('absen-filter-date')?.value || absenDateStr();
   const rows = absenRekapCache.map(r => ({
     'Nama': r.user_name,
     'Tanggal': r.tanggal,
     'Status': r.status,
-    'Clock In': absenTimeStr(r.clock_in),
-    'Clock Out': absenTimeStr(r.clock_out),
+    'Jam Masuk': absenTimeStr(r.clock_in),
+    'Jam Pulang': absenTimeStr(r.clock_out),
+    'Total Jam Kerja': absenTotalKerja(r),
     'Terlambat (menit)': r.terlambat_menit || 0,
-    'Lat Masuk': r.lat_in || '',
-    'Lng Masuk': r.lng_in || '',
-    'Lat Pulang': r.lat_out || '',
-    'Lng Pulang': r.lng_out || '',
+    'Lokasi Masuk': r.lat_in ? 'https://maps.google.com/?q=' + r.lat_in + ',' + r.lng_in : '-',
+    'Lokasi Pulang': r.lat_out ? 'https://maps.google.com/?q=' + r.lat_out + ',' + r.lng_out : '-',
     'Keterangan': r.keterangan || ''
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length + 2, 18) }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Absensi');
-  XLSX.writeFile(wb, `Absensi_AMS_${document.getElementById('absen-filter-date')?.value || absenDateStr()}.xlsx`);
+  XLSX.writeFile(wb, 'Absensi_AMS_' + filterDate + '.xlsx');
 }
 
-// ── Export PDF absensi ──────────────────────────────────────
 function exportAbsenToPDF() {
   if (!absenRekapCache.length) return alert('Tidak ada data untuk di-export.');
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape' });
   const filterDate = document.getElementById('absen-filter-date')?.value || absenDateStr();
 
-  doc.setFontSize(14);
-  doc.text('Rekap Absensi PT. Andrika Mitra Solusi', 14, 15);
-  doc.setFontSize(10);
-  doc.text('Tanggal: ' + filterDate, 14, 22);
+  doc.setFontSize(13); doc.setFont(undefined,'bold');
+  doc.text('Rekap Absensi PT. Andrika Mitra Solusi', 14, 14);
+  doc.setFontSize(9); doc.setFont(undefined,'normal');
+  doc.text('Tanggal: ' + filterDate + '   |   Dicetak: ' + new Date().toLocaleString('id-ID'), 14, 21);
+  doc.setDrawColor(180,180,180); doc.line(14, 24, 283, 24);
 
-  const headers = [['Nama','Status','Clock In','Clock Out','Terlambat','Keterangan']];
+  const headers = ['Nama','Status','Jam Masuk','Jam Pulang','Total Kerja','Terlambat','Lok. Masuk','Lok. Pulang','Keterangan'];
+  const colW   = [38,    20,      20,         20,          28,           20,          42,           42,           37];
   const rows = absenRekapCache.map(r => [
-    r.user_name, r.status, absenTimeStr(r.clock_in), absenTimeStr(r.clock_out),
-    r.terlambat_menit ? r.terlambat_menit + ' mnt' : '—', r.keterangan || ''
+    r.user_name, r.status,
+    absenTimeStr(r.clock_in), absenTimeStr(r.clock_out),
+    absenTotalKerja(r),
+    r.terlambat_menit ? r.terlambat_menit + ' mnt' : '-',
+    absenGPSText(r.lat_in, r.lng_in),
+    absenGPSText(r.lat_out, r.lng_out),
+    r.keterangan || '-'
   ]);
 
-  // Simple manual table
-  let y = 30;
-  doc.setFontSize(9);
-  const cols = [50,30,25,25,25,50];
-  const startX = 14;
-  headers[0].forEach((h, i) => {
-    let x = startX + cols.slice(0,i).reduce((a,b)=>a+b,0);
+  let y = 31; const startX = 14;
+  doc.setFontSize(8);
+  headers.forEach((h, i) => {
     doc.setFont(undefined,'bold');
-    doc.text(h, x, y);
+    doc.text(h, startX + colW.slice(0,i).reduce((a,b)=>a+b,0), y);
   });
-  y += 6;
-  rows.forEach(row => {
-    if (y > 190) { doc.addPage(); y = 20; }
+  y += 2; doc.line(14, y, 283, y); y += 5;
+
+  rows.forEach((row, ri) => {
+    if (y > 193) { doc.addPage(); y = 18; }
+    if (ri % 2 === 0) { doc.setFillColor(248,250,252); doc.rect(startX, y-4, colW.reduce((a,b)=>a+b,0), 7, 'F'); }
     row.forEach((cell, i) => {
-      let x = startX + cols.slice(0,i).reduce((a,b)=>a+b,0);
+      const x = startX + colW.slice(0,i).reduce((a,b)=>a+b,0);
       doc.setFont(undefined,'normal');
-      doc.text(String(cell), x, y);
+      const s = String(cell);
+      const max = Math.floor(colW[i] / 1.7);
+      doc.text(s.length > max ? s.substring(0, max) + '…' : s, x, y);
     });
-    y += 6;
+    y += 7;
   });
 
-  doc.save(`Absensi_AMS_${filterDate}.pdf`);
+  doc.setFontSize(7); doc.setTextColor(150);
+  doc.text('WorkBoard AMS — PT. Andrika Mitra Solusi', 14, 204);
+  doc.text('Total: ' + rows.length + ' karyawan', 248, 204);
+  doc.save('Absensi_AMS_' + filterDate + '.pdf');
 }
-
 // Auto-refresh rekap absensi setiap 30 detik saat panel absen aktif
 setInterval(() => {
   if (currentPanel === 'absen') {
@@ -3957,6 +3983,129 @@ setInterval(() => {
     renderAbsenRekap();
   }
 }, 30000);
+
+// ============================================================
+// ONLINE PRESENCE — siapa yang sedang buka WorkBoard
+// Pakai tabel sederhana "online_presence" di Supabase
+// ============================================================
+const ONLINE_HEARTBEAT_MS = 20000; // update tiap 20 detik
+const ONLINE_TIMEOUT_S = 60; // dianggap offline setelah 60 detik
+
+async function initOnlinePresence() {
+  // Upsert kehadiran user saat ini
+  async function heartbeat() {
+    const user = getUser();
+    try {
+      await sb.from('online_presence').upsert(
+        { user_name: user, last_seen: new Date().toISOString() },
+        { onConflict: 'user_name' }
+      );
+    } catch(e) { /* tabel mungkin belum ada, diam saja */ }
+    await renderOnlineUsers();
+  }
+
+  heartbeat();
+  setInterval(heartbeat, ONLINE_HEARTBEAT_MS);
+
+  // Hapus presence saat tab ditutup
+  window.addEventListener('beforeunload', () => {
+    const user = getUser();
+    navigator.sendBeacon && sb.from('online_presence').delete().eq('user_name', user);
+  });
+}
+
+async function renderOnlineUsers() {
+  try {
+    const cutoff = new Date(Date.now() - ONLINE_TIMEOUT_S * 1000).toISOString();
+    const { data, error } = await sb.from('online_presence').select('user_name,last_seen').gte('last_seen', cutoff);
+    if (error) return; // tabel belum ada, skip
+    const wrap = document.getElementById('online-users-wrap');
+    const list = document.getElementById('online-users-list');
+    if (!data || !data.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    const currentUser = getUser();
+    list.innerHTML = data.map(u =>
+      '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:6px">' +
+      '<span style="width:6px;height:6px;border-radius:50%;background:#22C55E;display:inline-block"></span>' +
+      (u.user_name === currentUser ? '<strong>' + u.user_name + '</strong> (Kamu)' : u.user_name) +
+      '</span>'
+    ).join('<br>');
+  } catch(e) {}
+}
+
+// ============================================================
+// NOTIFIKASI CHAT — pop-up browser saat ada pesan baru
+// ============================================================
+let lastNotifChatMsgId = null;
+
+async function initChatNotification() {
+  // Minta izin notifikasi
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  // Polling pesan baru setiap 15 detik (sudah ada chatPollInterval, kita hook di sini)
+  setInterval(checkNewChatMessages, 15000);
+}
+
+async function checkNewChatMessages() {
+  if (currentPanel === 'chat') return; // sedang buka chat, tidak perlu notif
+  try {
+    const { data } = await sb.from('chat_messages')
+      .select('id,sender,body,created_at')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (!data || !data.length) return;
+    const latest = data[0];
+    if (latest.id === lastNotifChatMsgId) return; // sudah dinotif
+    if (lastNotifChatMsgId === null) { lastNotifChatMsgId = latest.id; return; } // init
+    if (latest.sender === getUser()) { lastNotifChatMsgId = latest.id; return; } // pesan sendiri
+
+    lastNotifChatMsgId = latest.id;
+
+    // Browser notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const n = new Notification('💬 WorkBoard — Pesan Baru', {
+        body: latest.sender + ': ' + (latest.body || '').substring(0, 80),
+        icon: 'apple-touch-icon.png',
+        badge: 'apple-touch-icon.png',
+        tag: 'worktalk'
+      });
+      n.onclick = () => {
+        window.focus();
+        const chatNav = document.querySelector('.nav-item[onclick*="chat"]');
+        if (chatNav) chatNav.click();
+        n.close();
+      };
+    }
+
+    // In-app toast popup
+    showChatToast(latest.sender, latest.body);
+  } catch(e) {}
+}
+
+function showChatToast(sender, body) {
+  let toast = document.getElementById('chat-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'chat-toast';
+    toast.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:9999;background:#1D4ED8;color:#fff;border-radius:12px;padding:12px 16px;max-width:280px;box-shadow:0 4px 20px rgba(0,0,0,0.25);cursor:pointer;transition:opacity 0.3s;font-size:13px;line-height:1.4';
+    toast.onclick = () => {
+      const chatNav = document.querySelector('.nav-item[onclick*="chat"]');
+      if (chatNav) chatNav.click();
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    };
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = '<div style="font-weight:700;font-size:12px;opacity:0.8;margin-bottom:2px">💬 Work Talk</div><strong>' + sender + '</strong>: ' + (body||'').substring(0,60) + (body && body.length > 60 ? '…' : '');
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => { if(toast.parentNode) toast.remove(); }, 300);
+  }, 5000);
+}
 
 </script>
 </body>
