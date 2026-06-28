@@ -51,9 +51,19 @@
 }
 
 body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text1); }
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='18' fill='none' stroke='%232563eb' stroke-width='1.5'/%3E%3Ccircle cx='40' cy='40' r='10' fill='none' stroke='%232563eb' stroke-width='1'/%3E%3Ccircle cx='40' cy='40' r='3' fill='%232563eb'/%3E%3Cpath d='M40 22 L40 10 M40 58 L40 70 M22 40 L10 40 M58 40 L70 40' stroke='%232563eb' stroke-width='1' stroke-linecap='round'/%3E%3Cpath d='M27.5 27.5 L18 18 M52.5 52.5 L62 62 M52.5 27.5 L62 18 M27.5 52.5 L18 62' stroke='%232563eb' stroke-width='0.8' stroke-linecap='round'/%3E%3Ccircle cx='0' cy='0' r='3' fill='%232563eb'/%3E%3Ccircle cx='80' cy='0' r='3' fill='%232563eb'/%3E%3Ccircle cx='0' cy='80' r='3' fill='%232563eb'/%3E%3Ccircle cx='80' cy='80' r='3' fill='%232563eb'/%3E%3Cellipse cx='40' cy='40' rx='24' ry='10' fill='none' stroke='%232563eb' stroke-width='0.6' opacity='0.5'/%3E%3Cellipse cx='40' cy='40' rx='10' ry='24' fill='none' stroke='%232563eb' stroke-width='0.6' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 80px 80px;
+}
 
 /* ── App shell ─────────────────────────────── */
-.app { display: flex; height: 100vh; overflow: hidden; }
+.app { display: flex; height: 100vh; overflow: hidden; position: relative; z-index: 1; }
 
 /* ── Sidebar ───────────────────────────────── */
 .sidebar {
@@ -827,6 +837,13 @@ textarea { resize: vertical; }
       </button>
     </div>
 
+    <div class="nav-section">
+      <div class="nav-label">ℹ️ Bantuan</div>
+      <button class="nav-item" onclick="switchPanel('faq',this)">
+        <i class="ti ti-help-circle" aria-hidden="true"></i> Panduan & FAQ
+      </button>
+    </div>
+
     <div class="sb-progress">
       <div class="prog-label">Progress Tracker Hari Ini</div>
       <div class="prog-bar"><div class="prog-fill" id="daily-prog" style="width:0%"></div></div>
@@ -1489,6 +1506,18 @@ ON CONFLICT DO NOTHING;</code>
         </div>
       </div>
 
+      <!-- ── FAQ / Panduan ──────────────────────── -->
+      <div class="panel" id="panel-faq">
+        <div style="max-width:720px;margin:0 auto">
+          <div style="background:linear-gradient(135deg,#2563eb,#1d4ed8);border-radius:var(--radius-lg);padding:20px 24px;color:#fff;margin-bottom:18px">
+            <div style="font-size:18px;font-weight:700;margin-bottom:4px">📖 Panduan WorkBoard AMS</div>
+            <div style="font-size:12px;opacity:0.85">PT. Andrika Mitra Solusi — Manajemen Harian Perusahaan</div>
+          </div>
+
+          <div id="faq-list"></div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1706,7 +1735,8 @@ async function switchPanel(id, el) {
     chat: 'Work Talk',
     absen: 'Absensi',
     adminusers: '⚙️ Kelola User',
-    links: '🔗 Quick Links'
+    links: '🔗 Quick Links',
+    faq: '📖 Panduan & FAQ'
   };
   document.getElementById('panel-title').textContent = titles[id] || id;
   updateGlobalSearchFilter(id);
@@ -1723,6 +1753,7 @@ async function switchPanel(id, el) {
   else if (id === 'absen') await renderAbsen();
   else if (id === 'adminusers') await renderAdminUsers();
   else if (id === 'links') await renderLinks();
+  else if (id === 'faq') renderFaq();
 }
 
 // ── GLOBAL SEARCH & FILTER (dinamis per menu) ──────────────
@@ -4052,6 +4083,10 @@ const quillNp = new Quill('#np-body-editor', {
       <i class="ti ti-settings"></i>
       <span>Admin</span>
     </button>
+    <button class="bn-item" onclick="switchPanelMobile('faq',this)" aria-label="Panduan">
+      <i class="ti ti-help-circle"></i>
+      <span>Panduan</span>
+    </button>
   </div>
 </nav>
 
@@ -4713,12 +4748,9 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;min-width:110px">
         <span class="admin-leave-badge alb-${st}">${statusLabel[st] || st}</span>
-        ${st === 'pending' ? `
-          <button class="btn-sm" style="color:var(--success);border-color:var(--success)" onclick="adminUpdateLeaveStatus('${lv.id}','approved')"><i class="ti ti-check"></i> Setujui</button>
-          <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminUpdateLeaveStatus('${lv.id}','rejected')"><i class="ti ti-x"></i> Tolak</button>
-        ` : `
-          <button class="btn-sm" onclick="adminUpdateLeaveStatus('${lv.id}','pending')" title="Reset ke menunggu"><i class="ti ti-refresh"></i> Reset</button>
-        `}
+        ${st !== 'approved' ? `<button class="btn-sm" style="color:var(--success);border-color:var(--success)" onclick="adminUpdateLeaveStatus('${lv.id}','approved')"><i class="ti ti-check"></i> Setujui</button>` : ''}
+        ${st !== 'rejected' ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminUpdateLeaveStatus('${lv.id}','rejected')"><i class="ti ti-x"></i> Tolak</button>` : ''}
+        ${st !== 'pending' ? `<button class="btn-sm" onclick="adminUpdateLeaveStatus('${lv.id}','pending')" title="Reset ke menunggu"><i class="ti ti-refresh"></i> Reset</button>` : ''}
         <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteLeave('${lv.id}')"><i class="ti ti-trash"></i></button>
       </div>
     </div>`;
@@ -4877,6 +4909,113 @@ async function renderLinks() {
       `).join('')}
     </div>
   `).join('');
+}
+
+// ── FAQ / Panduan ──────────────────────────────────────────────
+function renderFaq() {
+  const el = document.getElementById('faq-list');
+  if (!el) return;
+
+  const faqs = [
+    {
+      section: '🚀 Memulai WorkBoard',
+      items: [
+        { q: 'Bagaimana cara login?', a: 'WorkBoard menggunakan nama sebagai identitas. Klik ikon nama di pojok kiri atas (atau tombol nama di HP), lalu masukkan nama kamu. Nama ini akan dipakai untuk semua data yang kamu simpan.' },
+        { q: 'Siapa yang bisa jadi Admin?', a: 'Akun dengan nama yang mengandung kata <strong>admin</strong>, <strong>bos</strong>, atau <strong>hrd</strong> otomatis mendapatkan akses admin. Contoh: "Admin", "BosUtama", "HRD".' },
+        { q: 'Apakah data tersimpan di cloud?', a: 'Ya. Semua data tersimpan di Supabase (cloud database). Bisa diakses dari HP, desktop, maupun browser mana saja selama terhubung internet.' },
+      ]
+    },
+    {
+      section: '📅 Daily Schedule',
+      items: [
+        { q: 'Cara menambah jadwal?', a: 'Klik tombol <strong>+ Tambah</strong> di pojok kanan atas, isi waktu, judul kegiatan, lokasi, dan kategori, lalu klik Simpan.' },
+        { q: 'Apa arti warna kategori?', a: '🔵 Umum = kegiatan biasa · 🟡 Penting = prioritas tinggi · 🟢 Selesai = sudah dikerjakan · 🟣 Meeting = rapat · 🔴 Darurat = mendesak.' },
+        { q: 'Apa itu mode Privat?', a: 'Jadwal yang diset Privat hanya bisa dilihat oleh kamu sendiri. Jadwal Publik bisa dilihat semua anggota tim.' },
+      ]
+    },
+    {
+      section: '⏱️ Time Plan Tracker',
+      items: [
+        { q: 'Apa bedanya Tracker dengan Schedule?', a: 'Schedule untuk mencatat rencana per jam dalam sehari. Tracker untuk memantau progress tugas/pekerjaan per hari — bisa diupdate statusnya (Belum Mulai, Dikerjakan, Selesai, dll).' },
+        { q: 'Apa itu Project/Milestone Tracker?', a: 'Di bagian bawah Tracker terdapat Project Tracker untuk memantau milestone proyek jangka panjang, bukan hanya harian.' },
+        { q: 'Apa arti status tracker?', a: '⬜ Belum Mulai · 🔵 Dikerjakan · ✅ Selesai · ⏸️ On Hold · ⏭️ Dilewati.' },
+      ]
+    },
+    {
+      section: '👥 SDM — Absensi & Izin',
+      items: [
+        { q: 'Cara Clock In/Out?', a: 'Buka panel <strong>Absensi</strong>, klik tombol <strong>Clock In</strong>. Sistem akan meminta foto dan lokasi GPS. Klik <strong>Clock Out</strong> saat selesai bekerja.' },
+        { q: 'Cara mengajukan izin/sakit/cuti?', a: 'Di panel Absensi, scroll ke bawah ke bagian "Ajukan Izin/Sakit/Cuti", pilih tipe, isi tanggal, dan alasan, lalu klik Ajukan. Status awal adalah <strong>Menunggu</strong> hingga disetujui admin.' },
+        { q: 'Admin bagaimana menyetujui izin?', a: 'Admin/Bos/HRD buka panel <strong>Kelola User</strong> → tab <strong>Kelola Izin/Cuti</strong>. Di sana bisa klik Setujui, Tolak (dengan alasan), atau Reset ke Menunggu.' },
+        { q: 'Apa arti status izin?', a: '⏳ Menunggu = belum diproses admin · ✅ Disetujui = disetujui · ❌ Ditolak = ditolak (akan ada catatan alasan dari admin).' },
+      ]
+    },
+    {
+      section: '💬 Work Talk (Chat)',
+      items: [
+        { q: 'Apa itu channel di Work Talk?', a: 'Ada 3 jenis channel: <strong>Umum</strong> (semua bisa baca), <strong>Bagian</strong> (per divisi), dan <strong>DM</strong> (pesan langsung ke satu orang).' },
+        { q: 'Cara mengirim pesan ke seseorang?', a: 'Klik ikon + di Work Talk, pilih "DM", lalu pilih nama rekan. Chat akan terbuka khusus antara kamu berdua.' },
+        { q: 'Bisa edit atau hapus pesan?', a: 'Ya. Hover/tap pesan, lalu klik ikon pensil untuk edit atau ikon mata untuk sembunyikan pesan dari pandanganmu.' },
+      ]
+    },
+    {
+      section: '📊 Result (Laporan)',
+      items: [
+        { q: 'Apa yang ditampilkan di Result?', a: 'Ringkasan bulanan: jumlah jadwal, tracker, logbook, catatan, rekap kehadiran per karyawan, grafik aktivitas harian, dan distribusi status/kategori.' },
+        { q: 'Angka Sakit/Izin/Cuti di Result artinya apa?', a: 'Angka tersebut adalah <strong>total hari</strong> (bukan jumlah orang). Misal "Sakit: 3" artinya ada 3 hari total sakit di bulan itu dari semua karyawan.' },
+        { q: 'Cara export laporan?', a: 'Klik tombol <strong>Export</strong> di pojok kanan atas. Tersedia format Excel, PDF, Screenshot PNG, atau Backup JSON.' },
+      ]
+    },
+    {
+      section: '🔗 Quick Links',
+      items: [
+        { q: 'Apa itu Quick Links?', a: 'Panel untuk menyimpan dan mengakses semua link penting perusahaan dalam satu tempat. Contoh: SiAkun, website company, dokumen cloud, dsb.' },
+        { q: 'Cara menambah link baru?', a: 'Buka panel <strong>Semua Link</strong>, klik <strong>+ Tambah Link</strong>, isi nama, URL, kategori, dan emoji, lalu simpan.' },
+      ]
+    },
+    {
+      section: '📱 Aplikasi & PWA',
+      items: [
+        { q: 'Cara install WorkBoard di HP?', a: 'Buka WorkBoard di browser Chrome (Android) atau Safari (iPhone). Klik ikon "Tambah ke Layar Utama" yang muncul di browser. WorkBoard akan terinstall seperti aplikasi biasa.' },
+        { q: 'Kenapa tampilan HP berbeda dengan desktop?', a: 'Di HP, sidebar diganti dengan navigasi bawah (bottom nav). Geser ke kanan untuk melihat semua menu. Fungsinya sama persis dengan desktop.' },
+        { q: 'Apakah bisa dipakai offline?', a: 'Tampilan bisa muncul offline (PWA cache), tapi data memerlukan koneksi internet karena tersimpan di Supabase cloud.' },
+      ]
+    },
+  ];
+
+  const isAdmin = getUser().toLowerCase().includes('admin') || getUser().toLowerCase().includes('bos') || getUser().toLowerCase().includes('hrd');
+
+  el.innerHTML = faqs.map(section => `
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--text1);padding:8px 0;border-bottom:2px solid var(--accent);margin-bottom:10px">${section.section}</div>
+      ${section.items.map((item, i) => `
+        <div class="faq-item" id="faq-${section.section}-${i}" style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--surface);font-size:12.5px;font-weight:600;color:var(--text1);gap:8px"
+            onclick="toggleFaq('faq-body-${section.section}-${i}',this)">
+            <span>❓ ${item.q}</span>
+            <i class="ti ti-chevron-down" style="flex-shrink:0;font-size:14px;transition:transform .2s;color:var(--text3)"></i>
+          </div>
+          <div id="faq-body-${section.section}-${i}" style="display:none;padding:10px 14px;font-size:12px;color:var(--text2);background:var(--bg2);border-top:1px solid var(--border);line-height:1.6">
+            ${item.a}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('') + `
+    <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1px solid #bae6fd;border-radius:var(--radius-lg);padding:14px 16px;margin-top:8px;font-size:12px;color:#0c4a6e">
+      <div style="font-weight:700;margin-bottom:4px">💡 Butuh bantuan lebih lanjut?</div>
+      Hubungi admin perusahaan atau cek panel <strong>Work Talk</strong> untuk koordinasi dengan tim.
+    </div>
+  `;
+}
+
+function toggleFaq(bodyId, headerEl) {
+  const body = document.getElementById(bodyId);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  const icon = headerEl.querySelector('.ti-chevron-down');
+  if (icon) icon.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 function openLinkForm(id) {
