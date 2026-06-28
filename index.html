@@ -1382,7 +1382,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
       <!-- ── Admin: Kelola User ─────────────────── -->
       <div class="panel" id="panel-adminusers">
         <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#92400E">
-          <strong>⚠️ Panel Admin</strong> — Hanya terlihat oleh akun dengan nama mengandung <em>admin</em>, <em>bos</em>, atau <em>hrd</em>.
+          <strong>⚠️ Panel Admin</strong> — Hanya terlihat oleh akun yang memiliki hak akses admin.
           Menghapus user akan menghapus seluruh data kehadiran, leave, jadwal, tracker, dan catatan milik user tersebut. Tindakan ini <strong>tidak dapat dibatalkan</strong>.
         </div>
 
@@ -4921,7 +4921,7 @@ function renderFaq() {
       section: '🚀 Memulai WorkBoard',
       items: [
         { q: 'Bagaimana cara login?', a: 'WorkBoard menggunakan nama sebagai identitas. Klik ikon nama di pojok kiri atas (atau tombol nama di HP), lalu masukkan nama kamu. Nama ini akan dipakai untuk semua data yang kamu simpan.' },
-        { q: 'Siapa yang bisa jadi Admin?', a: 'Akun dengan nama yang mengandung kata <strong>admin</strong>, <strong>bos</strong>, atau <strong>hrd</strong> otomatis mendapatkan akses admin. Contoh: "Admin", "BosUtama", "HRD".' },
+        { q: 'Siapa yang bisa jadi Admin?', a: 'Akses admin diberikan oleh manajemen PT. Andrika Mitra Solusi. Hubungi atasan atau HRD jika memerlukan akses lebih.' },
         { q: 'Apakah data tersimpan di cloud?', a: 'Ya. Semua data tersimpan di Supabase (cloud database). Bisa diakses dari HP, desktop, maupun browser mana saja selama terhubung internet.' },
       ]
     },
