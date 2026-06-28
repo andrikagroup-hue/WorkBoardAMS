@@ -673,6 +673,14 @@ textarea { resize: vertical; }
     </div>
 
     <div class="nav-section">
+      <div class="nav-label">SDM</div>
+      <button class="nav-item" onclick="switchPanel('absen',this)">
+        <i class="ti ti-fingerprint" aria-hidden="true"></i> Absensi
+        <span class="nav-badge badge-blue" id="badge-absen"></span>
+      </button>
+    </div>
+
+    <div class="nav-section">
       <div class="nav-label">Laporan</div>
       <button class="nav-item" onclick="switchPanel('result',this)">
         <i class="ti ti-chart-bar" aria-hidden="true"></i> Result
@@ -1067,6 +1075,57 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
         </div>
       </div>
 
+      <!-- ── Absensi ─────────────────────────── -->
+      <div class="panel" id="panel-absen">
+        <div id="absen-setup-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">
+          ⚠️ <strong>Setup diperlukan:</strong> Tabel absensi belum ada. Jalankan SQL di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh.<br>
+          <code id="absen-sql-code" style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;user-select:all;white-space:pre-wrap"></code>
+          <button onclick="document.getElementById('absen-setup-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
+        </div>
+        <div id="absen-today-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:10px">📋 Status Absen Hari Ini — <span id="absen-today-date"></span></div>
+          <div id="absen-today-info" style="font-size:12px;color:var(--text2)"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...</div>
+          <div id="absen-action-btns" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+          <input type="date" id="absen-filter-date" style="font-size:12px" onchange="renderAbsenRekap()" />
+          <select id="absen-filter-status" class="global-filter" onchange="renderAbsenRekap()" style="font-size:12px">
+            <option value="">Semua Status</option>
+            <option value="hadir">✅ Hadir</option>
+            <option value="terlambat">⚠️ Terlambat</option>
+            <option value="izin">📝 Izin</option>
+            <option value="sakit">🤒 Sakit</option>
+            <option value="cuti">🏖️ Cuti</option>
+          </select>
+          <button class="btn-sm" onclick="exportAbsenToExcel()"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+          <button class="btn-sm" onclick="exportAbsenToPDF()"><i class="ti ti-file-type-pdf"></i> PDF</button>
+          <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Ajukan Izin</button>
+        </div>
+        <div class="form-box" id="absen-leave-form" style="display:none;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px">📝 Ajukan Izin / Sakit / Cuti</div>
+          <div class="form-row">
+            <select id="leave-type" style="max-width:140px">
+              <option value="izin">📝 Izin</option>
+              <option value="sakit">🤒 Sakit</option>
+              <option value="cuti">🏖️ Cuti</option>
+            </select>
+            <input type="date" id="leave-date-from" />
+            <input type="date" id="leave-date-to" />
+          </div>
+          <div class="form-row">
+            <input id="leave-reason" placeholder="Alasan / keterangan..." style="flex:1" />
+          </div>
+          <div class="form-actions">
+            <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='none'">Batal</button>
+            <button class="btn-sm btn-primary" onclick="submitLeave()">Ajukan</button>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:8px">📊 Rekap Absensi</div>
+        <div id="absen-rekap-table" style="overflow-x:auto">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat rekap...</div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1269,7 +1328,8 @@ async function switchPanel(id, el) {
     todo: 'To Do',
     result: 'Result — Laporan',
     notepad: 'Notepad',
-    chat: 'Work Talk'
+    chat: 'Work Talk',
+    absen: 'Absensi'
   };
   document.getElementById('panel-title').textContent = titles[id] || id;
   updateGlobalSearchFilter(id);
@@ -1283,6 +1343,7 @@ async function switchPanel(id, el) {
   else if (id === 'result') await renderResult();
   else if (id === 'notepad') await renderNotepad();
   else if (id === 'chat') await renderChat();
+  else if (id === 'absen') await renderAbsen();
 }
 
 // ── GLOBAL SEARCH & FILTER (dinamis per menu) ──────────────
@@ -3383,6 +3444,11 @@ const quillNp = new Quill('#np-body-editor', {
       <span>Work Talk</span>
       <span class="bn-badge hidden" id="bn-badge-chat"></span>
     </button>
+    <button class="bn-item" onclick="switchPanelMobile('absen',this)" aria-label="Absensi">
+      <i class="ti ti-fingerprint"></i>
+      <span>Absensi</span>
+      <span class="bn-badge hidden" id="bn-badge-absen"></span>
+    </button>
     <button class="bn-item" onclick="switchPanelMobile('result',this)" aria-label="Result">
       <i class="ti ti-chart-bar"></i>
       <span>Result</span>
@@ -3460,6 +3526,438 @@ var badgeObserver = new MutationObserver(syncBottomNavBadges);
     });
   };
 })();
+
+
+// ============================================================
+// ABSENSI — WorkBoard AMS
+// Fitur: Clock In/Out, Izin/Sakit/Cuti, GPS, Foto Selfie
+// Real-time, Export Excel/PDF, Admin-only delete/edit
+// ============================================================
+
+const ABSEN_SQL = `-- Jalankan di Supabase SQL Editor
+CREATE TABLE IF NOT EXISTS attendance (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_name text NOT NULL,
+  tanggal date NOT NULL,
+  clock_in timestamptz,
+  clock_out timestamptz,
+  status text NOT NULL DEFAULT 'hadir', -- hadir | terlambat | izin | sakit | cuti
+  terlambat_menit int DEFAULT 0,
+  lat_in double precision,
+  lng_in double precision,
+  lat_out double precision,
+  lng_out double precision,
+  foto_in text,
+  foto_out text,
+  keterangan text,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS leave_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_name text NOT NULL,
+  tipe text NOT NULL, -- izin | sakit | cuti
+  dari_tanggal date NOT NULL,
+  sampai_tanggal date NOT NULL,
+  alasan text,
+  status text DEFAULT 'approved', -- auto-approved for now
+  created_at timestamptz DEFAULT now()
+);
+
+-- RLS: semua bisa baca, tapi hanya bisa insert/update/delete milik sendiri
+ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE leave_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "read_all_attendance" ON attendance FOR SELECT USING (true);
+CREATE POLICY "insert_own_attendance" ON attendance FOR INSERT WITH CHECK (true);
+CREATE POLICY "update_own_attendance" ON attendance FOR UPDATE USING (true);
+
+CREATE POLICY "read_all_leave" ON leave_requests FOR SELECT USING (true);
+CREATE POLICY "insert_own_leave" ON leave_requests FOR INSERT WITH CHECK (true);`;
+
+const JAM_MASUK = 8; // 08:00 = terlambat jika clock_in > jam ini
+
+// ── Helpers ────────────────────────────────────────────────
+function absenDateStr(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function absenTimeStr(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+}
+
+function absenStatusLabel(status) {
+  const map = { hadir:'✅ Hadir', terlambat:'⚠️ Terlambat', izin:'📝 Izin', sakit:'🤒 Sakit', cuti:'🏖️ Cuti' };
+  return map[status] || status;
+}
+
+function absenStatusColor(status) {
+  const map = { hadir:'#22C55E', terlambat:'#F59E0B', izin:'#3B82F6', sakit:'#EF4444', cuti:'#8B5CF6' };
+  return map[status] || '#94A3B8';
+}
+
+// Get GPS koordinat
+function getGPS() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve({lat: null, lng: null});
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({lat: pos.coords.latitude, lng: pos.coords.longitude}),
+      () => resolve({lat: null, lng: null}),
+      {timeout: 8000}
+    );
+  });
+}
+
+// Ambil foto selfie via kamera
+function takeSelfie() {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'user';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = (ev) => resolve(ev.target.result); // base64
+      reader.readAsDataURL(file);
+    };
+    input.oncancel = () => resolve(null);
+    input.click();
+  });
+}
+
+// ── Render panel Absensi ────────────────────────────────────
+async function renderAbsen() {
+  // Set tanggal hari ini di date input filter
+  const today = absenDateStr();
+  const filterEl = document.getElementById('absen-filter-date');
+  if (filterEl && !filterEl.value) filterEl.value = today;
+
+  const dateEl = document.getElementById('absen-today-date');
+  if (dateEl) {
+    const now = new Date();
+    dateEl.textContent = now.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  }
+
+  await renderAbsenToday();
+  await renderAbsenRekap();
+}
+
+// Cek status absen hari ini untuk user yang sedang login
+async function renderAbsenToday() {
+  const user = getUser();
+  const today = absenDateStr();
+  const infoEl = document.getElementById('absen-today-info');
+  const btnEl = document.getElementById('absen-action-btns');
+
+  infoEl.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...';
+  btnEl.innerHTML = '';
+
+  try {
+    // Cek tabel ada atau tidak
+    const { data, error } = await withTimeout(
+      sb.from('attendance').select('*').eq('user_name', user).eq('tanggal', today).maybeSingle()
+    );
+
+    if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+      // Tabel belum ada — tampilkan setup banner
+      document.getElementById('absen-sql-code').textContent = ABSEN_SQL;
+      document.getElementById('absen-setup-banner').style.display = 'block';
+      infoEl.innerHTML = '<span style="color:var(--danger)">⚠️ Tabel belum ada — ikuti petunjuk setup di atas.</span>';
+      return;
+    }
+
+    if (error) throw error;
+
+    // Cek leave (izin/sakit/cuti) hari ini
+    const { data: leaveData } = await withTimeout(
+      sb.from('leave_requests').select('*').eq('user_name', user).lte('dari_tanggal', today).gte('sampai_tanggal', today).maybeSingle()
+    );
+
+    if (leaveData) {
+      infoEl.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:16px;font-weight:700;color:${absenStatusColor(leaveData.tipe)}">${absenStatusLabel(leaveData.tipe)}</span>
+          <span style="color:var(--text2)">Keterangan: ${leaveData.alasan || '—'}</span>
+          <span style="color:var(--text3);font-size:11px">Periode: ${leaveData.dari_tanggal} s/d ${leaveData.sampai_tanggal}</span>
+        </div>`;
+      return;
+    }
+
+    if (!data) {
+      // Belum absen sama sekali hari ini
+      infoEl.innerHTML = `<span style="color:var(--text3)">Belum absen hari ini.</span>`;
+      btnEl.innerHTML = `
+        <button class="btn-sm btn-primary" onclick="doClockIn()"><i class="ti ti-login"></i> Clock In</button>
+        <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Izin / Sakit / Cuti</button>`;
+    } else if (data.clock_in && !data.clock_out) {
+      // Sudah clock in, belum clock out
+      const late = data.terlambat_menit > 0 ? ` <span style="color:#F59E0B">(Terlambat ${data.terlambat_menit} menit)</span>` : '';
+      infoEl.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${absenStatusLabel(data.status)}</span>
+          <span>🕐 Masuk: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
+          ${data.lat_in ? `<span style="color:var(--text3);font-size:11px">📍 GPS: ${data.lat_in.toFixed(5)}, ${data.lng_in.toFixed(5)}</span>` : ''}
+          ${data.foto_in ? `<img src="${data.foto_in}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;margin-top:4px" />` : ''}
+        </div>`;
+      btnEl.innerHTML = `<button class="btn-sm btn-primary" onclick="doClockOut('${data.id}')"><i class="ti ti-logout"></i> Clock Out</button>`;
+    } else if (data.clock_in && data.clock_out) {
+      // Sudah clock in & out
+      const late = data.terlambat_menit > 0 ? ` <span style="color:#F59E0B">(Terlambat ${data.terlambat_menit} menit)</span>` : '';
+      const dur = Math.round((new Date(data.clock_out) - new Date(data.clock_in)) / 60000);
+      infoEl.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${absenStatusLabel(data.status)}</span>
+          <span>🕐 Masuk: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
+          <span>🕔 Pulang: <strong>${absenTimeStr(data.clock_out)}</strong></span>
+          <span style="color:var(--text3);font-size:11px">⏱️ Total kerja: ${Math.floor(dur/60)} jam ${dur%60} menit</span>
+          ${data.lat_in ? `<span style="color:var(--text3);font-size:11px">📍 Masuk: <a href="https://maps.google.com/?q=${data.lat_in},${data.lng_in}" target="_blank" style="color:var(--accent)">${data.lat_in.toFixed(5)}, ${data.lng_in.toFixed(5)}</a></span>` : ''}
+          ${data.lat_out ? `<span style="color:var(--text3);font-size:11px">📍 Pulang: <a href="https://maps.google.com/?q=${data.lat_out},${data.lng_out}" target="_blank" style="color:var(--accent)">${data.lat_out.toFixed(5)}, ${data.lng_out.toFixed(5)}</a></span>` : ''}
+          <div style="display:flex;gap:6px;margin-top:4px">
+            ${data.foto_in ? `<img src="${data.foto_in}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Foto Masuk" />` : ''}
+            ${data.foto_out ? `<img src="${data.foto_out}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Foto Pulang" />` : ''}
+          </div>
+        </div>`;
+      btnEl.innerHTML = `<span style="font-size:12px;color:var(--success)">✅ Absen hari ini sudah lengkap</span>`;
+    }
+  } catch (e) {
+    infoEl.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
+  }
+}
+
+// Clock In
+async function doClockIn() {
+  const user = getUser();
+  const now = new Date();
+  const today = absenDateStr(now);
+
+  const btnEl = document.getElementById('absen-action-btns');
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Ambil foto selfie...</span>';
+
+  const foto = await takeSelfie();
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Mengambil lokasi GPS...</span>';
+  const gps = await getGPS();
+
+  // Hitung keterlambatan
+  const jamMasukLimit = new Date(now);
+  jamMasukLimit.setHours(JAM_MASUK, 0, 0, 0);
+  const terlambatMenit = now > jamMasukLimit ? Math.round((now - jamMasukLimit) / 60000) : 0;
+  const status = terlambatMenit > 0 ? 'terlambat' : 'hadir';
+
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Menyimpan...</span>';
+
+  const { error } = await withTimeout(sb.from('attendance').insert({
+    user_name: user,
+    tanggal: today,
+    clock_in: now.toISOString(),
+    status,
+    terlambat_menit: terlambatMenit,
+    lat_in: gps.lat,
+    lng_in: gps.lng,
+    foto_in: foto
+  }));
+
+  if (error) {
+    alert('Gagal clock in: ' + error.message);
+  } else {
+    await renderAbsen();
+  }
+}
+
+// Clock Out
+async function doClockOut(recordId) {
+  const now = new Date();
+  const btnEl = document.getElementById('absen-action-btns');
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Ambil foto selfie...</span>';
+
+  const foto = await takeSelfie();
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Mengambil lokasi GPS...</span>';
+  const gps = await getGPS();
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Menyimpan...</span>';
+
+  const { error } = await withTimeout(sb.from('attendance').update({
+    clock_out: now.toISOString(),
+    lat_out: gps.lat,
+    lng_out: gps.lng,
+    foto_out: foto
+  }).eq('id', recordId));
+
+  if (error) {
+    alert('Gagal clock out: ' + error.message);
+  } else {
+    await renderAbsen();
+  }
+}
+
+// Ajukan izin/sakit/cuti
+async function submitLeave() {
+  const user = getUser();
+  const tipe = document.getElementById('leave-type').value;
+  const dari = document.getElementById('leave-date-from').value;
+  const sampai = document.getElementById('leave-date-to').value;
+  const alasan = document.getElementById('leave-reason').value.trim();
+
+  if (!dari || !sampai) return alert('Tanggal harus diisi!');
+  if (dari > sampai) return alert('Tanggal mulai harus sebelum tanggal akhir!');
+
+  const { error } = await withTimeout(sb.from('leave_requests').insert({
+    user_name: user, tipe, dari_tanggal: dari, sampai_tanggal: sampai, alasan, status: 'approved'
+  }));
+
+  if (error) {
+    alert('Gagal mengajukan: ' + error.message);
+  } else {
+    document.getElementById('absen-leave-form').style.display = 'none';
+    document.getElementById('leave-reason').value = '';
+    await renderAbsen();
+  }
+}
+
+// ── Rekap absensi semua karyawan ───────────────────────────
+let absenRekapCache = [];
+
+async function renderAbsenRekap() {
+  const container = document.getElementById('absen-rekap-table');
+  const filterDate = document.getElementById('absen-filter-date')?.value || absenDateStr();
+  const filterStatus = document.getElementById('absen-filter-status')?.value || '';
+
+  container.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat rekap...</div>';
+
+  try {
+    let q = sb.from('attendance').select('*').eq('tanggal', filterDate).order('clock_in', {ascending: true});
+    if (filterStatus) q = q.eq('status', filterStatus);
+    const { data, error } = await withTimeout(q);
+    if (error) throw error;
+
+    absenRekapCache = data || [];
+
+    if (!absenRekapCache.length) {
+      container.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:16px 0">Tidak ada data absensi untuk tanggal ini.</div>';
+      return;
+    }
+
+    const currentUser = getUser();
+    const isAdmin = currentUser.toLowerCase().includes('admin') || currentUser.toLowerCase().includes('bos') || currentUser.toLowerCase().includes('hrd');
+
+    let html = `<table class="task-table" style="min-width:600px">
+      <thead><tr>
+        <th>Nama</th><th>Status</th><th>Clock In</th><th>Clock Out</th>
+        <th>Terlambat</th><th>Lokasi</th><th>Foto</th>
+        ${isAdmin ? '<th>Aksi</th>' : ''}
+      </tr></thead><tbody>`;
+
+    for (const row of absenRekapCache) {
+      const dur = row.clock_in && row.clock_out
+        ? Math.round((new Date(row.clock_out) - new Date(row.clock_in)) / 60000)
+        : null;
+      html += `<tr>
+        <td style="font-weight:500">${row.user_name}</td>
+        <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${absenStatusColor(row.status)}22;color:${absenStatusColor(row.status)};font-weight:600">${absenStatusLabel(row.status)}</span></td>
+        <td>${absenTimeStr(row.clock_in)}</td>
+        <td>${absenTimeStr(row.clock_out)}${dur ? `<br><span style="font-size:10px;color:var(--text3)">${Math.floor(dur/60)}j ${dur%60}m</span>` : ''}</td>
+        <td>${row.terlambat_menit > 0 ? `<span style="color:#F59E0B">${row.terlambat_menit} mnt</span>` : '—'}</td>
+        <td style="font-size:10px">
+          ${row.lat_in ? `<a href="https://maps.google.com/?q=${row.lat_in},${row.lng_in}" target="_blank" style="color:var(--accent)">📍 Masuk</a>` : '—'}
+          ${row.lat_out ? `<br><a href="https://maps.google.com/?q=${row.lat_out},${row.lng_out}" target="_blank" style="color:var(--accent)">📍 Pulang</a>` : ''}
+        </td>
+        <td>
+          ${row.foto_in ? `<img src="${row.foto_in}" style="width:36px;height:36px;border-radius:6px;object-fit:cover" title="Foto Masuk" />` : ''}
+          ${row.foto_out ? `<img src="${row.foto_out}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;margin-left:2px" title="Foto Pulang" />` : ''}
+        </td>
+        ${isAdmin ? `<td><button class="btn-sm" style="color:var(--danger);padding:2px 8px" onclick="adminDeleteAbsen('${row.id}')"><i class="ti ti-trash"></i></button></td>` : ''}
+      </tr>`;
+    }
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<span style="color:var(--danger);font-size:12px">Error: ${e.message}</span>`;
+  }
+}
+
+// Admin delete absensi
+async function adminDeleteAbsen(id) {
+  if (!confirm('Hapus data absensi ini? (Hanya admin yang bisa melakukan ini)')) return;
+  const { error } = await withTimeout(sb.from('attendance').delete().eq('id', id));
+  if (error) alert('Gagal hapus: ' + error.message);
+  else await renderAbsenRekap();
+}
+
+// ── Export Excel absensi ────────────────────────────────────
+function exportAbsenToExcel() {
+  if (!absenRekapCache.length) return alert('Tidak ada data untuk di-export.');
+  const rows = absenRekapCache.map(r => ({
+    'Nama': r.user_name,
+    'Tanggal': r.tanggal,
+    'Status': r.status,
+    'Clock In': absenTimeStr(r.clock_in),
+    'Clock Out': absenTimeStr(r.clock_out),
+    'Terlambat (menit)': r.terlambat_menit || 0,
+    'Lat Masuk': r.lat_in || '',
+    'Lng Masuk': r.lng_in || '',
+    'Lat Pulang': r.lat_out || '',
+    'Lng Pulang': r.lng_out || '',
+    'Keterangan': r.keterangan || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Absensi');
+  XLSX.writeFile(wb, `Absensi_AMS_${document.getElementById('absen-filter-date')?.value || absenDateStr()}.xlsx`);
+}
+
+// ── Export PDF absensi ──────────────────────────────────────
+function exportAbsenToPDF() {
+  if (!absenRekapCache.length) return alert('Tidak ada data untuk di-export.');
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const filterDate = document.getElementById('absen-filter-date')?.value || absenDateStr();
+
+  doc.setFontSize(14);
+  doc.text('Rekap Absensi PT. Andrika Mitra Solusi', 14, 15);
+  doc.setFontSize(10);
+  doc.text('Tanggal: ' + filterDate, 14, 22);
+
+  const headers = [['Nama','Status','Clock In','Clock Out','Terlambat','Keterangan']];
+  const rows = absenRekapCache.map(r => [
+    r.user_name, r.status, absenTimeStr(r.clock_in), absenTimeStr(r.clock_out),
+    r.terlambat_menit ? r.terlambat_menit + ' mnt' : '—', r.keterangan || ''
+  ]);
+
+  // Simple manual table
+  let y = 30;
+  doc.setFontSize(9);
+  const cols = [50,30,25,25,25,50];
+  const startX = 14;
+  headers[0].forEach((h, i) => {
+    let x = startX + cols.slice(0,i).reduce((a,b)=>a+b,0);
+    doc.setFont(undefined,'bold');
+    doc.text(h, x, y);
+  });
+  y += 6;
+  rows.forEach(row => {
+    if (y > 190) { doc.addPage(); y = 20; }
+    row.forEach((cell, i) => {
+      let x = startX + cols.slice(0,i).reduce((a,b)=>a+b,0);
+      doc.setFont(undefined,'normal');
+      doc.text(String(cell), x, y);
+    });
+    y += 6;
+  });
+
+  doc.save(`Absensi_AMS_${filterDate}.pdf`);
+}
+
+// Auto-refresh rekap absensi setiap 30 detik saat panel absen aktif
+setInterval(() => {
+  if (currentPanel === 'absen') {
+    renderAbsenToday();
+    renderAbsenRekap();
+  }
+}, 30000);
+
 </script>
 </body>
 </html>
