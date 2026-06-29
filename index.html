@@ -1564,18 +1564,7 @@ ON CONFLICT DO NOTHING;</code>
 
 <!-- js/supabase.js merged inline -->
 <!-- js/app.js merged inline -->
-<script>
-function changeUser() {
-  const name = prompt('Masukkan nama kamu:', getUser());
-  if (name && name.trim()) {
-    localStorage.setItem('wb_user', name.trim());
-    document.getElementById('user-name').textContent = name.trim();
-    const unm = document.getElementById('user-name-mobile');
-    if (unm) unm.textContent = name.trim();
-    refreshCurrentPanel();
-  }
-}
-</script>
+<!-- changeUser() didefinisikan sekali di bawah (dekat NOTEPAD), sekarang sudah termasuk migrasi data -->
 <script>
 // ============================================
 // js/supabase.js — Konfigurasi Supabase
@@ -1635,6 +1624,66 @@ function withTimeout(promise, ms = 10000) {
     setTimeout(() => reject(new Error('Timeout — periksa koneksi atau API key Supabase')), ms)
   );
   return Promise.race([promise, timeout]);
+}
+
+// ============================================
+// GANTI NAMA USER DI SELURUH APLIKASI
+// Dipakai oleh: pencil edit nama (sidebar) & Admin > Kelola User
+// Mengubah SEMUA riwayat data dari oldName → newName di semua tabel,
+// supaya tidak muncul dua nama berbeda untuk orang yang sama.
+// ============================================
+async function renameUserEverywhere(oldName, newName) {
+  oldName = (oldName || '').trim();
+  newName = (newName || '').trim();
+  if (!oldName || !newName || oldName === newName) return { ok: true, skipped: true, failedCount: 0 };
+
+  const tasks = [
+    sb.from('schedule_events').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('tracker_items').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('time_plan_tracker').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('logbook_entries').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('notes').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('todos').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('notepad_items').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('chat_messages').update({ sender: newName }).eq('sender', oldName),
+    sb.from('chat_channels').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('attendance').update({ user_name: newName }).eq('user_name', oldName),
+    sb.from('leave_requests').update({ user_name: newName }).eq('user_name', oldName),
+  ];
+
+  // online_presence.user_name itu UNIK (key upsert) — kalau baris nama baru kebetulan sudah ada
+  // (data basi/lama), hapus dulu supaya tidak bentrok, baru pindahkan baris nama lama ke nama baru.
+  tasks.push(
+    (async () => {
+      await sb.from('online_presence').delete().eq('user_name', newName);
+      return sb.from('online_presence').update({ user_name: newName }).eq('user_name', oldName);
+    })()
+  );
+
+  // chat_channels.participants & hidden_by adalah array JSON (bukan kolom teks biasa),
+  // jadi harus diambil dulu lalu nama di dalam array-nya diganti satu per satu.
+  tasks.push(
+    (async () => {
+      const { data: chans } = await withTimeout(sb.from('chat_channels').select('id,participants,hidden_by'));
+      for (const c of (chans || [])) {
+        const payload = {};
+        if (Array.isArray(c.participants) && c.participants.includes(oldName)) {
+          payload.participants = c.participants.map(p => p === oldName ? newName : p);
+        }
+        if (Array.isArray(c.hidden_by) && c.hidden_by.includes(oldName)) {
+          payload.hidden_by = c.hidden_by.map(h => h === oldName ? newName : h);
+        }
+        if (Object.keys(payload).length) {
+          await sb.from('chat_channels').update(payload).eq('id', c.id);
+        }
+      }
+    })()
+  );
+
+  const results = await Promise.allSettled(tasks);
+  const failed = results.filter(r => r.status === 'rejected' || r.value?.error);
+  if (failed.length) console.warn('renameUserEverywhere errors:', results);
+  return { ok: failed.length === 0, failedCount: failed.length };
 }
 // ============================================
 // js/app.js — Logic utama WorkBoard
@@ -3266,18 +3315,39 @@ function setupRealtime() {
 window.addEventListener('DOMContentLoaded', () => {
   setupRealtime();
 });
-function changeUser() {
-  const name = prompt('Masukkan nama kamu:', getUser());
-  if (name && name.trim()) {
-    localStorage.setItem('wb_user', name.trim());
-    document.getElementById('user-name').textContent = name.trim();
-    const unm = document.getElementById('user-name-mobile');
-    if (unm) unm.textContent = name.trim();
-    refreshCurrentPanel();
+async function changeUser() {
+  const oldName = getUser();
+  const input = prompt('Masukkan nama kamu:', oldName);
+  if (!input || !input.trim()) return;
+  const newName = input.trim();
+  if (newName === oldName) return;
+
+  if (!confirm(
+    `Ganti nama dari "${oldName}" menjadi "${newName}"?\n\n` +
+    `Semua riwayat lama kamu (jadwal, tracker, logbook, notes, to do, notepad, chat, absensi, izin/cuti) ` +
+    `akan ikut dipindahkan ke nama baru ini, supaya tidak jadi dua nama berbeda.`
+  )) return;
+
+  const elName = document.getElementById('user-name');
+  const elNameMobile = document.getElementById('user-name-mobile');
+  if (elName) elName.textContent = '⏳ Mengganti nama...';
+
+  try {
+    const res = await renameUserEverywhere(oldName, newName);
+    localStorage.setItem('wb_user', newName);
+    if (elName) elName.textContent = newName;
+    if (elNameMobile) elNameMobile.textContent = newName;
+    await refreshCurrentPanel();
+    if (!res.ok) {
+      alert(`Nama diganti ke "${newName}", tapi ${res.failedCount} bagian data gagal diupdate (mungkin koneksi/RLS). Coba cek lagi nanti atau ulangi.`);
+    } else {
+      alert(`✅ Nama berhasil diganti ke "${newName}" di semua data.`);
+    }
+  } catch (e) {
+    if (elName) elName.textContent = oldName;
+    alert('Gagal mengganti nama: ' + e.message);
   }
 }
-
-// ── NOTEPAD ────────────────────────────────
 let notepadCache = [];
 let editingNpId = null;
 
@@ -4817,6 +4887,7 @@ async function renderAdminUsers() {
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         ${isOnline ? '<span class="admin-user-badge online">🟢 Online</span>' : ''}
         ${isAdminUser ? '<span class="admin-user-badge admin">⭐ Admin</span>' : ''}
+        <button class="btn-sm" style="color:var(--accent);border-color:var(--accent)" onclick="adminRenameUser('${u.name.replace(/'/g,"\\'")}')" title="Ganti nama user ini (riwayat data ikut berubah)"><i class="ti ti-edit"></i> Ganti Nama</button>
         ${!isSelf ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteUser('${u.name.replace(/'/g,"\\'")}')" title="Hapus semua data user ini"><i class="ti ti-user-minus"></i> Hapus</button>` : ''}
       </div>
     </div>`;
@@ -4996,7 +5067,46 @@ async function adminDeleteUser(targetName) {
   await renderAdminUsers();
 }
 
-// ── Quick Links ────────────────────────────────────────────────
+// Admin: ganti nama user (riwayat data di semua tabel ikut pindah ke nama baru, tidak jadi dobel nama)
+async function adminRenameUser(oldName) {
+  const currentUser = getUser();
+  const isAdmin = currentUser.toLowerCase().includes('admin')
+    || currentUser.toLowerCase().includes('bos')
+    || currentUser.toLowerCase().includes('hrd');
+  if (!isAdmin) return alert('Akses ditolak.');
+
+  const input = prompt(`Ganti nama "${oldName}" menjadi:`, oldName);
+  if (!input || !input.trim()) return;
+  const newName = input.trim();
+  if (newName === oldName) return;
+
+  if (!confirm(
+    `Ganti SEMUA riwayat data milik "${oldName}" menjadi "${newName}"?\n\n` +
+    `Ini akan mengubah nama di Daily Schedule, Tracker, Logbook, Notes, To Do, Notepad, Work Talk, ` +
+    `Absensi, dan Izin/Cuti.\n\nTindakan ini TIDAK DAPAT DIBATALKAN. Lanjutkan?`
+  )) return;
+
+  const listEl = document.getElementById('admin-users-list');
+  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Mengganti nama...</div>';
+
+  const res = await renameUserEverywhere(oldName, newName);
+
+  // Kalau yang diganti adalah nama sendiri, sinkronkan juga localStorage di device ini
+  if (oldName === currentUser) {
+    localStorage.setItem('wb_user', newName);
+    const elName = document.getElementById('user-name');
+    const elNameMobile = document.getElementById('user-name-mobile');
+    if (elName) elName.textContent = newName;
+    if (elNameMobile) elNameMobile.textContent = newName;
+  }
+
+  if (!res.ok) {
+    alert(`Nama diganti, tapi ${res.failedCount} bagian data gagal diupdate (mungkin tabel belum ada atau RLS aktif). Cek console untuk detail.`);
+  } else {
+    alert(`✅ Nama "${oldName}" berhasil diganti menjadi "${newName}" di semua data.`);
+  }
+  await renderAdminUsers();
+}
 let linksCache = [];
 
 async function renderLinks() {
