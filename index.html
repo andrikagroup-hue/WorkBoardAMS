@@ -2097,8 +2097,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   }).catch(() => {});
 
   // Daftarkan service worker biar app ini bisa di-"Add to Home Screen" / di-install
+  // SW v2: sekarang juga dipakai untuk Work-Break Alarm notification sistem
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      // Paksa update sw.js kalau ada versi baru
+      reg.update();
+    }).catch(() => {
       // Diamkan kalau gagal (misal dibuka dari file lokal tanpa https) — app tetap jalan normal
     });
   }
@@ -6117,25 +6121,38 @@ function initWorkBreakAlarm() {
 
   // ── Toast ──────────────────────────────────────────
   function _showToast(main, sub, isWork) {
+    // ── 1. Toast in-app (tampil kalau tab WB aktif) ──
     const el     = document.getElementById('workBreakAlarm_toast');
     const elMain = document.getElementById('workBreakAlarm_toastMain');
     const elSub  = document.getElementById('workBreakAlarm_toastSub');
-    if (!el) return;
-    elMain.textContent = main;
-    elSub.textContent  = sub;
-    el.classList.toggle('work-toast', !!isWork);
-    el.style.display    = 'block';
-    el.style.opacity    = '1';
-    el.style.transition = '';
-    if (Notification && Notification.permission === 'granted') {
-      try { new Notification(main, { body: sub, icon: 'favicon.ico' }); } catch (_) {}
+    if (el) {
+      elMain.textContent = main;
+      elSub.textContent  = sub;
+      el.classList.toggle('work-toast', !!isWork);
+      el.style.display    = 'block';
+      el.style.opacity    = '1';
+      el.style.transition = '';
+      clearTimeout(el._wbaTimer);
+      el._wbaTimer = setTimeout(() => {
+        el.style.transition = 'opacity .5s';
+        el.style.opacity    = '0';
+        setTimeout(() => { el.style.display = 'none'; el.style.transition = ''; }, 500);
+      }, 5000);
     }
-    clearTimeout(el._wbaTimer);
-    el._wbaTimer = setTimeout(() => {
-      el.style.transition = 'opacity .5s';
-      el.style.opacity    = '0';
-      setTimeout(() => { el.style.display = 'none'; el.style.transition = ''; }, 500);
-    }, 5000);
+
+    // ── 2. Notifikasi sistem via Service Worker (muncul walau tab ditutup/minimize) ──
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      // Kirim ke SW — SW yang tampilkan notifikasi sistem
+      navigator.serviceWorker.controller.postMessage({
+        type:  'WBA_NOTIFY',
+        title: main,
+        body:  sub,
+        tag:   'wba-alarm',
+      });
+    } else if (Notification && Notification.permission === 'granted') {
+      // Fallback: notif langsung kalau SW belum siap
+      try { new Notification(main, { body: sub, icon: 'icon-192.png' }); } catch (_) {}
+    }
   }
 
   function _toastBreak() {
