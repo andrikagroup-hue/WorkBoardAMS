@@ -780,6 +780,96 @@ textarea { resize: vertical; }
   .chat-wrap.mobile-show-thread .chat-main { display: flex; z-index: 2; }
   .chat-back { display: inline-flex; align-items: center; justify-content: center; }
 }
+
+/* ── Work-Break Alarm ── */
+#workBreakAlarm_btn {
+  background: #94A3B8; color: #fff; border: none; border-radius: var(--radius);
+  padding: 6px 12px; font-size: 13px; font-weight: 500; cursor: pointer;
+  display: flex; align-items: center; gap: 5px; transition: background .2s;
+}
+#workBreakAlarm_btn.alarm-on { background: #F59E0B; }
+#workBreakAlarm_btn.alarm-on:hover { background: #D97706; }
+#workBreakAlarm_btn:not(.alarm-on):hover { background: #64748B; }
+
+#workBreakAlarm_overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  z-index: 9000; align-items: center; justify-content: center;
+}
+#workBreakAlarm_overlay.open { display: flex; }
+#workBreakAlarm_modal {
+  background: var(--surface); border-radius: var(--radius-lg);
+  padding: 24px; width: 360px; max-width: 95vw;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18); position: relative;
+}
+#workBreakAlarm_modal h3 {
+  font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text1);
+}
+.wba-row { margin-bottom: 14px; }
+.wba-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
+.wba-toggle-wrap { display: flex; align-items: center; gap: 10px; }
+.wba-toggle {
+  position: relative; width: 44px; height: 24px; cursor: pointer;
+}
+.wba-toggle input { opacity: 0; width: 0; height: 0; }
+.wba-slider {
+  position: absolute; inset: 0; background: #CBD5E1; border-radius: 24px; transition: .3s;
+}
+.wba-slider::before {
+  content: ''; position: absolute; width: 18px; height: 18px;
+  left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .3s;
+}
+.wba-toggle input:checked + .wba-slider { background: #F59E0B; }
+.wba-toggle input:checked + .wba-slider::before { transform: translateX(20px); }
+.wba-time-row { display: flex; gap: 8px; align-items: center; }
+.wba-time-row input[type=time] {
+  flex: 1; padding: 6px 8px; border: 1px solid var(--border2);
+  border-radius: var(--radius); font-size: 13px; color: var(--text1);
+  background: var(--bg);
+}
+.wba-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wba-mode-card {
+  border: 2px solid var(--border2); border-radius: var(--radius);
+  padding: 8px 10px; cursor: pointer; transition: border-color .15s;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.wba-mode-card input[type=radio] { margin-top: 2px; accent-color: #F59E0B; }
+.wba-mode-card:has(input:checked) { border-color: #F59E0B; background: #FEF9EE; }
+.wba-mode-title { font-size: 12px; font-weight: 600; color: var(--text1); }
+.wba-mode-desc { font-size: 11px; color: var(--text2); }
+.wba-custom-inputs { display: none; margin-top: 10px; gap: 8px; }
+.wba-custom-inputs.visible { display: flex; }
+.wba-custom-inputs input {
+  flex: 1; padding: 6px 8px; border: 1px solid var(--border2);
+  border-radius: var(--radius); font-size: 13px; background: var(--bg); color: var(--text1);
+}
+.wba-info-box {
+  background: var(--bg2); border-radius: var(--radius); padding: 8px 10px;
+  font-size: 12px; color: var(--text2); border: 1px solid var(--border);
+}
+.wba-btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.wba-btn-save {
+  background: #F59E0B; color: #fff; border: none; border-radius: var(--radius);
+  padding: 7px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.wba-btn-save:hover { background: #D97706; }
+.wba-btn-cancel {
+  background: var(--bg3); color: var(--text2); border: none; border-radius: var(--radius);
+  padding: 7px 14px; font-size: 13px; cursor: pointer;
+}
+#workBreakAlarm_toast {
+  display: none; position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); z-index: 9999;
+  background: #ff4444; border-radius: 12px; padding: 20px 28px;
+  box-shadow: 0 6px 12px rgba(0,0,0,.4); text-align: center;
+  min-width: 280px; max-width: 90vw;
+  animation: wba-fadein .25s ease;
+}
+#workBreakAlarm_toast.work-toast { background: #22C55E; }
+@keyframes wba-fadein { from { opacity:0; transform: translate(-50%,-55%); } to { opacity:1; transform: translate(-50%,-50%); } }
+#workBreakAlarm_toast .wba-toast-main {
+  font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px;
+}
+#workBreakAlarm_toast .wba-toast-sub { font-size: 13px; color: rgba(255,255,255,.9); }
   </style>
 </head>
 <body>
@@ -986,10 +1076,77 @@ textarea { resize: vertical; }
             <button class="export-menu-item" onclick="exportCurrentToPNG()"><i class="ti ti-photo"></i> Screenshot PNG</button>
           </div>
         </div>
+        <button id="workBreakAlarm_btn" onclick="workBreakAlarm_openModal()" title="Atur Work-Break Alarm">
+          ⏰ Work Alarm
+        </button>
         <button class="btn-sm btn-primary" onclick="handleAdd()">
           <i class="ti ti-plus" aria-hidden="true"></i> Tambah
         </button>
       </div>
+    </div>
+
+    <!-- ── Work-Break Alarm Modal ── -->
+    <div id="workBreakAlarm_overlay" onclick="workBreakAlarm_overlayClose(event)">
+      <div id="workBreakAlarm_modal">
+        <h3>⏰ Work-Break Alarm</h3>
+        <div class="wba-row">
+          <span class="wba-label">Status Alarm</span>
+          <div class="wba-toggle-wrap">
+            <label class="wba-toggle">
+              <input type="checkbox" id="workBreakAlarm_toggle">
+              <span class="wba-slider"></span>
+            </label>
+            <span id="workBreakAlarm_statusLabel" style="font-size:13px;color:var(--text2)">OFF</span>
+          </div>
+        </div>
+        <div class="wba-row">
+          <span class="wba-label">Jam Kerja</span>
+          <div class="wba-time-row">
+            <input type="time" id="workBreakAlarm_start" value="08:00">
+            <span style="color:var(--text3);font-size:12px">s/d</span>
+            <input type="time" id="workBreakAlarm_end" value="17:00">
+          </div>
+        </div>
+        <div class="wba-row">
+          <span class="wba-label">Mode</span>
+          <div class="wba-mode-grid">
+            <label class="wba-mode-card">
+              <input type="radio" name="wba_mode" value="pomodoro" checked>
+              <div><div class="wba-mode-title">Pomodoro</div><div class="wba-mode-desc">25 kerja / 5 istirahat</div></div>
+            </label>
+            <label class="wba-mode-card">
+              <input type="radio" name="wba_mode" value="short_pomodoro">
+              <div><div class="wba-mode-title">Short Pomodoro</div><div class="wba-mode-desc">15 kerja / 5 istirahat</div></div>
+            </label>
+            <label class="wba-mode-card">
+              <input type="radio" name="wba_mode" value="flowtime">
+              <div><div class="wba-mode-title">Flowtime</div><div class="wba-mode-desc">Kamu yang stop sendiri</div></div>
+            </label>
+            <label class="wba-mode-card">
+              <input type="radio" name="wba_mode" value="custom">
+              <div><div class="wba-mode-title">Custom</div><div class="wba-mode-desc">Atur sendiri durasinya</div></div>
+            </label>
+          </div>
+          <div class="wba-custom-inputs" id="workBreakAlarm_customWrap">
+            <input type="number" id="workBreakAlarm_customWork" placeholder="Kerja (menit)" min="1" max="120" value="30">
+            <input type="number" id="workBreakAlarm_customBreak" placeholder="Istirahat (menit)" min="1" max="60" value="10">
+          </div>
+        </div>
+        <div class="wba-row">
+          <span class="wba-label">Jadwal Istirahat Siang (Otomatis)</span>
+          <div class="wba-info-box">⏰ 12:00 Istirahat 1 Jam &nbsp;·&nbsp; 💪 13:00 Kembali Kerja</div>
+        </div>
+        <div class="wba-btn-row">
+          <button class="wba-btn-cancel" onclick="workBreakAlarm_closeModal()">Batal</button>
+          <button class="wba-btn-save" onclick="workBreakAlarm_save()">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Work-Break Alarm -->
+    <div id="workBreakAlarm_toast">
+      <div class="wba-toast-main" id="workBreakAlarm_toastMain"></div>
+      <div class="wba-toast-sub" id="workBreakAlarm_toastSub"></div>
     </div>
 
     <div class="content">
@@ -5879,6 +6036,247 @@ function showChatToast(sender, body) {
   clearTimeout(_chatToastTimer);
   _chatToastTimer = setTimeout(_hideChatToast, 5000);
 }
+
+// ═══════════════════════════════════════════════════════
+// WORK-BREAK ALARM — terisolasi, tidak menyentuh modul lain
+// ═══════════════════════════════════════════════════════
+function initWorkBreakAlarm() {
+  const LS_KEY = 'workBreakAlarm_prefs';
+
+  // ── State ──────────────────────────────────────────
+  let prefs = {
+    on: false,
+    start: '08:00',
+    end: '17:00',
+    mode: 'pomodoro',       // pomodoro | short_pomodoro | flowtime | custom
+    customWork: 30,
+    customBreak: 10,
+  };
+
+  // Timer handles
+  let _cycleTimer = null;
+  let _fixedTimer = null;
+  let _isBreak = false;     // true = sedang fase istirahat, false = sedang fase kerja
+
+  // ── Helpers ────────────────────────────────────────
+  function _load() {
+    try { const s = localStorage.getItem(LS_KEY); if (s) prefs = { ...prefs, ...JSON.parse(s) }; } catch (_) {}
+  }
+  function _save() {
+    localStorage.setItem(LS_KEY, JSON.stringify(prefs));
+  }
+
+  // Cek apakah sekarang dalam rentang jam kerja (handle span tengah malam, misal 20:00–02:00)
+  function _inWorkHours() {
+    const now = new Date();
+    const cur = now.getHours() * 60 + now.getMinutes();
+    const [sh, sm] = prefs.start.split(':').map(Number);
+    const [eh, em] = prefs.end.split(':').map(Number);
+    const s = sh * 60 + sm;
+    const e = eh * 60 + em;
+    if (s <= e) return cur >= s && cur < e;          // hari yang sama
+    return cur >= s || cur < e;                      // melewati tengah malam
+  }
+
+  // ── Toast ──────────────────────────────────────────
+  function _showToast(main, sub, isWork) {
+    const el = document.getElementById('workBreakAlarm_toast');
+    const elMain = document.getElementById('workBreakAlarm_toastMain');
+    const elSub  = document.getElementById('workBreakAlarm_toastSub');
+    elMain.textContent = main;
+    elSub.textContent  = sub;
+    el.classList.toggle('work-toast', !!isWork);
+    el.style.display = 'block';
+    el.style.opacity = '1';
+    // Browser notification (jika diizinkan)
+    if (Notification && Notification.permission === 'granted') {
+      try { new Notification(main, { body: sub, icon: 'favicon.ico' }); } catch (_) {}
+    }
+    clearTimeout(el._wbaTimer);
+    el._wbaTimer = setTimeout(() => {
+      el.style.transition = 'opacity .5s';
+      el.style.opacity = '0';
+      setTimeout(() => { el.style.display = 'none'; el.style.transition = ''; }, 500);
+    }, 5000);
+  }
+
+  // Pesan toast berdasarkan kondisi
+  function _toastBreak() {
+    const msgs = {
+      pomodoro:       ['⏰ WAKTUNYA ISTIRAHAT!', 'Ambil waktu 5 menit untuk istirahat.'],
+      short_pomodoro: ['⏰ WAKTUNYA ISTIRAHAT!', 'Ambil waktu 5 menit untuk istirahat.'],
+      flowtime:       ['⏰ WAKTUNYA ISTIRAHAT!', 'Istirahat sesuai kebutuhan, kamu yang tentukan.'],
+      custom:         ['⏰ WAKTUNYA ISTIRAHAT!', `Ambil waktu ${prefs.customBreak} menit untuk istirahat.`],
+    };
+    const [m, s] = msgs[prefs.mode] || msgs.pomodoro;
+    _showToast(m, s, false);
+  }
+  function _toastWork() {
+    _showToast('💪 WAKTUNYA KERJA LAGI!', 'Fokus kembali sampai jam kerja selesai.', true);
+  }
+
+  // ── Cycle Timer (Pomodoro / Custom) ────────────────
+  function _getDurations() {
+    // [workMs, breakMs]
+    const m = prefs.mode;
+    if (m === 'pomodoro')       return [25 * 60000, 5 * 60000];
+    if (m === 'short_pomodoro') return [15 * 60000, 5 * 60000];
+    if (m === 'custom')         return [prefs.customWork * 60000, prefs.customBreak * 60000];
+    return null; // flowtime — tidak ada timer otomatis
+  }
+
+  function _stopCycle() {
+    clearTimeout(_cycleTimer);
+    _cycleTimer = null;
+    _isBreak = false;
+  }
+
+  function _startCycle() {
+    _stopCycle();
+    if (!prefs.on || prefs.mode === 'flowtime') return;
+    const durs = _getDurations();
+    if (!durs) return;
+
+    function _tick(isBreakPhase) {
+      if (!prefs.on || !_inWorkHours()) { _stopCycle(); return; }
+      const waitMs = isBreakPhase ? durs[1] : durs[0];
+      _cycleTimer = setTimeout(() => {
+        if (!prefs.on || !_inWorkHours()) { _stopCycle(); return; }
+        _isBreak = !isBreakPhase;
+        if (_isBreak) _toastBreak(); else _toastWork();
+        _tick(_isBreak);
+      }, waitMs);
+    }
+    _isBreak = false;
+    _tick(false); // mulai dari fase kerja
+  }
+
+  // ── Fixed Break (12:00 & 13:00) ────────────────────
+  function _scheduleFixedBreak() {
+    clearTimeout(_fixedTimer);
+    if (!prefs.on) return;
+
+    function _msUntil(h, m) {
+      const now = new Date();
+      const target = new Date(now);
+      target.setHours(h, m, 0, 0);
+      if (target <= now) target.setDate(target.getDate() + 1); // besok
+      return target - now;
+    }
+
+    const now = new Date();
+    const hour = now.getHours(), min = now.getMinutes();
+
+    // Tentukan checkpoint berikutnya: 12:00 atau 13:00
+    let nextH, nextM, nextAction;
+    if (hour < 12 || (hour === 12 && min === 0)) {
+      nextH = 12; nextM = 0; nextAction = 'break12';
+    } else if (hour < 13 || (hour === 13 && min === 0)) {
+      nextH = 13; nextM = 0; nextAction = 'work13';
+    } else {
+      // Sudah lewat keduanya → jadwalkan 12:00 besok
+      nextH = 12; nextM = 0; nextAction = 'break12';
+    }
+
+    _fixedTimer = setTimeout(() => {
+      if (!prefs.on) return;
+      if (nextAction === 'break12') {
+        _showToast('⏰ WAKTUNYA ISTIRAHAT SEBENTAR!', 'Ambil waktu 60 menit untuk istirahat.', false);
+      } else {
+        _showToast('💪 WAKTUNYA KERJA LAGI!', 'Fokus kembali sampai jam kerja selesai.', true);
+      }
+      // Jadwalkan ulang untuk checkpoint berikutnya
+      setTimeout(_scheduleFixedBreak, 60000); // cek ulang 1 menit setelah toast
+    }, _msUntil(nextH, nextM));
+  }
+
+  // ── Minta izin notif browser ────────────────────────
+  function _requestNotifPermission() {
+    if (Notification && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  }
+
+  // ── UI Modal ───────────────────────────────────────
+  window.workBreakAlarm_openModal = function () {
+    _load();
+    // Isi form dari prefs
+    document.getElementById('workBreakAlarm_toggle').checked = prefs.on;
+    document.getElementById('workBreakAlarm_statusLabel').textContent = prefs.on ? 'ON' : 'OFF';
+    document.getElementById('workBreakAlarm_start').value = prefs.start;
+    document.getElementById('workBreakAlarm_end').value   = prefs.end;
+    document.querySelectorAll('input[name="wba_mode"]').forEach(r => {
+      r.checked = r.value === prefs.mode;
+    });
+    document.getElementById('workBreakAlarm_customWork').value  = prefs.customWork;
+    document.getElementById('workBreakAlarm_customBreak').value = prefs.customBreak;
+    _toggleCustomInputs(prefs.mode === 'custom');
+    document.getElementById('workBreakAlarm_overlay').classList.add('open');
+  };
+
+  window.workBreakAlarm_closeModal = function () {
+    document.getElementById('workBreakAlarm_overlay').classList.remove('open');
+  };
+
+  window.workBreakAlarm_overlayClose = function (e) {
+    if (e.target.id === 'workBreakAlarm_overlay') workBreakAlarm_closeModal();
+  };
+
+  window.workBreakAlarm_save = function () {
+    prefs.on          = document.getElementById('workBreakAlarm_toggle').checked;
+    prefs.start       = document.getElementById('workBreakAlarm_start').value || '08:00';
+    prefs.end         = document.getElementById('workBreakAlarm_end').value   || '17:00';
+    prefs.mode        = document.querySelector('input[name="wba_mode"]:checked')?.value || 'pomodoro';
+    prefs.customWork  = parseInt(document.getElementById('workBreakAlarm_customWork').value)  || 30;
+    prefs.customBreak = parseInt(document.getElementById('workBreakAlarm_customBreak').value) || 10;
+    _save();
+    _applyBtn();
+    workBreakAlarm_closeModal();
+    // Restart semua timer dengan setting baru
+    _stopCycle();
+    clearTimeout(_fixedTimer);
+    if (prefs.on) {
+      _requestNotifPermission();
+      _startCycle();
+      _scheduleFixedBreak();
+    }
+  };
+
+  // Toggle label ON/OFF saat checkbox diklik di modal
+  document.getElementById('workBreakAlarm_toggle').addEventListener('change', function () {
+    document.getElementById('workBreakAlarm_statusLabel').textContent = this.checked ? 'ON' : 'OFF';
+  });
+
+  // Tampilkan/sembunyikan input Custom saat mode dipilih
+  document.querySelectorAll('input[name="wba_mode"]').forEach(r => {
+    r.addEventListener('change', () => _toggleCustomInputs(r.value === 'custom'));
+  });
+
+  function _toggleCustomInputs(show) {
+    document.getElementById('workBreakAlarm_customWrap').classList.toggle('visible', show);
+  }
+
+  // Update warna tombol sesuai status alarm
+  function _applyBtn() {
+    const btn = document.getElementById('workBreakAlarm_btn');
+    if (!btn) return;
+    btn.classList.toggle('alarm-on', prefs.on);
+  }
+
+  // ── Init ───────────────────────────────────────────
+  _load();
+  _applyBtn();
+  if (prefs.on) {
+    _requestNotifPermission();
+    _startCycle();
+    _scheduleFixedBreak();
+  }
+}
+
+// Panggil saat app siap
+document.addEventListener('DOMContentLoaded', () => {
+  initWorkBreakAlarm();
+});
 
 </script>
 </body>
