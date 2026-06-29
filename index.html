@@ -404,6 +404,9 @@ textarea { resize: vertical; }
 }
 .link-card:hover { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
 .link-emoji { font-size: 22px; flex-shrink: 0; width: 34px; text-align: center; }
+.emoji-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+.emoji-btn { font-size: 18px; padding: 4px; border: none; background: transparent; border-radius: 6px; cursor: pointer; transition: background .15s; line-height: 1; }
+.emoji-btn:hover { background: var(--bg2); }
 .link-info { flex: 1; min-width: 0; }
 .link-label { font-size: 13px; font-weight: 600; color: var(--text1); }
 .link-url-text { font-size: 11px; color: var(--accent); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1502,7 +1505,28 @@ ON CONFLICT DO NOTHING;</code>
             </div>
             <div>
               <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Emoji ikon</label>
-              <input type="text" id="link-emoji" class="form-input" placeholder="💰 🌐 📊 🗂️" style="font-size:12px;width:100%">
+              <input type="hidden" id="link-emoji" value="🔗">
+              <div style="position:relative">
+                <button type="button" id="emoji-picker-btn" onclick="toggleEmojiPicker()"
+                  style="width:100%;border:1px solid var(--border2);border-radius:var(--radius);padding:7px 10px;background:var(--surface);font-size:20px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px">
+                  <span id="emoji-selected-display">🔗</span>
+                  <span style="font-size:11px;color:var(--text3)">Klik untuk pilih ikon</span>
+                </button>
+                <div id="emoji-picker-popup" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:999;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);width:320px;max-height:280px;overflow-y:auto">
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin-bottom:6px">UMUM</div>
+                  <div class="emoji-grid" id="emoji-grid-umum"></div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">BISNIS & KERJA</div>
+                  <div class="emoji-grid" id="emoji-grid-bisnis"></div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">TEKNOLOGI</div>
+                  <div class="emoji-grid" id="emoji-grid-tech"></div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">KEUANGAN & DATA</div>
+                  <div class="emoji-grid" id="emoji-grid-finance"></div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">KOMUNIKASI</div>
+                  <div class="emoji-grid" id="emoji-grid-komun"></div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">LAINNYA</div>
+                  <div class="emoji-grid" id="emoji-grid-lain"></div>
+                </div>
+              </div>
             </div>
             <div style="grid-column:1/-1">
               <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Deskripsi singkat</label>
@@ -5114,6 +5138,7 @@ function openLinkForm(id) {
   const titleEl = document.getElementById('link-form-title');
   form.style.display = 'block';
   form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  initEmojiPicker(); // inisialisasi grid emoji
 
   if (id) {
     const link = linksCache.find(l => l.id === id);
@@ -5122,18 +5147,68 @@ function openLinkForm(id) {
     document.getElementById('link-label').value = link.label || '';
     document.getElementById('link-url').value = link.url || '';
     document.getElementById('link-kategori').value = link.kategori || '';
-    document.getElementById('link-emoji').value = link.emoji || '';
     document.getElementById('link-deskripsi').value = link.deskripsi || '';
     document.getElementById('link-editing-id').value = id;
+    setSelectedEmoji(link.emoji || '🔗');
   } else {
     titleEl.textContent = '➕ Tambah Link Baru';
     document.getElementById('link-label').value = '';
     document.getElementById('link-url').value = '';
     document.getElementById('link-kategori').value = '';
-    document.getElementById('link-emoji').value = '';
     document.getElementById('link-deskripsi').value = '';
     document.getElementById('link-editing-id').value = '';
+    setSelectedEmoji('🔗');
   }
+}
+
+function setSelectedEmoji(emoji) {
+  document.getElementById('link-emoji').value = emoji;
+  const disp = document.getElementById('emoji-selected-display');
+  if (disp) disp.textContent = emoji;
+}
+
+function toggleEmojiPicker() {
+  const popup = document.getElementById('emoji-picker-popup');
+  if (!popup) return;
+  const isOpen = popup.style.display !== 'none';
+  popup.style.display = isOpen ? 'none' : 'block';
+}
+
+function pickEmoji(emoji) {
+  setSelectedEmoji(emoji);
+  document.getElementById('emoji-picker-popup').style.display = 'none';
+}
+
+let emojiPickerInited = false;
+function initEmojiPicker() {
+  if (emojiPickerInited) return;
+  emojiPickerInited = true;
+
+  const groups = {
+    'umum':    ['🔗','📌','⭐','🏠','📁','📂','🗂️','📋','📎','🔖','✅','❤️','🎯','🚀','💡','🔔','🎁','🏆','🌟','⚡'],
+    'bisnis':  ['💼','👔','🤝','📊','📈','📉','🗓️','📅','📆','🖊️','✏️','📝','📄','📃','🖨️','🗃️','🗄️','📤','📥','📨'],
+    'tech':    ['💻','🖥️','🖱️','⌨️','📱','📲','🖱️','💾','💿','📀','🔌','🔋','📡','🛰️','🌐','🔧','🔨','⚙️','🛠️','🔐'],
+    'finance': ['💰','💵','💴','💶','💷','💳','🏦','💹','📊','🪙','💸','🧾','🏧','💱','📑','🔢','🧮','📉','📈','💎'],
+    'komun':   ['💬','📣','📢','📞','☎️','📟','📠','📩','📧','✉️','💌','🗣️','👥','👤','🙋','📲','🔊','📻','🗺️','🌍'],
+    'lain':    ['🎨','🎭','🎬','🎥','📷','📸','🎵','🎶','🏋️','⚽','🎮','🏕️','🌈','🌺','🍀','🦋','🌊','🔥','❄️','🌙'],
+  };
+
+  Object.keys(groups).forEach(key => {
+    const el = document.getElementById('emoji-grid-' + key);
+    if (!el) return;
+    el.innerHTML = groups[key].map(e =>
+      `<button type="button" class="emoji-btn" onclick="pickEmoji('${e}')" title="${e}">${e}</button>`
+    ).join('');
+  });
+
+  // Tutup picker kalau klik di luar
+  document.addEventListener('click', function closePicker(e) {
+    const btn = document.getElementById('emoji-picker-btn');
+    const popup = document.getElementById('emoji-picker-popup');
+    if (popup && btn && !btn.contains(e.target) && !popup.contains(e.target)) {
+      popup.style.display = 'none';
+    }
+  });
 }
 
 function closeLinkForm() {
