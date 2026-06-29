@@ -804,57 +804,55 @@ textarea { resize: vertical; }
 #workBreakAlarm_modal h3 {
   font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text1);
 }
-.wba-row { margin-bottom: 14px; }
-.wba-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
+/* wba-row: label kiri, konten kanan — layout horizontal */
+.wba-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.wba-label { font-size: 13px; font-weight: 600; color: var(--text1); min-width: 110px; padding-top: 5px; flex-shrink: 0; }
+.wba-content { flex: 1; }
+/* Toggle */
 .wba-toggle-wrap { display: flex; align-items: center; gap: 10px; }
-.wba-toggle {
-  position: relative; width: 44px; height: 24px; cursor: pointer;
-}
+.wba-toggle { position: relative; width: 48px; height: 26px; cursor: pointer; flex-shrink: 0; }
 .wba-toggle input { opacity: 0; width: 0; height: 0; }
-.wba-slider {
-  position: absolute; inset: 0; background: #CBD5E1; border-radius: 24px; transition: .3s;
-}
-.wba-slider::before {
-  content: ''; position: absolute; width: 18px; height: 18px;
-  left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .3s;
-}
-.wba-toggle input:checked + .wba-slider { background: #F59E0B; }
-.wba-toggle input:checked + .wba-slider::before { transform: translateX(20px); }
-.wba-time-row { display: flex; gap: 8px; align-items: center; }
+.wba-slider { position: absolute; inset: 0; background: #CBD5E1; border-radius: 26px; transition: .3s; }
+.wba-slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .3s; }
+.wba-toggle input:checked + .wba-slider { background: #22C55E; }
+.wba-toggle input:checked + .wba-slider::before { transform: translateX(22px); }
+.wba-toggle-label { font-size: 13px; font-weight: 600; color: var(--text2); }
+/* Time row */
+.wba-time-row { display: flex; gap: 6px; align-items: center; }
 .wba-time-row input[type=time] {
-  flex: 1; padding: 6px 8px; border: 1px solid var(--border2);
-  border-radius: var(--radius); font-size: 13px; color: var(--text1);
-  background: var(--bg);
+  padding: 5px 8px; border: 1px solid var(--border2); border-radius: var(--radius);
+  font-size: 13px; color: var(--text1); background: var(--bg); width: 100px;
 }
-.wba-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.wba-mode-card {
-  border: 2px solid var(--border2); border-radius: var(--radius);
-  padding: 8px 10px; cursor: pointer; transition: border-color .15s;
-  display: flex; align-items: flex-start; gap: 8px;
-}
-.wba-mode-card input[type=radio] { margin-top: 2px; accent-color: #F59E0B; }
-.wba-mode-card:has(input:checked) { border-color: #F59E0B; background: #FEF9EE; }
-.wba-mode-title { font-size: 12px; font-weight: 600; color: var(--text1); }
-.wba-mode-desc { font-size: 11px; color: var(--text2); }
-.wba-custom-inputs { display: none; margin-top: 10px; gap: 8px; }
+.wba-time-sep { color: var(--text3); font-size: 13px; }
+/* Mode list — radio biasa (bukan card) */
+.wba-mode-list { display: flex; flex-direction: column; gap: 6px; }
+.wba-mode-list label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text1); cursor: pointer; }
+.wba-mode-list input[type=radio] { accent-color: #3B82F6; width: 15px; height: 15px; cursor: pointer; }
+/* Custom inputs — inline, muncul setelah Custom dipilih */
+.wba-custom-inputs { display: none; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .wba-custom-inputs.visible { display: flex; }
-.wba-custom-inputs input {
-  flex: 1; padding: 6px 8px; border: 1px solid var(--border2);
+.wba-custom-field { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+.wba-custom-field input {
+  width: 70px; padding: 4px 7px; border: 1px solid var(--border2);
   border-radius: var(--radius); font-size: 13px; background: var(--bg); color: var(--text1);
+  text-align: center;
 }
+/* Info box istirahat siang */
 .wba-info-box {
-  background: var(--bg2); border-radius: var(--radius); padding: 8px 10px;
-  font-size: 12px; color: var(--text2); border: 1px solid var(--border);
+  background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius); padding: 10px 12px;
 }
-.wba-btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.wba-info-title { font-size: 12px; font-weight: 700; color: #B45309; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+.wba-info-item { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+/* Buttons */
+.wba-btn-row { display: flex; gap: 8px; justify-content: center; margin-top: 18px; }
 .wba-btn-save {
-  background: #F59E0B; color: #fff; border: none; border-radius: var(--radius);
-  padding: 7px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+  background: #3B82F6; color: #fff; border: none; border-radius: var(--radius);
+  padding: 8px 32px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px;
 }
-.wba-btn-save:hover { background: #D97706; }
+.wba-btn-save:hover { background: #2563EB; }
 .wba-btn-cancel {
   background: var(--bg3); color: var(--text2); border: none; border-radius: var(--radius);
-  padding: 7px 14px; font-size: 13px; cursor: pointer;
+  padding: 8px 20px; font-size: 14px; cursor: pointer; border-radius: 6px;
 }
 #workBreakAlarm_toast {
   display: none; position: fixed; top: 50%; left: 50%;
@@ -1088,57 +1086,71 @@ textarea { resize: vertical; }
     <!-- ── Work-Break Alarm Modal ── -->
     <div id="workBreakAlarm_overlay" onclick="workBreakAlarm_overlayClose(event)">
       <div id="workBreakAlarm_modal">
-        <h3>⏰ Work-Break Alarm</h3>
+        <h3 style="font-size:16px;font-weight:700;color:var(--text1);margin-bottom:18px;display:flex;align-items:center;gap:8px;">
+          🕐 Work-Break Alarm
+          <button onclick="workBreakAlarm_closeModal()" style="margin-left:auto;background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3);line-height:1;">&times;</button>
+        </h3>
+
+        <!-- Alarm Status -->
         <div class="wba-row">
-          <span class="wba-label">Status Alarm</span>
-          <div class="wba-toggle-wrap">
+          <span class="wba-label">Alarm Status:</span>
+          <div class="wba-content wba-toggle-wrap">
             <label class="wba-toggle">
               <input type="checkbox" id="workBreakAlarm_toggle">
               <span class="wba-slider"></span>
             </label>
-            <span id="workBreakAlarm_statusLabel" style="font-size:13px;color:var(--text2)">OFF</span>
+            <span id="workBreakAlarm_statusLabel" class="wba-toggle-label">OFF</span>
           </div>
         </div>
+
+        <!-- Work Hours -->
         <div class="wba-row">
-          <span class="wba-label">Jam Kerja</span>
-          <div class="wba-time-row">
-            <input type="time" id="workBreakAlarm_start" value="08:00">
-            <span style="color:var(--text3);font-size:12px">s/d</span>
-            <input type="time" id="workBreakAlarm_end" value="17:00">
+          <span class="wba-label">Work Hours:</span>
+          <div class="wba-content">
+            <div class="wba-time-row">
+              <input type="time" id="workBreakAlarm_start" value="08:00">
+              <span class="wba-time-sep">–</span>
+              <input type="time" id="workBreakAlarm_end" value="17:00">
+            </div>
           </div>
         </div>
+
+        <!-- Mode -->
         <div class="wba-row">
-          <span class="wba-label">Mode</span>
-          <div class="wba-mode-grid">
-            <label class="wba-mode-card">
-              <input type="radio" name="wba_mode" value="pomodoro" checked>
-              <div><div class="wba-mode-title">Pomodoro</div><div class="wba-mode-desc">25 kerja / 5 istirahat</div></div>
-            </label>
-            <label class="wba-mode-card">
-              <input type="radio" name="wba_mode" value="short_pomodoro">
-              <div><div class="wba-mode-title">Short Pomodoro</div><div class="wba-mode-desc">15 kerja / 5 istirahat</div></div>
-            </label>
-            <label class="wba-mode-card">
-              <input type="radio" name="wba_mode" value="flowtime">
-              <div><div class="wba-mode-title">Flowtime</div><div class="wba-mode-desc">Kamu yang stop sendiri</div></div>
-            </label>
-            <label class="wba-mode-card">
-              <input type="radio" name="wba_mode" value="custom">
-              <div><div class="wba-mode-title">Custom</div><div class="wba-mode-desc">Atur sendiri durasinya</div></div>
-            </label>
-          </div>
-          <div class="wba-custom-inputs" id="workBreakAlarm_customWrap">
-            <input type="number" id="workBreakAlarm_customWork" placeholder="Kerja (menit)" min="1" max="120" value="30">
-            <input type="number" id="workBreakAlarm_customBreak" placeholder="Istirahat (menit)" min="1" max="60" value="10">
+          <span class="wba-label">Mode:</span>
+          <div class="wba-content">
+            <div class="wba-mode-list">
+              <label><input type="radio" name="wba_mode" value="pomodoro" checked> Pomodoro (25/5)</label>
+              <label><input type="radio" name="wba_mode" value="short_pomodoro"> Short Pomodoro (15/5)</label>
+              <label><input type="radio" name="wba_mode" value="flowtime"> Flowtime (Flexible)</label>
+              <label><input type="radio" name="wba_mode" value="custom"> Custom Mode</label>
+            </div>
+            <!-- Custom inputs — muncul hanya jika Custom dipilih -->
+            <div class="wba-custom-inputs" id="workBreakAlarm_customWrap">
+              <div class="wba-custom-field">
+                <span>Work Duration:</span>
+                <input type="number" id="workBreakAlarm_customWork" min="1" max="240" value="120">
+                <span>min</span>
+              </div>
+              <div class="wba-custom-field">
+                <span>Break Duration:</span>
+                <input type="number" id="workBreakAlarm_customBreak" min="1" max="60" value="20">
+                <span>min</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="wba-row">
-          <span class="wba-label">Jadwal Istirahat Siang (Otomatis)</span>
-          <div class="wba-info-box">⏰ 12:00 Istirahat 1 Jam &nbsp;·&nbsp; 💪 13:00 Kembali Kerja</div>
+
+        <!-- Jadwal Istirahat Siang -->
+        <div class="wba-info-box">
+          <div class="wba-info-title">⏰ Jadwal Istirahat Siang:</div>
+          <div class="wba-info-item">⏰ 12:00 Waktunya Istirahat 1 Jam</div>
+          <div class="wba-info-item">⏰ 13:00 Kembali Kerja Lagi</div>
         </div>
+
         <div class="wba-btn-row">
-          <button class="wba-btn-cancel" onclick="workBreakAlarm_closeModal()">Batal</button>
-          <button class="wba-btn-save" onclick="workBreakAlarm_save()">Simpan</button>
+          <button class="wba-btn-save" onclick="workBreakAlarm_save()">Save</button>
+          <button class="wba-btn-cancel" onclick="workBreakAlarm_closeModal()">Cancel</button>
         </div>
       </div>
     </div>
