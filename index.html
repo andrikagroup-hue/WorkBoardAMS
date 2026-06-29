@@ -3322,6 +3322,32 @@ async function changeUser() {
   const newName = input.trim();
   if (newName === oldName) return;
 
+  // Cek dulu: apakah nama baru ini sudah dipakai orang LAIN yang punya riwayat sendiri?
+  // Kalau iya → JANGAN gabung data (itu dua orang berbeda), cukup pindah identitas device ini saja.
+  // Kalau nama baru ini belum pernah dipakai siapa pun → aman, migrasi riwayat seperti biasa.
+  let existing = null;
+  try {
+    const known = await getAllKnownUsers();
+    existing = known.find(u => u.name === newName);
+  } catch (e) { /* kalau gagal cek, anggap aman dan lanjut seperti biasa */ }
+
+  if (existing) {
+    if (!confirm(
+      `Nama "${newName}" sudah terdaftar sebagai pengguna lain di WorkBoard.\n\n` +
+      `Kamu akan beralih memakai nama "${newName}" di device ini, TANPA menggabung riwayat data ` +
+      `"${oldName}" dan "${newName}" — keduanya tetap terpisah seperti semula.\n\n` +
+      `Lanjutkan ganti ke "${newName}"?`
+    )) return;
+
+    localStorage.setItem('wb_user', newName);
+    const elName2 = document.getElementById('user-name');
+    const elNameMobile2 = document.getElementById('user-name-mobile');
+    if (elName2) elName2.textContent = newName;
+    if (elNameMobile2) elNameMobile2.textContent = newName;
+    await refreshCurrentPanel();
+    return;
+  }
+
   if (!confirm(
     `Ganti nama dari "${oldName}" menjadi "${newName}"?\n\n` +
     `Semua riwayat lama kamu (jadwal, tracker, logbook, notes, to do, notepad, chat, absensi, izin/cuti) ` +
@@ -4887,7 +4913,6 @@ async function renderAdminUsers() {
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         ${isOnline ? '<span class="admin-user-badge online">🟢 Online</span>' : ''}
         ${isAdminUser ? '<span class="admin-user-badge admin">⭐ Admin</span>' : ''}
-        <button class="btn-sm" style="color:var(--accent);border-color:var(--accent)" onclick="adminRenameUser('${u.name.replace(/'/g,"\\'")}')" title="Ganti nama user ini (riwayat data ikut berubah)"><i class="ti ti-edit"></i> Ganti Nama</button>
         ${!isSelf ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteUser('${u.name.replace(/'/g,"\\'")}')" title="Hapus semua data user ini"><i class="ti ti-user-minus"></i> Hapus</button>` : ''}
       </div>
     </div>`;
@@ -5067,46 +5092,10 @@ async function adminDeleteUser(targetName) {
   await renderAdminUsers();
 }
 
-// Admin: ganti nama user (riwayat data di semua tabel ikut pindah ke nama baru, tidak jadi dobel nama)
-async function adminRenameUser(oldName) {
-  const currentUser = getUser();
-  const isAdmin = currentUser.toLowerCase().includes('admin')
-    || currentUser.toLowerCase().includes('bos')
-    || currentUser.toLowerCase().includes('hrd');
-  if (!isAdmin) return alert('Akses ditolak.');
+// Admin: ganti nama user di sini sengaja TIDAK ada — ganti nama hanya boleh dilakukan
+// oleh masing-masing user sendiri lewat pencil "Ganti Nama" di sidebar, supaya tidak
+// ada user yang tiba-tiba namanya berubah tanpa sepengetahuan mereka sendiri.
 
-  const input = prompt(`Ganti nama "${oldName}" menjadi:`, oldName);
-  if (!input || !input.trim()) return;
-  const newName = input.trim();
-  if (newName === oldName) return;
-
-  if (!confirm(
-    `Ganti SEMUA riwayat data milik "${oldName}" menjadi "${newName}"?\n\n` +
-    `Ini akan mengubah nama di Daily Schedule, Tracker, Logbook, Notes, To Do, Notepad, Work Talk, ` +
-    `Absensi, dan Izin/Cuti.\n\nTindakan ini TIDAK DAPAT DIBATALKAN. Lanjutkan?`
-  )) return;
-
-  const listEl = document.getElementById('admin-users-list');
-  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Mengganti nama...</div>';
-
-  const res = await renameUserEverywhere(oldName, newName);
-
-  // Kalau yang diganti adalah nama sendiri, sinkronkan juga localStorage di device ini
-  if (oldName === currentUser) {
-    localStorage.setItem('wb_user', newName);
-    const elName = document.getElementById('user-name');
-    const elNameMobile = document.getElementById('user-name-mobile');
-    if (elName) elName.textContent = newName;
-    if (elNameMobile) elNameMobile.textContent = newName;
-  }
-
-  if (!res.ok) {
-    alert(`Nama diganti, tapi ${res.failedCount} bagian data gagal diupdate (mungkin tabel belum ada atau RLS aktif). Cek console untuk detail.`);
-  } else {
-    alert(`✅ Nama "${oldName}" berhasil diganti menjadi "${newName}" di semua data.`);
-  }
-  await renderAdminUsers();
-}
 let linksCache = [];
 
 async function renderLinks() {
