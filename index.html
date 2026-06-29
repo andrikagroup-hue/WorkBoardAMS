@@ -6077,10 +6077,11 @@ function initWorkBreakAlarm() {
     customBreak: 0,
   };
 
-  // Timer handles
-  let _cycleTimer = null;
-  let _fixedTimer = null;
-  let _isBreak = false;     // true = sedang fase istirahat, false = sedang fase kerja
+  // Clock-based tracker
+  let _mainInterval = null;   // setInterval 30 detik — jantung alarm
+  let _cycleStart   = null;   // timestamp (ms) kapan fase sekarang dimulai
+  let _isBreak      = false;  // true = sedang istirahat
+  let _lastFixed    = null;   // 'break12' | 'work13' | null — fixed toast terakhir yg sudah ditampilkan
 
   // ── Helpers ────────────────────────────────────────
   function _load() {
@@ -6090,7 +6091,6 @@ function initWorkBreakAlarm() {
     localStorage.setItem(LS_KEY, JSON.stringify(prefs));
   }
 
-  // Cek apakah sekarang dalam rentang jam kerja (handle span tengah malam, misal 20:00–02:00)
   function _inWorkHours() {
     const now = new Date();
     const cur = now.getHours() * 60 + now.getMinutes();
@@ -6098,33 +6098,46 @@ function initWorkBreakAlarm() {
     const [eh, em] = prefs.end.split(':').map(Number);
     const s = sh * 60 + sm;
     const e = eh * 60 + em;
-    if (s <= e) return cur >= s && cur < e;          // hari yang sama
-    return cur >= s || cur < e;                      // melewati tengah malam
+    if (s <= e) return cur >= s && cur < e;
+    return cur >= s || cur < e;
+  }
+
+  function _phaseDurations() {
+    // return [workMs, breakMs] atau null jika flowtime
+    const m = prefs.mode;
+    if (m === 'pomodoro')       return [25 * 60000, 5 * 60000];
+    if (m === 'short_pomodoro') return [15 * 60000, 5 * 60000];
+    if (m === 'custom') {
+      const w = (parseInt(prefs.customWork)  || 1) * 60000;
+      const b = (parseInt(prefs.customBreak) || 1) * 60000;
+      return [w, b];
+    }
+    return null; // flowtime
   }
 
   // ── Toast ──────────────────────────────────────────
   function _showToast(main, sub, isWork) {
-    const el = document.getElementById('workBreakAlarm_toast');
+    const el     = document.getElementById('workBreakAlarm_toast');
     const elMain = document.getElementById('workBreakAlarm_toastMain');
     const elSub  = document.getElementById('workBreakAlarm_toastSub');
+    if (!el) return;
     elMain.textContent = main;
     elSub.textContent  = sub;
     el.classList.toggle('work-toast', !!isWork);
-    el.style.display = 'block';
-    el.style.opacity = '1';
-    // Browser notification (jika diizinkan)
+    el.style.display    = 'block';
+    el.style.opacity    = '1';
+    el.style.transition = '';
     if (Notification && Notification.permission === 'granted') {
       try { new Notification(main, { body: sub, icon: 'favicon.ico' }); } catch (_) {}
     }
     clearTimeout(el._wbaTimer);
     el._wbaTimer = setTimeout(() => {
       el.style.transition = 'opacity .5s';
-      el.style.opacity = '0';
+      el.style.opacity    = '0';
       setTimeout(() => { el.style.display = 'none'; el.style.transition = ''; }, 500);
     }, 5000);
   }
 
-  // Pesan toast berdasarkan kondisi
   function _toastBreak() {
     const msgs = {
       pomodoro:       ['⏰ WAKTUNYA ISTIRAHAT!', 'Ambil waktu 5 menit untuk istirahat.'],
@@ -6139,79 +6152,74 @@ function initWorkBreakAlarm() {
     _showToast('💪 WAKTUNYA KERJA LAGI!', 'Fokus kembali sampai jam kerja selesai.', true);
   }
 
-  // ── Cycle Timer (Pomodoro / Custom) ────────────────
-  function _getDurations() {
-    // [workMs, breakMs]
-    const m = prefs.mode;
-    if (m === 'pomodoro')       return [25 * 60000, 5 * 60000];
-    if (m === 'short_pomodoro') return [15 * 60000, 5 * 60000];
-    if (m === 'custom')         return [prefs.customWork * 60000, prefs.customBreak * 60000];
-    return null; // flowtime — tidak ada timer otomatis
-  }
-
-  function _stopCycle() {
-    clearTimeout(_cycleTimer);
-    _cycleTimer = null;
-    _isBreak = false;
-  }
-
-  function _startCycle() {
-    _stopCycle();
-    if (!prefs.on || prefs.mode === 'flowtime') return;
-    const durs = _getDurations();
-    if (!durs) return;
-
-    function _tick(isBreakPhase) {
-      if (!prefs.on || !_inWorkHours()) { _stopCycle(); return; }
-      const waitMs = isBreakPhase ? durs[1] : durs[0];
-      _cycleTimer = setTimeout(() => {
-        if (!prefs.on || !_inWorkHours()) { _stopCycle(); return; }
-        _isBreak = !isBreakPhase;
-        if (_isBreak) _toastBreak(); else _toastWork();
-        _tick(_isBreak);
-      }, waitMs);
-    }
-    _isBreak = false;
-    _tick(false); // mulai dari fase kerja
-  }
-
-  // ── Fixed Break (12:00 & 13:00) ────────────────────
-  function _scheduleFixedBreak() {
-    clearTimeout(_fixedTimer);
+  // ── CLOCK-BASED TICK (jantung utama) ───────────────
+  // Dipanggil setiap 30 detik. Tidak bergantung countdown — cek jam aktual.
+  function _tick() {
     if (!prefs.on) return;
 
-    function _msUntil(h, m) {
-      const now = new Date();
-      const target = new Date(now);
-      target.setHours(h, m, 0, 0);
-      if (target <= now) target.setDate(target.getDate() + 1); // besok
-      return target - now;
+    const now     = Date.now();
+    const nowDate = new Date();
+    const h       = nowDate.getHours();
+    const m       = nowDate.getMinutes();
+
+    // ── 1. Fixed break 12:00 & 13:00 ──
+    if (h === 12 && m === 0 && _lastFixed !== 'break12') {
+      _lastFixed = 'break12';
+      _showToast('⏰ WAKTUNYA ISTIRAHAT SEBENTAR!', 'Ambil waktu 60 menit untuk istirahat.', false);
+    } else if (h === 13 && m === 0 && _lastFixed !== 'work13') {
+      _lastFixed = 'work13';
+      _showToast('💪 WAKTUNYA KERJA LAGI!', 'Fokus kembali sampai jam kerja selesai.', true);
+    } else if (h !== 12 && h !== 13) {
+      _lastFixed = null; // reset agar bisa muncul lagi hari berikutnya / jam berikutnya
     }
 
-    const now = new Date();
-    const hour = now.getHours(), min = now.getMinutes();
-
-    // Tentukan checkpoint berikutnya: 12:00 atau 13:00
-    let nextH, nextM, nextAction;
-    if (hour < 12 || (hour === 12 && min === 0)) {
-      nextH = 12; nextM = 0; nextAction = 'break12';
-    } else if (hour < 13 || (hour === 13 && min === 0)) {
-      nextH = 13; nextM = 0; nextAction = 'work13';
-    } else {
-      // Sudah lewat keduanya → jadwalkan 12:00 besok
-      nextH = 12; nextM = 0; nextAction = 'break12';
+    // ── 2. Cycle alarm (Pomodoro / Custom) ──
+    if (prefs.mode === 'flowtime') return;
+    if (!_inWorkHours()) {
+      // Di luar jam kerja — reset cycle agar mulai fresh saat masuk jam kerja
+      _cycleStart = null;
+      _isBreak    = false;
+      return;
     }
 
-    _fixedTimer = setTimeout(() => {
-      if (!prefs.on) return;
-      if (nextAction === 'break12') {
-        _showToast('⏰ WAKTUNYA ISTIRAHAT SEBENTAR!', 'Ambil waktu 60 menit untuk istirahat.', false);
-      } else {
-        _showToast('💪 WAKTUNYA KERJA LAGI!', 'Fokus kembali sampai jam kerja selesai.', true);
-      }
-      // Jadwalkan ulang untuk checkpoint berikutnya
-      setTimeout(_scheduleFixedBreak, 60000); // cek ulang 1 menit setelah toast
-    }, _msUntil(nextH, nextM));
+    const durs = _phaseDurations();
+    if (!durs) return;
+
+    if (_cycleStart === null) {
+      // Baru mulai / baru masuk jam kerja
+      _cycleStart = now;
+      _isBreak    = false;
+      return;
+    }
+
+    const elapsed    = now - _cycleStart;
+    const phaseMs    = _isBreak ? durs[1] : durs[0];
+
+    if (elapsed >= phaseMs) {
+      // Fase selesai — ganti fase
+      _isBreak    = !_isBreak;
+      _cycleStart = now;
+      if (_isBreak) _toastBreak(); else _toastWork();
+    }
+  }
+
+  // ── Start / Stop ───────────────────────────────────
+  function _stopAll() {
+    clearInterval(_mainInterval);
+    _mainInterval = null;
+    _cycleStart   = null;
+    _isBreak      = false;
+    _lastFixed    = null;
+  }
+
+  function _startAll() {
+    _stopAll();
+    if (!prefs.on) return;
+    _requestNotifPermission();
+    _cycleStart = _inWorkHours() ? Date.now() : null;
+    _isBreak    = false;
+    _mainInterval = setInterval(_tick, 30000); // cek setiap 30 detik
+    _tick(); // langsung cek sekali saat start
   }
 
   // ── Minta izin notif browser ────────────────────────
@@ -6224,7 +6232,6 @@ function initWorkBreakAlarm() {
   // ── UI Modal ───────────────────────────────────────
   window.workBreakAlarm_openModal = function () {
     _load();
-    // Isi form dari prefs
     document.getElementById('workBreakAlarm_toggle').checked = prefs.on;
     document.getElementById('workBreakAlarm_statusLabel').textContent = prefs.on ? 'ON' : 'OFF';
     document.getElementById('workBreakAlarm_start').value = prefs.start;
@@ -6251,27 +6258,18 @@ function initWorkBreakAlarm() {
     prefs.start       = document.getElementById('workBreakAlarm_start').value || '08:00';
     prefs.end         = document.getElementById('workBreakAlarm_end').value   || '17:00';
     prefs.mode        = document.querySelector('input[name="wba_mode"]:checked')?.value || 'pomodoro';
-    prefs.customWork  = parseInt(document.getElementById('workBreakAlarm_customWork').value)  || 30;
-    prefs.customBreak = parseInt(document.getElementById('workBreakAlarm_customBreak').value) || 10;
+    prefs.customWork  = parseInt(document.getElementById('workBreakAlarm_customWork').value)  || 1;
+    prefs.customBreak = parseInt(document.getElementById('workBreakAlarm_customBreak').value) || 1;
     _save();
     _applyBtn();
     workBreakAlarm_closeModal();
-    // Restart semua timer dengan setting baru
-    _stopCycle();
-    clearTimeout(_fixedTimer);
-    if (prefs.on) {
-      _requestNotifPermission();
-      _startCycle();
-      _scheduleFixedBreak();
-    }
+    _startAll(); // restart dengan setting baru, cycle mulai dari 0
   };
 
-  // Toggle label ON/OFF saat checkbox diklik di modal
   document.getElementById('workBreakAlarm_toggle').addEventListener('change', function () {
     document.getElementById('workBreakAlarm_statusLabel').textContent = this.checked ? 'ON' : 'OFF';
   });
 
-  // Tampilkan/sembunyikan input Custom saat mode dipilih
   document.querySelectorAll('input[name="wba_mode"]').forEach(r => {
     r.addEventListener('change', () => _toggleCustomInputs(r.value === 'custom'));
   });
@@ -6280,7 +6278,6 @@ function initWorkBreakAlarm() {
     document.getElementById('workBreakAlarm_customWrap').classList.toggle('visible', show);
   }
 
-  // Update warna tombol sesuai status alarm
   function _applyBtn() {
     const btn = document.getElementById('workBreakAlarm_btn');
     if (!btn) return;
@@ -6290,12 +6287,10 @@ function initWorkBreakAlarm() {
   // ── Init ───────────────────────────────────────────
   _load();
   _applyBtn();
-  if (prefs.on) {
-    _requestNotifPermission();
-    _startCycle();
-    _scheduleFixedBreak();
-  }
+  _startAll();
 }
+
+// Panggil saat app siap}
 
 // Panggil saat app siap
 document.addEventListener('DOMContentLoaded', () => {
