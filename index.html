@@ -80,18 +80,50 @@ body::before {
 .sb-user { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 5px 8px; background: #EFF6FF; border-radius: 6px; }
 .sb-user-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
 .sb-user-name { font-size: 11px; color: #1D4ED8; font-weight: 500; }
-.nav-section { padding: 10px 8px 4px; }
-.nav-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; padding: 0 8px; margin-bottom: 3px; }
+/* ── Flyout Sidebar Navigation ── */
+.nav-section { padding: 3px 8px; }
+
+/* Parent nav item (group header) */
+.nav-group {
+  position: relative;
+}
 .nav-item {
   display: flex; align-items: center; gap: 9px;
   padding: 7px 12px; border-radius: var(--radius);
   cursor: pointer; font-size: 13px; color: var(--text2);
   border: none; background: none; width: 100%; text-align: left;
   transition: background 0.12s, color 0.12s;
+  user-select: none;
 }
 .nav-item:hover { background: var(--bg2); color: var(--text1); }
 .nav-item.active { background: #EFF6FF; color: #1D4ED8; font-weight: 500; }
-.nav-item i { font-size: 16px; flex-shrink: 0; }
+.nav-item.group-active { background: #EFF6FF; color: #1D4ED8; }
+.nav-item i.nav-icon { font-size: 17px; flex-shrink: 0; }
+.nav-item .nav-label-text { flex: 1; font-size: 12.5px; font-weight: 500; }
+.nav-item .nav-arrow {
+  font-size: 10px; margin-left: auto; opacity: .5;
+  transition: transform 0.18s;
+}
+.nav-group.open > .nav-item .nav-arrow { transform: rotate(90deg); opacity: .8; }
+
+/* Flyout submenu — slides down inline */
+.nav-submenu {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.22s ease;
+}
+.nav-group.open > .nav-submenu { max-height: 400px; }
+.nav-sub-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 36px;
+  border-radius: var(--radius);
+  cursor: pointer; font-size: 12.5px; color: var(--text2);
+  border: none; background: none; width: 100%; text-align: left;
+  transition: background 0.1s, color 0.1s;
+}
+.nav-sub-item:hover { background: var(--bg2); color: var(--text1); }
+.nav-sub-item.active { background: #EFF6FF; color: #1D4ED8; font-weight: 500; }
+.nav-sub-item i { font-size: 14px; flex-shrink: 0; opacity: .8; }
 .nav-badge {
   margin-left: auto; font-size: 10px; padding: 1px 6px;
   border-radius: 10px; font-weight: 500; min-width: 20px; text-align: center;
@@ -778,78 +810,145 @@ textarea { resize: vertical; }
       </div>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-label">Harian</div>
-      <button class="nav-item active" onclick="switchPanel('schedule',this)">
-        <i class="ti ti-calendar-event" aria-hidden="true"></i> Daily Schedule
-        <span class="nav-badge badge-blue" id="badge-sched">0</span>
-      </button>
-      <button class="nav-item" onclick="switchPanel('tracker',this)">
-        <i class="ti ti-clock" aria-hidden="true"></i> Time Plan Tracker
-        <span class="nav-badge badge-amber" id="badge-track">0</span>
-      </button>
-      <button class="nav-item" onclick="switchPanel('logbook',this)">
-        <i class="ti ti-book" aria-hidden="true"></i> Logbook
-        <span class="nav-badge badge-blue" id="badge-log">0</span>
-      </button>
-    </div>
+    <div class="nav-section" style="padding-top:8px">
 
-    <div class="nav-section">
-      <div class="nav-label">Catatan</div>
-      <button class="nav-item" onclick="switchPanel('notes',this)">
-        <i class="ti ti-notes" aria-hidden="true"></i> Notes
-        <span class="nav-badge badge-blue" id="badge-notes">0</span>
-      </button>
-      <button class="nav-item" onclick="switchPanel('todo',this)">
-        <i class="ti ti-checkbox" aria-hidden="true"></i> To Do
-        <span class="nav-badge badge-red" id="badge-todo">0</span>
-      </button>
-      <button class="nav-item" onclick="switchPanel('notepad',this)">
-        <i class="ti ti-notebook" aria-hidden="true"></i> Notepad
-        <span class="nav-badge badge-blue" id="badge-notepad">0</span>
-      </button>
-    </div>
+      <!-- DAILY -->
+      <div class="nav-group" id="ng-daily">
+        <button class="nav-item" onclick="toggleNavGroup('ng-daily')" title="Daily">
+          <i class="ti ti-calendar nav-icon"></i>
+          <span class="nav-label-text">Daily</span>
+          <i class="ti ti-chevron-right nav-arrow"></i>
+        </button>
+        <div class="nav-submenu">
+          <button class="nav-sub-item active" id="nsub-schedule" onclick="switchPanel('schedule',this)">
+            <i class="ti ti-calendar-event"></i> Daily Schedule
+            <span class="nav-badge badge-blue" id="badge-sched">0</span>
+          </button>
+          <button class="nav-sub-item" id="nsub-tracker" onclick="switchPanel('tracker',this)">
+            <i class="ti ti-clock"></i> Time Plan Tracker
+            <span class="nav-badge badge-amber" id="badge-track">0</span>
+          </button>
+          <button class="nav-sub-item" id="nsub-logbook" onclick="switchPanel('logbook',this)">
+            <i class="ti ti-book"></i> Logbook
+            <span class="nav-badge badge-blue" id="badge-log">0</span>
+          </button>
+        </div>
+      </div>
 
-    <div class="nav-section">
-      <div class="nav-label">Komunikasi</div>
-      <button class="nav-item" onclick="switchPanel('chat',this)">
-        <i class="ti ti-message-circle-2" aria-hidden="true"></i> Work Talk
-        <span class="nav-badge badge-red" id="badge-chat">0</span>
-      </button>
-    </div>
+      <!-- TASKS -->
+      <div class="nav-group" id="ng-tasks">
+        <button class="nav-item" onclick="toggleNavGroup('ng-tasks')" title="Tasks">
+          <i class="ti ti-checklist nav-icon"></i>
+          <span class="nav-label-text">Tasks</span>
+          <i class="ti ti-chevron-right nav-arrow"></i>
+        </button>
+        <div class="nav-submenu">
+          <button class="nav-sub-item" id="nsub-notes" onclick="switchPanel('notes',this)">
+            <i class="ti ti-notes"></i> Notes
+            <span class="nav-badge badge-blue" id="badge-notes">0</span>
+          </button>
+          <button class="nav-sub-item" id="nsub-todo" onclick="switchPanel('todo',this)">
+            <i class="ti ti-checkbox"></i> To Do
+            <span class="nav-badge badge-red" id="badge-todo">0</span>
+          </button>
+          <button class="nav-sub-item" id="nsub-notepad" onclick="switchPanel('notepad',this)">
+            <i class="ti ti-notebook"></i> Notepad
+            <span class="nav-badge badge-blue" id="badge-notepad">0</span>
+          </button>
+        </div>
+      </div>
 
-    <div class="nav-section">
-      <div class="nav-label">SDM</div>
-      <button class="nav-item" onclick="switchPanel('absen',this)">
-        <i class="ti ti-fingerprint" aria-hidden="true"></i> Absensi
-        <span class="nav-badge badge-blue" id="badge-absen"></span>
-      </button>
-      <button class="nav-item" id="nav-admin-users" onclick="switchPanel('adminusers',this)" style="display:none">
-        <i class="ti ti-users-group" aria-hidden="true"></i> Kelola User
-      </button>
-    </div>
+      <!-- COMMUNICATION -->
+      <div class="nav-group" id="ng-comm">
+        <button class="nav-item" onclick="toggleNavGroup('ng-comm')" title="Communication">
+          <i class="ti ti-message-2 nav-icon"></i>
+          <span class="nav-label-text">Communication</span>
+          <i class="ti ti-chevron-right nav-arrow"></i>
+        </button>
+        <div class="nav-submenu">
+          <button class="nav-sub-item" id="nsub-chat" onclick="switchPanel('chat',this)">
+            <i class="ti ti-message-circle-2"></i> Work Talk
+            <span class="nav-badge badge-red" id="badge-chat">0</span>
+          </button>
+        </div>
+      </div>
 
-    <div class="nav-section">
-      <div class="nav-label">Laporan</div>
-      <button class="nav-item" onclick="switchPanel('result',this)">
-        <i class="ti ti-chart-bar" aria-hidden="true"></i> Result
-        <span class="nav-badge badge-blue">bulan ini</span>
-      </button>
-    </div>
+      <!-- HR -->
+      <div class="nav-group" id="ng-hr">
+        <button class="nav-item" onclick="toggleNavGroup('ng-hr')" title="HR">
+          <i class="ti ti-users nav-icon"></i>
+          <span class="nav-label-text">HR</span>
+          <i class="ti ti-chevron-right nav-arrow"></i>
+        </button>
+        <div class="nav-submenu">
+          <button class="nav-sub-item" id="nsub-absen" onclick="switchPanel('absen',this)">
+            <i class="ti ti-fingerprint"></i> Attendance
+            <span class="nav-badge badge-blue" id="badge-absen"></span>
+          </button>
+        </div>
+      </div>
 
-    <div class="nav-section">
-      <div class="nav-label">🔗 Quick Links</div>
-      <button class="nav-item" onclick="switchPanel('links',this)">
-        <i class="ti ti-link" aria-hidden="true"></i> Semua Link
-        <span class="nav-badge badge-blue" id="badge-links">—</span>
-      </button>
-    </div>
+      <!-- REPORTS -->
+      <div class="nav-group" id="ng-reports">
+        <button class="nav-item" onclick="toggleNavGroup('ng-reports')" title="Reports">
+          <i class="ti ti-chart-bar nav-icon"></i>
+          <span class="nav-label-text">Reports</span>
+          <i class="ti ti-chevron-right nav-arrow"></i>
+        </button>
+        <div class="nav-submenu">
+          <button class="nav-sub-item" id="nsub-result" onclick="switchPanel('result',this)">
+            <i class="ti ti-chart-pie"></i> Result
+            <span class="nav-badge badge-blue" style="font-size:9px">bulan ini</span>
+          </button>
+        </div>
+      </div>
 
-    <div class="nav-section">
-      <div class="nav-label">ℹ️ Bantuan</div>
-      <button class="nav-item" onclick="switchPanel('faq',this)">
-        <i class="ti ti-help-circle" aria-hidden="true"></i> Panduan & FAQ
-      </button>
+      <!-- QUICK LINKS -->
+      <div class="nav-group" id="ng-links">
+        <button class="nav-item" onclick="toggleNavGroup('ng-links')" title="Quick Links">
+          <i class="ti ti-link nav-icon"></i>
+          <span class="nav-label-text">Quick Links</span>
+          <i class="ti ti-chevron-right nav-arrow"></i>
+        </button>
+        <div class="nav-submenu">
+          <button class="nav-sub-item" id="nsub-links" onclick="switchPanel('links',this)">
+            <i class="ti ti-world"></i> All Links
+            <span class="nav-badge badge-blue" id="badge-links">—</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- HELP -->
+      <div class="nav-group" id="ng-help">
+        <button class="nav-item" onclick="toggleNavGroup('ng-help')" title="Help">
+          <i class="ti ti-help-circle nav-icon"></i>
+          <span class="nav-label-text">Help</span>
+          <i class="ti ti-chevron-right nav-arrow"></i>
+        </button>
+        <div class="nav-submenu">
+          <button class="nav-sub-item" id="nsub-faq" onclick="switchPanel('faq',this)">
+            <i class="ti ti-book-2"></i> Guide & FAQ
+          </button>
+        </div>
+      </div>
+
+      <!-- SETTINGS (admin only) -->
+      <div class="nav-group" id="ng-settings" style="display:none">
+        <button class="nav-item" onclick="toggleNavGroup('ng-settings')" title="Settings">
+          <i class="ti ti-settings nav-icon"></i>
+          <span class="nav-label-text">Settings</span>
+          <i class="ti ti-chevron-right nav-arrow"></i>
+        </button>
+        <div class="nav-submenu">
+          <button class="nav-sub-item" id="nav-admin-users" onclick="switchPanel('adminusers',this)">
+            <i class="ti ti-users-group"></i> Manage Users
+          </button>
+          <button class="nav-sub-item" id="nav-admin-leave" onclick="switchPanel('adminleave',this)">
+            <i class="ti ti-calendar-off"></i> Leave Management
+          </button>
+        </div>
+      </div>
+
     </div>
 
     <div class="sb-progress">
@@ -1454,6 +1553,34 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
         </div>
       </div>
 
+      <!-- ── Leave Management (Admin) ──────── -->
+      <div class="panel" id="panel-adminleave">
+        <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#92400E">
+          <strong>⚙️ Leave Management</strong> — Setujui, tolak, atau hapus pengajuan izin/sakit/cuti karyawan.
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:13px;font-weight:600;color:var(--text1)">📋 Pengajuan Izin / Sakit / Cuti</div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <select id="admin-leave-filter2" class="global-filter" style="font-size:12px" onchange="renderAdminLeaveStandalone()">
+              <option value="all">Semua Status</option>
+              <option value="pending">⏳ Menunggu</option>
+              <option value="approved">✅ Disetujui</option>
+              <option value="rejected">❌ Ditolak</option>
+            </select>
+            <select id="admin-leave-type2" class="global-filter" style="font-size:12px" onchange="renderAdminLeaveStandalone()">
+              <option value="all">Semua Tipe</option>
+              <option value="izin">📝 Izin</option>
+              <option value="sakit">🤒 Sakit</option>
+              <option value="cuti">🏖️ Cuti</option>
+            </select>
+            <button class="btn-sm" onclick="renderAdminLeaveStandalone()"><i class="ti ti-refresh"></i> Refresh</button>
+          </div>
+        </div>
+        <div id="admin-leave-list2">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat data izin...</div>
+        </div>
+      </div>
+
       <!-- ── Quick Links ─────────────────────── -->
       <div class="panel" id="panel-links">
 
@@ -1770,7 +1897,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const todayInputs = document.querySelectorAll('.input-today');
   todayInputs.forEach(el => { el.value = todayStr(); });
 
-  applyAdminVisibility(); // tampilkan/sembunyikan menu Kelola User
+  applyAdminVisibility(); // tampilkan/sembunyikan menu Settings
+  // Auto-open Daily group on first load
+  const ngDaily = document.getElementById('ng-daily');
+  if (ngDaily) ngDaily.classList.add('open');
   await renderSchedule();
   updateDailyProgress();
   loadChatLastRead();
@@ -1821,9 +1951,11 @@ function startChatPolling() {
 // ── Panel switching ────────────────────────
 async function switchPanel(id, el) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('panel-' + id).classList.add('active');
-  el.classList.add('active');
+  // Remove active from both old nav-item and new nav-sub-item
+  document.querySelectorAll('.nav-item, .nav-sub-item').forEach(n => n.classList.remove('active'));
+  const panelEl = document.getElementById('panel-' + id);
+  if (panelEl) panelEl.classList.add('active');
+  if (el) el.classList.add('active');
   currentPanel = id;
 
   const titles = {
@@ -1832,17 +1964,19 @@ async function switchPanel(id, el) {
     logbook: 'Logbook',
     notes: 'Notes',
     todo: 'To Do',
-    result: 'Result — Laporan',
+    result: 'Reports — Result',
     notepad: 'Notepad',
     chat: 'Work Talk',
-    absen: 'Absensi',
-    adminusers: '⚙️ Kelola User',
+    absen: 'HR — Attendance',
+    adminusers: '⚙️ Manage Users',
+    adminleave: '⚙️ Leave Management',
     links: '🔗 Quick Links',
-    faq: '📖 Panduan & FAQ'
+    faq: '📖 Guide & FAQ'
   };
   document.getElementById('panel-title').textContent = titles[id] || id;
   updateGlobalSearchFilter(id);
   hideAllForms();
+  openNavGroupForPanel(id);
 
   if (id === 'schedule') await renderSchedule();
   else if (id === 'tracker') { await renderTracker(); await renderProjectTracker(); }
@@ -1854,6 +1988,7 @@ async function switchPanel(id, el) {
   else if (id === 'chat') await renderChat();
   else if (id === 'absen') await renderAbsen();
   else if (id === 'adminusers') await renderAdminUsers();
+  else if (id === 'adminleave') await renderAdminLeaveStandalone();
   else if (id === 'links') await renderLinks();
   else if (id === 'faq') renderFaq();
 }
@@ -3321,6 +3456,37 @@ function setupRealtime() {
 window.addEventListener('DOMContentLoaded', () => {
   setupRealtime();
 });
+
+// ── Flyout sidebar: toggle group open/close ──────────────────
+function toggleNavGroup(groupId) {
+  const grp = document.getElementById(groupId);
+  if (!grp) return;
+  const isOpen = grp.classList.contains('open');
+  // Close all groups first
+  document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
+  // Open clicked group if it was closed
+  if (!isOpen) grp.classList.add('open');
+}
+
+// Open the nav-group that contains the given panel id
+function openNavGroupForPanel(panelId) {
+  const map = {
+    schedule: 'ng-daily', tracker: 'ng-daily', logbook: 'ng-daily',
+    notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
+    chat: 'ng-comm',
+    absen: 'ng-hr',
+    result: 'ng-reports',
+    links: 'ng-links',
+    faq: 'ng-help',
+    adminusers: 'ng-settings', adminleave: 'ng-settings'
+  };
+  const groupId = map[panelId];
+  if (!groupId) return;
+  document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
+  const grp = document.getElementById(groupId);
+  if (grp) grp.classList.add('open');
+}
+
 // Ganti User: masuk sebagai pengguna lain di perangkat ini (tanpa migrasi data)
 async function switchUser() {
   const currentName = getUser();
@@ -4289,13 +4455,17 @@ const quillNp = new Quill('#np-body-editor', {
       <span>Links</span>
       <span class="bn-badge hidden" id="bn-badge-links"></span>
     </button>
-    <button class="bn-item" id="bn-admin-users" style="display:none" onclick="switchPanelMobile('adminusers',this)" aria-label="Kelola User">
-      <i class="ti ti-settings"></i>
-      <span>Admin</span>
+    <button class="bn-item" id="bn-admin-users" style="display:none" onclick="switchPanelMobile('adminusers',this)" aria-label="Manage Users">
+      <i class="ti ti-users-group"></i>
+      <span>Users</span>
     </button>
-    <button class="bn-item" onclick="switchPanelMobile('faq',this)" aria-label="Panduan">
+    <button class="bn-item" id="bn-admin-leave" style="display:none" onclick="switchPanelMobile('adminleave',this)" aria-label="Leave Management">
+      <i class="ti ti-calendar-off"></i>
+      <span>Leaves</span>
+    </button>
+    <button class="bn-item" onclick="switchPanelMobile('faq',this)" aria-label="Help">
       <i class="ti ti-help-circle"></i>
-      <span>Panduan</span>
+      <span>Help</span>
     </button>
   </div>
 </nav>
@@ -4851,16 +5021,25 @@ async function adminDeleteAbsen(id, leaveId) {
 }
 
 // ── ADMIN: Kelola User ──────────────────────────────────────
-// Tampilkan/sembunyikan menu Kelola User berdasarkan apakah user adalah admin
+// Tampilkan/sembunyikan menu Settings berdasarkan apakah user adalah admin
 function applyAdminVisibility() {
   const currentUser = getUser();
   const isAdmin = currentUser.toLowerCase().includes('admin')
     || currentUser.toLowerCase().includes('bos')
     || currentUser.toLowerCase().includes('hrd');
+  // Desktop: show/hide Settings nav-group
+  const ngSettings = document.getElementById('ng-settings');
+  if (ngSettings) ngSettings.style.display = isAdmin ? 'block' : 'none';
+  // Keep legacy IDs working for any other code that references them
   const navEl = document.getElementById('nav-admin-users');
   if (navEl) navEl.style.display = isAdmin ? 'flex' : 'none';
+  const navLeaveEl = document.getElementById('nav-admin-leave');
+  if (navLeaveEl) navLeaveEl.style.display = isAdmin ? 'flex' : 'none';
+  // Bottom nav admin button
   const bnAdminEl = document.getElementById('bn-admin-users');
   if (bnAdminEl) bnAdminEl.style.display = isAdmin ? 'flex' : 'none';
+  const bnLeaveEl = document.getElementById('bn-admin-leave');
+  if (bnLeaveEl) bnLeaveEl.style.display = isAdmin ? 'flex' : 'none';
 }
 
 // Kumpulkan semua nama unik dari berbagai tabel di Supabase
@@ -4934,7 +5113,8 @@ async function renderAdminUsers() {
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         ${isOnline ? '<span class="admin-user-badge online">🟢 Online</span>' : ''}
         ${isAdminUser ? '<span class="admin-user-badge admin">⭐ Admin</span>' : ''}
-        ${!isSelf ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteUser('${u.name.replace(/'/g,"\\'")}')" title="Hapus semua data user ini"><i class="ti ti-user-minus"></i> Hapus</button>` : ''}
+        <button class="btn-sm" onclick="adminRenameUser('${u.name.replace(/'/g,"\\'")}')\" title="Ubah nama user ini"><i class="ti ti-pencil"></i> Rename</button>
+        ${!isSelf ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteUser('${u.name.replace(/'/g,"\\'")}\')" title="Hapus semua data user ini"><i class="ti ti-user-minus"></i> Hapus</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -4950,20 +5130,21 @@ function switchAdminTab(tab) {
 }
 
 // ── Admin: Kelola Izin/Cuti ────────────────────────────────────
-async function renderAdminLeave() {
+// Shared rendering helper for both Leave Management panels
+async function _renderAdminLeaveInto(listEl, filterSelectEl, typeSelectEl) {
   const currentUser = getUser();
   const isAdmin = currentUser.toLowerCase().includes('admin')
     || currentUser.toLowerCase().includes('bos')
     || currentUser.toLowerCase().includes('hrd');
-  const listEl = document.getElementById('admin-leave-list');
+  if (!listEl) return;
   if (!isAdmin) {
     listEl.innerHTML = '<div class="empty-msg">⛔ Akses ditolak.</div>';
     return;
   }
   listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...</div>';
 
-  const filterStatus = document.getElementById('admin-leave-filter')?.value || 'all';
-  const filterType   = document.getElementById('admin-leave-type')?.value || 'all';
+  const filterStatus = filterSelectEl?.value || 'all';
+  const filterType   = typeSelectEl?.value   || 'all';
 
   let query = sb.from('leave_requests').select('*').order('created_at', { ascending: false });
   if (filterStatus !== 'all') query = query.eq('status', filterStatus);
@@ -4971,7 +5152,6 @@ async function renderAdminLeave() {
 
   const { data, error } = await withTimeout(query);
   if (error) {
-    // Kolom status belum ada → tampilkan petunjuk migrasi
     if (error.message && (error.message.includes('status') || error.message.includes('column'))) {
       listEl.innerHTML = `<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:#92400E">
         ⚠️ <strong>Setup diperlukan:</strong> Kolom <code>status</code> dan <code>catatan_admin</code> belum ada di tabel <code>leave_requests</code>.
@@ -4984,15 +5164,12 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
     }
     return;
   }
-
   if (!data || !data.length) {
     listEl.innerHTML = '<div class="empty-msg">Tidak ada pengajuan izin untuk filter ini.</div>';
     return;
   }
-
-  const tipeIcon  = { izin: '📝', sakit: '🤒', cuti: '🏖️' };
+  const tipeIcon    = { izin: '📝', sakit: '🤒', cuti: '🏖️' };
   const statusLabel = { pending: '⏳ Menunggu', approved: '✅ Disetujui', rejected: '❌ Ditolak' };
-
   listEl.innerHTML = data.map(lv => {
     const st = lv.status || 'pending';
     const tipe = lv.tipe || 'izin';
@@ -5006,7 +5183,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
         <div class="admin-leave-name">${escHtml(lv.user_name || '—')}</div>
         <div class="admin-leave-meta">
           <span class="admin-leave-badge alb-${tipe}">${tipeIcon[tipe]||''} ${tipe.charAt(0).toUpperCase()+tipe.slice(1)}</span>
-          &nbsp;${dari} s/d ${sampai}${durStr ? ' <span style="color:var(--text3)">(' + durStr + ')</span>' : ''}
+          &nbsp;${dari} s/d ${sampai}${durStr ? ' <span style="color:var(--text3)">('+durStr+')</span>' : ''}
           &nbsp;·&nbsp;Diajukan: ${diajukan}
         </div>
         ${lv.alasan ? `<div class="admin-leave-alasan">"${escHtml(lv.alasan)}"</div>` : ''}
@@ -5021,6 +5198,23 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
       </div>
     </div>`;
   }).join('');
+}
+
+// renderAdminLeaveStandalone renders into the standalone panel (#admin-leave-list2)
+async function renderAdminLeaveStandalone() {
+  await _renderAdminLeaveInto(
+    document.getElementById('admin-leave-list2'),
+    document.getElementById('admin-leave-filter2'),
+    document.getElementById('admin-leave-type2')
+  );
+}
+
+async function renderAdminLeave() {
+  await _renderAdminLeaveInto(
+    document.getElementById('admin-leave-list'),
+    document.getElementById('admin-leave-filter'),
+    document.getElementById('admin-leave-type')
+  );
 }
 
 async function adminUpdateLeaveStatus(id, newStatus) {
@@ -5054,6 +5248,7 @@ async function adminUpdateLeaveStatus(id, newStatus) {
   }
 
   await renderAdminLeave();
+  await renderAdminLeaveStandalone();
 }
 
 async function adminDeleteLeave(id) {
@@ -5066,9 +5261,36 @@ async function adminDeleteLeave(id) {
   const { error } = await withTimeout(sb.from('leave_requests').delete().eq('id', id));
   if (error) return alert('Gagal hapus: ' + error.message);
   await renderAdminLeave();
+  await renderAdminLeaveStandalone();
 }
 
 // Hapus semua data user dari seluruh tabel
+// Admin: ubah nama user lain (semua data user tsb dipindah ke nama baru)
+async function adminRenameUser(oldName) {
+  const newName = prompt(`Ubah nama "${oldName}" menjadi apa?`, oldName);
+  if (!newName || !newName.trim() || newName.trim() === oldName) return;
+  const trimmed = newName.trim();
+  if (!confirm(`Ubah nama "${oldName}" → "${trimmed}"?\n\nSemua data user ini (jadwal, absensi, chat, notes, dll) akan dipindahkan ke nama baru.`)) return;
+
+  // Update localStorage jika admin mengganti nama dirinya sendiri
+  if (oldName === getUser()) {
+    localStorage.setItem('wb_user', trimmed);
+    const elName = document.getElementById('user-name');
+    const elNameM = document.getElementById('user-name-mobile');
+    if (elName) elName.textContent = trimmed;
+    if (elNameM) elNameM.textContent = trimmed;
+    applyAdminVisibility();
+  }
+
+  const res = await renameUserEverywhere(oldName, trimmed);
+  if (!res.ok) {
+    alert(`Nama diubah ke "${trimmed}", tapi ${res.failedCount} tabel gagal diupdate.`);
+  } else {
+    alert(`✅ Nama "${oldName}" berhasil diubah menjadi "${trimmed}".`);
+  }
+  await renderAdminUsers();
+}
+
 async function adminDeleteUser(targetName) {
   const currentUser = getUser();
   const isAdmin = currentUser.toLowerCase().includes('admin')
