@@ -767,7 +767,10 @@ textarea { resize: vertical; }
       <div class="sb-user">
         <div class="sb-user-dot"></div>
         <span class="sb-user-name" id="user-name">—</span>
-        <button style="margin-left:auto;background:none;border:none;cursor:pointer;color:#1D4ED8;font-size:11px" onclick="changeUser()" title="Ganti nama">✎</button>
+        <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
+          <button style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:5px;cursor:pointer;color:#1D4ED8;font-size:10px;padding:2px 6px;white-space:nowrap" onclick="switchUser()" title="Masuk sebagai pengguna lain di perangkat ini">⇄ Ganti</button>
+          <button style="background:none;border:none;cursor:pointer;color:#64748B;font-size:13px;padding:2px 4px;line-height:1" onclick="renameUser()" title="Ubah nama saya">✎</button>
+        </div>
       </div>
       <div id="online-users-wrap" style="margin-top:6px;padding:4px 8px;background:#F0FDF4;border-radius:6px;display:none">
         <div style="font-size:10px;color:#166534;font-weight:600;margin-bottom:3px">🟢 Sedang Online</div>
@@ -861,9 +864,12 @@ textarea { resize: vertical; }
     <div class="top-bar">
       <div class="top-title" id="panel-title">Daily Schedule</div>
       <div class="top-actions">
-        <button class="user-pill-mobile" id="user-pill-mobile" onclick="changeUser()" title="Ganti nama kamu">
-          <i class="ti ti-user-circle"></i> <span id="user-name-mobile">—</span> <i class="ti ti-pencil" style="font-size:10px;opacity:.6"></i>
-        </button>
+        <div style="display:flex;align-items:center;gap:5px">
+          <button class="user-pill-mobile" id="user-pill-mobile" onclick="switchUser()" title="Masuk sebagai pengguna lain">
+            <i class="ti ti-user-circle"></i> <span id="user-name-mobile">—</span> <i class="ti ti-arrows-exchange" style="font-size:10px;opacity:.7"></i>
+          </button>
+          <button style="background:none;border:none;cursor:pointer;color:#475569;font-size:15px;padding:4px;line-height:1;display:flex;align-items:center" onclick="renameUser()" title="Ubah nama saya"><i class="ti ti-pencil"></i></button>
+        </div>
         <div class="search-filter-wrap" id="global-search-wrap" style="display:none">
           <input class="global-search" id="global-search-input" placeholder="Cari..." oninput="applyGlobalSearch()" autocomplete="off">
           <select class="global-filter" id="global-filter-select" onchange="applyGlobalFilter()">
@@ -1564,7 +1570,7 @@ ON CONFLICT DO NOTHING;</code>
 
 <!-- js/supabase.js merged inline -->
 <!-- js/app.js merged inline -->
-<!-- changeUser() didefinisikan sekali di bawah (dekat NOTEPAD), sekarang sudah termasuk migrasi data -->
+<!-- switchUser() = ganti user di perangkat ini tanpa migrasi data | renameUser() = ubah nama + migrasi data -->
 <script>
 // ============================================
 // js/supabase.js — Konfigurasi Supabase
@@ -3315,48 +3321,63 @@ function setupRealtime() {
 window.addEventListener('DOMContentLoaded', () => {
   setupRealtime();
 });
-async function changeUser() {
+// Ganti User: masuk sebagai pengguna lain di perangkat ini (tanpa migrasi data)
+async function switchUser() {
+  const currentName = getUser();
+  const input = prompt(
+    'Masuk sebagai siapa di perangkat ini?\n' +
+    '(Nama baru yang kamu ketik akan langsung aktif. Data masing-masing orang tetap terpisah.)',
+    ''
+  );
+  if (!input || !input.trim()) return;
+  const newName = input.trim();
+  if (newName === currentName) return;
+
+  localStorage.setItem('wb_user', newName);
+  const elName = document.getElementById('user-name');
+  const elNameMobile = document.getElementById('user-name-mobile');
+  if (elName) elName.textContent = newName;
+  if (elNameMobile) elNameMobile.textContent = newName;
+  applyAdminVisibility();
+  await refreshCurrentPanel();
+}
+
+// Ubah Nama: rename nama sendiri — semua data lama ikut dipindahkan ke nama baru
+async function renameUser() {
   const oldName = getUser();
-  const input = prompt('Masukkan nama kamu:', oldName);
+  const input = prompt(
+    'Ubah nama kamu dari "' + oldName + '" menjadi apa?\n' +
+    '(Semua data kamu yang lama akan ikut dipindahkan ke nama baru ini.)',
+    oldName
+  );
   if (!input || !input.trim()) return;
   const newName = input.trim();
   if (newName === oldName) return;
 
-  // Cek dulu: apakah nama baru ini sudah dipakai orang LAIN yang punya riwayat sendiri?
-  // Kalau iya → JANGAN gabung data (itu dua orang berbeda), cukup pindah identitas device ini saja.
-  // Kalau nama baru ini belum pernah dipakai siapa pun → aman, migrasi riwayat seperti biasa.
+  // Kalau nama baru sudah dipakai orang lain → tolak, jangan campur data
   let existing = null;
   try {
     const known = await getAllKnownUsers();
     existing = known.find(u => u.name === newName);
-  } catch (e) { /* kalau gagal cek, anggap aman dan lanjut seperti biasa */ }
+  } catch (e) { /* kalau gagal cek, lanjut */ }
 
   if (existing) {
-    if (!confirm(
-      `Nama "${newName}" sudah terdaftar sebagai pengguna lain di WorkBoard.\n\n` +
-      `Kamu akan beralih memakai nama "${newName}" di device ini, TANPA menggabung riwayat data ` +
-      `"${oldName}" dan "${newName}" — keduanya tetap terpisah seperti semula.\n\n` +
-      `Lanjutkan ganti ke "${newName}"?`
-    )) return;
-
-    localStorage.setItem('wb_user', newName);
-    const elName2 = document.getElementById('user-name');
-    const elNameMobile2 = document.getElementById('user-name-mobile');
-    if (elName2) elName2.textContent = newName;
-    if (elNameMobile2) elNameMobile2.textContent = newName;
-    await refreshCurrentPanel();
+    alert(
+      `Nama "${newName}" sudah dipakai pengguna lain di WorkBoard.\n\n` +
+      `Pilih nama yang berbeda, atau gunakan tombol "Ganti" kalau kamu memang ingin masuk sebagai "${newName}".`
+    );
     return;
   }
 
   if (!confirm(
-    `Ganti nama dari "${oldName}" menjadi "${newName}"?\n\n` +
-    `Semua riwayat lama kamu (jadwal, tracker, logbook, notes, to do, notepad, chat, absensi, izin/cuti) ` +
-    `akan ikut dipindahkan ke nama baru ini, supaya tidak jadi dua nama berbeda.`
+    `Ubah nama dari "${oldName}" menjadi "${newName}"?\n\n` +
+    `Semua riwayat kamu (jadwal, tracker, logbook, notes, to do, notepad, chat, absensi, izin/cuti) ` +
+    `akan ikut dipindahkan ke nama baru ini.`
   )) return;
 
   const elName = document.getElementById('user-name');
   const elNameMobile = document.getElementById('user-name-mobile');
-  if (elName) elName.textContent = '⏳ Mengganti nama...';
+  if (elName) elName.textContent = '⏳ Mengubah nama...';
 
   try {
     const res = await renameUserEverywhere(oldName, newName);
@@ -3365,13 +3386,13 @@ async function changeUser() {
     if (elNameMobile) elNameMobile.textContent = newName;
     await refreshCurrentPanel();
     if (!res.ok) {
-      alert(`Nama diganti ke "${newName}", tapi ${res.failedCount} bagian data gagal diupdate (mungkin koneksi/RLS). Coba cek lagi nanti atau ulangi.`);
+      alert(`Nama diubah ke "${newName}", tapi ${res.failedCount} bagian data gagal diupdate (mungkin koneksi/RLS). Coba cek lagi nanti atau ulangi.`);
     } else {
-      alert(`✅ Nama berhasil diganti ke "${newName}" di semua data.`);
+      alert(`✅ Nama berhasil diubah ke "${newName}" di semua data.`);
     }
   } catch (e) {
     if (elName) elName.textContent = oldName;
-    alert('Gagal mengganti nama: ' + e.message);
+    alert('Gagal mengubah nama: ' + e.message);
   }
 }
 let notepadCache = [];
@@ -5178,7 +5199,7 @@ function renderFaq() {
     {
       section: '🚀 Memulai WorkBoard',
       items: [
-        { q: 'Bagaimana cara login?', a: 'WorkBoard menggunakan nama sebagai identitas. Klik ikon nama di pojok kiri atas (atau tombol nama di HP), lalu masukkan nama kamu. Nama ini akan dipakai untuk semua data yang kamu simpan.' },
+        { q: 'Bagaimana cara login?', a: 'WorkBoard menggunakan nama sebagai identitas. Pertama kali buka app, kamu akan diminta mengisi nama. Ada dua tombol berbeda di pojok kiri atas: tombol <b>⇄ Ganti</b> untuk masuk sebagai pengguna lain di perangkat yang sama (tanpa mengubah data siapapun), dan tombol <b>✎</b> (pensil) untuk mengubah nama kamu sendiri beserta seluruh data lama kamu.' },
         { q: 'Siapa yang bisa jadi Admin?', a: 'Akses admin diberikan oleh manajemen PT. Andrika Mitra Solusi. Hubungi atasan atau HRD jika memerlukan akses lebih.' },
         { q: 'Apakah data tersimpan di cloud?', a: 'Ya. Semua data tersimpan di Supabase (cloud database). Bisa diakses dari HP, desktop, maupun browser mana saja selama terhubung internet.' },
       ]
