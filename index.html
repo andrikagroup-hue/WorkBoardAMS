@@ -1130,12 +1130,12 @@ textarea { resize: vertical; }
             <div class="wba-custom-inputs" id="workBreakAlarm_customWrap">
               <div class="wba-custom-field">
                 <span>Work Duration:</span>
-                <input type="number" id="workBreakAlarm_customWork" min="1" max="240" value="120">
+                <input type="number" id="workBreakAlarm_customWork" min="0" max="240" value="0">
                 <span>min</span>
               </div>
               <div class="wba-custom-field">
                 <span>Break Duration:</span>
-                <input type="number" id="workBreakAlarm_customBreak" min="1" max="60" value="20">
+                <input type="number" id="workBreakAlarm_customBreak" min="0" max="60" value="0">
                 <span>min</span>
               </div>
             </div>
@@ -6062,8 +6062,8 @@ function initWorkBreakAlarm() {
     start: '08:00',
     end: '17:00',
     mode: 'pomodoro',       // pomodoro | short_pomodoro | flowtime | custom
-    customWork: 30,
-    customBreak: 10,
+    customWork: 0,
+    customBreak: 0,
   };
 
   // Timer handles
