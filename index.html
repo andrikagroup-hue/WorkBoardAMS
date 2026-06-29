@@ -3943,27 +3943,43 @@ async function hideChatChannelForMe(id, e) {
 // saat mau mulai chat pribadi — biar nggak perlu menebak ejaan nama orang.
 async function getKnownUserNames() {
   const me = getUser().toLowerCase();
-  const queries = [
-    sb.from('schedule_events').select('created_by'),
-    sb.from('tracker_items').select('created_by'),
-    sb.from('time_plan_tracker').select('created_by'),
-    sb.from('logbook_entries').select('created_by'),
-    sb.from('notes').select('created_by'),
-    sb.from('todos').select('created_by'),
-    sb.from('notepad_items').select('created_by'),
-    sb.from('chat_channels').select('created_by'),
-    sb.from('chat_messages').select('sender')
-  ];
-  const results = await Promise.all(queries.map(q => q.then(r => r.data || []).catch(() => [])));
-  const seen = new Map(); // key: lowercase, value: nama asli (tampilan)
-  results.flat().forEach(row => {
-    const n = (row.created_by || row.sender || '').trim();
+  const ONLINE_CUTOFF_MS = 60000; // 1 menit = dianggap online
+  const now = Date.now();
+
+  // Ambil online_presence sebagai direktori utama (semua yang pernah login)
+  const [onlineRes, ...dataResults] = await Promise.all([
+    withTimeout(sb.from('online_presence').select('user_name,last_seen'), 8000).catch(() => ({ data: [] })),
+    sb.from('schedule_events').select('created_by').then(r => r.data || []).catch(() => []),
+    sb.from('logbook_entries').select('created_by').then(r => r.data || []).catch(() => []),
+    sb.from('chat_messages').select('sender').then(r => r.data || []).catch(() => []),
+    sb.from('attendance').select('user_name').then(r => r.data || []).catch(() => []),
+  ]);
+
+  // Map nama → status online
+  const onlineMap = new Map(); // key: lowercase nama, value: { name, isOnline, last_seen }
+  (onlineRes.data || []).forEach(u => {
+    const key = (u.user_name || '').trim().toLowerCase();
+    if (!key || key === me) return;
+    const isOnline = u.last_seen && (now - new Date(u.last_seen).getTime()) < ONLINE_CUTOFF_MS;
+    onlineMap.set(key, { name: u.user_name.trim(), isOnline, last_seen: u.last_seen });
+  });
+
+  // Tambah nama dari tabel lain yang mungkin belum ada di online_presence
+  dataResults.flat().forEach(row => {
+    const n = (row.created_by || row.sender || row.user_name || '').trim();
     if (!n) return;
     const key = n.toLowerCase();
     if (key === me) return;
-    if (!seen.has(key)) seen.set(key, n);
+    if (!onlineMap.has(key)) {
+      onlineMap.set(key, { name: n, isOnline: false, last_seen: null });
+    }
   });
-  return Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
+
+  // Sort: online dulu, lalu offline — keduanya alfabetis
+  return Array.from(onlineMap.values()).sort((a, b) => {
+    if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 // Buka panel pemilihan nama buat mulai chat pribadi baru
@@ -3995,12 +4011,40 @@ let chatDMPickerNames = [];
 function renderChatDMPickerList(names) {
   const list = document.getElementById('chat-dm-picker-list');
   if (!list) return;
-  if (!names.length) { list.innerHTML = '<div class="chat-empty-list">Belum ada nama lain yang tercatat.</div>'; return; }
-  list.innerHTML = names.map(n => `<button class="chat-channel-item" onclick="startChatDM('${n.replace(/'/g, "\\'")}')"><i class="ti ti-user"></i><span class="cci-name">${escHtml(n)}</span></button>`).join('');
+  if (!names.length) { list.innerHTML = '<div class="chat-empty-list">Belum ada nama yang tercatat.</div>'; return; }
+  list.innerHTML = names.map(u => {
+    const name = typeof u === 'string' ? u : u.name;
+    const isOnline = typeof u === 'object' ? u.isOnline : false;
+    const lastSeen = typeof u === 'object' ? u.last_seen : null;
+    const lastSeenStr = lastSeen
+      ? new Date(lastSeen).toLocaleString('id-ID', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})
+      : null;
+    const statusDot = isOnline
+      ? `<span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block;flex-shrink:0" title="Sedang online"></span>`
+      : `<span style="width:8px;height:8px;border-radius:50%;background:#CBD5E1;display:inline-block;flex-shrink:0" title="${lastSeenStr ? 'Terakhir online: ' + lastSeenStr : 'Belum pernah online'}"></span>`;
+    const subText = isOnline
+      ? `<span style="font-size:10px;color:#22C55E">● Sedang online</span>`
+      : lastSeenStr
+        ? `<span style="font-size:10px;color:var(--text3)">Terakhir: ${lastSeenStr}</span>`
+        : `<span style="font-size:10px;color:var(--text3)">Belum pernah online</span>`;
+    return `<button class="chat-channel-item" onclick="startChatDM('${name.replace(/'/g, "\\'")}')" style="align-items:flex-start;gap:8px;padding:7px 10px">
+      <div style="display:flex;align-items:center;gap:6px;width:100%">
+        ${statusDot}
+        <div style="display:flex;flex-direction:column;align-items:flex-start;min-width:0">
+          <span class="cci-name" style="font-weight:500">${escHtml(name)}</span>
+          ${subText}
+        </div>
+      </div>
+    </button>`;
+  }).join('');
 }
 function filterChatDMPicker() {
   const q = (document.getElementById('chat-dm-search').value || '').toLowerCase();
-  renderChatDMPickerList(chatDMPickerNames.filter(n => n.toLowerCase().includes(q)));
+  const filtered = chatDMPickerNames.filter(u => {
+    const name = typeof u === 'string' ? u : u.name;
+    return name.toLowerCase().includes(q);
+  });
+  renderChatDMPickerList(filtered);
 }
 function closeChatDMPickerOnOutsideClick(e) {
   const pop = document.getElementById('chat-dm-picker');
