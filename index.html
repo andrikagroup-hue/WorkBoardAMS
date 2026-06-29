@@ -830,8 +830,8 @@ textarea { resize: vertical; }
 .wba-mode-list label { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text1); cursor: pointer; white-space: nowrap; }
 .wba-mode-list input[type=radio] { accent-color: #3B82F6; width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
 /* Custom inputs — 1 baris inline, muncul setelah Custom dipilih */
-.wba-custom-inputs { display: none; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-.wba-custom-inputs.visible { display: flex; }
+.wba-custom-inputs { display: none; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.wba-custom-inputs.visible { display: grid; }
 .wba-custom-field { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text2); }
 .wba-custom-field input {
   width: 56px; padding: 4px 6px; border: 1px solid var(--border2);
@@ -876,7 +876,7 @@ textarea { resize: vertical; }
   .wba-label { min-width: 80px; font-size: 12px; }
   .wba-mode-list { grid-template-columns: 1fr; gap: 6px; }
   .wba-time-row input[type=time] { width: 80px; font-size: 12px; }
-  .wba-custom-inputs { gap: 8px; }
+  .wba-custom-inputs.visible { display: grid; grid-template-columns: 1fr; gap: 8px; }
   .wba-custom-field { font-size: 12px; }
 }
   </style>
