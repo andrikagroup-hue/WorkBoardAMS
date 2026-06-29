@@ -800,6 +800,7 @@ textarea { resize: vertical; }
   background: var(--surface); border-radius: var(--radius-lg);
   padding: 24px 28px; width: 440px; max-width: 96vw;
   box-shadow: 0 8px 24px rgba(0,0,0,.18); position: relative;
+  overflow: hidden;
 }
 #workBreakAlarm_modal h3 {
   font-size: 16px; font-weight: 600; margin-bottom: 18px; color: var(--text1);
@@ -827,7 +828,7 @@ textarea { resize: vertical; }
 /* Mode list — radio biasa (bukan card) */
 /* Mode — 2 kolom grid, tiap label 1 baris */
 .wba-mode-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
-.wba-mode-list label { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text1); cursor: pointer; white-space: nowrap; }
+.wba-mode-list label { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text1); cursor: pointer; }
 .wba-mode-list input[type=radio] { accent-color: #3B82F6; width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
 /* Custom inputs — 1 baris inline, muncul setelah Custom dipilih */
 .wba-custom-inputs { display: none; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
