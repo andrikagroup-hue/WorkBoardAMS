@@ -3620,11 +3620,31 @@ async function runAiOnText(title, plainText, instruction) {
     if (typeof puter === 'undefined') throw new Error('Puter.js belum termuat. Cek koneksi internet lalu refresh halaman.');
     const prompt = `${instruction}\n\nTeks:\n"""\n${plainText}\n"""`;
     const response = await puter.ai.chat(prompt, { model: 'claude-sonnet-5' });
-    const resultText = (typeof response === 'string') ? response : (response?.message?.content?.[0]?.text || response?.text || String(response));
+    console.log('Puter AI response:', response);
+
+    let resultText = '';
+    if (typeof response === 'string') {
+      resultText = response;
+    } else if (response && typeof response === 'object') {
+      if (typeof response.text === 'string') {
+        resultText = response.text;
+      } else if (response.message && Array.isArray(response.message.content)) {
+        resultText = response.message.content.map(c => (c && c.text) ? c.text : '').join('\n').trim();
+      } else if (Array.isArray(response.content)) {
+        resultText = response.content.map(c => (c && c.text) ? c.text : '').join('\n').trim();
+      } else {
+        try { resultText = JSON.stringify(response, null, 2); } catch (e) { resultText = ''; }
+      }
+    }
+    if (!resultText) resultText = '[Tidak bisa membaca hasil AI. Buka Console browser (F12) untuk lihat respons mentahnya.]';
+
     _aiLastResult = resultText;
     document.getElementById('ai-modal-body').textContent = resultText;
   } catch (err) {
-    document.getElementById('ai-modal-body').innerHTML = `<span style="color:var(--danger)">Gagal memproses: ${escHtml(err.message || String(err))}</span>`;
+    console.error('AI error:', err);
+    let msg = 'Terjadi kesalahan tidak diketahui. Cek Console browser (F12) untuk detail.';
+    try { if (err && typeof err.message === 'string') msg = err.message; } catch (e) {}
+    document.getElementById('ai-modal-body').innerHTML = `<span style="color:var(--danger)">Gagal memproses: ${escHtml(msg)}</span>`;
   }
 }
 
