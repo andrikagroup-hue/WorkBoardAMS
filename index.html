@@ -5955,6 +5955,218 @@ async function deleteLink(id) {
   await renderLinks();
 }
 
+// ── Password Manager ────────────────────────────────────────
+let passVaultCache = [];
+let passVaultRevealed = {}; // { [id]: true } — card yang sedang ditampilkan (bukan disensor)
+
+function linkifyCatatan(text) {
+  if (!text) return '';
+  const escaped = escHtml(text);
+  return escaped.replace(/(https?:\/\/[^\s<]+)/g, url => `<a href="${url}" target="_blank" onclick="event.stopPropagation()">${url}</a>`);
+}
+
+function maskValue(v) {
+  return '•'.repeat(Math.min(Math.max((v || '').length, 6), 14));
+}
+
+async function renderPasswordVault() {
+  const listEl = document.getElementById('passvault-list');
+  const filterEl = document.getElementById('passvault-filter-kat');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...</div>';
+
+  const { data, error } = await withTimeout(
+    sb.from('password_vault').select('*').order('created_at')
+  );
+
+  if (error) {
+    if (error.message?.includes('password_vault') || error.code === '42P01') {
+      document.getElementById('passvault-setup-banner').style.display = 'block';
+      listEl.innerHTML = '<div class="empty-msg">Tabel belum ada — ikuti petunjuk setup di atas.</div>';
+    } else {
+      listEl.innerHTML = `<div class="empty-msg">Gagal memuat: ${error.message}</div>`;
+    }
+    return;
+  }
+
+  passVaultCache = applyPrivacy(data || []);
+
+  // Update badge count
+  const badge = document.getElementById('badge-passvault');
+  if (badge) badge.textContent = passVaultCache.length || '—';
+
+  // Update dropdown filter kategori
+  if (filterEl) {
+    const cats = [...new Set(passVaultCache.map(p => p.kategori || 'Lainnya'))].sort();
+    const current = filterEl.value;
+    filterEl.innerHTML = '<option value="all">Semua Kategori</option>'
+      + cats.map(c => `<option value="${escHtml(c)}" ${current===c?'selected':''}>${escHtml(c)}</option>`).join('');
+  }
+
+  const filterVal = filterEl?.value || 'all';
+  const filtered = filterVal === 'all' ? passVaultCache : passVaultCache.filter(p => (p.kategori||'Lainnya') === filterVal);
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div class="empty-msg">Belum ada password tersimpan. Klik "+ Tambah Password" untuk mulai.</div>';
+    return;
+  }
+
+  // Kelompokkan per kategori
+  const grouped = {};
+  filtered.forEach(p => {
+    const kat = p.kategori || 'Lainnya';
+    if (!grouped[kat]) grouped[kat] = [];
+    grouped[kat].push(p);
+  });
+
+  listEl.innerHTML = Object.entries(grouped).map(([kat, items]) => `
+    <div class="link-group">
+      <div class="link-group-title">${escHtml(kat)}</div>
+      ${items.map(p => {
+        const revealed = !!passVaultRevealed[p.id];
+        const displayVal = revealed ? escHtml(p.nilai) : maskValue(p.nilai);
+        return `
+        <div class="pass-card">
+          <div class="pass-icon">🔑</div>
+          <div class="pass-info">
+            <div class="pass-label">
+              ${escHtml(p.label)}
+              <span class="pass-type-badge">${escHtml(p.tipe || 'Password')}</span>
+              ${p.is_private ? '🔒' : '🌐'}
+            </div>
+            ${p.akun ? `<div class="pass-akun"><i class="ti ti-user" style="font-size:11px"></i> ${escHtml(p.akun)}</div>` : ''}
+            <div class="pass-value-row">
+              <span class="pass-value-box" id="pass-value-${p.id}">${displayVal}</span>
+              <button class="btn-sm" title="${revealed ? 'Sembunyikan' : 'Lihat'}" onclick="toggleCardMask('${p.id}')"><i class="ti ti-${revealed ? 'eye-off' : 'eye'}"></i></button>
+              <button class="btn-sm" title="Salin" onclick="copyPassValue('${p.id}')"><i class="ti ti-copy"></i></button>
+            </div>
+            ${p.catatan ? `<div class="pass-note">${linkifyCatatan(p.catatan)}</div>` : ''}
+          </div>
+          <div class="pass-actions">
+            <button class="btn-sm" title="Edit" onclick="openPassForm('${p.id}')"><i class="ti ti-pencil"></i></button>
+            <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" title="Hapus" onclick="deletePass('${p.id}')"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>
+      `;
+      }).join('')}
+    </div>
+  `).join('');
+}
+
+function toggleCardMask(id) {
+  passVaultRevealed[id] = !passVaultRevealed[id];
+  const item = passVaultCache.find(p => p.id === id);
+  const box = document.getElementById('pass-value-' + id);
+  if (box && item) box.textContent = passVaultRevealed[id] ? item.nilai : maskValue(item.nilai);
+  // Update icon on the toggle button without a full re-render
+  const btn = box?.parentElement?.querySelector('button[onclick^="toggleCardMask"] i');
+  if (btn) btn.className = passVaultRevealed[id] ? 'ti ti-eye-off' : 'ti ti-eye';
+}
+
+function copyPassValue(id) {
+  const item = passVaultCache.find(p => p.id === id);
+  if (!item) return;
+  navigator.clipboard.writeText(item.nilai).then(() => {
+    const box = document.getElementById('pass-value-' + id);
+    if (!box) return;
+    const original = box.textContent;
+    box.textContent = 'Disalin!';
+    setTimeout(() => { box.textContent = passVaultRevealed[id] ? item.nilai : maskValue(item.nilai); }, 1000);
+  }).catch(() => alert('Gagal menyalin. Coba salin manual.'));
+}
+
+function togglePassFormMask() {
+  const input = document.getElementById('pass-nilai');
+  const icon = document.querySelector('#pass-nilai-eye i');
+  if (!input) return;
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+  if (icon) icon.className = isPassword ? 'ti ti-eye-off' : 'ti ti-eye';
+}
+
+function openPassForm(id) {
+  const form = document.getElementById('pass-form');
+  const titleEl = document.getElementById('pass-form-title');
+  form.style.display = 'block';
+  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Reset masked input ke mode password setiap buka form
+  const nilaiInput = document.getElementById('pass-nilai');
+  const eyeIcon = document.querySelector('#pass-nilai-eye i');
+  if (nilaiInput) nilaiInput.type = 'password';
+  if (eyeIcon) eyeIcon.className = 'ti ti-eye';
+
+  if (id) {
+    const item = passVaultCache.find(p => p.id === id);
+    if (!item) return;
+    titleEl.textContent = '✏️ Edit Password';
+    document.getElementById('pass-label').value = item.label || '';
+    document.getElementById('pass-tipe').value = item.tipe || '';
+    document.getElementById('pass-kategori').value = item.kategori || '';
+    document.getElementById('pass-akun').value = item.akun || '';
+    document.getElementById('pass-nilai').value = item.nilai || '';
+    document.getElementById('pass-catatan').value = item.catatan || '';
+    document.getElementById('pass-privacy').value = item.is_private === false ? 'false' : 'true';
+    document.getElementById('pass-editing-id').value = id;
+  } else {
+    titleEl.textContent = '➕ Tambah Password Baru';
+    document.getElementById('pass-label').value = '';
+    document.getElementById('pass-tipe').value = '';
+    document.getElementById('pass-kategori').value = '';
+    document.getElementById('pass-akun').value = '';
+    document.getElementById('pass-nilai').value = '';
+    document.getElementById('pass-catatan').value = '';
+    document.getElementById('pass-privacy').value = 'true';
+    document.getElementById('pass-editing-id').value = '';
+  }
+}
+
+function closePassForm() {
+  document.getElementById('pass-form').style.display = 'none';
+}
+
+async function savePass() {
+  const label = document.getElementById('pass-label').value.trim();
+  const tipe  = document.getElementById('pass-tipe').value.trim() || 'Password';
+  const kat   = document.getElementById('pass-kategori').value.trim() || 'Lainnya';
+  const akun  = document.getElementById('pass-akun').value.trim();
+  const nilai = document.getElementById('pass-nilai').value;
+  const catatan = document.getElementById('pass-catatan').value.trim();
+  const isPrivate = document.getElementById('pass-privacy').value === 'true';
+  const editId = document.getElementById('pass-editing-id').value;
+
+  if (!label) return alert('Nama / judul harus diisi!');
+  if (!nilai) return alert('Password / PIN harus diisi!');
+
+  const payload = {
+    label, tipe, kategori: kat,
+    akun: akun || null,
+    nilai,
+    catatan: catatan || null,
+    is_private: isPrivate,
+    created_by: getUser()
+  };
+
+  let error;
+  if (editId) {
+    ({ error } = await withTimeout(sb.from('password_vault').update(payload).eq('id', editId)));
+  } else {
+    ({ error } = await withTimeout(sb.from('password_vault').insert(payload)));
+  }
+
+  if (error) return alert('Gagal menyimpan: ' + error.message);
+  closePassForm();
+  await renderPasswordVault();
+}
+
+async function deletePass(id) {
+  if (!confirm('Hapus password ini? Tindakan ini tidak bisa dibatalkan.')) return;
+  const { error } = await withTimeout(sb.from('password_vault').delete().eq('id', id));
+  if (error) return alert('Gagal hapus: ' + error.message);
+  delete passVaultRevealed[id];
+  await renderPasswordVault();
+}
+
 // ── Export Excel absensi ────────────────────────────────────
 // Helper: hitung total jam kerja
 function absenTotalKerja(row) {
