@@ -444,6 +444,17 @@ textarea { resize: vertical; }
 .link-url-text { font-size: 11px; color: var(--accent); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .link-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
 .link-actions { display: flex; gap: 5px; flex-shrink: 0; }
+.pass-card { display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; margin-bottom:8px; }
+.pass-icon { font-size: 20px; flex-shrink: 0; width: 30px; text-align: center; }
+.pass-info { flex: 1; min-width: 0; }
+.pass-label { font-size: 13px; font-weight: 600; color: var(--text1); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.pass-akun { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.pass-value-row { display:flex; align-items:center; gap:6px; margin-top:4px; }
+.pass-value-box { font-family: monospace; font-size: 12.5px; color: var(--text1); background: var(--bg2); border:1px solid var(--border); border-radius:6px; padding:3px 8px; letter-spacing:1px; user-select:all; }
+.pass-note { font-size: 11px; color: var(--text3); margin-top: 3px; }
+.pass-note a { color: var(--accent); }
+.pass-actions { display: flex; gap: 5px; flex-shrink: 0; }
+.pass-type-badge { font-size:9px; font-weight:600; padding:1px 6px; border-radius:8px; background:var(--bg2); color:var(--text3); border:1px solid var(--border); }
 
 /* ── Admin tab navigation ──────────────── */
 .admin-tab {
@@ -1014,6 +1025,10 @@ textarea { resize: vertical; }
           <button class="nav-sub-item" id="nsub-links" onclick="switchPanel('links',this)">
             <i class="ti ti-world"></i> All Links
             <span class="nav-badge badge-blue" id="badge-links">—</span>
+          </button>
+          <button class="nav-sub-item" id="nsub-passvault" onclick="switchPanel('passvault',this)">
+            <i class="ti ti-lock"></i> Password Manager
+            <span class="nav-badge badge-blue" id="badge-passvault">—</span>
           </button>
         </div>
       </div>
@@ -1860,6 +1875,112 @@ ON CONFLICT DO NOTHING;</code>
         </div>
       </div>
 
+      <!-- ── PASSWORD MANAGER ──────────────────────── -->
+      <div class="panel" id="panel-passvault">
+
+        <!-- Banner setup jika tabel belum ada -->
+        <div id="passvault-setup-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">
+          ⚠️ <strong>Setup diperlukan:</strong> Tabel <code>password_vault</code> belum ada. Jalankan SQL ini di
+          <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh:<br>
+          <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:8px;margin-top:8px;font-size:11px;user-select:all;white-space:pre-wrap">CREATE TABLE IF NOT EXISTS password_vault (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  label text NOT NULL,
+  tipe text DEFAULT 'Password',
+  akun text,
+  nilai text NOT NULL,
+  kategori text DEFAULT 'Lainnya',
+  catatan text,
+  is_private boolean DEFAULT true,
+  created_by text,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE password_vault ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "read_password_vault" ON password_vault FOR SELECT USING (true);
+CREATE POLICY "manage_password_vault" ON password_vault FOR ALL USING (true) WITH CHECK (true);</code>
+          <button onclick="document.getElementById('passvault-setup-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
+        </div>
+
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:#1e40af">
+          🔐 Catatan keamanan: password di sini tersimpan di database perusahaan (tidak terenkripsi tambahan). Jangan simpan password pribadi di luar keperluan kerja, dan gunakan mode <strong>Privat</strong> untuk akun yang tidak perlu dilihat tim lain.
+        </div>
+
+        <!-- Header + tombol tambah -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:13px;font-weight:600;color:var(--text1)">🔐 Password Manager — Simpan Password & PIN Rapi</div>
+          <div style="display:flex;gap:6px">
+            <select id="passvault-filter-kat" class="global-filter" style="font-size:12px" onchange="renderPasswordVault()">
+              <option value="all">Semua Kategori</option>
+            </select>
+            <button class="btn-sm btn-primary" onclick="openPassForm()"><i class="ti ti-plus"></i> Tambah Password</button>
+          </div>
+        </div>
+
+        <!-- Form tambah/edit password -->
+        <div id="pass-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">
+          <div style="font-size:12.5px;font-weight:600;margin-bottom:10px" id="pass-form-title">➕ Tambah Password Baru</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="grid-column:1/-1">
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Nama / Judul *</label>
+              <input type="text" id="pass-label" class="form-input" placeholder="cth: Email Gmail Admin, Login Website AMS, No Rekening BCA..." style="font-size:12px;width:100%">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Tipe</label>
+              <input type="text" id="pass-tipe" class="form-input" list="pass-tipe-list" placeholder="Password / PIN / bebas..." style="font-size:12px;width:100%">
+              <datalist id="pass-tipe-list">
+                <option value="Password">
+                <option value="PIN">
+                <option value="Passphrase">
+                <option value="Kode Akses">
+                <option value="Kunci/PIN Kartu">
+              </datalist>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Kategori</label>
+              <input type="text" id="pass-kategori" class="form-input" list="pass-kategori-list" placeholder="cth: Email, Website, Rekening Bank, Perangkat..." style="font-size:12px;width:100%">
+              <datalist id="pass-kategori-list">
+                <option value="Email">
+                <option value="Website">
+                <option value="Rekening Bank">
+                <option value="Perangkat (HP/Laptop)">
+                <option value="Lainnya">
+              </datalist>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Username / Email / No. Rekening (opsional)</label>
+              <input type="text" id="pass-akun" class="form-input" placeholder="cth: andri@andrikagroup.com" style="font-size:12px;width:100%">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Password / PIN *</label>
+              <div style="display:flex;gap:4px">
+                <input type="password" id="pass-nilai" class="form-input" placeholder="Isi password/PIN..." style="font-size:12px;width:100%">
+                <button type="button" class="btn-sm" onclick="togglePassFormMask()" title="Lihat/sembunyikan" id="pass-nilai-eye"><i class="ti ti-eye"></i></button>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Privasi</label>
+              <select id="pass-privacy" title="Siapa yang bisa lihat data ini" style="font-size:12px;width:100%">
+                <option value="true">🔒 Privat (hanya saya)</option>
+                <option value="false">🌐 Publik (tim bisa lihat)</option>
+              </select>
+            </div>
+            <div style="grid-column:1/-1">
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Catatan (boleh isi link website, akan jadi bisa diklik)</label>
+              <input type="text" id="pass-catatan" class="form-input" placeholder="cth: https://mail.google.com — untuk login email kantor" style="font-size:12px;width:100%">
+            </div>
+          </div>
+          <input type="hidden" id="pass-editing-id">
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn-sm btn-primary" onclick="savePass()"><i class="ti ti-device-floppy"></i> Simpan</button>
+            <button class="btn-sm" onclick="closePassForm()">Batal</button>
+          </div>
+        </div>
+
+        <!-- Daftar password -->
+        <div id="passvault-list">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat password...</div>
+        </div>
+      </div>
+
       <!-- ── FAQ / Panduan ──────────────────────── -->
       <div class="panel" id="panel-faq">
         <div style="max-width:720px;margin:0 auto">
@@ -2042,6 +2163,7 @@ async function refreshCurrentPanel() {
   else if (currentPanel === 'chat') await renderChat();
   else if (currentPanel === 'adminusers') await renderAdminUsers();
   else if (currentPanel === 'links') await renderLinks();
+  else if (currentPanel === 'passvault') await renderPasswordVault();
   updateDailyProgress();
 }
 let todoFilter = 'all';
@@ -2093,6 +2215,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Hitung jumlah links untuk badge sidebar
   sb.from('app_links').select('id', { count: 'exact', head: true }).then(({ count }) => {
     const badge = document.getElementById('badge-links');
+    if (badge) badge.textContent = count > 0 ? count : '—';
+  }).catch(() => {});
+
+  // Hitung jumlah password vault untuk badge sidebar
+  sb.from('password_vault').select('id', { count: 'exact', head: true }).then(({ count }) => {
+    const badge = document.getElementById('badge-passvault');
     if (badge) badge.textContent = count > 0 ? count : '—';
   }).catch(() => {});
 
@@ -2156,6 +2284,7 @@ async function switchPanel(id, el) {
     adminusers: '⚙️ Manage Users',
     adminleave: '⚙️ Leave Management',
     links: '🔗 Quick Links',
+    passvault: '🔐 Password Manager',
     faq: '📖 Guide & FAQ'
   };
   document.getElementById('panel-title').textContent = titles[id] || id;
@@ -2175,6 +2304,7 @@ async function switchPanel(id, el) {
   else if (id === 'adminusers') await renderAdminUsers();
   else if (id === 'adminleave') await renderAdminLeaveStandalone();
   else if (id === 'links') await renderLinks();
+  else if (id === 'passvault') await renderPasswordVault();
   else if (id === 'faq') renderFaq();
 }
 
@@ -3661,7 +3791,7 @@ function openNavGroupForPanel(panelId) {
     chat: 'ng-comm',
     absen: 'ng-hr',
     result: 'ng-reports',
-    links: 'ng-links',
+    links: 'ng-links', passvault: 'ng-links',
     faq: 'ng-help',
     adminusers: 'ng-settings', adminleave: 'ng-settings'
   };
@@ -4640,6 +4770,11 @@ const quillNp = new Quill('#np-body-editor', {
       <span>Links</span>
       <span class="bn-badge hidden" id="bn-badge-links"></span>
     </button>
+    <button class="bn-item" onclick="switchPanelMobile('passvault',this)" aria-label="Password Manager">
+      <i class="ti ti-lock"></i>
+      <span>Password</span>
+      <span class="bn-badge hidden" id="bn-badge-passvault"></span>
+    </button>
     <button class="bn-item" id="bn-admin-users" style="display:none" onclick="switchPanelMobile('adminusers',this)" aria-label="Manage Users">
       <i class="ti ti-users-group"></i>
       <span>Users</span>
@@ -4688,7 +4823,8 @@ function syncBottomNavBadges() {
     'notepad': 'badge-notepad',
     'chat':    'badge-chat',
     'absen':   'badge-absen',
-    'links':   'badge-links'
+    'links':   'badge-links',
+    'passvault': 'badge-passvault'
   };
   Object.keys(map).forEach(function(key) {
     var sidebarBadge = document.getElementById(map[key]);
