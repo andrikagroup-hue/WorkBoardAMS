@@ -16,6 +16,8 @@
   <!-- Quill Rich Text Editor -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
+  <!-- Puter.js — akses AI (Claude dll) gratis langsung dari browser, tiap user pakai akun Puter sendiri -->
+  <script src="https://js.puter.com/v2/"></script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -51,18 +53,6 @@
 }
 
 body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text1); }
-
-/* ── Batik Background — Motif Parang + Mega Mendung ── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.13;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3C!-- Mega Mendung awan --%3E%3Cpath d='M0 30 Q10 10 20 30 Q30 10 40 30 Q50 10 60 30 Q70 10 80 30 Q90 10 100 30 Q110 10 120 30' fill='none' stroke='%23FF6B35' stroke-width='2' opacity='0.9'/%3E%3Cpath d='M0 38 Q10 18 20 38 Q30 18 40 38 Q50 18 60 38 Q70 18 80 38 Q90 18 100 38 Q110 18 120 38' fill='none' stroke='%23FF6B35' stroke-width='1.5' opacity='0.7'/%3E%3Cpath d='M0 46 Q10 26 20 46 Q30 26 40 46 Q50 26 60 46 Q70 26 80 46 Q90 26 100 46 Q110 26 120 46' fill='none' stroke='%23C0392B' stroke-width='1' opacity='0.5'/%3E%3C!-- Mega Mendung bawah offset --%3E%3Cpath d='M-60 90 Q-50 70 -40 90 Q-30 70 -20 90 Q-10 70 0 90 Q10 70 20 90 Q30 70 40 90 Q50 70 60 90 Q70 70 80 90 Q90 70 100 90 Q110 70 120 90 Q130 70 140 90 Q150 70 160 90 Q170 70 180 90' fill='none' stroke='%23FF6B35' stroke-width='2' opacity='0.9'/%3E%3Cpath d='M-60 98 Q-50 78 -40 98 Q-30 78 -20 98 Q-10 78 0 98 Q10 78 20 98 Q30 78 40 98 Q50 78 60 98 Q70 78 80 98 Q90 78 100 98 Q110 78 120 98 Q130 78 140 98 Q150 78 160 98 Q170 78 180 98' fill='none' stroke='%23FF6B35' stroke-width='1.5' opacity='0.7'/%3E%3Cpath d='M-60 106 Q-50 86 -40 106 Q-30 86 -20 106 Q-10 86 0 106 Q10 86 20 106 Q30 86 40 106 Q50 86 60 106 Q70 86 80 106 Q90 86 100 106 Q110 86 120 106 Q130 86 140 106 Q150 86 160 106 Q170 86 180 106' fill='none' stroke='%23C0392B' stroke-width='1' opacity='0.5'/%3E%3C!-- Parang diagonal --%3E%3Cpath d='M0 60 L60 0' stroke='%2306B6D4' stroke-width='1.2' opacity='0.6'/%3E%3Cpath d='M60 120 L120 60' stroke='%2306B6D4' stroke-width='1.2' opacity='0.6'/%3E%3Cpath d='M0 120 L120 0' stroke='%2306B6D4' stroke-width='0.7' opacity='0.35'/%3E%3C!-- Titik ornamen --%3E%3Ccircle cx='0' cy='0' r='2.5' fill='%23FF6B35' opacity='0.8'/%3E%3Ccircle cx='60' cy='0' r='1.5' fill='%2306B6D4' opacity='0.7'/%3E%3Ccircle cx='120' cy='0' r='2.5' fill='%23FF6B35' opacity='0.8'/%3E%3Ccircle cx='0' cy='60' r='1.5' fill='%2306B6D4' opacity='0.7'/%3E%3Ccircle cx='60' cy='60' r='3' fill='%23C0392B' opacity='0.6'/%3E%3Ccircle cx='120' cy='60' r='1.5' fill='%2306B6D4' opacity='0.7'/%3E%3Ccircle cx='0' cy='120' r='2.5' fill='%23FF6B35' opacity='0.8'/%3E%3Ccircle cx='60' cy='120' r='1.5' fill='%2306B6D4' opacity='0.7'/%3E%3Ccircle cx='120' cy='120' r='2.5' fill='%23FF6B35' opacity='0.8'/%3E%3C!-- Bunga ornamen tengah --%3E%3Ccircle cx='60' cy='60' r='8' fill='none' stroke='%23C0392B' stroke-width='1' opacity='0.5'/%3E%3Ccircle cx='60' cy='60' r='4' fill='none' stroke='%23FF6B35' stroke-width='1.2' opacity='0.6'/%3E%3Cpath d='M60 52 L60 68 M52 60 L68 60 M54.3 54.3 L65.7 65.7 M65.7 54.3 L54.3 65.7' stroke='%23C0392B' stroke-width='0.8' opacity='0.5'/%3E%3C/svg%3E");
-  background-size: 120px 120px;
-}
 
 /* ── App shell ─────────────────────────────── */
 .app { display: flex; height: 100vh; overflow: hidden; position: relative; z-index: 1; }
@@ -455,6 +445,18 @@ textarea { resize: vertical; }
 .pass-note a { color: var(--accent); }
 .pass-actions { display: flex; gap: 5px; flex-shrink: 0; }
 .pass-type-badge { font-size:9px; font-weight:600; padding:1px 6px; border-radius:8px; background:var(--bg2); color:var(--text3); border:1px solid var(--border); }
+
+/* ── AI Modal (Puter.js) ─────────────────────────────────── */
+.ai-modal-overlay { display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; padding:20px; }
+.ai-modal-overlay.open { display:flex; }
+.ai-modal-box { background:var(--surface); border-radius:var(--radius-lg); max-width:520px; width:100%; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
+.ai-modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); font-size:13px; font-weight:700; }
+.ai-modal-body { padding:16px; overflow-y:auto; font-size:13px; line-height:1.7; color:var(--text1); white-space:pre-wrap; }
+.ai-modal-foot { display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--border); }
+.ai-btn { font-size:10px; padding:2px 8px; border-radius:6px; border:1px solid var(--accent); color:var(--accent); background:transparent; cursor:pointer; display:inline-flex; align-items:center; gap:3px; }
+.ai-btn:hover { background:var(--accent); color:#fff; }
+.ai-loading-dots::after { content:'...'; animation: aiDots 1.2s steps(4,end) infinite; }
+@keyframes aiDots { 0%,20%{content:'.'} 40%{content:'..'} 60%,100%{content:'...'} }
 
 /* ── Admin tab navigation ──────────────── */
 .admin-tab {
@@ -3585,6 +3587,63 @@ function htmlToPlainText(html) {
   return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
+// ── AI (Puter.js) — Ringkas/Rapikan Logbook & Notes ──────────────────────
+// Puter.js: tiap user login pakai akun Puter gratis (sekali klik, seperti login Google).
+// Tidak ada API key yang perlu disembunyikan; biaya pemakaian ditanggung akun Puter user itu sendiri.
+let _aiLastResult = '';
+
+function openAiModal(title) {
+  document.getElementById('ai-modal-title').textContent = title;
+  document.getElementById('ai-modal-body').innerHTML = '<span class="ai-loading-dots">✨ Memproses dengan AI</span>';
+  document.getElementById('ai-modal-overlay').classList.add('open');
+}
+
+function closeAiModal() {
+  document.getElementById('ai-modal-overlay').classList.remove('open');
+}
+
+function copyAiResult() {
+  if (!_aiLastResult) return;
+  navigator.clipboard.writeText(_aiLastResult).then(() => {
+    const btn = document.getElementById('ai-modal-copy-btn');
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="ti ti-check"></i> Tersalin!';
+    setTimeout(() => { btn.innerHTML = original; }, 1200);
+  }).catch(() => alert('Gagal menyalin.'));
+}
+
+// Fungsi inti: kirim teks ke AI lewat Puter.js, tampilkan hasil di modal
+async function runAiOnText(title, plainText, instruction) {
+  if (!plainText || !plainText.trim()) { alert('Tidak ada isi teks untuk diproses.'); return; }
+  openAiModal(title);
+  try {
+    if (typeof puter === 'undefined') throw new Error('Puter.js belum termuat. Cek koneksi internet lalu refresh halaman.');
+    const prompt = `${instruction}\n\nTeks:\n"""\n${plainText}\n"""`;
+    const response = await puter.ai.chat(prompt, { model: 'claude-sonnet-5' });
+    const resultText = (typeof response === 'string') ? response : (response?.message?.content?.[0]?.text || response?.text || String(response));
+    _aiLastResult = resultText;
+    document.getElementById('ai-modal-body').textContent = resultText;
+  } catch (err) {
+    document.getElementById('ai-modal-body').innerHTML = `<span style="color:var(--danger)">Gagal memproses: ${escHtml(err.message || String(err))}</span>`;
+  }
+}
+
+function aiSummarizeLog(id) {
+  const l = logbookCache.find(x => x.id === id);
+  if (!l) return;
+  const plain = htmlToPlainText(l.body || '');
+  runAiOnText('✨ Ringkasan Logbook: ' + (l.title || ''), plain,
+    'Ringkas isi logbook kerja berikut jadi poin-poin singkat berbahasa Indonesia yang mudah dibaca. Fokus pada inti kegiatan, hasil, dan hal yang perlu ditindaklanjuti.');
+}
+
+function aiSummarizeNote(id) {
+  const n = notesCache.find(x => x.id === id);
+  if (!n) return;
+  const plain = htmlToPlainText(n.body || '');
+  runAiOnText('✨ Ringkasan Notes: ' + (n.title || ''), plain,
+    'Rapikan dan ringkas catatan berikut jadi poin-poin singkat berbahasa Indonesia yang jelas dan terstruktur, tanpa mengubah maksud aslinya.');
+}
+
 // Ganti nama kolom mentah jadi label yang lebih manusiawi
 function prettifyExcelKey(k) {
   const map = {
@@ -4029,6 +4088,7 @@ function displayLogbook(data) {
       <div class="log-tags" style="margin-top:6px">${(l.tags||[]).map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
       ${attachHtml}
       <div style="display:flex;justify-content:flex-end;gap:4px;margin-top:8px">
+        <button class="ev-del" onclick="event.stopPropagation();aiSummarizeLog('${l.id}')" title="Ringkas dengan AI"><i class="ti ti-sparkles"></i></button>
         <button class="ev-del" onclick="event.stopPropagation();editLog('${l.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
         <button class="ev-del" onclick="event.stopPropagation();delLog('${l.id}')" title="Hapus"><i class="ti ti-x"></i></button>
       </div>
@@ -4055,6 +4115,7 @@ function _renderNoteCards(data) {
       <div class="note-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
         <span style="font-size:10px;opacity:0.55">${n.is_private?'🔒 ':''}${n.created_by||''}</span>
         <div style="display:flex;gap:4px">
+          <button class="ev-del" onclick="event.stopPropagation();aiSummarizeNote('${n.id}')" title="Ringkas dengan AI"><i class="ti ti-sparkles"></i></button>
           <button class="ev-del" onclick="event.stopPropagation();editNote('${n.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
           <button class="ev-del" onclick="event.stopPropagation();togglePin('${n.id}',${n.is_pinned})" title="${n.is_pinned?'Unpin':'Pin'}"><i class="ti ti-pin"></i></button>
           <button class="ev-del" onclick="event.stopPropagation();delNote('${n.id}')" title="Hapus"><i class="ti ti-x"></i></button>
@@ -6663,5 +6724,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
+
+<!-- ── AI Modal (Puter.js) — dipakai fitur Ringkas AI dll ── -->
+<div class="ai-modal-overlay" id="ai-modal-overlay" onclick="if(event.target===this) closeAiModal()">
+  <div class="ai-modal-box">
+    <div class="ai-modal-head">
+      <span id="ai-modal-title">✨ Ringkasan AI</span>
+      <button class="btn-sm" onclick="closeAiModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="ai-modal-body" id="ai-modal-body">Memuat...</div>
+    <div class="ai-modal-foot">
+      <button class="btn-sm" id="ai-modal-copy-btn" onclick="copyAiResult()"><i class="ti ti-copy"></i> Salin</button>
+      <button class="btn-sm btn-primary" onclick="closeAiModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
