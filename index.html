@@ -451,7 +451,8 @@ textarea { resize: vertical; }
 .ai-modal-overlay.open { display:flex; }
 .ai-modal-box { background:var(--surface); border-radius:var(--radius-lg); max-width:520px; width:100%; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
 .ai-modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); font-size:13px; font-weight:700; }
-.ai-modal-body { padding:16px; overflow-y:auto; font-size:13px; line-height:1.7; color:var(--text1); white-space:pre-wrap; }
+.ai-modal-body { padding:16px; overflow-y:auto; font-size:13px; line-height:1.6; color:var(--text1); }
+.ai-modal-body a { color: var(--accent); }
 .ai-modal-foot { display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--border); }
 .ai-btn { font-size:10px; padding:2px 8px; border-radius:6px; border:1px solid var(--accent); color:var(--accent); background:transparent; cursor:pointer; display:inline-flex; align-items:center; gap:3px; }
 .ai-btn:hover { background:var(--accent); color:#fff; }
@@ -3612,6 +3613,51 @@ function copyAiResult() {
   }).catch(() => alert('Gagal menyalin.'));
 }
 
+// Ubah markdown sederhana dari hasil AI (##, **, -, 1., ---, [link](url)) jadi HTML rapi
+function formatAiMarkdown(text) {
+  let escaped = escHtml(text);
+  const lines = escaped.split('\n');
+  let html = '';
+  let inUl = false, inOl = false;
+
+  function closeLists() {
+    if (inUl) { html += '</ul>'; inUl = false; }
+    if (inOl) { html += '</ol>'; inOl = false; }
+  }
+  function inline(s) {
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[^*])\*([^*]+)\*($|[^*])/g, '$1<em>$2</em>$3');
+    return s;
+  }
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) { closeLists(); html += '<div style="height:8px"></div>'; return; }
+    if (/^---+$/.test(trimmed)) { closeLists(); html += '<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">'; return; }
+    let m;
+    if ((m = trimmed.match(/^###\s+(.*)$/))) { closeLists(); html += `<h5 style="margin:10px 0 4px;font-size:12.5px">${inline(m[1])}</h5>`; return; }
+    if ((m = trimmed.match(/^##\s+(.*)$/))) { closeLists(); html += `<h4 style="margin:12px 0 6px;font-size:13.5px">${inline(m[1])}</h4>`; return; }
+    if ((m = trimmed.match(/^#\s+(.*)$/))) { closeLists(); html += `<h3 style="margin:12px 0 6px;font-size:15px">${inline(m[1])}</h3>`; return; }
+    if ((m = trimmed.match(/^[-*]\s+(.*)$/))) {
+      if (inOl) { html += '</ol>'; inOl = false; }
+      if (!inUl) { html += '<ul style="margin:4px 0;padding-left:20px">'; inUl = true; }
+      html += `<li style="margin:2px 0">${inline(m[1])}</li>`;
+      return;
+    }
+    if ((m = trimmed.match(/^\d+\.\s+(.*)$/))) {
+      if (inUl) { html += '</ul>'; inUl = false; }
+      if (!inOl) { html += '<ol style="margin:4px 0;padding-left:20px">'; inOl = true; }
+      html += `<li style="margin:2px 0">${inline(m[1])}</li>`;
+      return;
+    }
+    closeLists();
+    html += `<div style="margin:2px 0">${inline(trimmed)}</div>`;
+  });
+  closeLists();
+  return html;
+}
+
 // Fungsi inti: kirim teks ke AI lewat Puter.js, tampilkan hasil di modal
 async function runAiOnText(title, plainText, instruction) {
   if (!plainText || !plainText.trim()) { alert('Tidak ada isi teks untuk diproses.'); return; }
@@ -3639,7 +3685,7 @@ async function runAiOnText(title, plainText, instruction) {
     if (!resultText) resultText = '[Tidak bisa membaca hasil AI. Buka Console browser (F12) untuk lihat respons mentahnya.]';
 
     _aiLastResult = resultText;
-    document.getElementById('ai-modal-body').textContent = resultText;
+    document.getElementById('ai-modal-body').innerHTML = formatAiMarkdown(resultText);
   } catch (err) {
     console.error('AI error:', err);
     let msg = 'Terjadi kesalahan tidak diketahui. Cek Console browser (F12) untuk detail.';
