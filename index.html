@@ -3605,12 +3605,30 @@ function closeAiModal() {
 
 function copyAiResult() {
   if (!_aiLastResult) return;
-  navigator.clipboard.writeText(_aiLastResult).then(() => {
-    const btn = document.getElementById('ai-modal-copy-btn');
+  const btn = document.getElementById('ai-modal-copy-btn');
+  const showCopied = () => {
     const original = btn.innerHTML;
     btn.innerHTML = '<i class="ti ti-check"></i> Tersalin!';
     setTimeout(() => { btn.innerHTML = original; }, 1200);
-  }).catch(() => alert('Gagal menyalin.'));
+  };
+
+  const htmlContent = formatAiMarkdown(_aiLastResult);
+
+  // Coba salin sebagai rich text (HTML) supaya kalau ditempel ke Logbook/Notes
+  // (editor Quill), bold/heading-nya langsung jadi format asli, bukan tanda ** / ##.
+  if (window.ClipboardItem) {
+    try {
+      const item = new ClipboardItem({
+        'text/html': new Blob([htmlContent], { type: 'text/html' }),
+        'text/plain': new Blob([_aiLastResult], { type: 'text/plain' })
+      });
+      navigator.clipboard.write([item]).then(showCopied).catch(() => {
+        navigator.clipboard.writeText(_aiLastResult).then(showCopied).catch(() => alert('Gagal menyalin.'));
+      });
+      return;
+    } catch (e) { /* lanjut ke fallback di bawah */ }
+  }
+  navigator.clipboard.writeText(_aiLastResult).then(showCopied).catch(() => alert('Gagal menyalin.'));
 }
 
 // Ubah markdown sederhana dari hasil AI (##, **, -, 1., ---, [link](url)) jadi HTML rapi
