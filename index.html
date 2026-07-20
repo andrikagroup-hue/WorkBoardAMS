@@ -262,6 +262,13 @@ textarea { resize: vertical; }
 .kanban-empty { font-size: 11px; opacity: 0.5; text-align: center; padding: 10px 0; }
 @media (max-width: 700px) { .kanban-col { min-width: 78vw; } }
 
+/* ── Recurring Task ────────────────────────── */
+.rt-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.rt-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .03em; opacity: 0.55; padding: 6px 10px; border-bottom: 1px solid var(--border2); }
+.rt-table td { padding: 8px 10px; border-bottom: 1px solid var(--border2); vertical-align: middle; }
+.rt-freq-badge { font-size: 10px; font-weight: 600; background: var(--bg2); border-radius: 999px; padding: 2px 9px; }
+.rt-toggle { width: 16px; height: 16px; cursor: pointer; }
+
 .log-form-grid { display: flex; gap: 12px; flex-wrap: wrap; }
 .log-form-col { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
 .log-form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: 0.55; margin-bottom: 4px; }
@@ -978,6 +985,9 @@ textarea { resize: vertical; }
           <button class="nav-sub-item" id="nsub-kanban" onclick="switchPanel('kanban',this)">
             <i class="ti ti-layout-kanban"></i> Kanban Board
           </button>
+          <button class="nav-sub-item" id="nsub-recurring" onclick="switchPanel('recurring',this)">
+            <i class="ti ti-repeat"></i> Recurring Task
+          </button>
           <button class="nav-sub-item" id="nsub-logbook" onclick="switchPanel('logbook',this)">
             <i class="ti ti-book"></i> Logbook
             <span class="nav-badge badge-blue" id="badge-log">0</span>
@@ -1372,6 +1382,82 @@ textarea { resize: vertical; }
       <div class="panel" id="panel-kanban">
         <div id="kanban-board" class="kanban-board">
           <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat Kanban...</div>
+        </div>
+      </div>
+
+      <!-- ── Recurring Task ──────────────────── -->
+      <div class="panel" id="panel-recurring">
+        <div id="rt-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
+          ⚠️ <strong>Setup diperlukan:</strong> Tabel <code>recurring_templates</code> belum ada di database. Jalankan SQL yang sudah dikasih di chat, di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, lalu refresh halaman.
+          <button onclick="document.getElementById('rt-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e;display:block">Tutup</button>
+        </div>
+
+        <div class="form-box" id="rt-form" style="display:none">
+          <div class="log-form-grid">
+            <div class="log-form-col">
+              <label class="log-form-label">Jenis</label>
+              <select id="rt-target" onchange="toggleRecurringFieldsVisibility()">
+                <option value="schedule">📅 Daily Schedule</option>
+                <option value="tracker">📋 Time Plan Tracker</option>
+              </select>
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Frekuensi</label>
+              <select id="rt-frequency">
+                <option value="daily">Harian</option>
+                <option value="weekly" selected>Mingguan</option>
+                <option value="biweekly">2 Mingguan</option>
+                <option value="monthly4week">4 Mingguan</option>
+                <option value="monthly">Bulanan</option>
+                <option value="bimonthly">Per 2 Bulan</option>
+                <option value="quarterly">Kuartal (3 Bulan)</option>
+                <option value="biannual">Semester (6 Bulan)</option>
+                <option value="annual">Tahunan</option>
+              </select>
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Mulai Tanggal</label>
+              <input type="date" id="rt-start-date" />
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Privasi</label>
+              <select id="rt-privacy">
+                <option value="false">🌐 Publik</option>
+                <option value="true">🔒 Privat</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="rt-fields-schedule" class="form-row" style="margin-top:8px">
+            <input id="rt-sch-time" type="time" value="08:00" style="max-width:110px" />
+            <input id="rt-sch-title" placeholder="Judul kegiatan yang berulang..." style="flex:2" />
+            <input id="rt-sch-loc" placeholder="Lokasi / platform" />
+            <select id="rt-sch-cat">
+              <option value="blue">🔵 Umum</option>
+              <option value="amber">🟡 Penting</option>
+              <option value="green">🟢 Selesai</option>
+              <option value="purple">🟣 Meeting</option>
+              <option value="red">🔴 Darurat</option>
+            </select>
+          </div>
+          <div id="rt-fields-tracker" class="form-row" style="margin-top:8px;display:none">
+            <input id="rt-trk-subject" placeholder="Aktivitas / Subjek yang berulang..." style="flex:2" />
+            <input id="rt-trk-assign" placeholder="PIC / Assignment" />
+            <input id="rt-trk-schedule" placeholder="Schedule (mis: 3-5 hari)" />
+            <input id="rt-trk-notes" placeholder="Catatan / Notes..." style="flex:2" />
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-sm" onclick="closeRecurringForm()">Batal</button>
+            <button class="btn-sm btn-primary" id="rt-save-btn" onclick="saveRecurringTemplate()">Simpan Template</button>
+          </div>
+        </div>
+
+        <div id="rt-list-wrap">
+          <table class="rt-table">
+            <thead><tr><th>Jenis</th><th>Judul / Aktivitas</th><th>Frekuensi</th><th>Generate Berikutnya</th><th>Aktif</th><th></th></tr></thead>
+            <tbody id="rt-tbody"><tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Memuat...</td></tr></tbody>
+          </table>
         </div>
       </div>
 
@@ -2275,6 +2361,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const ngDaily = document.getElementById('ng-daily');
   if (ngDaily) ngDaily.classList.add('open');
   await renderSchedule();
+  generateDueRecurringTasks().then(() => {
+    // Kalau ada entri baru yang barusan digenerate & lagi lihat Daily Schedule, refresh biar langsung kelihatan
+    if (currentPanel === 'schedule') renderSchedule();
+  }).catch(() => {});
   updateDailyProgress();
   loadChatLastRead();
   refreshChatUnreadBadge();
@@ -2345,6 +2435,7 @@ async function switchPanel(id, el) {
     schedule: 'Daily Schedule',
     tracker: 'Time Plan Tracker',
     kanban: 'Kanban Board',
+    recurring: 'Recurring Task',
     logbook: 'Logbook',
     notes: 'Notes',
     todo: 'To Do',
@@ -2366,6 +2457,7 @@ async function switchPanel(id, el) {
   if (id === 'schedule') await renderSchedule();
   else if (id === 'tracker') { await renderTracker(); await renderProjectTracker(); }
   else if (id === 'kanban') await renderKanban();
+  else if (id === 'recurring') await renderRecurring();
   else if (id === 'logbook') await renderLogbook();
   else if (id === 'notes') await renderNotes();
   else if (id === 'todo') await renderTodo();
@@ -2536,7 +2628,7 @@ function applyGlobalSearch() { _applyGlobalSearchFilter(); }
 function applyGlobalFilter() { _applyGlobalSearchFilter(); }
 
 function hideAllForms() {
-  ['sched-form','log-form','note-form'].forEach(id => {
+  ['sched-form','log-form','note-form','rt-form'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -2545,18 +2637,21 @@ function hideAllForms() {
   resetNoteForm();
   resetTrackerForm();
   resetTodoForm();
+  resetRecurringForm();
 }
 
 async function handleAdd() {
   const formMap = {
     schedule: 'sched-form',
     logbook: 'log-form',
-    notes: 'note-form'
+    notes: 'note-form',
+    recurring: 'rt-form'
   };
   const resetMap = {
     schedule: resetScheduleForm,
     logbook: resetLogForm,
-    notes: resetNoteForm
+    notes: resetNoteForm,
+    recurring: resetRecurringForm
   };
   const formId = formMap[currentPanel];
   if (formId) {
@@ -2569,6 +2664,7 @@ async function handleAdd() {
       await populateTrackerLinkOptions('');
       maybeRestoreLogDraft();
     }
+    if (willOpen && currentPanel === 'recurring') resetRecurringForm();
   }
 }
 
@@ -2876,6 +2972,255 @@ async function kanbanChangeStatus(id, newStatus) {
   const { error } = await sb.from('time_plan_tracker').update({ status: newStatus }).eq('id', id);
   if (error) return alert('Gagal ubah status: ' + error.message);
   await renderKanban();
+}
+
+// ── Recurring Task ──────────────────────────────────────────────
+// Template disimpan di tabel recurring_templates. Setiap kali app dibuka (sekali per hari),
+// generateDueRecurringTasks() cek template yang jadwalnya sudah lewat/hari ini, lalu bikin
+// entri asli otomatis di Daily Schedule / Time Plan Tracker, dan majukan next_run.
+const RT_FREQ_LABEL = {
+  daily: 'Harian', weekly: 'Mingguan', biweekly: '2 Mingguan', monthly4week: '4 Mingguan',
+  monthly: 'Bulanan', bimonthly: 'Per 2 Bulan', quarterly: 'Kuartal', biannual: 'Semester', annual: 'Tahunan'
+};
+let recurringCache = [];
+let editingRecurringId = null;
+
+function toggleRecurringFieldsVisibility() {
+  const target = document.getElementById('rt-target').value;
+  document.getElementById('rt-fields-schedule').style.display = target === 'schedule' ? 'flex' : 'none';
+  document.getElementById('rt-fields-tracker').style.display = target === 'tracker' ? 'flex' : 'none';
+}
+
+function resetRecurringForm() {
+  editingRecurringId = null;
+  document.getElementById('rt-target').value = 'schedule';
+  document.getElementById('rt-frequency').value = 'weekly';
+  document.getElementById('rt-start-date').value = todayStr();
+  document.getElementById('rt-privacy').value = 'false';
+  document.getElementById('rt-sch-time').value = '08:00';
+  document.getElementById('rt-sch-title').value = '';
+  document.getElementById('rt-sch-loc').value = '';
+  document.getElementById('rt-sch-cat').value = 'blue';
+  document.getElementById('rt-trk-subject').value = '';
+  document.getElementById('rt-trk-assign').value = '';
+  document.getElementById('rt-trk-schedule').value = '';
+  document.getElementById('rt-trk-notes').value = '';
+  document.getElementById('rt-save-btn').textContent = 'Simpan Template';
+  toggleRecurringFieldsVisibility();
+}
+
+function closeRecurringForm() {
+  document.getElementById('rt-form').style.display = 'none';
+  resetRecurringForm();
+}
+
+async function renderRecurring() {
+  const tbody = document.getElementById('rt-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Memuat...</td></tr>';
+  let data, error;
+  try {
+    ({ data, error } = await withTimeout(sb.from('recurring_templates').select('*').order('created_at', { ascending: false })));
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ ${e.message}</td></tr>`;
+    return;
+  }
+  if (error) {
+    if (error.message && error.message.includes('recurring_templates')) {
+      document.getElementById('rt-migration-banner').style.display = 'block';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Belum ada data.</td></tr>';
+    } else {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ Gagal memuat: ${error.message}</td></tr>`;
+    }
+    return;
+  }
+  document.getElementById('rt-migration-banner').style.display = 'none';
+  recurringCache = data || [];
+  displayRecurringTemplates(recurringCache);
+}
+
+function displayRecurringTemplates(data) {
+  const tbody = document.getElementById('rt-tbody');
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Belum ada Recurring Task. Klik + Tambah buat bikin yang pertama.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(t => {
+    const d = t.template_data || {};
+    const label = t.target_table === 'schedule' ? (d.title || '-') : (d.subject || '-');
+    const icon = t.target_table === 'schedule' ? '📅' : '📋';
+    return `<tr>
+      <td>${icon} ${t.target_table === 'schedule' ? 'Schedule' : 'Tracker'}</td>
+      <td>${t.is_private ? '🔒 ' : ''}${escHtml(label)}</td>
+      <td><span class="rt-freq-badge">${RT_FREQ_LABEL[t.frequency] || t.frequency}</span></td>
+      <td style="font-size:12px">${fmtDate(t.next_run)}</td>
+      <td><input type="checkbox" class="rt-toggle" ${t.is_active ? 'checked' : ''} onchange="toggleRecurringActive('${t.id}', this.checked)" title="Aktif/Nonaktifkan"></td>
+      <td style="white-space:nowrap">
+        <button class="ev-del" onclick="editRecurringTemplate('${t.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+        <button class="ev-del" onclick="delRecurringTemplate('${t.id}')" title="Hapus"><i class="ti ti-x"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveRecurringTemplate() {
+  const target = document.getElementById('rt-target').value;
+  const frequency = document.getElementById('rt-frequency').value;
+  const startDate = document.getElementById('rt-start-date').value || todayStr();
+  const isPrivate = document.getElementById('rt-privacy').value === 'true';
+
+  let templateData;
+  if (target === 'schedule') {
+    const title = document.getElementById('rt-sch-title').value.trim();
+    if (!title) return alert('Judul kegiatan tidak boleh kosong!');
+    templateData = {
+      title,
+      time_start: document.getElementById('rt-sch-time').value || '08:00',
+      location: document.getElementById('rt-sch-loc').value.trim(),
+      category: document.getElementById('rt-sch-cat').value
+    };
+  } else {
+    const subject = document.getElementById('rt-trk-subject').value.trim();
+    if (!subject) return alert('Aktivitas / Subjek tidak boleh kosong!');
+    templateData = {
+      subject,
+      assignment: document.getElementById('rt-trk-assign').value.trim(),
+      schedule_duration: document.getElementById('rt-trk-schedule').value.trim(),
+      notes: document.getElementById('rt-trk-notes').value.trim()
+    };
+  }
+
+  const payload = {
+    target_table: target,
+    frequency,
+    start_date: startDate,
+    is_private: isPrivate,
+    template_data: templateData,
+    created_by: getUser()
+  };
+
+  let error;
+  if (editingRecurringId) {
+    ({ error } = await sb.from('recurring_templates').update(payload).eq('id', editingRecurringId));
+  } else {
+    payload.next_run = startDate;
+    ({ error } = await sb.from('recurring_templates').insert(payload));
+  }
+  if (error) {
+    if (error.message && error.message.includes('recurring_templates')) {
+      document.getElementById('rt-migration-banner').style.display = 'block';
+    }
+    return alert('Gagal: ' + error.message);
+  }
+  document.getElementById('rt-migration-banner').style.display = 'none';
+  resetRecurringForm();
+  document.getElementById('rt-form').style.display = 'none';
+  await renderRecurring();
+}
+
+function editRecurringTemplate(id) {
+  const t = recurringCache.find(x => x.id === id);
+  if (!t) return;
+  editingRecurringId = id;
+  const d = t.template_data || {};
+  document.getElementById('rt-target').value = t.target_table;
+  document.getElementById('rt-frequency').value = t.frequency;
+  document.getElementById('rt-start-date').value = t.start_date;
+  document.getElementById('rt-privacy').value = t.is_private ? 'true' : 'false';
+  if (t.target_table === 'schedule') {
+    document.getElementById('rt-sch-title').value = d.title || '';
+    document.getElementById('rt-sch-time').value = d.time_start || '08:00';
+    document.getElementById('rt-sch-loc').value = d.location || '';
+    document.getElementById('rt-sch-cat').value = d.category || 'blue';
+  } else {
+    document.getElementById('rt-trk-subject').value = d.subject || '';
+    document.getElementById('rt-trk-assign').value = d.assignment || '';
+    document.getElementById('rt-trk-schedule').value = d.schedule_duration || '';
+    document.getElementById('rt-trk-notes').value = d.notes || '';
+  }
+  toggleRecurringFieldsVisibility();
+  document.getElementById('rt-save-btn').textContent = 'Update Template';
+  document.getElementById('rt-form').style.display = 'block';
+}
+
+async function delRecurringTemplate(id) {
+  if (!confirm('Hapus Recurring Task ini? Entri yang SUDAH terlanjur dibuat sebelumnya tidak ikut terhapus, cuma template-nya saja yang berhenti bikin entri baru.')) return;
+  await sb.from('recurring_templates').delete().eq('id', id);
+  await renderRecurring();
+}
+
+async function toggleRecurringActive(id, checked) {
+  await sb.from('recurring_templates').update({ is_active: checked }).eq('id', id);
+}
+
+// Hitung tanggal generate berikutnya berdasarkan frekuensi
+function computeNextRunDate(dateStr, freq) {
+  const d = new Date(dateStr + 'T00:00:00');
+  switch (freq) {
+    case 'daily': d.setDate(d.getDate() + 1); break;
+    case 'weekly': d.setDate(d.getDate() + 7); break;
+    case 'biweekly': d.setDate(d.getDate() + 14); break;
+    case 'monthly4week': d.setDate(d.getDate() + 28); break;
+    case 'monthly': d.setMonth(d.getMonth() + 1); break;
+    case 'bimonthly': d.setMonth(d.getMonth() + 2); break;
+    case 'quarterly': d.setMonth(d.getMonth() + 3); break;
+    case 'biannual': d.setMonth(d.getMonth() + 6); break;
+    case 'annual': d.setFullYear(d.getFullYear() + 1); break;
+    default: d.setDate(d.getDate() + 7);
+  }
+  return d.toISOString().slice(0, 10);
+}
+
+async function generateOneRecurringOccurrence(tpl, dateStr) {
+  const d = tpl.template_data || {};
+  if (tpl.target_table === 'schedule') {
+    await sb.from('schedule_events').insert({
+      event_date: dateStr,
+      time_start: d.time_start || '08:00',
+      title: d.title,
+      location: d.location || '',
+      category: d.category || 'blue',
+      is_private: !!tpl.is_private,
+      created_by: tpl.created_by || getUser()
+    });
+  } else {
+    await sb.from('time_plan_tracker').insert({
+      subject: d.subject,
+      assignment: d.assignment || '',
+      status: 'not_started',
+      schedule_duration: d.schedule_duration || '',
+      start_date: dateStr,
+      notes: d.notes || '',
+      is_private: !!tpl.is_private,
+      created_by: tpl.created_by || getUser()
+    });
+  }
+}
+
+// Dipanggil sekali tiap app dibuka (dibatasi 1x per hari via localStorage) — cek semua
+// template aktif yang next_run-nya sudah jatuh tempo, generate entri asli, lalu majukan next_run.
+// Kalau app sempat beberapa hari tidak dibuka, ini otomatis "kejar" semua tanggal yang terlewat.
+async function generateDueRecurringTasks() {
+  const todayKey = todayStr();
+  let lastCheck;
+  try { lastCheck = localStorage.getItem('wb_recurring_last_check'); } catch (e) { lastCheck = null; }
+  if (lastCheck === todayKey) return;
+  try {
+    const { data: templates, error } = await sb.from('recurring_templates')
+      .select('*').eq('is_active', true).lte('next_run', todayKey);
+    if (!error && templates && templates.length) {
+      for (const tpl of templates) {
+        let nextRun = tpl.next_run;
+        let guard = 0;
+        while (nextRun <= todayKey && guard < 60) {
+          await generateOneRecurringOccurrence(tpl, nextRun);
+          nextRun = computeNextRunDate(nextRun, tpl.frequency);
+          guard++;
+        }
+        await sb.from('recurring_templates').update({ next_run: nextRun }).eq('id', tpl.id);
+      }
+    }
+  } catch (e) { /* diamkan — jangan sampai bikin app gagal load cuma karena ini */ }
+  try { localStorage.setItem('wb_recurring_last_check', todayKey); } catch (e) {}
 }
 
 async function renderProjectTracker() {
@@ -4215,7 +4560,7 @@ function toggleNavGroup(groupId) {
 // Open the nav-group that contains the given panel id
 function openNavGroupForPanel(panelId) {
   const map = {
-    schedule: 'ng-daily', tracker: 'ng-daily', kanban: 'ng-daily', logbook: 'ng-daily',
+    schedule: 'ng-daily', tracker: 'ng-daily', kanban: 'ng-daily', recurring: 'ng-daily', logbook: 'ng-daily',
     notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
     absen: 'ng-hr',
@@ -5208,6 +5553,10 @@ const quillNp = new Quill('#np-body-editor', {
     <button class="bn-item" onclick="switchPanelMobile('kanban',this)" aria-label="Kanban Board">
       <i class="ti ti-layout-kanban"></i>
       <span>Kanban</span>
+    </button>
+    <button class="bn-item" onclick="switchPanelMobile('recurring',this)" aria-label="Recurring Task">
+      <i class="ti ti-repeat"></i>
+      <span>Berulang</span>
     </button>
     <button class="bn-item" onclick="switchPanelMobile('logbook',this)" aria-label="Logbook">
       <i class="ti ti-book"></i>
