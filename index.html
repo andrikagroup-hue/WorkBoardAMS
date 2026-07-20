@@ -251,8 +251,30 @@ textarea { resize: vertical; }
 .task-prog-fill { height: 100%; background: var(--accent); border-radius: 2px; }
 .tracker-add { background: var(--bg2); border-radius: var(--radius); padding: 12px; margin-top: 12px; }
 
-/* ── Logbook ───────────────────────────────── */
+.log-form-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+.log-form-col { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
+.log-form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: 0.55; margin-bottom: 4px; }
+.log-status-select { font-weight: 700; border-radius: 6px; }
 .logbook-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: start; }
+.logbook-list.log-view-list { display: block; }
+.log-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+.log-table thead th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; opacity: 0.55; font-weight: 700; padding: 0 14px 4px; }
+.log-table tbody tr { cursor: pointer; }
+.log-table tbody td { padding: 10px 14px; vertical-align: top; }
+.log-table tbody tr td:first-child { border-radius: 8px 0 0 8px; width: 78px; text-align: center; }
+.log-table tbody tr td:last-child { border-radius: 0 8px 8px 0; width: 96px; }
+.log-date-day { font-size: 20px; font-weight: 800; line-height: 1; }
+.log-date-month { font-size: 10px; font-weight: 700; opacity: 0.65; text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; }
+.log-row-title { font-size: 13px; font-weight: 700; }
+.log-row-type { font-size: 10px; font-weight: 500; opacity: 0.6; margin-left: 6px; }
+.log-row-tags { margin-top: 3px; }
+.log-row-tags .log-row-tag { font-size: 10px; opacity: 0.6; margin-right: 7px; }
+.log-row-attachments { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.log-row-attachments a { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; background: rgba(0,0,0,0.08); border-radius: 5px; padding: 2px 7px; text-decoration: none; color: inherit; }
+.log-row-body-full { display: none; font-size: 12px; opacity: 0.8; line-height: 1.5; margin-top: 8px; }
+.log-row.expanded .log-row-body-full { display: block; }
+.log-row-actions { display: flex; gap: 2px; justify-content: flex-end; }
+@media (max-width: 600px) { .log-table thead { display: none; } .log-table tbody tr td:first-child { display: none; } }
 .log-entry { border-radius: 4px 16px 16px 16px; padding: 14px 14px 10px; cursor: pointer; position: relative; box-shadow: 3px 4px 10px rgba(0,0,0,0.10); transition: transform 0.15s, box-shadow 0.15s; min-height: 120px; }
 .log-entry:hover { transform: translateY(-3px) rotate(-0.5deg); box-shadow: 5px 8px 18px rgba(0,0,0,0.15); }
 .log-entry .log-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -942,6 +964,9 @@ textarea { resize: vertical; }
             <i class="ti ti-clock"></i> Time Plan Tracker
             <span class="nav-badge badge-amber" id="badge-track">0</span>
           </button>
+          <button class="nav-sub-item" id="nsub-kanban" onclick="switchPanel('kanban',this)">
+            <i class="ti ti-layout-kanban"></i> Kanban Board
+          </button>
           <button class="nav-sub-item" id="nsub-logbook" onclick="switchPanel('logbook',this)">
             <i class="ti ti-book"></i> Logbook
             <span class="nav-badge badge-blue" id="badge-log">0</span>
@@ -1093,6 +1118,9 @@ textarea { resize: vertical; }
             <option value="">Semua</option>
           </select>
         </div>
+        <button class="btn-sm" id="log-view-toggle" onclick="toggleLogView()" title="Ganti tampilan Grid/List" style="display:none">
+          <i class="ti ti-list" id="log-view-icon" aria-hidden="true"></i>
+        </button>
         <div class="export-dropdown" id="export-dropdown">
           <button class="btn-sm" onclick="toggleExportMenu(event)">
             <i class="ti ti-download" aria-hidden="true"></i> Export <i class="ti ti-chevron-down" style="font-size:11px"></i>
@@ -1329,30 +1357,52 @@ textarea { resize: vertical; }
         </div>
       </div>
 
+      <!-- ── Kanban Board ────────────────────── -->
+      <div class="panel" id="panel-kanban">
+        <div id="kanban-board" class="kanban-board">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat Kanban...</div>
+        </div>
+      </div>
+
       <!-- ── Logbook ─────────────────────────── -->
       <div class="panel" id="panel-logbook">
         <div id="logbook-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup diperlukan:</strong> Kolom lampiran belum ada di database. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh halaman:<br>
+          ⚠️ <strong>Setup diperlukan:</strong> Kolom di database belum lengkap. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh halaman:<br>
           <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE logbook_entries
-  ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::jsonb;</code>
+  ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE logbook_entries
+  ADD COLUMN IF NOT EXISTS tracker_item_id UUID REFERENCES time_plan_tracker(id) ON DELETE SET NULL;</code>
           <button onclick="document.getElementById('logbook-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
         </div>
         <div class="form-box" id="log-form" style="display:none">
-          <div class="form-row">
-            <input id="log-title" placeholder="Judul catatan logbook..." style="flex:2" />
-            <select id="log-type">
-              <option value="meeting">Rapat</option>
-              <option value="report">Laporan</option>
-              <option value="note">Catatan</option>
-              <option value="issue">Masalah</option>
-            </select>
-            <select id="log-privacy" title="Siapa yang bisa lihat data ini">
-              <option value="false">🌐 Publik</option>
-              <option value="true">🔒 Privat</option>
-            </select>
+          <div class="log-form-grid">
+            <div class="log-form-col" style="flex:2">
+              <label class="log-form-label">Aktivitas</label>
+              <input id="log-title" placeholder="Judul catatan logbook..." />
+              <select id="log-type" style="margin-top:6px">
+                <option value="meeting">Rapat</option>
+                <option value="report">Laporan</option>
+                <option value="note">Catatan</option>
+                <option value="issue">Masalah</option>
+              </select>
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Status</label>
+              <select id="log-tracker-link" class="log-status-select" onchange="updateLogStatusColor()" title="Hubungkan catatan ini ke item di Time Plan Tracker — status akan ikut otomatis dari sana">
+                <option value="">— Tidak dihubungkan ke Tracker —</option>
+              </select>
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Privasi</label>
+              <select id="log-privacy" title="Siapa yang bisa lihat data ini">
+                <option value="false">🌐 Publik</option>
+                <option value="true">🔒 Privat</option>
+              </select>
+            </div>
           </div>
-          <div class="form-row">
-            <div class="quill-editor-wrap"><div id="log-body-editor"></div></div>
+          <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:4px;margin-top:4px">
+            <label class="log-form-label">Catatan / Notes</label>
+            <div class="quill-editor-wrap" style="width:100%"><div id="log-body-editor"></div></div>
           </div>
           <div class="form-row">
             <input id="log-tags-in" placeholder="Tag (pisahkan koma — contoh: keuangan, ops, hr)" />
@@ -2177,6 +2227,7 @@ const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustu
 
 // ── Init ───────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
+  updateLogViewIcon();
   // Cek nama pengguna — kalau belum pernah diisi di device ini, WAJIB tanya
   // (jangan diam-diam jadi "Pengguna" cuma karena kotaknya kosong/kepencet OK doang).
   let user = localStorage.getItem('wb_user');
@@ -2277,6 +2328,7 @@ async function switchPanel(id, el) {
   const titles = {
     schedule: 'Daily Schedule',
     tracker: 'Time Plan Tracker',
+    kanban: 'Kanban Board',
     logbook: 'Logbook',
     notes: 'Notes',
     todo: 'To Do',
@@ -2297,6 +2349,7 @@ async function switchPanel(id, el) {
 
   if (id === 'schedule') await renderSchedule();
   else if (id === 'tracker') { await renderTracker(); await renderProjectTracker(); }
+  else if (id === 'kanban') await renderKanban();
   else if (id === 'logbook') await renderLogbook();
   else if (id === 'notes') await renderNotes();
   else if (id === 'todo') await renderTodo();
@@ -2421,6 +2474,23 @@ function updateGlobalSearchFilter(panelId) {
     cfg.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
   filterSelect.value = '';
   filterSelect.style.display = cfg.options.length ? '' : 'none';
+
+  const viewToggleBtn = document.getElementById('log-view-toggle');
+  if (viewToggleBtn) viewToggleBtn.style.display = (panelId === 'logbook') ? '' : 'none';
+}
+
+// ── Toggle tampilan Logbook: Grid (kartu) vs List (baris ringkas) ──
+let logViewMode = localStorage.getItem('wb_log_view') || 'grid';
+function toggleLogView() {
+  logViewMode = (logViewMode === 'grid') ? 'list' : 'grid';
+  localStorage.setItem('wb_log_view', logViewMode);
+  updateLogViewIcon();
+  _applyGlobalSearchFilter();
+}
+function updateLogViewIcon() {
+  const icon = document.getElementById('log-view-icon');
+  if (!icon) return;
+  icon.className = 'ti ' + (logViewMode === 'grid' ? 'ti-list' : 'ti-layout-grid') + ' ';
 }
 
 // Helper: terapkan pencarian teks + filter kategori pada data menu yang aktif,
@@ -2479,7 +2549,47 @@ function handleAdd() {
     el.style.display = willOpen ? 'block' : 'none';
     // saat form ditutup, kembalikan ke mode "tambah baru" supaya tidak nyangkut di mode edit
     if (!willOpen && resetMap[currentPanel]) resetMap[currentPanel]();
+    if (willOpen && currentPanel === 'logbook') populateTrackerLinkOptions('');
   }
+}
+
+// Isi dropdown "Link ke Tracker" di form Logbook dengan daftar item Time Plan Tracker terbaru.
+// selectedId (opsional) = tracker_item_id yang sedang aktif, supaya kepilih otomatis saat edit.
+async function populateTrackerLinkOptions(selectedId) {
+  const sel = document.getElementById('log-tracker-link');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Memuat daftar Tracker...</option>';
+  try {
+    const { data, error } = await sb.from('time_plan_tracker').select('id,subject,status').order('created_at', { ascending: false }).limit(200);
+    if (error) throw error;
+    const items = data || [];
+    sel.innerHTML = '<option value="" data-status="">— Tidak dihubungkan ke Tracker —</option>' +
+      items.map(t => `<option value="${t.id}" data-status="${t.status}">${escHtml(t.subject)} — ${PT_STATUS_LABEL[t.status] || t.status}</option>`).join('');
+    sel.value = selectedId || '';
+  } catch (e) {
+    sel.innerHTML = '<option value="">— Gagal memuat daftar Tracker —</option>';
+  }
+  updateLogStatusColor();
+}
+
+// Warnai dropdown Status di form Logbook sesuai status item Tracker yang lagi dipilih
+// (warnanya sama dengan badge status di Time Plan Tracker).
+const LOG_STATUS_COLOR_HEX = {
+  done: { bg: '#DCFCE7', fg: '#166534' },
+  in_progress: { bg: '#DBEAFE', fg: '#1D4ED8' },
+  not_started: { bg: '#F3F4F6', fg: '#374151' },
+  skipped: { bg: '#EDE9FE', fg: '#5B21B6' },
+  on_hold: { bg: '#FFF7ED', fg: '#C2410C' },
+  overdue: { bg: '#FEE2E2', fg: '#7F1D1D' }
+};
+function updateLogStatusColor() {
+  const sel = document.getElementById('log-tracker-link');
+  if (!sel) return;
+  const opt = sel.options[sel.selectedIndex];
+  const st = opt ? opt.getAttribute('data-status') : '';
+  const c = LOG_STATUS_COLOR_HEX[st] || { bg: '#F3F4F6', fg: '#6B7280' };
+  sel.style.background = c.bg;
+  sel.style.color = c.fg;
 }
 
 // ── Loading state ──────────────────────────
@@ -2903,7 +3013,23 @@ async function renderLogbook() {
     document.getElementById('logbook-list').innerHTML = '<div class="empty-msg">Belum ada catatan logbook.</div>';
     return;
   }
+  await refreshTrackerStatusMap(logbookCache);
   displayLogbook(data || []);
+}
+
+// Catatan Logbook yang di-link ke Tracker ikut status TERKINI dari sana (bukan disimpan manual),
+// jadi kalau status di Tracker berubah, badge di Logbook otomatis ikut berubah juga.
+let trackerStatusMap = {};
+async function refreshTrackerStatusMap(entries) {
+  const ids = [...new Set((entries || []).map(l => l.tracker_item_id).filter(Boolean))];
+  if (!ids.length) { trackerStatusMap = {}; return; }
+  try {
+    const { data } = await sb.from('time_plan_tracker').select('id,subject,status').in('id', ids);
+    trackerStatusMap = {};
+    (data || []).forEach(t => { trackerStatusMap[t.id] = t; });
+  } catch (e) {
+    trackerStatusMap = {};
+  }
 }
 
 // ── Lampiran (Supabase Storage) ─────────────
@@ -2983,7 +3109,8 @@ async function saveLog() {
     tags,
     is_private: document.getElementById('log-privacy').value === 'true',
     created_by: getUser(),
-    attachments
+    attachments,
+    tracker_item_id: document.getElementById('log-tracker-link').value || null
   };
   let error;
   if (editingLogId) {
@@ -2994,7 +3121,7 @@ async function saveLog() {
   }
   if (error) {
     saveBtn.textContent = originalBtnText;
-    if (error.message && error.message.includes('attachments')) {
+    if (error.message && (error.message.includes('attachments') || error.message.includes('tracker_item_id'))) {
       document.getElementById('logbook-migration-banner').style.display = 'block';
     }
     return alert('Gagal: ' + error.message);
@@ -3006,7 +3133,7 @@ async function saveLog() {
 }
 
 // Isi form dengan data logbook yang dipilih untuk diedit
-function editLog(id) {
+async function editLog(id) {
   const l = logbookCache.find(x => x.id === id);
   if (!l) return;
   editingLogId = id;
@@ -3020,6 +3147,7 @@ function editLog(id) {
   renderAttachPreview();
   document.getElementById('log-save-btn').textContent = 'Update';
   document.getElementById('log-form').style.display = 'block';
+  await populateTrackerLinkOptions(l.tracker_item_id || '');
 }
 
 // Kembalikan form ke mode "tambah baru"
@@ -3034,6 +3162,9 @@ function resetLogForm() {
   const fileInput = document.getElementById('log-files');
   if (fileInput) fileInput.value = '';
   renderAttachPreview();
+  const trackerSel = document.getElementById('log-tracker-link');
+  if (trackerSel) trackerSel.innerHTML = '<option value="" data-status="">— Tidak dihubungkan ke Tracker —</option>';
+  updateLogStatusColor();
   document.getElementById('log-save-btn').textContent = 'Simpan ke Logbook';
 }
 
@@ -3929,7 +4060,7 @@ function toggleNavGroup(groupId) {
 // Open the nav-group that contains the given panel id
 function openNavGroupForPanel(panelId) {
   const map = {
-    schedule: 'ng-daily', tracker: 'ng-daily', logbook: 'ng-daily',
+    schedule: 'ng-daily', tracker: 'ng-daily', kanban: 'ng-daily', logbook: 'ng-daily',
     notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
     absen: 'ng-hr',
@@ -4149,10 +4280,12 @@ async function delNpItem(id) {
 // Render helper — dipanggil dari filter maupun renderLogbook
 function displayLogbook(data) {
   const typeLabel = {meeting:'Rapat',report:'Laporan',note:'Catatan',issue:'Masalah'};
+  const list = document.getElementById('logbook-list');
+  list.classList.toggle('log-view-list', logViewMode === 'list');
+  if (!data || !data.length) { list.innerHTML = '<div class="empty-msg">Tidak ada catatan yang sesuai.</div>'; return; }
+  if (logViewMode === 'list') { displayLogbookList(data, typeLabel); return; }
   const colors = ['sn-peach','sn-yellow','sn-mint','sn-blue','sn-lavender','sn-pink','sn-sage','sn-cream'];
   const tapes  = ['sn-tape-peach','sn-tape-yellow','sn-tape-mint','sn-tape-blue','sn-tape-lavender','sn-tape-pink','sn-tape-sage','sn-tape-cream'];
-  const list = document.getElementById('logbook-list');
-  if (!data || !data.length) { list.innerHTML = '<div class="empty-msg">Tidak ada catatan yang sesuai.</div>'; return; }
   list.innerHTML = data.map((l, i) => {
     const c = colors[i % colors.length];
     const tc = tapes[i % tapes.length];
@@ -4161,10 +4294,13 @@ function displayLogbook(data) {
       <div class="log-attachments" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px" onclick="event.stopPropagation()">
         ${l.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit" title="Unduh ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
       </div>` : '';
+    const tItem = l.tracker_item_id ? trackerStatusMap[l.tracker_item_id] : null;
+    const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px" title="Terhubung ke Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
     return `<div class="log-entry ${c}" onclick="this.classList.toggle('expanded')">
       <span class="sn-tape-el ${tc}"></span>
       <div class="log-header">
         <span class="log-type" style="font-size:10px;font-weight:700;opacity:0.7">${typeLabel[l.type]||l.type}</span>
+        ${trackerBadge}
         <span style="font-size:10px;opacity:0.6;margin-left:auto">${d}</span>
       </div>
       <div class="log-title" style="font-size:14px;font-weight:700;margin:4px 0 6px">${l.is_private?'🔒 ':''}${escHtml(l.title)}</div>
@@ -4178,6 +4314,43 @@ function displayLogbook(data) {
       </div>
     </div>`;
   }).join('');
+}
+
+// Mode List: tabel ringkas bergaya "DayBook" — Tanggal besar | Catatan (+lampiran),
+// tiap baris dikasih warna pastel yang sama dengan kartu Grid.
+function displayLogbookList(data, typeLabel) {
+  const colors = ['sn-peach','sn-yellow','sn-mint','sn-blue','sn-lavender','sn-pink','sn-sage','sn-cream'];
+  const list = document.getElementById('logbook-list');
+  const rows = data.map((l, i) => {
+    const c = colors[i % colors.length];
+    let dateObj = null;
+    if (l.entry_date) dateObj = new Date(l.entry_date + 'T00:00:00');
+    else if (l.created_at) dateObj = new Date(l.created_at);
+    const dayNum = dateObj ? dateObj.toLocaleDateString('id-ID', {day:'2-digit'}) : '–';
+    const monthYear = dateObj ? dateObj.toLocaleDateString('id-ID', {month:'short', year:'numeric'}) : '';
+    const tagsHtml = (l.tags||[]).map(t => `<span class="log-row-tag">#${t}</span>`).join('');
+    const attachHtml = (l.attachments && l.attachments.length) ? `
+      <div class="log-row-attachments">
+        ${l.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" onclick="event.stopPropagation()" title="Unduh ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
+      </div>` : '';
+    const tItem = l.tracker_item_id ? trackerStatusMap[l.tracker_item_id] : null;
+    const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px;margin-left:6px" title="Terhubung ke Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
+    return `<tr class="log-row ${c}" onclick="this.classList.toggle('expanded')">
+      <td><div class="log-date-day">${dayNum}</div><div class="log-date-month">${monthYear}</div></td>
+      <td>
+        <div class="log-row-title">${l.is_private?'🔒 ':''}${escHtml(l.title)}<span class="log-row-type">${typeLabel[l.type]||l.type}</span>${trackerBadge}</div>
+        <div class="log-row-tags">${tagsHtml}</div>
+        ${attachHtml}
+        <div class="log-row-body-full">${renderBody(l.body)}</div>
+      </td>
+      <td class="log-row-actions" onclick="event.stopPropagation()">
+        <button class="ev-del" onclick="aiSummarizeLog('${l.id}')" title="Ringkas dengan AI"><i class="ti ti-sparkles"></i></button>
+        <button class="ev-del" onclick="editLog('${l.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+        <button class="ev-del" onclick="delLog('${l.id}')" title="Hapus"><i class="ti ti-x"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+  list.innerHTML = `<table class="log-table"><thead><tr><th>Tanggal</th><th>Catatan</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function _renderNoteCards(data) {
@@ -4875,6 +5048,10 @@ const quillNp = new Quill('#np-body-editor', {
       <i class="ti ti-clock"></i>
       <span>Tracker</span>
       <span class="bn-badge hidden" id="bn-badge-track"></span>
+    </button>
+    <button class="bn-item" onclick="switchPanelMobile('kanban',this)" aria-label="Kanban Board">
+      <i class="ti ti-layout-kanban"></i>
+      <span>Kanban</span>
     </button>
     <button class="bn-item" onclick="switchPanelMobile('logbook',this)" aria-label="Logbook">
       <i class="ti ti-book"></i>
