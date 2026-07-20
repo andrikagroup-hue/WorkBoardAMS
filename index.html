@@ -251,6 +251,17 @@ textarea { resize: vertical; }
 .task-prog-fill { height: 100%; background: var(--accent); border-radius: 2px; }
 .tracker-add { background: var(--bg2); border-radius: var(--radius); padding: 12px; margin-top: 12px; }
 
+.kanban-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: flex-start; }
+.kanban-col { background: var(--bg2); border-radius: 10px; padding: 10px; min-width: 240px; max-width: 260px; flex-shrink: 0; }
+.kanban-col-header { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; padding: 4px 6px 8px; }
+.kanban-col-count { font-size: 11px; font-weight: 700; background: rgba(0,0,0,0.08); border-radius: 999px; padding: 1px 8px; }
+.kanban-card { background: var(--bg1); border: 1px solid var(--border2); border-radius: 8px; padding: 10px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.kanban-card-title { font-size: 12.5px; font-weight: 700; margin-bottom: 3px; }
+.kanban-card-meta { font-size: 10.5px; opacity: 0.65; margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+.kanban-card-move { width: 100%; font-size: 11px; padding: 4px 6px; border-radius: 6px; }
+.kanban-empty { font-size: 11px; opacity: 0.5; text-align: center; padding: 10px 0; }
+@media (max-width: 700px) { .kanban-col { min-width: 78vw; } }
+
 .log-form-grid { display: flex; gap: 12px; flex-wrap: wrap; }
 .log-form-col { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
 .log-form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: 0.55; margin-bottom: 4px; }
@@ -1378,8 +1389,8 @@ ALTER TABLE logbook_entries
           <div class="log-form-grid">
             <div class="log-form-col" style="flex:2">
               <label class="log-form-label">Aktivitas</label>
-              <input id="log-title" placeholder="Judul catatan logbook..." />
-              <select id="log-type" style="margin-top:6px">
+              <input id="log-title" placeholder="Judul catatan logbook..." oninput="autosaveLogDraft()" />
+              <select id="log-type" style="margin-top:6px" onchange="autosaveLogDraft()">
                 <option value="meeting">Rapat</option>
                 <option value="report">Laporan</option>
                 <option value="note">Catatan</option>
@@ -1387,14 +1398,18 @@ ALTER TABLE logbook_entries
               </select>
             </div>
             <div class="log-form-col">
+              <label class="log-form-label">Tanggal</label>
+              <input type="date" id="log-entry-date" onchange="autosaveLogDraft()" />
+            </div>
+            <div class="log-form-col">
               <label class="log-form-label">Status</label>
-              <select id="log-tracker-link" class="log-status-select" onchange="updateLogStatusColor()" title="Hubungkan catatan ini ke item di Time Plan Tracker — status akan ikut otomatis dari sana">
+              <select id="log-tracker-link" class="log-status-select" onchange="updateLogStatusColor();autosaveLogDraft()" title="Hubungkan catatan ini ke item di Time Plan Tracker — status akan ikut otomatis dari sana">
                 <option value="">— Tidak dihubungkan ke Tracker —</option>
               </select>
             </div>
             <div class="log-form-col">
               <label class="log-form-label">Privasi</label>
-              <select id="log-privacy" title="Siapa yang bisa lihat data ini">
+              <select id="log-privacy" title="Siapa yang bisa lihat data ini" onchange="autosaveLogDraft()">
                 <option value="false">🌐 Publik</option>
                 <option value="true">🔒 Privat</option>
               </select>
@@ -1405,13 +1420,13 @@ ALTER TABLE logbook_entries
             <div class="quill-editor-wrap" style="width:100%"><div id="log-body-editor"></div></div>
           </div>
           <div class="form-row">
-            <input id="log-tags-in" placeholder="Tag (pisahkan koma — contoh: keuangan, ops, hr)" />
+            <input id="log-tags-in" placeholder="Tag (pisahkan koma — contoh: keuangan, ops, hr)" oninput="autosaveLogDraft()" />
           </div>
           <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:6px">
             <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px">
               <i class="ti ti-paperclip"></i> Lampiran (PDF, gambar, Word, Excel — bisa lebih dari satu)
             </label>
-            <input type="file" id="log-files" multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv" style="font-size:12px" />
+            <input type="file" id="log-files" multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv" style="font-size:12px" onchange="handleLogFileSelect()" />
             <div id="log-attach-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
           </div>
           <div class="form-actions">
@@ -2192,6 +2207,7 @@ let editingScheduleId = null;
 let editingTrackerId = null;
 let editingLogId = null;
 let logAttachments = [];
+let logPendingFiles = []; // File objects yang sudah dipilih user tapi belum diupload (masih bisa dibatalkan)
 let editingNoteId = null;
 let editingTodoId = null;
 let chatChannels = [];
@@ -2531,7 +2547,7 @@ function hideAllForms() {
   resetTodoForm();
 }
 
-function handleAdd() {
+async function handleAdd() {
   const formMap = {
     schedule: 'sched-form',
     logbook: 'log-form',
@@ -2549,7 +2565,10 @@ function handleAdd() {
     el.style.display = willOpen ? 'block' : 'none';
     // saat form ditutup, kembalikan ke mode "tambah baru" supaya tidak nyangkut di mode edit
     if (!willOpen && resetMap[currentPanel]) resetMap[currentPanel]();
-    if (willOpen && currentPanel === 'logbook') populateTrackerLinkOptions('');
+    if (willOpen && currentPanel === 'logbook') {
+      await populateTrackerLinkOptions('');
+      maybeRestoreLogDraft();
+    }
   }
 }
 
@@ -2797,6 +2816,66 @@ const PT_STATUS_CLASS = {
 function onPtSearchInput() {
   clearTimeout(ptSearchDebounce);
   ptSearchDebounce = setTimeout(renderProjectTracker, 300);
+}
+
+// ── Kanban Board — visualisasi status dari data Time Plan Tracker (tabel sama) ──
+const KANBAN_COLUMNS = [
+  { key: 'not_started', label: 'Not Started' },
+  { key: 'in_progress', label: 'In Progress' },
+  { key: 'on_hold', label: 'On Hold' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'skipped', label: 'Skipped' },
+  { key: 'done', label: 'Done' }
+];
+let kanbanCache = [];
+
+async function renderKanban() {
+  const board = document.getElementById('kanban-board');
+  board.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat Kanban...</div>';
+  let data, error;
+  try {
+    ({ data, error } = await withTimeout(sb.from('time_plan_tracker').select('*').order('created_at', { ascending: false })));
+  } catch (e) {
+    board.innerHTML = `<div class="empty-msg" style="color:#e53e3e">⚠️ ${e.message}</div>`;
+    return;
+  }
+  if (error) {
+    board.innerHTML = `<div class="empty-msg" style="color:#e53e3e">⚠️ Gagal memuat: ${error.message}</div>`;
+    return;
+  }
+  kanbanCache = data || [];
+  displayKanban(kanbanCache);
+}
+
+function displayKanban(data) {
+  const board = document.getElementById('kanban-board');
+  board.innerHTML = KANBAN_COLUMNS.map(col => {
+    const items = (data || []).filter(t => (t.status || 'not_started') === col.key);
+    const cards = items.map(t => `
+      <div class="kanban-card">
+        <div class="kanban-card-title">${t.is_private ? '🔒 ' : ''}${escHtml(t.subject)}</div>
+        <div class="kanban-card-meta">
+          ${t.assignment ? `<span><i class="ti ti-user"></i> ${escHtml(t.assignment)}</span>` : ''}
+          ${t.due_date ? `<span><i class="ti ti-calendar"></i> ${fmtDate(t.due_date)}</span>` : ''}
+        </div>
+        <select class="kanban-card-move" onchange="kanbanChangeStatus('${t.id}', this.value)">
+          ${KANBAN_COLUMNS.map(c => `<option value="${c.key}" ${c.key === col.key ? 'selected' : ''}>${c.key === col.key ? '📍 ' + c.label + ' (sekarang)' : '→ Pindah ke ' + c.label}</option>`).join('')}
+        </select>
+      </div>
+    `).join('');
+    return `<div class="kanban-col">
+      <div class="kanban-col-header"><span>${col.label}</span><span class="kanban-col-count">${items.length}</span></div>
+      ${cards || '<div class="kanban-empty">Kosong</div>'}
+    </div>`;
+  }).join('');
+}
+
+// Ganti status langsung dari dropdown kartu — ini nulis ke tabel time_plan_tracker yang sama
+// dengan Time Plan Tracker, jadi otomatis sinkron di kedua tempat (termasuk badge di Logbook).
+async function kanbanChangeStatus(id, newStatus) {
+  const { error } = await sb.from('time_plan_tracker').update({ status: newStatus }).eq('id', id);
+  if (error) return alert('Gagal ubah status: ' + error.message);
+  await renderKanban();
 }
 
 async function renderProjectTracker() {
@@ -3070,17 +3149,39 @@ async function uploadFilesToStorage(fileList, folder) {
 function renderAttachPreview() {
   const wrap = document.getElementById('log-attach-preview');
   if (!wrap) return;
-  if (!logAttachments.length) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = logAttachments.map((a, idx) => `
+  const savedHtml = logAttachments.map((a, idx) => `
     <span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;font-size:11px">
       <i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)} ${a.size ? '<span style="opacity:0.5">(' + formatBytes(a.size) + ')</span>' : ''}
       <i class="ti ti-x" style="cursor:pointer;opacity:0.6" onclick="removeLogAttachment(${idx})" title="Hapus lampiran ini"></i>
     </span>
   `).join('');
+  const pendingHtml = logPendingFiles.map((f, idx) => `
+    <span style="display:inline-flex;align-items:center;gap:4px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:3px 8px;font-size:11px;color:#1D4ED8">
+      <i class="ti ti-cloud-upload"></i> ${escHtml(f.name)} <span style="opacity:0.6">(${formatBytes(f.size)}, belum diupload)</span>
+      <i class="ti ti-x" style="cursor:pointer;opacity:0.7" onclick="removePendingLogFile(${idx})" title="Batalkan file ini"></i>
+    </span>
+  `).join('');
+  wrap.innerHTML = savedHtml + pendingHtml;
 }
 
 function removeLogAttachment(idx) {
   logAttachments.splice(idx, 1);
+  renderAttachPreview();
+}
+
+// Dipanggil begitu user memilih file di kotak "Choose files" — supaya langsung kelihatan
+// preview-nya dan bisa dibatalkan (X) SEBELUM benar-benar diupload saat Simpan.
+function handleLogFileSelect() {
+  const input = document.getElementById('log-files');
+  if (input.files && input.files.length) {
+    logPendingFiles = [...logPendingFiles, ...Array.from(input.files)];
+  }
+  input.value = ''; // reset supaya bisa pilih file lain lagi tanpa numpuk duplikat
+  renderAttachPreview();
+}
+
+function removePendingLogFile(idx) {
+  logPendingFiles.splice(idx, 1);
   renderAttachPreview();
 }
 
@@ -3092,12 +3193,11 @@ async function saveLog() {
   const saveBtn = document.getElementById('log-save-btn');
   const originalBtnText = saveBtn.textContent;
 
-  const fileInput = document.getElementById('log-files');
   let newFiles = [];
-  if (fileInput.files && fileInput.files.length) {
+  if (logPendingFiles.length) {
     saveBtn.textContent = 'Mengunggah lampiran...';
     saveBtn.disabled = true;
-    newFiles = await uploadFilesToStorage(fileInput.files, 'logbook');
+    newFiles = await uploadFilesToStorage(logPendingFiles, 'logbook');
     saveBtn.disabled = false;
   }
   const attachments = [...logAttachments, ...newFiles];
@@ -3110,13 +3210,13 @@ async function saveLog() {
     is_private: document.getElementById('log-privacy').value === 'true',
     created_by: getUser(),
     attachments,
-    tracker_item_id: document.getElementById('log-tracker-link').value || null
+    tracker_item_id: document.getElementById('log-tracker-link').value || null,
+    entry_date: document.getElementById('log-entry-date').value || todayStr()
   };
   let error;
   if (editingLogId) {
     ({ error } = await sb.from('logbook_entries').update(payload).eq('id', editingLogId));
   } else {
-    payload.entry_date = todayStr();
     ({ error } = await sb.from('logbook_entries').insert(payload));
   }
   if (error) {
@@ -3127,6 +3227,7 @@ async function saveLog() {
     return alert('Gagal: ' + error.message);
   }
   document.getElementById('logbook-migration-banner').style.display = 'none';
+  clearLogDraft();
   resetLogForm();
   document.getElementById('log-form').style.display = 'none';
   await renderLogbook();
@@ -3140,9 +3241,11 @@ async function editLog(id) {
   document.getElementById('log-title').value = l.title || '';
   document.getElementById('log-type').value = l.type || 'meeting';
   document.getElementById('log-privacy').value = l.is_private ? 'true' : 'false';
+  document.getElementById('log-entry-date').value = l.entry_date || todayStr();
   quillLog.root.innerHTML = l.body || '';
   document.getElementById('log-tags-in').value = (l.tags || []).join(', ');
   logAttachments = Array.isArray(l.attachments) ? [...l.attachments] : [];
+  logPendingFiles = [];
   document.getElementById('log-files').value = '';
   renderAttachPreview();
   document.getElementById('log-save-btn').textContent = 'Update';
@@ -3156,9 +3259,11 @@ function resetLogForm() {
   document.getElementById('log-title').value = '';
   document.getElementById('log-type').value = 'meeting';
   document.getElementById('log-privacy').value = 'false';
+  document.getElementById('log-entry-date').value = todayStr();
   quillLog.setText('');
   document.getElementById('log-tags-in').value = '';
   logAttachments = [];
+  logPendingFiles = [];
   const fileInput = document.getElementById('log-files');
   if (fileInput) fileInput.value = '';
   renderAttachPreview();
@@ -3168,9 +3273,59 @@ function resetLogForm() {
   document.getElementById('log-save-btn').textContent = 'Simpan ke Logbook';
 }
 
+// ── Auto-save draft Logbook ke localStorage ──
+// Supaya isi catatan yang lagi diketik TIDAK HILANG kalau tab browser ke-tutup
+// atau pindah menu tanpa sengaja sebelum sempat klik "Simpan".
+// Hanya untuk catatan BARU (bukan yang lagi diedit), biar tidak ketimpa draft lama.
+let logDraftDebounce = null;
+function autosaveLogDraft() {
+  if (editingLogId) return;
+  clearTimeout(logDraftDebounce);
+  logDraftDebounce = setTimeout(() => {
+    const draft = {
+      title: document.getElementById('log-title').value,
+      type: document.getElementById('log-type').value,
+      privacy: document.getElementById('log-privacy').value,
+      entryDate: document.getElementById('log-entry-date').value,
+      tags: document.getElementById('log-tags-in').value,
+      trackerLink: document.getElementById('log-tracker-link').value,
+      body: quillLog ? quillLog.root.innerHTML : ''
+    };
+    // Jangan simpan draft kosong (form baru dibuka, belum diisi apa-apa)
+    if (!draft.title && !draft.tags && (!draft.body || draft.body === '<p><br></p>')) return;
+    try { localStorage.setItem('wb_log_draft', JSON.stringify(draft)); } catch (e) {}
+  }, 500);
+}
+function clearLogDraft() {
+  try { localStorage.removeItem('wb_log_draft'); } catch (e) {}
+}
+// Dipanggil saat form Tambah Logbook dibuka — kalau ada draft lama, tawarkan lanjutin.
+function maybeRestoreLogDraft() {
+  if (editingLogId) return;
+  let raw;
+  try { raw = localStorage.getItem('wb_log_draft'); } catch (e) { raw = null; }
+  if (!raw) return;
+  let draft;
+  try { draft = JSON.parse(raw); } catch (e) { return; }
+  if (!draft) return;
+  if (!confirm('Ada catatan Logbook yang belum sempat disimpan (mungkin sebelumnya ke-tutup atau pindah menu). Mau lanjutin dari situ?')) {
+    clearLogDraft();
+    return;
+  }
+  document.getElementById('log-title').value = draft.title || '';
+  document.getElementById('log-type').value = draft.type || 'meeting';
+  document.getElementById('log-privacy').value = draft.privacy || 'false';
+  document.getElementById('log-entry-date').value = draft.entryDate || todayStr();
+  document.getElementById('log-tags-in').value = draft.tags || '';
+  if (quillLog) quillLog.root.innerHTML = draft.body || '';
+  const trackerSel = document.getElementById('log-tracker-link');
+  if (trackerSel && draft.trackerLink) { trackerSel.value = draft.trackerLink; updateLogStatusColor(); }
+}
+
 function closeLogForm() {
   document.getElementById('log-form').style.display = 'none';
   resetLogForm();
+  clearLogDraft();
 }
 
 async function delLog(id) {
@@ -5022,6 +5177,7 @@ const quillLog = new Quill('#log-body-editor', {
   modules: { toolbar: quillToolbar },
   placeholder: 'Isi catatan, hasil keputusan, tindak lanjut, notulensi...'
 });
+quillLog.on('text-change', autosaveLogDraft);
 
 const quillNote = new Quill('#note-body-editor', {
   theme: 'snow',
