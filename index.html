@@ -3177,6 +3177,21 @@ function computeNextRunDate(dateStr, freq) {
 
 async function generateOneRecurringOccurrence(tpl, dateStr) {
   const d = tpl.template_data || {};
+  const table = tpl.target_table === 'schedule' ? 'schedule_events' : 'time_plan_tracker';
+
+  // Cek dulu apakah occurrence untuk template + tanggal ini sudah pernah dibuat.
+  // Ini kunci anti-duplikat: kalau 2 device/tab jalan bareng, keduanya akan lihat
+  // baris ini sebelum salah satu sempat insert, tapi constraint UNIQUE di database
+  // (lihat SQL) tetap akan menolak salah satunya kalau race-nya sangat mepet.
+  try {
+    const { data: existing } = await sb.from(table)
+      .select('id')
+      .eq('recurring_template_id', tpl.id)
+      .eq('occurrence_date', dateStr)
+      .limit(1);
+    if (existing && existing.length) return; // sudah ada, jangan bikin lagi
+  } catch (e) { /* kolomnya mungkin belum ada kalau SQL belum dijalankan — lanjut coba insert */ }
+
   if (tpl.target_table === 'schedule') {
     await sb.from('schedule_events').insert({
       event_date: dateStr,
@@ -3185,7 +3200,9 @@ async function generateOneRecurringOccurrence(tpl, dateStr) {
       location: d.location || '',
       category: d.category || 'blue',
       is_private: !!tpl.is_private,
-      created_by: tpl.created_by || getUser()
+      created_by: tpl.created_by || getUser(),
+      recurring_template_id: tpl.id,
+      occurrence_date: dateStr
     });
   } else {
     await sb.from('time_plan_tracker').insert({
@@ -3196,7 +3213,9 @@ async function generateOneRecurringOccurrence(tpl, dateStr) {
       start_date: dateStr,
       notes: d.notes || '',
       is_private: !!tpl.is_private,
-      created_by: tpl.created_by || getUser()
+      created_by: tpl.created_by || getUser(),
+      recurring_template_id: tpl.id,
+      occurrence_date: dateStr
     });
   }
 }
