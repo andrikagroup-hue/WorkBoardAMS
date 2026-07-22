@@ -95,7 +95,40 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
 .nav-item:hover { background: rgba(30,58,82,0.08); color: var(--sb-text); }
 .nav-item.active { background: var(--brand); color: #fff; font-weight: 500; }
 .nav-item.group-active { background: var(--sb-active-bg); color: #fff; }
-.nav-item i.nav-icon { font-size: 17px; flex-shrink: 0; }
+.nav-item i.nav-icon {
+  font-size: 14px; flex-shrink: 0;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--icon-bg, rgba(61,122,181,0.14));
+  color: var(--icon-fg, var(--brand));
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.nav-item:hover i.nav-icon { transform: scale(1.08); }
+.nav-item.active i.nav-icon, .nav-item.group-active i.nav-icon { background: rgba(255,255,255,0.25); color: #fff; }
+#ng-daily > .nav-item { --icon-bg: rgba(91,155,209,0.18); --icon-fg: #3D7AB5; }
+#ng-daily > .nav-item:hover { --icon-bg: #3D7AB5; --icon-fg: #fff; }
+#ng-tasks > .nav-item { --icon-bg: rgba(232,163,61,0.18); --icon-fg: #B5750E; }
+#ng-tasks > .nav-item:hover { --icon-bg: #E8A33D; --icon-fg: #fff; }
+#ng-comm > .nav-item { --icon-bg: rgba(34,197,94,0.18); --icon-fg: #15803D; }
+#ng-comm > .nav-item:hover { --icon-bg: #22C55E; --icon-fg: #fff; }
+#ng-hr > .nav-item { --icon-bg: rgba(139,92,246,0.18); --icon-fg: #6D28D9; }
+#ng-hr > .nav-item:hover { --icon-bg: #8B5CF6; --icon-fg: #fff; }
+#ng-reports > .nav-item { --icon-bg: rgba(219,39,119,0.18); --icon-fg: #BE185D; }
+#ng-reports > .nav-item:hover { --icon-bg: #DB2777; --icon-fg: #fff; }
+#ng-links > .nav-item { --icon-bg: rgba(20,184,166,0.18); --icon-fg: #0F766E; }
+#ng-links > .nav-item:hover { --icon-bg: #14B8A6; --icon-fg: #fff; }
+#ng-help > .nav-item { --icon-bg: rgba(100,116,139,0.18); --icon-fg: #475569; }
+#ng-help > .nav-item:hover { --icon-bg: #64748B; --icon-fg: #fff; }
+#ng-settings > .nav-item { --icon-bg: rgba(220,38,38,0.18); --icon-fg: #B91C1C; }
+#ng-settings > .nav-item:hover { --icon-bg: #DC2626; --icon-fg: #fff; }
+.nav-sub-item i {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(61,122,181,0.12); font-size: 12px; opacity: 1 !important;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.nav-sub-item:hover i { background: rgba(61,122,181,0.28); transform: scale(1.08); }
+.nav-sub-item.active i { background: rgba(255,255,255,0.25); color: #fff; }
 .nav-item .nav-label-text { flex: 1; font-size: 12.5px; font-weight: 500; }
 .nav-item .nav-arrow {
   font-size: 10px; margin-left: auto; opacity: .5;
@@ -714,8 +747,16 @@ textarea { resize: vertical; }
   position: relative;
   white-space: nowrap;
 }
-.bn-item i { font-size: 20px; line-height: 1; }
+.bn-item i {
+  font-size: 18px; line-height: 1;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(61,122,181,0.10);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.bn-item:active i { transform: scale(0.92); }
 .bn-item.active { color: #3D7AB5; }
+.bn-item.active i { background: #3D7AB5; color: #fff; }
 .bn-item.active::before {
   content: '';
   position: absolute;
@@ -1019,8 +1060,8 @@ textarea { resize: vertical; }
         </div>
       </div>
       <div id="online-users-wrap" style="margin-top:6px;padding:4px 8px;background:rgba(34,197,94,0.14);border-radius:6px;display:none">
-        <div style="font-size:10px;color:#6EE7B7;font-weight:600;margin-bottom:3px">🟢 Sedang Online</div>
-        <div id="online-users-list" style="font-size:10px;color:#A7F3D0;line-height:1.7"></div>
+        <div style="font-size:10px;color:#15803D;font-weight:600;margin-bottom:3px">🟢 Sedang Online</div>
+        <div id="online-users-list" style="font-size:10px;color:var(--sb-text);line-height:1.7"></div>
       </div>
     </div>
 
