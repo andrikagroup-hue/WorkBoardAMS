@@ -1522,6 +1522,22 @@ textarea { resize: vertical; }
             <option value="Admin">Admin</option>
             <option value="Web Developer">Web Developer</option>
           </select>
+          <select class="global-filter" id="pt-category-filter" onchange="renderProjectTracker()">
+            <option value="">Semua Kategori</option>
+            <option value="Legalitas">Legalitas</option>
+            <option value="Website">Website</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Sales">Sales</option>
+            <option value="Administrasi">Administrasi</option>
+            <option value="General Affairs">General Affairs</option>
+            <option value="Finance">Finance</option>
+          </select>
+          <select class="global-filter" id="pt-priority-filter" onchange="renderProjectTracker()">
+            <option value="">Semua Prioritas</option>
+            <option value="high">🔴 High</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
         </div>
         <table class="task-table">
           <thead>
@@ -1554,18 +1570,19 @@ textarea { resize: vertical; }
               <option value="medium" selected>🟡 Medium</option>
               <option value="high">🔴 High</option>
             </select>
-            <select id="pt-new-category" title="Category" style="flex:1">
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-              <option value="Home">Home</option>
-              <option value="Family">Family</option>
-              <option value="Health">Health</option>
-              <option value="Finance">Finance</option>
-              <option value="Study / Learning">Study / Learning</option>
-              <option value="Errands">Errands</option>
-              <option value="Calls / Emails">Calls / Emails</option>
-              <option value="Lainnya" selected>Lainnya</option>
-            </select>
+            <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+              <select id="pt-new-category" title="Category" onchange="ptToggleCustomCategory('pt-new')">
+                <option value="Legalitas">Legalitas</option>
+                <option value="Website">Website</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Sales">Sales</option>
+                <option value="Administrasi">Administrasi</option>
+                <option value="General Affairs">General Affairs</option>
+                <option value="Finance">Finance</option>
+                <option value="__custom__">✏️ Kategori Lain...</option>
+              </select>
+              <input id="pt-new-category-custom" placeholder="Tulis kategori lain..." style="display:none" />
+            </div>
             <select id="pt-new-status">
               <option value="in_progress" selected>In Progress</option>
               <option value="done">Done</option>
@@ -3126,7 +3143,7 @@ async function renderTracker() {
     const total = items.length;
     const done = items.filter(t => t.status === 'done').length;
     const prog = total ? Math.round(done / total * 100) : 0;
-    const overdue = items.filter(t => t.status === 'overdue').length;
+    const overdue = items.filter(t => ptEffectiveStatus(t) === 'overdue').length;
 
     document.getElementById('tracker-stats').innerHTML = `
       <div class="stat-card"><div class="stat-label">Total Kegiatan</div><div class="stat-val">${total}</div><div class="stat-sub">semua proyek</div></div>
@@ -3146,9 +3163,8 @@ async function renderTracker() {
 const TRACKER_STATUS_COLOR = { done: '#22C55E', in_progress: '#2F6364', not_started: '#9CA3AF', skipped: '#8B5CF6', on_hold: '#F97316', overdue: '#EF4444' };
 const TRACKER_STATUS_ORDER = ['not_started', 'in_progress', 'on_hold', 'overdue', 'skipped', 'done'];
 const TRACKER_CATEGORY_COLORS = {
-  'Work': '#2F6364', 'Personal': '#B8792A', 'Home': '#7FA88F', 'Family': '#A78BAA',
-  'Health': '#C97064', 'Finance': '#D9A66C', 'Study / Learning': '#6E93A6',
-  'Errands': '#9CC5CE', 'Calls / Emails': '#D9C36C', 'Lainnya': '#B7AFA1'
+  'Legalitas': '#2F6364', 'Website': '#6E93A6', 'Marketing': '#A78BAA', 'Sales': '#B8792A',
+  'Administrasi': '#7FA88F', 'General Affairs': '#D9C36C', 'Finance': '#D9A66C', 'Lainnya': '#B7AFA1'
 };
 const TRACKER_CATEGORY_FALLBACK = ['#2F6364', '#B8792A', '#7FA88F', '#A78BAA', '#C97064', '#D9A66C', '#6E93A6', '#9CC5CE', '#D9C36C', '#B7AFA1'];
 function trackerCatColor(cat, idx) {
@@ -3164,7 +3180,7 @@ function renderTrackerCharts(items) {
 
   const statusCounts = {};
   TRACKER_STATUS_ORDER.forEach(s => statusCounts[s] = 0);
-  items.forEach(t => { const s = t.status || 'not_started'; statusCounts[s] = (statusCounts[s] || 0) + 1; });
+  items.forEach(t => { const s = ptEffectiveStatus(t); statusCounts[s] = (statusCounts[s] || 0) + 1; });
   const maxCount = Math.max(1, ...Object.values(statusCounts));
   statusEl.innerHTML = TRACKER_STATUS_ORDER.map(s => {
     const count = statusCounts[s] || 0;
@@ -3267,6 +3283,16 @@ const PT_STATUS_CLASS = {
 };
 const PT_PRIORITY_LABEL = { low: '🟢 Low', medium: '🟡 Medium', high: '🔴 High' };
 const PT_PRIORITY_CLASS = { low: 's-prio-low', medium: 's-prio-medium', high: 's-prio-high' };
+
+// Status "asli" (effective) sebuah item: Done/Skipped tetap dihormati apa adanya.
+// Selain itu, kalau due_date sudah lewat hari ini -> otomatis dianggap Overdue,
+// walau field status di database belum diubah manual. Ini yang benerin bug
+// "Overdue selalu 0" karena sebelumnya overdue cuma dihitung dari status manual.
+function ptEffectiveStatus(t) {
+  if (t.status === 'done' || t.status === 'skipped') return t.status;
+  if (t.due_date && t.due_date < todayStr()) return 'overdue';
+  return t.status || 'not_started';
+}
 
 function onPtSearchInput() {
   clearTimeout(ptSearchDebounce);
@@ -3821,13 +3847,18 @@ async function renderProjectTracker() {
   const q = (document.getElementById('pt-search').value || '').trim().replace(/[%,]/g, '');
   const statusF = document.getElementById('pt-status-filter').value;
   const assignF = document.getElementById('pt-assign-filter').value;
+  const categoryF = document.getElementById('pt-category-filter').value;
+  const priorityF = document.getElementById('pt-priority-filter').value;
 
-  // Search & filter dijalankan langsung di query Supabase (.ilike / .eq),
-  // bukan disaring belakangan di JS, sesuai permintaan.
+  // Search & filter (kecuali Status) dijalankan langsung di query Supabase (.ilike / .eq).
+  // Filter Status sengaja disaring belakangan di JS (bukan .eq ke DB), karena "Overdue"
+  // sekarang dihitung otomatis dari due_date lewat hari ini + status belum Done/Skipped,
+  // bukan cuma dari nilai status yang tersimpan di database.
   let query = sb.from('time_plan_tracker').select('*').order('created_at', { ascending: false });
   if (q) query = query.or(`subject.ilike.%${q}%,notes.ilike.%${q}%`);
-  if (statusF) query = query.eq('status', statusF);
   if (assignF) query = query.eq('assignment', assignF);
+  if (categoryF) query = query.eq('category', categoryF);
+  if (priorityF) query = query.eq('priority', priorityF);
 
   let data, error;
   try { ({ data, error } = await withTimeout(query)); }
@@ -3845,7 +3876,8 @@ async function renderProjectTracker() {
     return;
   }
   document.getElementById('pt-migration-banner').style.display = 'none';
-  const filtered = applyPrivacy(data || []);
+  let filtered = applyPrivacy(data || []);
+  if (statusF) filtered = filtered.filter(t => ptEffectiveStatus(t) === statusF);
   projectTrackerCache = filtered;
   displayProjectTracker(filtered);
 }
@@ -3860,12 +3892,13 @@ function displayProjectTracker(data) {
 }
 
 function ptViewRow(t) {
+  const effStatus = ptEffectiveStatus(t);
   return `<tr>
     <td>${escHtml(t.subject)}</td>
     <td>${escHtml(t.assignment || '-')}</td>
     <td><span class="status-pill ${PT_PRIORITY_CLASS[t.priority] || 's-prog'}">${PT_PRIORITY_LABEL[t.priority] || '-'}</span></td>
     <td style="font-size:12px">${escHtml(t.category || '-')}</td>
-    <td><span class="status-pill ${PT_STATUS_CLASS[t.status] || 's-prog'}">${PT_STATUS_LABEL[t.status] || t.status}</span></td>
+    <td><span class="status-pill ${PT_STATUS_CLASS[effStatus] || 's-prog'}">${PT_STATUS_LABEL[effStatus] || effStatus}</span></td>
     <td style="font-size:12px">${escHtml(t.schedule_duration || '-')}</td>
     <td style="font-size:12px">${t.start_date ? fmtDate(t.start_date) : '-'}</td>
     <td style="font-size:12px">${t.due_date ? fmtDate(t.due_date) : '-'}</td>
@@ -3887,9 +3920,7 @@ function ptEditRow(t) {
       <option value="medium" ${!t.priority || t.priority === 'medium' ? 'selected' : ''}>🟡 Medium</option>
       <option value="high" ${t.priority === 'high' ? 'selected' : ''}>🔴 High</option>
     </select></td>
-    <td><select id="pt-edit-category" style="width:100%">
-      ${ptCategoryOptions(t.category)}
-    </select></td>
+    <td>${ptCategorySelectHtml('pt-edit', t.category)}</td>
     <td><select id="pt-edit-status" style="width:100%">
       <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
       <option value="done" ${t.status === 'done' ? 'selected' : ''}>Done</option>
@@ -3913,12 +3944,39 @@ function ptEditRow(t) {
   </tr>`;
 }
 
-const PT_CATEGORY_OPTIONS = ['Work', 'Personal', 'Home', 'Family', 'Health', 'Finance', 'Study / Learning', 'Errands', 'Calls / Emails', 'Lainnya'];
-function ptCategoryOptions(current) {
-  const cur = (current || '').trim() || 'Lainnya';
-  let opts = PT_CATEGORY_OPTIONS.slice();
-  if (!opts.includes(cur)) opts.unshift(cur); // kategori custom yang sudah ada sebelumnya, jangan sampai hilang
-  return opts.map(c => `<option value="${escAttr(c)}" ${c === cur ? 'selected' : ''}>${escHtml(c)}</option>`).join('');
+const PT_CATEGORY_OPTIONS = ['Legalitas', 'Website', 'Marketing', 'Sales', 'Administrasi', 'General Affairs', 'Finance'];
+// Render dropdown kategori kantor + input manual utk kategori yang gak ada di list.
+// idPrefix: 'pt-new' atau 'pt-edit' -> jadi id="pt-new-category" / "pt-edit-category" dst.
+function ptCategorySelectHtml(idPrefix, current) {
+  const cur = (current || '').trim();
+  const isCustom = !!cur && !PT_CATEGORY_OPTIONS.includes(cur);
+  const opts = PT_CATEGORY_OPTIONS.map(c => `<option value="${escAttr(c)}" ${c === cur ? 'selected' : ''}>${escHtml(c)}</option>`).join('');
+  return `<div style="display:flex;flex-direction:column;gap:4px;width:100%">
+    <select id="${idPrefix}-category" style="width:100%" onchange="ptToggleCustomCategory('${idPrefix}')">
+      ${opts}
+      <option value="__custom__" ${isCustom ? 'selected' : ''}>✏️ Kategori Lain...</option>
+    </select>
+    <input id="${idPrefix}-category-custom" placeholder="Tulis kategori lain..." value="${isCustom ? escAttr(cur) : ''}" style="width:100%;${isCustom ? '' : 'display:none'}" />
+  </div>`;
+}
+// Munculin/sembunyiin input teks kategori manual pas pilih "Kategori Lain..."
+function ptToggleCustomCategory(idPrefix) {
+  const sel = document.getElementById(idPrefix + '-category');
+  const custom = document.getElementById(idPrefix + '-category-custom');
+  if (!sel || !custom) return;
+  const showCustom = sel.value === '__custom__';
+  custom.style.display = showCustom ? 'block' : 'none';
+  if (showCustom) custom.focus();
+}
+// Ambil nilai kategori final (dari dropdown atau dari input manual)
+function ptGetCategoryValue(idPrefix) {
+  const sel = document.getElementById(idPrefix + '-category');
+  if (!sel) return null;
+  if (sel.value === '__custom__') {
+    const custom = document.getElementById(idPrefix + '-category-custom');
+    return (custom && custom.value.trim()) || null;
+  }
+  return sel.value || null;
 }
 
 function escAttr(s) { return escHtml(s == null ? '' : s).replace(/"/g, '&quot;'); }
@@ -3941,7 +3999,7 @@ async function saveProjectRow(id) {
     subject,
     assignment: document.getElementById('pt-edit-assignment').value.trim() || null,
     priority: document.getElementById('pt-edit-priority').value,
-    category: document.getElementById('pt-edit-category').value.trim() || null,
+    category: ptGetCategoryValue('pt-edit'),
     status: document.getElementById('pt-edit-status').value,
     schedule_duration: document.getElementById('pt-edit-schedule').value.trim() || null,
     start_date: document.getElementById('pt-edit-start').value || null,
@@ -3970,7 +4028,7 @@ async function addProjectRow() {
     subject,
     assignment: document.getElementById('pt-new-assignment').value.trim() || null,
     priority: document.getElementById('pt-new-priority').value,
-    category: document.getElementById('pt-new-category').value.trim() || null,
+    category: ptGetCategoryValue('pt-new'),
     status: document.getElementById('pt-new-status').value,
     schedule_duration: document.getElementById('pt-new-schedule').value.trim() || null,
     start_date: document.getElementById('pt-new-start').value || null,
@@ -3981,12 +4039,14 @@ async function addProjectRow() {
   };
   const { error } = await sb.from('time_plan_tracker').insert(payload);
   if (error) return alert('Gagal menambah: ' + error.message);
-  ['pt-new-subject', 'pt-new-assignment', 'pt-new-schedule', 'pt-new-notes', 'pt-new-category'].forEach(id => document.getElementById(id).value = '');
+  ['pt-new-subject', 'pt-new-assignment', 'pt-new-schedule', 'pt-new-notes', 'pt-new-category-custom'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('pt-new-start').value = '';
   document.getElementById('pt-new-due').value = '';
   document.getElementById('pt-new-status').value = 'in_progress';
   document.getElementById('pt-new-priority').value = 'medium';
   document.getElementById('pt-new-privacy').value = 'false';
+  document.getElementById('pt-new-category').value = 'Legalitas';
+  document.getElementById('pt-new-category-custom').style.display = 'none';
   await renderProjectTracker();
 }
 
