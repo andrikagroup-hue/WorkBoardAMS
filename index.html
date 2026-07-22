@@ -484,24 +484,55 @@ textarea { resize: vertical; }
 
 .np-edit-btns { display: flex; gap: 6px; justify-content: flex-end; }
 
-/* ── To Do ─────────────────────────────────── */
-.todo-filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-.filter-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 0.5px solid var(--border2); background: none; color: var(--text2); cursor: pointer; transition: background 0.12s; }
-.filter-btn:hover { background: var(--bg2); }
-.filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-.todo-add { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-.todo-add input, .todo-add select { font-size: 12px; }
-.todo-add input:first-child { flex: 2; min-width: 160px; }
-.todo-list { display: flex; flex-direction: column; gap: 18px; }
-.todo-item { display: flex; align-items: center; gap: 10px; padding: 0 0 8px 0; background: none; border: none; border-bottom: 2px solid var(--accent2); border-radius: 0; }
+/* ── To Do (Laporan Mingguan) ───────────────── */
+.todo-toolbar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+.todo-toolbar input, .todo-toolbar select { font-size: 12px; }
+.todo-toolbar input:first-child { flex: 2; min-width: 160px; }
+.todo-month-picker { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.todo-month-picker input[type="month"] { font-size: 12px; }
+
+.todo-summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+.todo-stat-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 10px 12px; text-align: center; }
+.todo-stat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; color: var(--text3); margin-bottom: 6px; }
+.todo-stat-value { font-size: 20px; font-weight: 700; color: var(--text1); }
+.todo-stat-card.todo-stat-done { background: #EAF3F2; }
+.todo-stat-card.todo-stat-pending { background: #F2E9DC; }
+.todo-stat-card.todo-stat-rate { background: #F1EEF7; }
+.todo-rate-value { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+.todo-rate-bar { height: 6px; border-radius: 4px; background: #E1DCEE; overflow: hidden; }
+.todo-rate-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+
+.todo-weeks { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 16px; }
+.todo-week-card { flex: 0 0 150px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 10px; text-align: center; }
+.todo-week-mini { display: flex; justify-content: space-between; font-size: 10px; color: var(--text2); background: var(--bg2); border-radius: 6px; padding: 3px 8px; margin-bottom: 4px; }
+.todo-week-mini-alt { background: #F1EEF7; }
+.todo-donut { width: 84px; height: 84px; border-radius: 50%; margin: 8px auto; display: flex; align-items: center; justify-content: center; }
+.todo-donut-hole { width: 58px; height: 58px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--text1); }
+.todo-week-label { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.4px; }
+
+.todo-week-tables { display: flex; gap: 12px; overflow-x: auto; }
+.todo-week-table { flex: 0 0 220px; }
+.todo-week-table table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.todo-week-table th { background: var(--bg2); text-align: left; padding: 6px 8px; font-size: 10px; color: var(--text2); }
+.todo-week-table td { padding: 6px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+.todo-row-actions { display: inline-flex; gap: 4px; margin-left: 6px; opacity: 0; transition: opacity 0.12s; }
+.todo-week-table tr:hover .todo-row-actions { opacity: 1; }
+.todo-row-actions i { cursor: pointer; font-size: 12px; color: var(--text3); }
+.todo-row-actions i:hover { color: var(--danger); }
+.todo-status-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.status-done { background: #DCEFE9; color: #1F7A5C; }
+.status-pending { background: #FBE9D9; color: #92400E; }
+
+.todo-list { display: flex; flex-direction: column; gap: 6px; }
+.todo-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); }
 .todo-item.done-item { opacity: 0.5; }
 .todo-check {
-  width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--accent2);
+  width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border2);
   flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
   background: none; transition: all 0.15s;
 }
-.todo-check.checked { background: var(--accent2); border-color: var(--accent2); color: white; }
-.todo-text { flex: 1; font-size: 13px; color: var(--text1); padding-bottom: 2px; }
+.todo-check.checked { background: var(--success); border-color: var(--success); color: white; }
+.todo-text { flex: 1; font-size: 13px; color: var(--text1); }
 .done-item .todo-text { text-decoration: line-through; }
 .todo-meta { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
 .prio-high { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #FEE2E2; color: #991B1B; }
@@ -1721,14 +1752,7 @@ ALTER TABLE logbook_entries
         <div style="background:#E8F1EF;border:1px solid #A8CAC6;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#1F4443;display:flex;align-items:center;gap:6px">
           🔒 <strong>To Do Pribadi</strong> — Hanya kamu yang bisa melihat daftar tugasmu sendiri.
         </div>
-        <div class="todo-filters">
-          <button class="filter-btn active" onclick="filterTodo('all',this)">Semua</button>
-          <button class="filter-btn" onclick="filterTodo('high',this)">🔴 Prioritas Tinggi</button>
-          <button class="filter-btn" onclick="filterTodo('med',this)">🟡 Sedang</button>
-          <button class="filter-btn" onclick="filterTodo('low',this)">🔵 Rendah</button>
-          <button class="filter-btn" onclick="filterTodo('done',this)">✅ Selesai</button>
-        </div>
-        <div class="todo-add">
+        <div class="todo-toolbar">
           <input id="todo-input" placeholder="Tambah tugas baru..." onkeydown="if(event.key==='Enter')addTodo()" />
           <select id="todo-prio">
             <option value="high">Prioritas Tinggi</option>
@@ -1744,9 +1768,22 @@ ALTER TABLE logbook_entries
           <button class="btn-sm" id="todo-cancel-btn" onclick="resetTodoForm()" style="display:none">Batal Edit</button>
           <button class="btn-sm btn-primary" id="todo-save-btn" onclick="addTodo()">Tambah</button>
         </div>
-        <div class="todo-list" id="todo-list">
-          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat tugas...</div>
+
+        <div class="todo-month-picker">
+          <input type="month" id="todo-month-input" onchange="renderTodoDashboard(todoCache)" />
+          <button class="btn-sm" onclick="document.getElementById('todo-month-input').value=todayStr().substring(0,7);renderTodoDashboard(todoCache)">Bulan Ini</button>
+          <span style="font-size:10.5px;color:var(--text3)">*hanya tugas yang ada tanggal deadline yang masuk laporan ini</span>
         </div>
+
+        <div id="todo-dashboard">
+          <div class="todo-summary" id="todo-summary">
+            <div class="loading-msg" style="grid-column:1/-1"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat tugas...</div>
+          </div>
+          <div class="todo-weeks" id="todo-weeks"></div>
+          <div class="todo-week-tables" id="todo-week-tables"></div>
+        </div>
+
+        <div class="todo-list" id="todo-search-list" style="display:none"></div>
       </div>
 
       <!-- ── Notepad ───────────────────────────── -->
@@ -4190,32 +4227,122 @@ async function delNote(id) {
 
 // ── TO DO ──────────────────────────────────
 async function renderTodo() {
-  let query = sb.from('todos').select('*').order('is_done').order('created_at', { ascending: false });
-  if (todoFilter === 'done') query = query.eq('is_done', true);
-  else if (todoFilter !== 'all') query = query.eq('priority', todoFilter).eq('is_done', false);
-
   let _td;
-  try { ({data:_td} = await withTimeout(query.limit(100))); }
-  catch(e) { document.getElementById('todo-list').innerHTML='<div class="empty-msg" style="color:#e53e3e">⚠️ '+e.message+'</div>'; return; }
+  try { ({data:_td} = await withTimeout(sb.from('todos').select('*').order('due_date', { ascending: true }).limit(500))); }
+  catch(e) { document.getElementById('todo-summary').innerHTML='<div class="empty-msg" style="color:#e53e3e;grid-column:1/-1">⚠️ '+e.message+'</div>'; return; }
   const all = applyOwner(_td);
   todoCache = all;
 
   const pending = all.filter(t => !t.is_done).length;
   document.getElementById('badge-todo').textContent = pending;
 
+  const monthInput = document.getElementById('todo-month-input');
+  if (monthInput && !monthInput.value) monthInput.value = todayStr().substring(0,7);
+
   displayTodo(all);
 }
 
 const prioClass = {high:'prio-high',med:'prio-med',low:'prio-low'};
 const prioLabel = {high:'Tinggi',med:'Sedang',low:'Rendah'};
+const monthNamesID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
-// Render helper — dipanggil dari renderTodo maupun search/filter global
-function displayTodo(all) {
-  if (!all.length) {
-    document.getElementById('todo-list').innerHTML = '<div class="empty-msg">Tidak ada tugas di kategori ini.</div>';
+// Router: kalau sedang search/filter global → tampilkan list biasa. Kalau tidak → tampilkan dashboard mingguan.
+function displayTodo(list) {
+  const q = (document.getElementById('global-search-input')?.value || '').trim();
+  const filterVal = document.getElementById('global-filter-select')?.value || '';
+  const searching = !!q || !!filterVal;
+
+  document.getElementById('todo-dashboard').style.display = searching ? 'none' : '';
+  document.getElementById('todo-search-list').style.display = searching ? 'flex' : 'none';
+
+  if (searching) renderTodoFlatList(list);
+  else renderTodoDashboard(todoCache);
+}
+
+// Dashboard laporan mingguan: kartu ringkasan + donut per minggu + tabel tugas per minggu
+function renderTodoDashboard(all) {
+  const monthInput = document.getElementById('todo-month-input');
+  const ym = monthInput.value || todayStr().substring(0,7);
+  const monthTasks = all.filter(t => t.due_date && t.due_date.substring(0,7) === ym);
+
+  const total = monthTasks.length;
+  const completed = monthTasks.filter(t => t.is_done).length;
+  const notCompleted = total - completed;
+  const rate = total ? Math.round((completed / total) * 100) : 0;
+  const monthLabel = monthNamesID[parseInt(ym.split('-')[1], 10) - 1] || '-';
+
+  document.getElementById('todo-summary').innerHTML = `
+    <div class="todo-stat-card"><div class="todo-stat-label">BULAN</div><div class="todo-stat-value">${monthLabel}</div></div>
+    <div class="todo-stat-card"><div class="todo-stat-label">TOTAL TUGAS</div><div class="todo-stat-value">${total}</div></div>
+    <div class="todo-stat-card todo-stat-done"><div class="todo-stat-label">SELESAI</div><div class="todo-stat-value">${completed}</div></div>
+    <div class="todo-stat-card todo-stat-pending"><div class="todo-stat-label">BELUM SELESAI</div><div class="todo-stat-value">${notCompleted}</div></div>
+    <div class="todo-stat-card todo-stat-rate">
+      <div class="todo-stat-label">TINGKAT PENYELESAIAN</div>
+      <div class="todo-rate-value">${rate}%</div>
+      <div class="todo-rate-bar"><div class="todo-rate-fill" style="width:${rate}%"></div></div>
+    </div>`;
+
+  if (!total) {
+    document.getElementById('todo-weeks').innerHTML = '<div class="empty-msg">Belum ada tugas dengan deadline di bulan ini.</div>';
+    document.getElementById('todo-week-tables').innerHTML = '';
     return;
   }
-  document.getElementById('todo-list').innerHTML = all.map(t => `
+
+  const weeks = {1:[],2:[],3:[],4:[],5:[]};
+  monthTasks.forEach(t => {
+    const day = parseInt(t.due_date.split('-')[2], 10);
+    const w = day <= 7 ? 1 : day <= 14 ? 2 : day <= 21 ? 3 : day <= 28 ? 4 : 5;
+    weeks[w].push(t);
+  });
+  const activeWeeks = Object.keys(weeks).filter(w => weeks[w].length > 0);
+
+  document.getElementById('todo-weeks').innerHTML = activeWeeks.map(w => {
+    const arr = weeks[w];
+    const c = arr.filter(t => t.is_done).length;
+    const nc = arr.length - c;
+    const pct = arr.length ? Math.round((c / arr.length) * 100) : 0;
+    return `
+      <div class="todo-week-card">
+        <div class="todo-week-mini"><span>SELESAI</span><strong>${c}</strong></div>
+        <div class="todo-week-mini todo-week-mini-alt"><span>BELUM</span><strong>${nc}</strong></div>
+        <div class="todo-donut" style="background:conic-gradient(var(--accent) 0% ${pct}%, #E4E1F0 ${pct}% 100%)">
+          <div class="todo-donut-hole">${pct}%</div>
+        </div>
+        <div class="todo-week-label">MINGGU ${w}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('todo-week-tables').innerHTML = activeWeeks.map(w => {
+    const arr = weeks[w].slice().sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
+    return `
+      <div class="todo-week-table">
+        <table>
+          <thead><tr><th>Tugas</th><th>Status</th></tr></thead>
+          <tbody>
+            ${arr.map(t => `
+              <tr>
+                <td>
+                  ${t.text}
+                  <span class="todo-row-actions">
+                    <i class="ti ti-pencil" onclick="editTodo('${t.id}')" title="Edit"></i>
+                    <i class="ti ti-x" onclick="delTodo('${t.id}')" title="Hapus"></i>
+                  </span>
+                </td>
+                <td><span class="todo-status-badge ${t.is_done ? 'status-done' : 'status-pending'}" onclick="toggleTodo('${t.id}',${t.is_done})">${t.is_done ? 'Selesai' : 'Belum Selesai'}</span></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }).join('');
+}
+
+// List rata biasa — dipakai waktu search/filter global aktif di panel To Do
+function renderTodoFlatList(all) {
+  if (!all.length) {
+    document.getElementById('todo-search-list').innerHTML = '<div class="empty-msg">Tidak ada tugas yang cocok.</div>';
+    return;
+  }
+  document.getElementById('todo-search-list').innerHTML = all.map(t => `
     <div class="todo-item${t.is_done ? ' done-item' : ''}">
       <button class="todo-check${t.is_done ? ' checked' : ''}" onclick="toggleTodo('${t.id}',${t.is_done})" aria-label="Tandai selesai">
         ${t.is_done ? '<i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i>' : ''}
