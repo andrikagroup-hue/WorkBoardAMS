@@ -274,6 +274,32 @@ textarea { resize: vertical; }
 .stat-label { font-size: 10px; color: var(--text2); margin-bottom: 3px; }
 .stat-val { font-size: 22px; font-weight: 600; color: var(--text1); }
 .stat-sub { font-size: 10px; color: var(--text3); margin-top: 1px; }
+
+.tracker-progress-wrap { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; }
+.tracker-progress-track { background: var(--surface); border-radius: 999px; height: 10px; overflow: hidden; margin-top: 8px; }
+.tracker-progress-fill { background: var(--success); height: 100%; border-radius: 999px; transition: width .3s; }
+
+.tracker-charts-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; margin-bottom: 18px; }
+.tchart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; }
+.tchart-title { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .03em; }
+
+.tstat-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; font-size: 11.5px; }
+.tstat-bar-label { width: 100px; flex-shrink: 0; color: var(--text2); }
+.tstat-bar-track { flex: 1; background: var(--bg2); border-radius: 999px; height: 14px; overflow: hidden; }
+.tstat-bar-fill { height: 100%; border-radius: 999px; transition: width .3s; }
+.tstat-bar-count { width: 22px; text-align: right; font-weight: 600; color: var(--text1); }
+
+.tcat-donut-wrap { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.tcat-donut { width: 120px; height: 120px; border-radius: 50%; flex-shrink: 0; position: relative; }
+.tcat-donut::after { content: ''; position: absolute; inset: 22px; background: var(--surface); border-radius: 50%; }
+.tcat-legend { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 6px; }
+.tcat-legend-item { font-size: 11px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+.tcat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.tcat-legend-pct { margin-left: auto; font-weight: 600; color: var(--text1); }
+
+@media (max-width: 900px) {
+  .tracker-charts-grid { grid-template-columns: 1fr; }
+}
 .task-table { width: 100%; border-collapse: collapse; }
 .task-table th { font-size: 10px; color: var(--text2); text-align: left; padding: 6px 10px; border-bottom: 0.5px solid var(--border); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
 .task-table td { font-size: 12px; padding: 8px 10px; border-bottom: 0.5px solid var(--border); color: var(--text1); }
@@ -1442,7 +1468,30 @@ textarea { resize: vertical; }
         <div class="tracker-cards" id="tracker-stats">
           <div class="stat-card"><div class="stat-label">Total Kegiatan</div><div class="stat-val">—</div></div>
           <div class="stat-card"><div class="stat-label">Selesai</div><div class="stat-val">—</div></div>
+          <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-val">—</div></div>
           <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-val">—</div></div>
+        </div>
+
+        <div class="tracker-progress-wrap">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">
+            <span>Overall Tasks Completed</span>
+            <span id="tracker-progress-label">0%</span>
+          </div>
+          <div class="tracker-progress-track"><div class="tracker-progress-fill" id="tracker-progress-fill" style="width:0%"></div></div>
+        </div>
+
+        <div class="tracker-charts-grid">
+          <div class="tchart-card">
+            <div class="tchart-title">Status Summary</div>
+            <div id="tracker-status-chart"></div>
+          </div>
+          <div class="tchart-card">
+            <div class="tchart-title">Category Breakdown</div>
+            <div class="tcat-donut-wrap">
+              <div class="tcat-donut" id="tracker-category-donut"></div>
+              <div class="tcat-legend" id="tracker-category-legend"></div>
+            </div>
+          </div>
         </div>
 
 
@@ -3073,20 +3122,83 @@ async function delSchedule(id) {
 // ── TIME PLAN TRACKER ──────────────────────
 async function renderTracker() {
   try {
-    const { data } = await withTimeout(sb.from('time_plan_tracker').select('status, is_private, created_by'));
+    const { data } = await withTimeout(sb.from('time_plan_tracker').select('status, priority, category, due_date, is_private, created_by'));
     const items = applyPrivacy(data) || [];
     const total = items.length;
     const done = items.filter(t => t.status === 'done').length;
     const prog = total ? Math.round(done / total * 100) : 0;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const overdue = items.filter(t => {
+      if (!t.due_date || t.status === 'done' || t.status === 'skipped') return false;
+      const due = new Date(t.due_date); due.setHours(0,0,0,0);
+      return due < today;
+    }).length;
+
     document.getElementById('tracker-stats').innerHTML = `
       <div class="stat-card"><div class="stat-label">Total Kegiatan</div><div class="stat-val">${total}</div><div class="stat-sub">semua proyek</div></div>
       <div class="stat-card"><div class="stat-label">Selesai</div><div class="stat-val">${done}</div><div class="stat-sub">dari ${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-val" style="color:var(--danger)">${overdue}</div><div class="stat-sub">lewat due date</div></div>
       <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-val">${prog}%</div><div class="stat-sub">completion rate</div></div>
     `;
+    document.getElementById('tracker-progress-fill').style.width = prog + '%';
+    document.getElementById('tracker-progress-label').textContent = prog + '%';
+    renderTrackerCharts(items);
     document.getElementById('badge-track').textContent = items.filter(t => t.status === 'in_progress').length;
   } catch(e) {
     // gagal load — stat card tetap tampil kosong
   }
+}
+
+const TRACKER_STATUS_COLOR = { done: '#22C55E', in_progress: '#2F6364', not_started: '#9CA3AF', skipped: '#8B5CF6', on_hold: '#F97316', overdue: '#EF4444' };
+const TRACKER_STATUS_ORDER = ['not_started', 'in_progress', 'on_hold', 'overdue', 'skipped', 'done'];
+const TRACKER_CATEGORY_COLORS = {
+  'Work': '#2F6364', 'Personal': '#B8792A', 'Home': '#7FA88F', 'Family': '#A78BAA',
+  'Health': '#C97064', 'Finance': '#D9A66C', 'Study / Learning': '#6E93A6',
+  'Errands': '#9CC5CE', 'Calls / Emails': '#D9C36C', 'Lainnya': '#B7AFA1'
+};
+const TRACKER_CATEGORY_FALLBACK = ['#2F6364', '#B8792A', '#7FA88F', '#A78BAA', '#C97064', '#D9A66C', '#6E93A6', '#9CC5CE', '#D9C36C', '#B7AFA1'];
+function trackerCatColor(cat, idx) {
+  return TRACKER_CATEGORY_COLORS[cat] || TRACKER_CATEGORY_FALLBACK[idx % TRACKER_CATEGORY_FALLBACK.length];
+}
+
+// Isi chart "Status Summary" (bar) & "Category Breakdown" (donut) di dashboard Time Plan Tracker.
+function renderTrackerCharts(items) {
+  const statusEl = document.getElementById('tracker-status-chart');
+  const donutEl = document.getElementById('tracker-category-donut');
+  const legendEl = document.getElementById('tracker-category-legend');
+  if (!statusEl || !donutEl || !legendEl) return;
+
+  const statusCounts = {};
+  TRACKER_STATUS_ORDER.forEach(s => statusCounts[s] = 0);
+  items.forEach(t => { const s = t.status || 'not_started'; statusCounts[s] = (statusCounts[s] || 0) + 1; });
+  const maxCount = Math.max(1, ...Object.values(statusCounts));
+  statusEl.innerHTML = TRACKER_STATUS_ORDER.map(s => {
+    const count = statusCounts[s] || 0;
+    const pct = Math.round(count / maxCount * 100);
+    return `<div class="tstat-bar-row">
+      <div class="tstat-bar-label">${PT_STATUS_LABEL[s] || s}</div>
+      <div class="tstat-bar-track"><div class="tstat-bar-fill" style="width:${pct}%;background:${TRACKER_STATUS_COLOR[s]}"></div></div>
+      <div class="tstat-bar-count">${count}</div>
+    </div>`;
+  }).join('');
+
+  const catCounts = {};
+  items.forEach(t => { const c = (t.category || 'Lainnya').trim() || 'Lainnya'; catCounts[c] = (catCounts[c] || 0) + 1; });
+  const cats = Object.keys(catCounts);
+  const totalCat = items.length || 1;
+  let acc = 0;
+  const gradientParts = [];
+  const legendParts = [];
+  cats.forEach((c, i) => {
+    const count = catCounts[c];
+    const pct = count / totalCat * 100;
+    const color = trackerCatColor(c, i);
+    gradientParts.push(`${color} ${acc}% ${acc + pct}%`);
+    acc += pct;
+    legendParts.push(`<div class="tcat-legend-item"><span class="tcat-dot" style="background:${color}"></span>${escHtml(c)} <span class="tcat-legend-pct">${Math.round(pct)}%</span></div>`);
+  });
+  donutEl.style.background = cats.length ? `conic-gradient(${gradientParts.join(', ')})` : 'var(--bg2)';
+  legendEl.innerHTML = cats.length ? legendParts.join('') : '<div style="font-size:11px;color:var(--text3)">Belum ada data kategori</div>';
 }
 
 const stClass = {done:'s-done',prog:'s-prog',not_started:'s-not-started',skipped:'s-skipped',on_hold:'s-on-hold',overdue:'s-overdue'};
