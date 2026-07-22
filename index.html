@@ -394,6 +394,7 @@ textarea { resize: vertical; }
 
 /* ── Notes ─────────────────────────────────── */
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: start; }
+.notes-grid.log-view-list { display: block; }
 .note-card { border-radius: 4px 16px 16px 16px; padding: 14px 14px 10px; cursor: pointer; position: relative; box-shadow: 3px 4px 10px rgba(0,0,0,0.10); transition: transform 0.15s, box-shadow 0.15s; min-height: 120px; }
 .note-card:hover { transform: translateY(-3px) rotate(0.5deg); box-shadow: 5px 8px 18px rgba(0,0,0,0.15); }
 .note-card .note-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -414,6 +415,7 @@ textarea { resize: vertical; }
 .notepad-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 0.5px solid var(--border); }
 .notepad-toolbar input { flex: 1; min-width: 180px; font-size: 13px; }
 .notepad-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: start; }
+.notepad-list.log-view-list { display: block; }
 .np-item { border-radius: 4px 16px 16px 16px; padding: 14px 14px 10px; cursor: pointer; position: relative; box-shadow: 3px 4px 10px rgba(0,0,0,0.10); transition: transform 0.15s, box-shadow 0.15s; min-height: 120px; display: flex; flex-direction: column; gap: 6px; }
 .np-item:hover { transform: translateY(-3px) rotate(-0.3deg); box-shadow: 5px 8px 18px rgba(0,0,0,0.15); }
 .np-item .np-item-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -789,23 +791,23 @@ textarea { resize: vertical; }
   .bottom-nav { display: block; }
 }
 /* ── Sticky Note Colors ── */
-.sn-peach   { background: #FFD5C2; }
-.sn-yellow  { background: #FFF3B0; }
-.sn-mint    { background: #C8F0D8; }
-.sn-blue    { background: #C8E6FF; }
-.sn-lavender{ background: #E2D5F8; }
-.sn-pink    { background: #FFD6E7; }
-.sn-sage    { background: #D8EDD4; }
-.sn-cream   { background: #FFF8DC; }
+.sn-peach   { background: #F0C6AC; }
+.sn-yellow  { background: #F2DA9E; }
+.sn-mint    { background: #C7D9B8; }
+.sn-blue    { background: #B9D3D0; }
+.sn-lavender{ background: #D4C3CE; }
+.sn-pink    { background: #E6C9C3; }
+.sn-sage    { background: #BFCBA6; }
+.sn-cream   { background: #EDE7DA; }
 .sn-tape    { content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 36px; height: 14px; border-radius: 3px; opacity: 0.6; }
-.sn-tape-peach   { background: #FFB89A; }
-.sn-tape-yellow  { background: #F0D060; }
-.sn-tape-mint    { background: #7DDBA0; }
-.sn-tape-blue    { background: #7DC0F0; }
-.sn-tape-lavender{ background: #B09AE8; }
-.sn-tape-pink    { background: #FFB0CC; }
-.sn-tape-sage    { background: #A8C8A0; }
-.sn-tape-cream   { background: #E8D890; }
+.sn-tape-peach   { background: #D68F5F; }
+.sn-tape-yellow  { background: #C99A3E; }
+.sn-tape-mint    { background: #7E9963; }
+.sn-tape-blue    { background: #4E8480; }
+.sn-tape-lavender{ background: #96748A; }
+.sn-tape-pink    { background: #B87D71; }
+.sn-tape-sage    { background: #7C8F5C; }
+.sn-tape-cream   { background: #BFA76E; }
 .sn-tape-el { display: block; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 36px; height: 14px; border-radius: 3px; opacity: 0.65; z-index: 1; }
 
 /* ── Work Talk (Chat) ───────────────────────── */
@@ -1246,7 +1248,7 @@ textarea { resize: vertical; }
             <option value="">Semua</option>
           </select>
         </div>
-        <button class="btn-sm" id="log-view-toggle" onclick="toggleLogView()" title="Ganti tampilan Grid/List" style="display:none">
+        <button class="btn-sm" id="log-view-toggle" onclick="toggleCurrentView()" title="Ganti tampilan Grid/List" style="display:none">
           <i class="ti ti-list" id="log-view-icon" aria-hidden="true"></i>
         </button>
         <div class="export-dropdown" id="export-dropdown">
@@ -2745,21 +2747,45 @@ function updateGlobalSearchFilter(panelId) {
   filterSelect.style.display = cfg.options.length ? '' : 'none';
 
   const viewToggleBtn = document.getElementById('log-view-toggle');
-  if (viewToggleBtn) viewToggleBtn.style.display = (panelId === 'logbook') ? '' : 'none';
+  if (viewToggleBtn) {
+    viewToggleBtn.style.display = (VIEW_TOGGLE_PANELS.includes(panelId)) ? '' : 'none';
+    updateLogViewIcon();
+  }
 }
 
-// ── Toggle tampilan Logbook: Grid (kartu) vs List (baris ringkas) ──
+// ── Toggle tampilan Grid vs List — berlaku untuk Logbook, Notes, Notepad ──
+const VIEW_TOGGLE_PANELS = ['logbook', 'notes', 'notepad'];
 let logViewMode = localStorage.getItem('wb_log_view') || 'grid';
+let noteViewMode = localStorage.getItem('wb_note_view') || 'grid';
+let npViewMode = localStorage.getItem('wb_np_view') || 'grid';
+function toggleCurrentView() {
+  if (currentPanel === 'notes') { toggleNoteView(); }
+  else if (currentPanel === 'notepad') { toggleNpView(); }
+  else { toggleLogView(); }
+}
 function toggleLogView() {
   logViewMode = (logViewMode === 'grid') ? 'list' : 'grid';
   localStorage.setItem('wb_log_view', logViewMode);
   updateLogViewIcon();
   _applyGlobalSearchFilter();
 }
+function toggleNoteView() {
+  noteViewMode = (noteViewMode === 'grid') ? 'list' : 'grid';
+  localStorage.setItem('wb_note_view', noteViewMode);
+  updateLogViewIcon();
+  _applyGlobalSearchFilter();
+}
+function toggleNpView() {
+  npViewMode = (npViewMode === 'grid') ? 'list' : 'grid';
+  localStorage.setItem('wb_np_view', npViewMode);
+  updateLogViewIcon();
+  _applyGlobalSearchFilter();
+}
 function updateLogViewIcon() {
   const icon = document.getElementById('log-view-icon');
   if (!icon) return;
-  icon.className = 'ti ' + (logViewMode === 'grid' ? 'ti-list' : 'ti-layout-grid') + ' ';
+  const mode = currentPanel === 'notes' ? noteViewMode : currentPanel === 'notepad' ? npViewMode : logViewMode;
+  icon.className = 'ti ' + (mode === 'grid' ? 'ti-list' : 'ti-layout-grid') + ' ';
 }
 
 // Helper: terapkan pencarian teks + filter kategori pada data menu yang aktif,
@@ -5060,10 +5086,12 @@ async function renderNotepad() {
 }
 
 function displayNotepad(items) {
+  const list = document.getElementById('notepad-list');
+  list.classList.toggle('log-view-list', npViewMode === 'list');
+  if (!items.length) { list.innerHTML = '<div class="empty-msg">Belum ada catatan. Klik "+ Catatan Baru" untuk mulai.</div>'; return; }
+  if (npViewMode === 'list') { displayNotepadList(items); return; }
   const colors = ['sn-mint','sn-lavender','sn-peach','sn-blue','sn-yellow','sn-pink','sn-sage','sn-cream'];
   const tapes  = ['sn-tape-mint','sn-tape-lavender','sn-tape-peach','sn-tape-blue','sn-tape-yellow','sn-tape-pink','sn-tape-sage','sn-tape-cream'];
-  const list = document.getElementById('notepad-list');
-  if (!items.length) { list.innerHTML = '<div class="empty-msg">Belum ada catatan. Klik "+ Catatan Baru" untuk mulai.</div>'; return; }
   list.innerHTML = items.map((n, i) => {
     const c = n.is_pinned ? 'sn-yellow' : colors[i % colors.length];
     const tc = n.is_pinned ? 'sn-tape-yellow' : tapes[i % tapes.length];
@@ -5082,6 +5110,31 @@ function displayNotepad(items) {
       </div>
     </div>`;
   }).join('');
+}
+
+// Mode List untuk Notepad — sama gaya dengan Logbook List (tabel ringkas per baris)
+function displayNotepadList(items) {
+  const colors = ['sn-mint','sn-lavender','sn-peach','sn-blue','sn-yellow','sn-pink','sn-sage','sn-cream'];
+  const list = document.getElementById('notepad-list');
+  const rows = items.map((n, i) => {
+    const c = n.is_pinned ? 'sn-yellow' : colors[i % colors.length];
+    const dateObj = n.created_at ? new Date(n.created_at) : null;
+    const dayNum = dateObj ? dateObj.toLocaleDateString('id-ID', {day:'2-digit'}) : '–';
+    const monthYear = dateObj ? dateObj.toLocaleDateString('id-ID', {month:'short', year:'numeric'}) : '';
+    return `<tr class="log-row ${c}" onclick="this.classList.toggle('expanded')">
+      <td><div class="log-date-day">${dayNum}</div><div class="log-date-month">${monthYear}</div></td>
+      <td>
+        <div class="log-row-title">${n.is_pinned?'📌 ':''}${escHtml(n.title)}</div>
+        <div class="log-row-body-full">${renderBody(n.body)}</div>
+      </td>
+      <td class="log-row-actions" onclick="event.stopPropagation()">
+        <button class="ev-del" onclick="editNpItem('${n.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+        <button class="ev-del" onclick="toggleNpPin('${n.id}',${n.is_pinned})" title="${n.is_pinned?'Unpin':'Pin'}"><i class="ti ti-pin"></i></button>
+        <button class="ev-del" onclick="delNpItem('${n.id}')" title="Hapus"><i class="ti ti-x"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+  list.innerHTML = `<table class="log-table"><thead><tr><th>Tanggal</th><th>Catatan</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function escHtml(s) {
@@ -5251,10 +5304,12 @@ function displayLogbookList(data, typeLabel) {
 
 function _renderNoteCards(data) {
   const catLabel = {finance:'Keuangan',ops:'Operasional',hr:'SDM/HR',strat:'Strategi'};
+  const grid = document.getElementById('notes-grid');
+  grid.classList.toggle('log-view-list', noteViewMode === 'list');
+  if (!data || !data.length) { grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Tidak ada catatan yang sesuai.</div>'; return; }
+  if (noteViewMode === 'list') { displayNotesList(data, catLabel); return; }
   const colors = ['sn-yellow','sn-mint','sn-peach','sn-lavender','sn-blue','sn-pink','sn-sage','sn-cream'];
   const tapes  = ['sn-tape-yellow','sn-tape-mint','sn-tape-peach','sn-tape-lavender','sn-tape-blue','sn-tape-pink','sn-tape-sage','sn-tape-cream'];
-  const grid = document.getElementById('notes-grid');
-  if (!data || !data.length) { grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Tidak ada catatan yang sesuai.</div>'; return; }
   grid.innerHTML = data.map((n, i) => {
     const c = n.is_pinned ? 'sn-yellow' : colors[i % colors.length];
     const tc = n.is_pinned ? 'sn-tape-yellow' : tapes[i % tapes.length];
@@ -5276,6 +5331,32 @@ function _renderNoteCards(data) {
       </div>
     </div>`;
   }).join('');
+}
+
+// Mode List untuk Notes — sama gaya dengan Logbook List (tabel ringkas per baris)
+function displayNotesList(data, catLabel) {
+  const colors = ['sn-yellow','sn-mint','sn-peach','sn-lavender','sn-blue','sn-pink','sn-sage','sn-cream'];
+  const grid = document.getElementById('notes-grid');
+  const rows = data.map((n, i) => {
+    const c = n.is_pinned ? 'sn-yellow' : colors[i % colors.length];
+    const dateObj = n.created_at ? new Date(n.created_at) : null;
+    const dayNum = dateObj ? dateObj.toLocaleDateString('id-ID', {day:'2-digit'}) : '–';
+    const monthYear = dateObj ? dateObj.toLocaleDateString('id-ID', {month:'short', year:'numeric'}) : '';
+    return `<tr class="log-row ${c}" onclick="this.classList.toggle('expanded')">
+      <td><div class="log-date-day">${dayNum}</div><div class="log-date-month">${monthYear}</div></td>
+      <td>
+        <div class="log-row-title">${n.is_pinned?'📌 ':''}${n.is_private?'🔒 ':''}${escHtml(n.title)}<span class="log-row-type">${catLabel[n.category]||n.category||''}</span></div>
+        <div class="log-row-body-full">${renderBody(n.body)}</div>
+      </td>
+      <td class="log-row-actions" onclick="event.stopPropagation()">
+        <button class="ev-del" onclick="aiSummarizeNote('${n.id}')" title="Ringkas dengan AI"><i class="ti ti-sparkles"></i></button>
+        <button class="ev-del" onclick="editNote('${n.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+        <button class="ev-del" onclick="togglePin('${n.id}',${n.is_pinned})" title="${n.is_pinned?'Unpin':'Pin'}"><i class="ti ti-pin"></i></button>
+        <button class="ev-del" onclick="delNote('${n.id}')" title="Hapus"><i class="ti ti-x"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+  grid.innerHTML = `<table class="log-table"><thead><tr><th>Tanggal</th><th>Catatan</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 // ── QUILL RICH TEXT EDITORS ──────────────────────────────────────
