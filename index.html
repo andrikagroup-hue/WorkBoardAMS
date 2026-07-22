@@ -7,7 +7,7 @@
 
   <!-- ── PWA: bisa di-"Add to Home Screen" jadi kayak app ── -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0B3B45">
+  <meta name="theme-color" content="#D9EAF6">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -35,28 +35,28 @@
 
 :root {
   --nav-w: 230px;
-  --accent: #0891B2;
-  --accent2: #F59E0B;
-  --brand: #F77E2D;
-  --brand-dark: #C4601A;
+  --accent: #5B9BD1;
+  --accent2: #A9CFE8;
+  --brand: #3D7AB5;
+  --brand-dark: #2C5F91;
   --success: #22C55E;
   --danger: #EF4444;
-  --bg: rgba(248,250,252,0.88);
-  --bg2: rgba(241,245,249,0.90);
-  --bg3: #E2E8F0;
-  --surface: rgba(255,255,255,0.92);
-  --border: rgba(0,0,0,0.08);
-  --border2: rgba(0,0,0,0.14);
-  --text1: #0F172A;
-  --text2: #475569;
-  --text3: #94A3B8;
+  --bg: rgba(240,247,252,0.9);
+  --bg2: rgba(230,241,250,0.9);
+  --bg3: #D9EAF6;
+  --surface: rgba(255,255,255,0.95);
+  --border: rgba(61,122,181,0.14);
+  --border2: rgba(61,122,181,0.22);
+  --text1: #1E3A52;
+  --text2: #4A6B85;
+  --text3: #8FADC2;
   --radius: 8px;
   --radius-lg: 12px;
-  --sb-bg: #0B3B45;
-  --sb-bg2: #0E4A56;
-  --sb-text: #B9E4EB;
-  --sb-text-dim: #6FA9B3;
-  --sb-active-bg: #145C6B;
+  --sb-bg: #D9EAF6;
+  --sb-bg2: #C3DFF0;
+  --sb-text: #1E3A52;
+  --sb-text-dim: #5F84A0;
+  --sb-active-bg: #4A85B8;
 }
 
 body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text1); }
@@ -70,11 +70,11 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
   border-right: 0.5px solid var(--border);
   display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
 }
-.sb-header { padding: 18px 16px 12px; border-bottom: 0.5px solid rgba(255,255,255,0.08); }
-.sb-logo { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.3px; display: flex; align-items: center; gap: 7px; }
+.sb-header { padding: 18px 16px 12px; border-bottom: 0.5px solid rgba(30,58,82,0.12); }
+.sb-logo { font-size: 15px; font-weight: 600; color: var(--sb-text); letter-spacing: -0.3px; display: flex; align-items: center; gap: 7px; }
 .sb-sub { font-size: 11px; color: var(--sb-text-dim); margin-top: 2px; }
-.sb-date { font-size: 11px; color: var(--sb-text); margin-top: 8px; padding: 4px 8px; background: rgba(255,255,255,0.06); border-radius: 6px; display: inline-block; }
-.sb-user { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 5px 8px; background: rgba(247,126,45,0.16); border-radius: 6px; }
+.sb-date { font-size: 11px; color: var(--sb-text); margin-top: 8px; padding: 4px 8px; background: rgba(30,58,82,0.06); border-radius: 6px; display: inline-block; }
+.sb-user { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 5px 8px; background: rgba(61,122,181,0.14); border-radius: 6px; }
 .sb-user-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
 .sb-user-name { font-size: 11px; color: var(--brand); font-weight: 600; }
 /* ── Flyout Sidebar Navigation ── */
@@ -92,7 +92,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
   transition: background 0.12s, color 0.12s;
   user-select: none;
 }
-.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-item:hover { background: rgba(30,58,82,0.08); color: var(--sb-text); }
 .nav-item.active { background: var(--brand); color: #fff; font-weight: 500; }
 .nav-item.group-active { background: var(--sb-active-bg); color: #fff; }
 .nav-item i.nav-icon { font-size: 17px; flex-shrink: 0; }
@@ -118,14 +118,14 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
   border: none; background: none; width: 100%; text-align: left;
   transition: background 0.1s, color 0.1s;
 }
-.nav-sub-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-sub-item:hover { background: rgba(30,58,82,0.08); color: var(--sb-text); }
 .nav-sub-item.active { background: var(--brand); color: #fff; font-weight: 500; }
 .nav-sub-item i { font-size: 14px; flex-shrink: 0; opacity: .8; }
 .nav-badge {
   margin-left: auto; font-size: 10px; padding: 1px 6px;
   border-radius: 10px; font-weight: 500; min-width: 20px; text-align: center;
 }
-.badge-blue { background: #A5F3FC; color: #0E7490; }
+.badge-blue { background: #D6E9F5; color: #3D7AB5; }
 .badge-amber { background: #FEF3C7; color: #92400E; }
 .badge-red { background: #FEE2E2; color: #991B1B; }
 
@@ -151,7 +151,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
 }
 .btn-sm:hover { background: var(--bg2); }
 .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-.btn-primary:hover { background: #0E7490; }
+.btn-primary:hover { background: #3D7AB5; }
 .export-dropdown { position: relative; }
 .export-menu {
   display: none; position: absolute; top: calc(100% + 4px); right: 0;
@@ -227,7 +227,7 @@ textarea { resize: vertical; }
   padding: 6px 10px; border-radius: var(--radius); font-size: 12px;
   border-left: 3px solid; margin-bottom: 4px; position: relative;
 }
-.ev-blue { background: #ECFEFF; border-color: #0891B2; color: #164E63; }
+.ev-blue { background: #EAF4FB; border-color: #5B9BD1; color: #1E3A52; }
 .ev-amber { background: #FFFBEB; border-color: #F59E0B; color: #92400E; }
 .ev-green { background: #F0FDF4; border-color: #22C55E; color: #166534; }
 .ev-purple { background: #FAF5FF; border-color: #A855F7; color: #6B21A8; }
@@ -247,7 +247,7 @@ textarea { resize: vertical; }
 .task-table tr:hover td { background: var(--bg2); }
 .status-pill { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
 .s-done { background: #DCFCE7; color: #166534; }
-.s-prog { background: #A5F3FC; color: #0E7490; }
+.s-prog { background: #D6E9F5; color: #3D7AB5; }
 .s-wait { background: #FEF3C7; color: #92400E; }
 .s-late { background: #FEE2E2; color: #991B1B; }
 .s-not-started { background: #F3F4F6; color: #374151; }
@@ -350,7 +350,7 @@ textarea { resize: vertical; }
 .log-header { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; flex-wrap: wrap; }
 .log-type { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
 .lt-meeting { background: #EDE9FE; color: #5B21B6; }
-.lt-report { background: #A5F3FC; color: #0E7490; }
+.lt-report { background: #D6E9F5; color: #3D7AB5; }
 .lt-note { background: #DCFCE7; color: #166534; }
 .lt-issue { background: #FEE2E2; color: #991B1B; }
 .log-time { font-size: 10px; color: var(--text3); margin-left: auto; }
@@ -370,7 +370,7 @@ textarea { resize: vertical; }
 .note-title { font-size: 15px; font-weight: 700; color: var(--text1); margin-bottom: 2px; }
 .note-cat { font-size: 10px; padding: 2px 7px; border-radius: 8px; white-space: nowrap; }
 .nc-finance { background: #FEF3C7; color: #92400E; }
-.nc-ops { background: #A5F3FC; color: #0E7490; }
+.nc-ops { background: #D6E9F5; color: #3D7AB5; }
 .nc-hr { background: #EDE9FE; color: #5B21B6; }
 .nc-strat { background: #DCFCE7; color: #166534; }
 .note-body { font-size: 11px; color: var(--text2); line-height: 1.6; }
@@ -471,7 +471,7 @@ textarea { resize: vertical; }
 .todo-meta { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
 .prio-high { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #FEE2E2; color: #991B1B; }
 .prio-med { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #FEF3C7; color: #92400E; }
-.prio-low { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #A5F3FC; color: #0E7490; }
+.prio-low { font-size: 10px; padding: 1px 6px; border-radius: 6px; background: #D6E9F5; color: #3D7AB5; }
 .todo-due { font-size: 10px; color: var(--text3); }
 .todo-del { background: none; border: none; color: var(--text3); cursor: pointer; padding: 2px; font-size: 14px; line-height: 1; }
 .todo-del:hover { color: var(--danger); }
@@ -479,7 +479,7 @@ textarea { resize: vertical; }
 /* ── Result ─────────────────────────────────── */
 .result-header { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
 .res-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; border-left: 3px solid; }
-.rc-blue { border-color: #0891B2; }
+.rc-blue { border-color: #5B9BD1; }
 .rc-green { border-color: #22C55E; }
 .rc-amber { border-color: #F59E0B; }
 .rc-purple { border-color: #A855F7; }
@@ -573,7 +573,7 @@ textarea { resize: vertical; }
 .alb-pending  { background: #FEF3C7; color: #92400E; }
 .alb-approved { background: #DCFCE7; color: #166534; }
 .alb-rejected { background: #FEE2E2; color: #991B1B; }
-.alb-izin  { background: #ECFEFF; color: #0E7490; }
+.alb-izin  { background: #EAF4FB; color: #3D7AB5; }
 .alb-sakit { background: #FEF3C7; color: #92400E; }
 .alb-cuti  { background: #F0FDF4; color: #166534; }
 
@@ -593,7 +593,7 @@ textarea { resize: vertical; }
 .admin-user-meta { font-size:11px;color:var(--text3);margin-top:1px; }
 .admin-user-badge {
   font-size:10px;padding:2px 7px;border-radius:8px;
-  background:#A5F3FC;color:#0E7490;font-weight:500;
+  background:#D6E9F5;color:#3D7AB5;font-weight:500;
 }
 .admin-user-badge.online { background:#DCFCE7;color:#166534; }
 .admin-user-badge.admin { background:#FEF3C7;color:#92400E; }
@@ -618,7 +618,7 @@ textarea { resize: vertical; }
 }
 .asc-hadir::before { background:#22C55E; }
 .asc-terlambat::before { background:#F59E0B; }
-.asc-izin::before { background:#0891B2; }
+.asc-izin::before { background:#5B9BD1; }
 .asc-sakit::before { background:#EF4444; }
 .asc-cuti::before { background:#8B5CF6; }
 .asc-icon { font-size:18px;margin-bottom:4px; }
@@ -715,7 +715,7 @@ textarea { resize: vertical; }
   white-space: nowrap;
 }
 .bn-item i { font-size: 20px; line-height: 1; }
-.bn-item.active { color: #0E7490; }
+.bn-item.active { color: #3D7AB5; }
 .bn-item.active::before {
   content: '';
   position: absolute;
@@ -723,7 +723,7 @@ textarea { resize: vertical; }
   left: 20%;
   right: 20%;
   height: 2px;
-  background: #0E7490;
+  background: #3D7AB5;
   border-radius: 0 0 2px 2px;
 }
 .bn-badge {
@@ -795,7 +795,7 @@ textarea { resize: vertical; }
   border-left: 3px solid transparent;
 }
 .chat-channel-item:hover { background: var(--bg2); }
-.chat-channel-item.active { background: #ECFEFF; color: #0E7490; font-weight: 600; border-left-color: var(--brand); }
+.chat-channel-item.active { background: #EAF4FB; color: #3D7AB5; font-weight: 600; border-left-color: var(--brand); }
 .chat-channel-item i { font-size: 14px; flex-shrink: 0; opacity: 0.7; }
 .chat-channel-item .cci-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .cci-badge {
@@ -851,7 +851,7 @@ textarea { resize: vertical; }
 }
 .chat-icon-btn:hover { background: var(--bg2); }
 .chat-icon-btn.chat-send { background: var(--accent); color: #fff; border-color: var(--accent); }
-.chat-icon-btn.chat-send:hover { background: #0E7490; }
+.chat-icon-btn.chat-send:hover { background: #3D7AB5; }
 .chat-no-channel { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 12.5px; text-align: center; padding: 20px; }
 .cci-hide { opacity: 0.35; font-size: 12px !important; flex-shrink: 0; margin-left: 2px; padding: 4px; border-radius: 5px; }
 .cci-hide:hover { opacity: 1; color: var(--danger); }
@@ -943,7 +943,7 @@ textarea { resize: vertical; }
 /* Mode — 2 kolom grid, tiap label 1 baris */
 .wba-mode-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
 .wba-mode-list label { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text1); cursor: pointer; }
-.wba-mode-list input[type=radio] { accent-color: #0891B2; width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+.wba-mode-list input[type=radio] { accent-color: #5B9BD1; width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
 /* Custom inputs — 1 baris inline, muncul setelah Custom dipilih */
 .wba-custom-inputs { display: none; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .wba-custom-inputs.visible { display: grid; }
@@ -962,10 +962,10 @@ textarea { resize: vertical; }
 /* Buttons */
 .wba-btn-row { display: flex; gap: 8px; justify-content: center; margin-top: 18px; }
 .wba-btn-save {
-  background: #0891B2; color: #fff; border: none; border-radius: var(--radius);
+  background: #5B9BD1; color: #fff; border: none; border-radius: var(--radius);
   padding: 8px 32px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px;
 }
-.wba-btn-save:hover { background: #0E7490; }
+.wba-btn-save:hover { background: #3D7AB5; }
 .wba-btn-cancel {
   background: var(--bg3); color: var(--text2); border: none; border-radius: var(--radius);
   padding: 8px 20px; font-size: 14px; cursor: pointer; border-radius: 6px;
@@ -1014,7 +1014,7 @@ textarea { resize: vertical; }
         <div class="sb-user-dot"></div>
         <span class="sb-user-name" id="user-name">—</span>
         <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
-          <button style="background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.16);border-radius:5px;cursor:pointer;color:var(--sb-text);font-size:10px;padding:2px 6px;white-space:nowrap" onclick="switchUser()" title="Masuk sebagai pengguna lain di perangkat ini">⇄ Ganti</button>
+          <button style="background:rgba(30,58,82,0.08);border:1px solid rgba(30,58,82,0.18);border-radius:5px;cursor:pointer;color:var(--sb-text);font-size:10px;padding:2px 6px;white-space:nowrap" onclick="switchUser()" title="Masuk sebagai pengguna lain di perangkat ini">⇄ Ganti</button>
           <button style="background:none;border:none;cursor:pointer;color:var(--sb-text-dim);font-size:13px;padding:2px 4px;line-height:1" onclick="renameUser()" title="Ubah nama saya">✎</button>
         </div>
       </div>
@@ -1477,7 +1477,7 @@ textarea { resize: vertical; }
         </div>
         <div class="gantt-legend">
           <span><i style="background:#94A3B8"></i> Not Started</span>
-          <span><i style="background:#0891B2"></i> In Progress</span>
+          <span><i style="background:#5B9BD1"></i> In Progress</span>
           <span><i style="background:#F97316"></i> On Hold</span>
           <span><i style="background:#EF4444"></i> Overdue</span>
           <span><i style="background:#8B5CF6"></i> Skipped</span>
@@ -1491,7 +1491,7 @@ textarea { resize: vertical; }
 
       <!-- ── Decision Matrix ──────────────────── -->
       <div class="panel" id="panel-matrix">
-        <div style="background:#ECFEFF;border:1px solid #67E8F9;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#164E63">
+        <div style="background:#EAF4FB;border:1px solid #B8D9EE;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#1E3A52">
           🎯 <strong>Decision Matrix (Eisenhower)</strong> — Gabungan To Do + Time Plan Tracker yang belum selesai. Tap tombol 🔥 Urgent / ⭐ Penting di tiap kartu untuk pindah kotak.
         </div>
         <div class="matrix-grid" id="matrix-grid">
@@ -1642,7 +1642,7 @@ ALTER TABLE logbook_entries
 
       <!-- ── Notes ─────────────────────────────── -->
       <div class="panel" id="panel-notes">
-        <div style="background:#ECFEFF;border:1px solid #67E8F9;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#164E63;display:flex;align-items:center;gap:6px">
+        <div style="background:#EAF4FB;border:1px solid #B8D9EE;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#1E3A52;display:flex;align-items:center;gap:6px">
           🔒 <strong>Catatan Pribadi</strong> — Hanya kamu yang bisa melihat catatan milikmu sendiri.
         </div>
         <div class="form-box" id="note-form" style="display:none">
@@ -1675,7 +1675,7 @@ ALTER TABLE logbook_entries
 
       <!-- ── To Do ─────────────────────────────── -->
       <div class="panel" id="panel-todo">
-        <div style="background:#ECFEFF;border:1px solid #67E8F9;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#164E63;display:flex;align-items:center;gap:6px">
+        <div style="background:#EAF4FB;border:1px solid #B8D9EE;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#1E3A52;display:flex;align-items:center;gap:6px">
           🔒 <strong>To Do Pribadi</strong> — Hanya kamu yang bisa melihat daftar tugasmu sendiri.
         </div>
         <div class="todo-filters">
@@ -1708,7 +1708,7 @@ ALTER TABLE logbook_entries
 
       <!-- ── Notepad ───────────────────────────── -->
       <div class="panel" id="panel-notepad">
-        <div style="background:#ECFEFF;border:1px solid #67E8F9;border-radius:var(--radius);padding:8px 12px;margin-bottom:10px;font-size:11.5px;color:#164E63;display:flex;align-items:center;gap:6px">
+        <div style="background:#EAF4FB;border:1px solid #B8D9EE;border-radius:var(--radius);padding:8px 12px;margin-bottom:10px;font-size:11.5px;color:#1E3A52;display:flex;align-items:center;gap:6px">
           🔒 <strong>Notepad Pribadi</strong> — Hanya kamu yang bisa melihat catatan sticky-mu sendiri.
         </div>
         <div class="notepad-wrap">
@@ -1872,7 +1872,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
             <div class="chart-title" style="margin-bottom:0">Grafik Jadwal Harian (Schedule)</div>
             <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
-              <span><span style="display:inline-block;width:10px;height:10px;background:#0891B2;border-radius:2px;margin-right:3px"></span>Ada jadwal</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#5B9BD1;border-radius:2px;margin-right:3px"></span>Ada jadwal</span>
               <span><span style="display:inline-block;width:10px;height:10px;background:#E2E8F0;border-radius:2px;margin-right:3px"></span>Kosong</span>
             </div>
           </div>
@@ -2811,7 +2811,7 @@ async function populateTrackerLinkOptions(selectedId) {
 // (warnanya sama dengan badge status di Time Plan Tracker).
 const LOG_STATUS_COLOR_HEX = {
   done: { bg: '#DCFCE7', fg: '#166534' },
-  in_progress: { bg: '#A5F3FC', fg: '#0E7490' },
+  in_progress: { bg: '#D6E9F5', fg: '#3D7AB5' },
   not_started: { bg: '#F3F4F6', fg: '#374151' },
   skipped: { bg: '#EDE9FE', fg: '#5B21B6' },
   on_hold: { bg: '#FFF7ED', fg: '#C2410C' },
@@ -3097,7 +3097,7 @@ async function kanbanChangeStatus(id, newStatus) {
 // ── DECISION MATRIX (Eisenhower) — gabungan todos + time_plan_tracker ──
 const MATRIX_QUADRANTS = [
   { urgent: true,  important: true,  label: '🔴 Kerjakan Sekarang', sub: 'Urgent & Penting', color: '#EF4444' },
-  { urgent: false, important: true,  label: '🔵 Jadwalkan',         sub: 'Penting, Tidak Urgent', color: '#0891B2' },
+  { urgent: false, important: true,  label: '🔵 Jadwalkan',         sub: 'Penting, Tidak Urgent', color: '#5B9BD1' },
   { urgent: true,  important: false, label: '🟡 Delegasikan',       sub: 'Urgent, Tidak Penting', color: '#F59E0B' },
   { urgent: false, important: false, label: '⚪ Nanti / Eliminasi', sub: 'Tidak Urgent, Tidak Penting', color: '#94A3B8' }
 ];
@@ -3164,7 +3164,7 @@ async function toggleMatrixFlag(src, id, field, current) {
 // ── Gantt Chart — timeline visual dari data Time Plan Tracker (tabel sama, bulan berjalan) ──
 const GANTT_BAR_COLOR = {
   not_started: '#94A3B8',
-  in_progress: '#0891B2',
+  in_progress: '#5B9BD1',
   on_hold: '#F97316',
   overdue: '#EF4444',
   skipped: '#8B5CF6',
@@ -3854,7 +3854,7 @@ function renderAttachPreview() {
     </span>
   `).join('');
   const pendingHtml = logPendingFiles.map((f, idx) => `
-    <span style="display:inline-flex;align-items:center;gap:4px;background:#ECFEFF;border:1px solid #67E8F9;border-radius:6px;padding:3px 8px;font-size:11px;color:#0E7490">
+    <span style="display:inline-flex;align-items:center;gap:4px;background:#EAF4FB;border:1px solid #B8D9EE;border-radius:6px;padding:3px 8px;font-size:11px;color:#3D7AB5">
       <i class="ti ti-cloud-upload"></i> ${escHtml(f.name)} <span style="opacity:0.6">(${formatBytes(f.size)}, belum diupload)</span>
       <i class="ti ti-x" style="cursor:pointer;opacity:0.7" onclick="removePendingLogFile(${idx})" title="Batalkan file ini"></i>
     </span>
@@ -4419,7 +4419,7 @@ async function renderResult() {
       const isFuture = ds > todayFull2;
       const isToday = ds === todayFull2;
       const barH = cnt ? Math.max(8, Math.round(cnt/maxSchedPerDay*60)) : (isFuture ? 0 : 4);
-      const barColor = isFuture ? 'var(--bg3)' : cnt > 0 ? '#0891B2' : '#E2E8F0';
+      const barColor = isFuture ? 'var(--bg3)' : cnt > 0 ? '#5B9BD1' : '#E2E8F0';
       const tip = isFuture ? ds : `${ds}\nJadwal: ${cnt}`;
       return `<div class="adc-day" title="${tip}">
         <div class="adc-bar" style="height:${barH}px;background:${barColor};${isToday?'outline:2px solid var(--accent2);':''}"></div>
@@ -4458,7 +4458,7 @@ async function renderResult() {
   const totalTrk = tr.length || 1;
   const trkStatDefs = [
     { name: 'Selesai', key: 'done', color: '#22C55E' },
-    { name: 'Berjalan', key: 'prog', color: '#0891B2' },
+    { name: 'Berjalan', key: 'prog', color: '#5B9BD1' },
     { name: 'Belum Mulai', key: 'not_started', color: '#94A3B8' },
     { name: 'Di-hold', key: 'on_hold', color: '#F59E0B' },
     { name: 'Dilewati', key: 'skipped', color: '#EF4444' },
@@ -5484,7 +5484,7 @@ async function loadChatMessages(channelId) {
   renderChatThread(chatMessagesCache);
 }
 
-const AVATAR_PALETTE = ['#0891B2','#F77E2D','#7C3AED','#059669','#DB2777','#D97706','#2563EB','#DC2626'];
+const AVATAR_PALETTE = ['#5B9BD1','#F77E2D','#7C3AED','#059669','#DB2777','#D97706','#2563EB','#DC2626'];
 function avatarInitials(name) {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/);
@@ -6145,7 +6145,7 @@ function absenStatusLabel(status) {
 }
 
 function absenStatusColor(status) {
-  const map = { hadir:'#22C55E', terlambat:'#F59E0B', izin:'#0891B2', sakit:'#EF4444', cuti:'#8B5CF6' };
+  const map = { hadir:'#22C55E', terlambat:'#F59E0B', izin:'#5B9BD1', sakit:'#EF4444', cuti:'#8B5CF6' };
   return map[status] || '#94A3B8';
 }
 
@@ -6720,7 +6720,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
           &nbsp;·&nbsp;Diajukan: ${diajukan}
         </div>
         ${lv.alasan ? `<div class="admin-leave-alasan">"${escHtml(lv.alasan)}"</div>` : ''}
-        ${lv.catatan_admin ? `<div style="font-size:11px;margin-top:4px;color:#0E7490"><i class="ti ti-message"></i> Catatan admin: ${escHtml(lv.catatan_admin)}</div>` : ''}
+        ${lv.catatan_admin ? `<div style="font-size:11px;margin-top:4px;color:#3D7AB5"><i class="ti ti-message"></i> Catatan admin: ${escHtml(lv.catatan_admin)}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;min-width:110px">
         <span class="admin-leave-badge alb-${st}">${statusLabel[st] || st}</span>
@@ -7584,7 +7584,7 @@ function _getChatToastEl() {
     _chatToastEl.id = 'chat-toast';
     _chatToastEl.style.cssText = [
       'position:fixed', 'bottom:80px', 'right:16px', 'z-index:9999',
-      'background:#0E7490', 'color:#fff', 'border-radius:12px',
+      'background:#3D7AB5', 'color:#fff', 'border-radius:12px',
       'padding:12px 16px', 'max-width:280px',
       'box-shadow:0 4px 20px rgba(0,0,0,0.25)', 'cursor:pointer',
       'transition:opacity 0.3s', 'font-size:13px', 'line-height:1.4',
