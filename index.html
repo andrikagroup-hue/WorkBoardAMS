@@ -1554,7 +1554,18 @@ textarea { resize: vertical; }
               <option value="medium" selected>🟡 Medium</option>
               <option value="high">🔴 High</option>
             </select>
-            <input id="pt-new-category" placeholder="Category (mis: Work)" list="pt-category-list" style="flex:1" />
+            <select id="pt-new-category" title="Category" style="flex:1">
+              <option value="Work">Work</option>
+              <option value="Personal">Personal</option>
+              <option value="Home">Home</option>
+              <option value="Family">Family</option>
+              <option value="Health">Health</option>
+              <option value="Finance">Finance</option>
+              <option value="Study / Learning">Study / Learning</option>
+              <option value="Errands">Errands</option>
+              <option value="Calls / Emails">Calls / Emails</option>
+              <option value="Lainnya" selected>Lainnya</option>
+            </select>
             <select id="pt-new-status">
               <option value="in_progress" selected>In Progress</option>
               <option value="done">Done</option>
@@ -1577,18 +1588,6 @@ textarea { resize: vertical; }
             </select>
             <button class="btn-sm btn-primary" id="pt-save-btn" onclick="addProjectRow()">Tambah</button>
           </div>
-          <datalist id="pt-category-list">
-            <option value="Work"></option>
-            <option value="Personal"></option>
-            <option value="Home"></option>
-            <option value="Family"></option>
-            <option value="Health"></option>
-            <option value="Finance"></option>
-            <option value="Study / Learning"></option>
-            <option value="Errands"></option>
-            <option value="Calls / Emails"></option>
-            <option value="Lainnya"></option>
-          </datalist>
         </div>
       </div>
 
@@ -3127,17 +3126,12 @@ async function renderTracker() {
     const total = items.length;
     const done = items.filter(t => t.status === 'done').length;
     const prog = total ? Math.round(done / total * 100) : 0;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const overdue = items.filter(t => {
-      if (!t.due_date || t.status === 'done' || t.status === 'skipped') return false;
-      const due = new Date(t.due_date); due.setHours(0,0,0,0);
-      return due < today;
-    }).length;
+    const overdue = items.filter(t => t.status === 'overdue').length;
 
     document.getElementById('tracker-stats').innerHTML = `
       <div class="stat-card"><div class="stat-label">Total Kegiatan</div><div class="stat-val">${total}</div><div class="stat-sub">semua proyek</div></div>
       <div class="stat-card"><div class="stat-label">Selesai</div><div class="stat-val">${done}</div><div class="stat-sub">dari ${total}</div></div>
-      <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-val" style="color:var(--danger)">${overdue}</div><div class="stat-sub">lewat due date</div></div>
+      <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-val" style="color:var(--danger)">${overdue}</div><div class="stat-sub">status Overdue</div></div>
       <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-val">${prog}%</div><div class="stat-sub">completion rate</div></div>
     `;
     document.getElementById('tracker-progress-fill').style.width = prog + '%';
@@ -3893,7 +3887,9 @@ function ptEditRow(t) {
       <option value="medium" ${!t.priority || t.priority === 'medium' ? 'selected' : ''}>🟡 Medium</option>
       <option value="high" ${t.priority === 'high' ? 'selected' : ''}>🔴 High</option>
     </select></td>
-    <td><input id="pt-edit-category" value="${escAttr(t.category || '')}" list="pt-category-list" style="width:100%" /></td>
+    <td><select id="pt-edit-category" style="width:100%">
+      ${ptCategoryOptions(t.category)}
+    </select></td>
     <td><select id="pt-edit-status" style="width:100%">
       <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
       <option value="done" ${t.status === 'done' ? 'selected' : ''}>Done</option>
@@ -3915,6 +3911,14 @@ function ptEditRow(t) {
       <button class="ev-del" onclick="cancelEditProjectRow()" aria-label="Batal" title="Batal"><i class="ti ti-x" aria-hidden="true"></i></button>
     </td>
   </tr>`;
+}
+
+const PT_CATEGORY_OPTIONS = ['Work', 'Personal', 'Home', 'Family', 'Health', 'Finance', 'Study / Learning', 'Errands', 'Calls / Emails', 'Lainnya'];
+function ptCategoryOptions(current) {
+  const cur = (current || '').trim() || 'Lainnya';
+  let opts = PT_CATEGORY_OPTIONS.slice();
+  if (!opts.includes(cur)) opts.unshift(cur); // kategori custom yang sudah ada sebelumnya, jangan sampai hilang
+  return opts.map(c => `<option value="${escAttr(c)}" ${c === cur ? 'selected' : ''}>${escHtml(c)}</option>`).join('');
 }
 
 function escAttr(s) { return escHtml(s == null ? '' : s).replace(/"/g, '&quot;'); }
