@@ -511,6 +511,7 @@ textarea { resize: vertical; }
 .todo-week-label { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.4px; }
 
 .todo-week-tables { display: flex; gap: 12px; overflow-x: auto; }
+.todo-nodate-title { font-size: 12px; font-weight: 700; color: var(--text2); margin: 4px 0 8px; }
 .todo-week-table { flex: 0 0 220px; }
 .todo-week-table table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
 .todo-week-table th { background: var(--bg2); text-align: left; padding: 6px 8px; font-size: 10px; color: var(--text2); }
@@ -610,17 +611,6 @@ textarea { resize: vertical; }
 .ai-modal-body { padding:16px; overflow-y:auto; font-size:13px; line-height:1.6; color:var(--text1); }
 .ai-modal-body a { color: var(--accent); }
 .ai-modal-foot { display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--border); }
-
-/* ── Note Taking Method chooser ─────────────────────────────── */
-.note-method-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-.note-method-opt { display:flex; flex-direction:column; align-items:center; gap:6px; padding:16px 10px; border:1px solid var(--border); border-radius:var(--radius); background:transparent; cursor:pointer; font-size:12px; font-weight:600; color:var(--text1); transition:transform .15s, box-shadow .15s, border-color .15s; }
-.note-method-opt:hover { transform:translateY(-2px); box-shadow:3px 4px 10px rgba(0,0,0,0.10); border-color:var(--accent); }
-.note-method-opt i { font-size:22px; color:var(--accent); }
-.note-method-badge { font-size:12px; opacity:0.55; margin-right:4px; }
-.cornell-grid { display:grid; grid-template-columns: 1fr 2fr; gap:10px; }
-.cornell-grid textarea, #note-editor-cornell textarea { width:100%; font-family:inherit; font-size:13px; line-height:1.6; }
-.form-label-sm { display:block; font-size:11px; font-weight:700; color:var(--text2); margin-bottom:4px; }
-@media (max-width:700px) { .cornell-grid { grid-template-columns: 1fr; } }
 .ai-btn { font-size:10px; padding:2px 8px; border-radius:6px; border:1px solid var(--accent); color:var(--accent); background:transparent; cursor:pointer; display:inline-flex; align-items:center; gap:3px; }
 .ai-btn:hover { background:var(--accent); color:#fff; }
 .ai-loading-dots::after { content:'...'; animation: aiDots 1.2s steps(4,end) infinite; }
@@ -1744,24 +1734,8 @@ ALTER TABLE logbook_entries
               <option value="true" selected>🔒 Privat</option>
             </select>
           </div>
-          <div class="form-row" id="note-editor-classic">
+          <div class="form-row">
             <div class="quill-editor-wrap"><div id="note-body-editor"></div></div>
-          </div>
-          <div id="note-editor-cornell" style="display:none">
-            <div class="cornell-grid">
-              <div>
-                <label class="form-label-sm">Cue / Keywords</label>
-                <textarea id="cornell-cue-in" placeholder="Kata kunci, pertanyaan..." style="min-height:180px"></textarea>
-              </div>
-              <div>
-                <label class="form-label-sm">Main Notes</label>
-                <textarea id="cornell-notes-in" placeholder="Catatan utama..." style="min-height:180px"></textarea>
-              </div>
-            </div>
-            <div style="margin-top:10px">
-              <label class="form-label-sm">Summary</label>
-              <textarea id="cornell-summary-in" placeholder="Ringkasan..." style="min-height:70px"></textarea>
-            </div>
           </div>
           <div class="form-actions">
             <button class="btn-sm" onclick="closeNoteForm()">Batal</button>
@@ -1808,6 +1782,8 @@ ALTER TABLE logbook_entries
           </div>
           <div class="todo-weeks" id="todo-weeks"></div>
           <div class="todo-week-tables" id="todo-week-tables"></div>
+          <div class="todo-nodate-title" id="todo-nodate-title" style="display:none">Tugas Tanpa Deadline</div>
+          <div class="todo-week-tables" id="todo-nodate"></div>
         </div>
 
         <div class="todo-list" id="todo-search-list" style="display:none"></div>
@@ -2518,28 +2494,6 @@ let editingLogId = null;
 let logAttachments = [];
 let logPendingFiles = []; // File objects yang sudah dipilih user tapi belum diupload (masih bisa dibatalkan)
 let editingNoteId = null;
-let selectedNoteMethod = null; // metode note-taking yang dipilih user: cornell/mindmap/outline/box/chart
-// Metadata icon+label per metode, dipakai untuk badge di note card
-const NOTE_METHOD_META = {
-  cornell: { icon: 'ti-columns', label: 'Cornell' },
-  mindmap: { icon: 'ti-sitemap', label: 'Mind Map' },
-  outline: { icon: 'ti-list-numbers', label: 'Outline' },
-  box:     { icon: 'ti-layout-grid', label: 'Box' },
-  chart:   { icon: 'ti-table', label: 'Chart' }
-};
-
-function openNoteMethodModal() {
-  document.getElementById('note-method-modal').classList.add('open');
-}
-function closeNoteMethodModal() {
-  document.getElementById('note-method-modal').classList.remove('open');
-}
-// User pilih salah satu metode di dialog -> tutup dialog, buka form Notes seperti biasa
-function chooseNoteMethod(method) {
-  selectedNoteMethod = method;
-  closeNoteMethodModal();
-  document.getElementById('note-form').style.display = 'block';
-}
 let editingTodoId = null;
 let chatChannels = [];
 let activeChatChannelId = null;
@@ -2905,7 +2859,6 @@ function hideAllForms() {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
-  closeNoteMethodModal();
   resetScheduleForm();
   resetLogForm();
   resetNoteForm();
@@ -2931,11 +2884,6 @@ async function handleAdd() {
   if (formId) {
     const el = document.getElementById(formId);
     const willOpen = el.style.display === 'none';
-    // Notes: sebelum buka form catatan baru, munculkan dulu dialog "Choose Note Taking Method"
-    if (currentPanel === 'notes' && willOpen) {
-      openNoteMethodModal();
-      return;
-    }
     el.style.display = willOpen ? 'block' : 'none';
     // saat form ditutup, kembalikan ke mode "tambah baru" supaya tidak nyangkut di mode edit
     if (!willOpen && resetMap[currentPanel]) resetMap[currentPanel]();
@@ -4227,8 +4175,7 @@ async function saveNote() {
     category: document.getElementById('note-cat-in').value,
     body: quillNote.root.innerHTML,
     is_private: true,
-    created_by: getUser(),
-    note_method: selectedNoteMethod
+    created_by: getUser()
   };
   let error;
   if (editingNoteId) {
@@ -4247,7 +4194,6 @@ function editNote(id) {
   const n = notesCache.find(x => x.id === id);
   if (!n) return;
   editingNoteId = id;
-  selectedNoteMethod = n.note_method || null;
   document.getElementById('note-title-in').value = n.title || '';
   document.getElementById('note-cat-in').value = n.category || 'finance';
   document.getElementById('note-privacy').value = n.is_private ? 'true' : 'false';
@@ -4259,7 +4205,6 @@ function editNote(id) {
 // Kembalikan form ke mode "tambah baru"
 function resetNoteForm() {
   editingNoteId = null;
-  selectedNoteMethod = null;
   document.getElementById('note-title-in').value = '';
   document.getElementById('note-cat-in').value = 'finance';
   document.getElementById('note-privacy').value = 'false';
@@ -4343,6 +4288,7 @@ function renderTodoDashboard(all) {
   if (!total) {
     document.getElementById('todo-weeks').innerHTML = '<div class="empty-msg">Belum ada tugas dengan deadline di bulan ini.</div>';
     document.getElementById('todo-week-tables').innerHTML = '';
+    renderTodoNoDate(all);
     return;
   }
 
@@ -4392,6 +4338,36 @@ function renderTodoDashboard(all) {
         </table>
       </div>`;
   }).join('');
+
+  renderTodoNoDate(all);
+}
+
+// Tugas tanpa tanggal deadline — ditampilkan terpisah, tidak terikat bulan/minggu manapun
+function renderTodoNoDate(all) {
+  const noDate = all.filter(t => !t.due_date).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  const titleEl = document.getElementById('todo-nodate-title');
+  const boxEl = document.getElementById('todo-nodate');
+  if (!noDate.length) { titleEl.style.display = 'none'; boxEl.innerHTML = ''; return; }
+  titleEl.style.display = '';
+  boxEl.innerHTML = `
+    <div class="todo-week-table" style="flex:1 1 100%">
+      <table>
+        <thead><tr><th>Tugas</th><th>Status</th></tr></thead>
+        <tbody>
+          ${noDate.map(t => `
+            <tr>
+              <td>
+                ${t.text}
+                <span class="todo-row-actions">
+                  <i class="ti ti-pencil" onclick="editTodo('${t.id}')" title="Edit"></i>
+                  <i class="ti ti-x" onclick="delTodo('${t.id}')" title="Hapus"></i>
+                </span>
+              </td>
+              <td><span class="todo-status-badge ${t.is_done ? 'status-done' : 'status-pending'}" onclick="toggleTodo('${t.id}',${t.is_done})">${t.is_done ? 'Selesai' : 'Belum Selesai'}</span></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 // List rata biasa — dipakai waktu search/filter global aktif di panel To Do
@@ -5502,7 +5478,7 @@ function _renderNoteCards(data) {
       <span class="sn-tape-el ${tc}"></span>
       <div class="note-top" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
         <div class="note-title" style="font-size:14px;font-weight:700">${n.is_pinned?'📌 ':''}${escHtml(n.title)}</div>
-        <span style="font-size:10px;opacity:0.6;white-space:nowrap;margin-left:6px">${n.note_method && NOTE_METHOD_META[n.note_method] ? `<i class="ti ${NOTE_METHOD_META[n.note_method].icon} note-method-badge" title="${NOTE_METHOD_META[n.note_method].label}"></i>` : ''}${catLabel[n.category]||n.category||''}</span>
+        <span style="font-size:10px;opacity:0.6;white-space:nowrap;margin-left:6px">${catLabel[n.category]||n.category||''}</span>
       </div>
       <div class="note-body" style="font-size:12px;opacity:0.8;line-height:1.5">${renderBody(n.body)}</div>
       <div class="note-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
@@ -5530,7 +5506,7 @@ function displayNotesList(data, catLabel) {
     return `<tr class="log-row ${c}" onclick="this.classList.toggle('expanded')">
       <td><div class="log-date-day">${dayNum}</div><div class="log-date-month">${monthYear}</div></td>
       <td>
-        <div class="log-row-title">${n.is_pinned?'📌 ':''}${n.is_private?'🔒 ':''}${n.note_method && NOTE_METHOD_META[n.note_method] ? `<i class="ti ${NOTE_METHOD_META[n.note_method].icon} note-method-badge" title="${NOTE_METHOD_META[n.note_method].label}"></i>` : ''}${escHtml(n.title)}<span class="log-row-type">${catLabel[n.category]||n.category||''}</span></div>
+        <div class="log-row-title">${n.is_pinned?'📌 ':''}${n.is_private?'🔒 ':''}${escHtml(n.title)}<span class="log-row-type">${catLabel[n.category]||n.category||''}</span></div>
         <div class="log-row-body-full">${renderBody(n.body)}</div>
       </td>
       <td class="log-row-actions" onclick="event.stopPropagation()">
@@ -8182,25 +8158,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
-
-<!-- ── Note Method Modal — dialog pilih metode pencatatan saat + New Note ── -->
-<div class="ai-modal-overlay" id="note-method-modal" onclick="if(event.target===this) closeNoteMethodModal()">
-  <div class="ai-modal-box" style="max-width:420px">
-    <div class="ai-modal-head">
-      <span>📝 Pilih Metode Pencatatan</span>
-      <button class="btn-sm" onclick="closeNoteMethodModal()"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="ai-modal-body">
-      <div class="note-method-grid">
-        <button class="note-method-opt" onclick="chooseNoteMethod('cornell')"><i class="ti ti-columns"></i><span>Cornell Method</span></button>
-        <button class="note-method-opt" onclick="chooseNoteMethod('mindmap')"><i class="ti ti-sitemap"></i><span>Mind Mapping</span></button>
-        <button class="note-method-opt" onclick="chooseNoteMethod('outline')"><i class="ti ti-list-numbers"></i><span>Outline Method</span></button>
-        <button class="note-method-opt" onclick="chooseNoteMethod('box')"><i class="ti ti-layout-grid"></i><span>Box Method</span></button>
-        <button class="note-method-opt" onclick="chooseNoteMethod('chart')"><i class="ti ti-table"></i><span>Charting Method</span></button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ── AI Modal (Puter.js) — dipakai fitur Ringkas AI dll ── -->
 <div class="ai-modal-overlay" id="ai-modal-overlay" onclick="if(event.target===this) closeAiModal()">
