@@ -1029,7 +1029,7 @@ textarea { resize: vertical; }
             <i class="ti ti-layout-kanban"></i> Kanban Board
           </button>
           <button class="nav-sub-item" id="nsub-gantt" onclick="switchPanel('gantt',this)">
-            <i class="ti ti-chart-gantt"></i> Gantt Chart
+            <i class="ti ti-timeline"></i> Gantt Chart
           </button>
           <button class="nav-sub-item" id="nsub-matrix" onclick="switchPanel('matrix',this)">
             <i class="ti ti-layout-grid"></i> Decision Matrix
@@ -2335,6 +2335,8 @@ async function renameUserEverywhere(oldName, newName) {
     sb.from('chat_channels').update({ created_by: newName }).eq('created_by', oldName),
     sb.from('attendance').update({ user_name: newName }).eq('user_name', oldName),
     sb.from('leave_requests').update({ user_name: newName }).eq('user_name', oldName),
+    sb.from('password_vault').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('recurring_templates').update({ created_by: newName }).eq('created_by', oldName),
   ];
 
   // online_presence.user_name itu UNIK (key upsert) — kalau baris nama baru kebetulan sudah ada
@@ -3040,7 +3042,7 @@ async function renderKanban() {
     board.innerHTML = `<div class="empty-msg" style="color:#e53e3e">⚠️ Gagal memuat: ${error.message}</div>`;
     return;
   }
-  kanbanCache = data || [];
+  kanbanCache = applyPrivacy(data || []);
   displayKanban(kanbanCache);
 }
 
@@ -3343,7 +3345,7 @@ async function renderRecurring() {
     return;
   }
   document.getElementById('rt-migration-banner').style.display = 'none';
-  recurringCache = data || [];
+  recurringCache = applyPrivacy(data || []);
   displayRecurringTemplates(recurringCache);
 }
 
@@ -3587,8 +3589,9 @@ async function renderProjectTracker() {
     return;
   }
   document.getElementById('pt-migration-banner').style.display = 'none';
-  projectTrackerCache = data || [];
-  displayProjectTracker(data || []);
+  const filtered = applyPrivacy(data || []);
+  projectTrackerCache = filtered;
+  displayProjectTracker(filtered);
 }
 
 function displayProjectTracker(data) {
@@ -5890,7 +5893,7 @@ const quillNp = new Quill('#np-body-editor', {
       <span>Kanban</span>
     </button>
     <button class="bn-item" id="bn-gantt" onclick="switchPanelMobile('gantt',this)" aria-label="Gantt Chart">
-      <i class="ti ti-chart-gantt"></i>
+      <i class="ti ti-timeline"></i>
       <span>Gantt</span>
     </button>
     <button class="bn-item" id="bn-matrix" onclick="switchPanelMobile('matrix',this)" aria-label="Decision Matrix">
