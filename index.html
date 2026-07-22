@@ -262,6 +262,49 @@ textarea { resize: vertical; }
 .kanban-empty { font-size: 11px; opacity: 0.5; text-align: center; padding: 10px 0; }
 @media (max-width: 700px) { .kanban-col { min-width: 78vw; } }
 
+.matrix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.matrix-quad { background: var(--bg2); border-radius: 10px; padding: 10px; border-top: 3px solid #94A3B8; }
+.matrix-quad-header { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; font-weight: 700; padding: 2px 4px 0; }
+.matrix-quad-count { font-size: 11px; font-weight: 700; background: rgba(0,0,0,0.08); border-radius: 999px; padding: 1px 8px; }
+.matrix-quad-sub { font-size: 10px; opacity: 0.6; padding: 2px 4px 8px; }
+.matrix-card { background: var(--bg1); border: 1px solid var(--border2); border-radius: 8px; padding: 10px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.matrix-card-title { font-size: 12.5px; font-weight: 700; margin-bottom: 3px; }
+.matrix-card-meta { font-size: 10.5px; opacity: 0.65; margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+.matrix-card-toggles { display: flex; gap: 6px; }
+.matrix-toggle { flex: 1; font-size: 10.5px; padding: 5px 4px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg1); cursor: pointer; opacity: 0.55; }
+.matrix-toggle.on { opacity: 1; border-color: transparent; background: #FEF3C7; font-weight: 700; }
+@media (max-width: 700px) { .matrix-grid { grid-template-columns: 1fr; } }
+
+/* ── Gantt Chart ─────────────────────── */
+.gantt-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.gantt-month-nav { display: flex; align-items: center; gap: 6px; }
+.gantt-month-nav button { padding: 4px 9px; border-radius: 6px; border: 1px solid var(--border2); background: var(--surface); cursor: pointer; font-size: 13px; }
+.gantt-month-label { font-size: 13px; font-weight: 700; min-width: 130px; text-align: center; }
+.gantt-scroll { overflow-x: auto; border: 1px solid var(--border2); border-radius: 10px; background: var(--surface); }
+.gantt-grid { display: grid; min-width: max-content; }
+.gantt-row { display: grid; grid-template-columns: 200px 1fr; border-bottom: 1px solid var(--border); }
+.gantt-row.gantt-head-row { position: sticky; top: 0; background: var(--bg2); z-index: 2; border-bottom: 1px solid var(--border2); }
+.gantt-row:last-child { border-bottom: none; }
+.gantt-label-cell { padding: 6px 8px; font-size: 11.5px; position: sticky; left: 0; background: var(--surface); z-index: 1; border-right: 1px solid var(--border2); display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+.gantt-head-row .gantt-label-cell { background: var(--bg2); font-weight: 700; z-index: 3; }
+.gantt-label-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 184px; }
+.gantt-label-meta { font-size: 9.5px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 184px; }
+.gantt-days { position: relative; display: grid; }
+.gantt-day-cell { border-right: 1px solid var(--border); text-align: center; font-size: 9.5px; color: var(--text3); padding: 6px 0; }
+.gantt-day-cell.gantt-today-col { background: rgba(59,130,246,0.08); color: var(--accent); font-weight: 700; }
+.gantt-day-cell.gantt-weekend-col { background: rgba(0,0,0,0.025); }
+.gantt-bar-track { position: relative; min-height: 30px; }
+.gantt-bar { position: absolute; top: 5px; height: 20px; border-radius: 6px; font-size: 9.5px; color: #fff; display: flex; align-items: center; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 1px 2px rgba(0,0,0,0.15); cursor: default; }
+.gantt-empty { font-size: 12px; opacity: 0.55; text-align: center; padding: 20px 0; }
+.gantt-nodate-box { margin-top: 12px; border: 1px dashed var(--border2); border-radius: 10px; padding: 10px 12px; }
+.gantt-nodate-title { font-size: 11.5px; font-weight: 700; color: var(--text3); margin-bottom: 6px; }
+.gantt-nodate-item { font-size: 11.5px; padding: 4px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 8px; }
+.gantt-nodate-item:last-child { border-bottom: none; }
+.gantt-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 10.5px; color: var(--text2); margin-top: 8px; }
+.gantt-legend span { display: flex; align-items: center; gap: 4px; }
+.gantt-legend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+@media (max-width: 700px) { .gantt-row { grid-template-columns: 130px 1fr; } .gantt-label-cell, .gantt-label-title, .gantt-label-meta { max-width: 114px; } }
+
 /* ── Recurring Task ────────────────────────── */
 .rt-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .rt-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .03em; opacity: 0.55; padding: 6px 10px; border-bottom: 1px solid var(--border2); }
@@ -985,6 +1028,12 @@ textarea { resize: vertical; }
           <button class="nav-sub-item" id="nsub-kanban" onclick="switchPanel('kanban',this)">
             <i class="ti ti-layout-kanban"></i> Kanban Board
           </button>
+          <button class="nav-sub-item" id="nsub-gantt" onclick="switchPanel('gantt',this)">
+            <i class="ti ti-chart-gantt"></i> Gantt Chart
+          </button>
+          <button class="nav-sub-item" id="nsub-matrix" onclick="switchPanel('matrix',this)">
+            <i class="ti ti-layout-grid"></i> Decision Matrix
+          </button>
           <button class="nav-sub-item" id="nsub-recurring" onclick="switchPanel('recurring',this)">
             <i class="ti ti-repeat"></i> Recurring Task
           </button>
@@ -1382,6 +1431,54 @@ textarea { resize: vertical; }
       <div class="panel" id="panel-kanban">
         <div id="kanban-board" class="kanban-board">
           <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat Kanban...</div>
+        </div>
+      </div>
+
+      <!-- ── Gantt Chart ──────────────────────── -->
+      <div class="panel" id="panel-gantt">
+        <div class="gantt-toolbar">
+          <div class="gantt-month-nav">
+            <button onclick="ganttChangeMonth(-1)" aria-label="Bulan sebelumnya" title="Bulan sebelumnya"><i class="ti ti-chevron-left"></i></button>
+            <span class="gantt-month-label" id="gantt-month-label">-</span>
+            <button onclick="ganttChangeMonth(1)" aria-label="Bulan berikutnya" title="Bulan berikutnya"><i class="ti ti-chevron-right"></i></button>
+          </div>
+          <button onclick="ganttGoToday()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:12px">Hari ini</button>
+          <select class="global-filter" id="gantt-status-filter" onchange="displayGanttFromCache()">
+            <option value="">Semua Status</option>
+            <option value="not_started">⬜ Not Started</option>
+            <option value="in_progress">🔵 In Progress</option>
+            <option value="on_hold">⏸️ On Hold</option>
+            <option value="overdue">🔴 Overdue</option>
+            <option value="skipped">⏭️ Skipped</option>
+            <option value="done">✅ Done</option>
+          </select>
+        </div>
+        <div class="gantt-scroll">
+          <div id="gantt-grid" class="gantt-grid">
+            <div class="gantt-empty"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat Gantt Chart...</div>
+          </div>
+        </div>
+        <div class="gantt-legend">
+          <span><i style="background:#94A3B8"></i> Not Started</span>
+          <span><i style="background:#3B82F6"></i> In Progress</span>
+          <span><i style="background:#F97316"></i> On Hold</span>
+          <span><i style="background:#EF4444"></i> Overdue</span>
+          <span><i style="background:#8B5CF6"></i> Skipped</span>
+          <span><i style="background:#22C55E"></i> Done</span>
+        </div>
+        <div class="gantt-nodate-box" id="gantt-nodate-box" style="display:none">
+          <div class="gantt-nodate-title">📌 Tanpa Tanggal (tidak tampil di timeline)</div>
+          <div id="gantt-nodate-list"></div>
+        </div>
+      </div>
+
+      <!-- ── Decision Matrix ──────────────────── -->
+      <div class="panel" id="panel-matrix">
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#1E40AF">
+          🎯 <strong>Decision Matrix (Eisenhower)</strong> — Gabungan To Do + Time Plan Tracker yang belum selesai. Tap tombol 🔥 Urgent / ⭐ Penting di tiap kartu untuk pindah kotak.
+        </div>
+        <div class="matrix-grid" id="matrix-grid">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat Decision Matrix...</div>
         </div>
       </div>
 
@@ -2435,6 +2532,8 @@ async function switchPanel(id, el) {
     schedule: 'Daily Schedule',
     tracker: 'Time Plan Tracker',
     kanban: 'Kanban Board',
+    gantt: 'Gantt Chart',
+    matrix: 'Decision Matrix',
     recurring: 'Recurring Task',
     logbook: 'Logbook',
     notes: 'Notes',
@@ -2457,6 +2556,8 @@ async function switchPanel(id, el) {
   if (id === 'schedule') await renderSchedule();
   else if (id === 'tracker') { await renderTracker(); await renderProjectTracker(); }
   else if (id === 'kanban') await renderKanban();
+  else if (id === 'gantt') await renderGantt();
+  else if (id === 'matrix') await renderMatrix();
   else if (id === 'recurring') await renderRecurring();
   else if (id === 'logbook') await renderLogbook();
   else if (id === 'notes') await renderNotes();
@@ -2972,6 +3073,214 @@ async function kanbanChangeStatus(id, newStatus) {
   const { error } = await sb.from('time_plan_tracker').update({ status: newStatus }).eq('id', id);
   if (error) return alert('Gagal ubah status: ' + error.message);
   await renderKanban();
+}
+
+// ── DECISION MATRIX (Eisenhower) — gabungan todos + time_plan_tracker ──
+const MATRIX_QUADRANTS = [
+  { urgent: true,  important: true,  label: '🔴 Kerjakan Sekarang', sub: 'Urgent & Penting', color: '#EF4444' },
+  { urgent: false, important: true,  label: '🔵 Jadwalkan',         sub: 'Penting, Tidak Urgent', color: '#3B82F6' },
+  { urgent: true,  important: false, label: '🟡 Delegasikan',       sub: 'Urgent, Tidak Penting', color: '#F59E0B' },
+  { urgent: false, important: false, label: '⚪ Nanti / Eliminasi', sub: 'Tidak Urgent, Tidak Penting', color: '#94A3B8' }
+];
+let matrixCache = [];
+
+async function renderMatrix() {
+  const grid = document.getElementById('matrix-grid');
+  grid.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat Decision Matrix...</div>';
+  let rTodo, rTrack;
+  try {
+    [rTodo, rTrack] = await Promise.all([
+      withTimeout(sb.from('todos').select('*').eq('is_done', false)),
+      withTimeout(sb.from('time_plan_tracker').select('*').not('status', 'in', '(done,skipped)'))
+    ]);
+  } catch (e) {
+    grid.innerHTML = `<div class="empty-msg" style="color:#e53e3e">⚠️ ${e.message}</div>`;
+    return;
+  }
+  if (rTodo.error || rTrack.error) {
+    grid.innerHTML = `<div class="empty-msg" style="color:#e53e3e">⚠️ Gagal memuat: ${(rTodo.error || rTrack.error).message}</div>`;
+    return;
+  }
+  const combined = [
+    ...applyOwner(rTodo.data || []).map(t => ({ ...t, _src: 'todos', _title: t.text })),
+    ...applyOwner(rTrack.data || []).map(t => ({ ...t, _src: 'tracker', _title: t.subject }))
+  ];
+  matrixCache = combined;
+  displayMatrix(combined);
+}
+
+function displayMatrix(data) {
+  const grid = document.getElementById('matrix-grid');
+  grid.innerHTML = MATRIX_QUADRANTS.map(q => {
+    const items = (data || []).filter(t => !!t.is_urgent === q.urgent && !!t.is_important === q.important);
+    const cards = items.map(t => `
+      <div class="matrix-card">
+        <div class="matrix-card-title">${t.is_private ? '🔒 ' : ''}${escHtml(t._title || '')}</div>
+        <div class="matrix-card-meta">
+          <span>${t._src === 'todos' ? '📋 To Do' : '📅 Tracker'}</span>
+          ${t.due_date ? `<span><i class="ti ti-calendar"></i> ${fmtDate(t.due_date)}</span>` : ''}
+        </div>
+        <div class="matrix-card-toggles">
+          <button class="matrix-toggle ${t.is_urgent ? 'on' : ''}" onclick="toggleMatrixFlag('${t._src}','${t.id}','is_urgent',${!!t.is_urgent})">🔥 Urgent</button>
+          <button class="matrix-toggle ${t.is_important ? 'on' : ''}" onclick="toggleMatrixFlag('${t._src}','${t.id}','is_important',${!!t.is_important})">⭐ Penting</button>
+        </div>
+      </div>
+    `).join('');
+    return `<div class="matrix-quad" style="border-top-color:${q.color}">
+      <div class="matrix-quad-header"><span>${q.label}</span><span class="matrix-quad-count">${items.length}</span></div>
+      <div class="matrix-quad-sub">${q.sub}</div>
+      ${cards || '<div class="kanban-empty">Kosong</div>'}
+    </div>`;
+  }).join('');
+}
+
+// Toggle Urgent/Penting langsung dari kartu — nulis ke tabel asal (todos atau time_plan_tracker)
+async function toggleMatrixFlag(src, id, field, current) {
+  const table = src === 'todos' ? 'todos' : 'time_plan_tracker';
+  const { error } = await sb.from(table).update({ [field]: !current }).eq('id', id);
+  if (error) return alert('Gagal ubah: ' + error.message);
+  await renderMatrix();
+}
+
+// ── Gantt Chart — timeline visual dari data Time Plan Tracker (tabel sama, bulan berjalan) ──
+const GANTT_BAR_COLOR = {
+  not_started: '#94A3B8',
+  in_progress: '#3B82F6',
+  on_hold: '#F97316',
+  overdue: '#EF4444',
+  skipped: '#8B5CF6',
+  done: '#22C55E'
+};
+let ganttCache = [];
+let ganttViewYear = new Date().getFullYear();
+let ganttViewMonth = new Date().getMonth(); // 0-11
+
+async function renderGantt() {
+  const grid = document.getElementById('gantt-grid');
+  grid.innerHTML = '<div class="gantt-empty"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat Gantt Chart...</div>';
+  let data, error;
+  try {
+    ({ data, error } = await withTimeout(sb.from('time_plan_tracker').select('*').order('start_date', { ascending: true })));
+  } catch (e) {
+    grid.innerHTML = `<div class="gantt-empty" style="color:#e53e3e">⚠️ ${e.message}</div>`;
+    return;
+  }
+  if (error) {
+    grid.innerHTML = `<div class="gantt-empty" style="color:#e53e3e">⚠️ Gagal memuat: ${error.message}</div>`;
+    return;
+  }
+  ganttCache = data || [];
+  displayGanttFromCache();
+}
+
+function displayGanttFromCache() {
+  displayGantt(ganttCache);
+}
+
+function ganttChangeMonth(delta) {
+  ganttViewMonth += delta;
+  if (ganttViewMonth < 0) { ganttViewMonth = 11; ganttViewYear--; }
+  else if (ganttViewMonth > 11) { ganttViewMonth = 0; ganttViewYear++; }
+  displayGanttFromCache();
+}
+
+function ganttGoToday() {
+  const now = new Date();
+  ganttViewYear = now.getFullYear();
+  ganttViewMonth = now.getMonth();
+  displayGanttFromCache();
+}
+
+function displayGantt(allData) {
+  const grid = document.getElementById('gantt-grid');
+  const statusF = document.getElementById('gantt-status-filter').value;
+  document.getElementById('gantt-month-label').textContent = `${MONTHS[ganttViewMonth]} ${ganttViewYear}`;
+
+  let data = allData || [];
+  if (statusF) data = data.filter(t => (t.status || 'not_started') === statusF);
+
+  const monthStart = new Date(ganttViewYear, ganttViewMonth, 1);
+  const monthEnd = new Date(ganttViewYear, ganttViewMonth + 1, 0); // last day of month
+  const daysInMonth = monthEnd.getDate();
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Pisahkan item tanpa tanggal sama sekali
+  const noDateItems = data.filter(t => !t.start_date && !t.due_date);
+  const dateItems = data.filter(t => t.start_date || t.due_date);
+
+  // Hanya tampilkan item yang overlap dengan bulan yang sedang dilihat
+  const visibleItems = dateItems.filter(t => {
+    const s = t.start_date ? new Date(t.start_date + 'T00:00:00') : (t.due_date ? new Date(t.due_date + 'T00:00:00') : null);
+    const e = t.due_date ? new Date(t.due_date + 'T00:00:00') : (t.start_date ? new Date(t.start_date + 'T00:00:00') : null);
+    if (!s || !e) return false;
+    return s <= monthEnd && e >= monthStart;
+  });
+
+  // Header row — angka tanggal
+  const dayHeaderCells = Array.from({ length: daysInMonth }, (_, i) => {
+    const d = i + 1;
+    const dateObj = new Date(ganttViewYear, ganttViewMonth, d);
+    const isToday = dateObj.toISOString().slice(0, 10) === todayStr;
+    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+    return `<div class="gantt-day-cell${isToday ? ' gantt-today-col' : ''}${isWeekend ? ' gantt-weekend-col' : ''}" style="width:26px">${d}</div>`;
+  }).join('');
+
+  const headRow = `<div class="gantt-row gantt-head-row">
+    <div class="gantt-label-cell">Task</div>
+    <div class="gantt-days" style="grid-template-columns:repeat(${daysInMonth},26px)">${dayHeaderCells}</div>
+  </div>`;
+
+  let bodyRows = '';
+  if (!visibleItems.length) {
+    bodyRows = `<div class="gantt-row"><div class="gantt-empty" style="grid-column:1/-1">Tidak ada task dengan tanggal di ${MONTHS[ganttViewMonth]} ${ganttViewYear}.</div></div>`;
+  } else {
+    bodyRows = visibleItems.map(t => {
+      const rawStart = t.start_date ? new Date(t.start_date + 'T00:00:00') : new Date(t.due_date + 'T00:00:00');
+      const rawEnd = t.due_date ? new Date(t.due_date + 'T00:00:00') : new Date(t.start_date + 'T00:00:00');
+      const clipStart = rawStart < monthStart ? monthStart : rawStart;
+      const clipEnd = rawEnd > monthEnd ? monthEnd : rawEnd;
+      const startDay = clipStart.getDate(); // 1-based
+      const spanDays = Math.max(1, Math.round((clipEnd - clipStart) / 86400000) + 1);
+      const leftPx = (startDay - 1) * 26;
+      const widthPx = spanDays * 26 - 4;
+      const color = GANTT_BAR_COLOR[t.status || 'not_started'] || '#94A3B8';
+      const barLabel = `${t.is_private ? '🔒 ' : ''}${escHtml(t.subject)}`;
+      const dayCells = Array.from({ length: daysInMonth }, (_, i) => {
+        const d = i + 1;
+        const dateObj = new Date(ganttViewYear, ganttViewMonth, d);
+        const isToday = dateObj.toISOString().slice(0, 10) === todayStr;
+        const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+        return `<div class="gantt-day-cell${isToday ? ' gantt-today-col' : ''}${isWeekend ? ' gantt-weekend-col' : ''}" style="width:26px;min-height:30px;padding:0"></div>`;
+      }).join('');
+      return `<div class="gantt-row">
+        <div class="gantt-label-cell">
+          <div class="gantt-label-title" title="${escAttr(t.subject)}">${escHtml(t.subject)}</div>
+          <div class="gantt-label-meta">${t.assignment ? escHtml(t.assignment) + ' · ' : ''}${PT_STATUS_LABEL[t.status] || 'Not Started'}</div>
+        </div>
+        <div class="gantt-bar-track">
+          <div class="gantt-days" style="grid-template-columns:repeat(${daysInMonth},26px);position:absolute;inset:0">${dayCells}</div>
+          <div class="gantt-bar" style="left:${leftPx}px;width:${widthPx}px;background:${color}" title="${escAttr(t.subject)}${t.start_date ? ' | Mulai: ' + fmtDate(t.start_date) : ''}${t.due_date ? ' | Selesai: ' + fmtDate(t.due_date) : ''}">${barLabel}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  grid.innerHTML = headRow + bodyRows;
+
+  // Item tanpa tanggal — tampil di bawah sebagai daftar terpisah
+  const nodateBox = document.getElementById('gantt-nodate-box');
+  const nodateList = document.getElementById('gantt-nodate-list');
+  if (noDateItems.length) {
+    nodateBox.style.display = 'block';
+    nodateList.innerHTML = noDateItems.map(t => `
+      <div class="gantt-nodate-item">
+        <span>${t.is_private ? '🔒 ' : ''}${escHtml(t.subject)}${t.assignment ? ' — ' + escHtml(t.assignment) : ''}</span>
+        <span class="status-pill ${PT_STATUS_CLASS[t.status] || 's-not-started'}">${PT_STATUS_LABEL[t.status] || t.status}</span>
+      </div>`).join('');
+  } else {
+    nodateBox.style.display = 'none';
+    nodateList.innerHTML = '';
+  }
 }
 
 // ── Recurring Task ──────────────────────────────────────────────
@@ -4529,6 +4838,8 @@ function setupRealtime() {
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'time_plan_tracker' }, () => {
       if (currentPanel === 'tracker' && editingProjectId === null) renderProjectTracker();
+      if (currentPanel === 'kanban') renderKanban();
+      if (currentPanel === 'gantt') renderGantt();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'logbook_entries' }, () => {
       if (currentPanel === 'logbook') debouncedRenderLogbook();
@@ -4584,7 +4895,7 @@ function toggleNavGroup(groupId) {
 // Open the nav-group that contains the given panel id
 function openNavGroupForPanel(panelId) {
   const map = {
-    schedule: 'ng-daily', tracker: 'ng-daily', kanban: 'ng-daily', recurring: 'ng-daily', logbook: 'ng-daily',
+    schedule: 'ng-daily', tracker: 'ng-daily', kanban: 'ng-daily', gantt: 'ng-daily', matrix: 'ng-daily', recurring: 'ng-daily', logbook: 'ng-daily',
     notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
     absen: 'ng-hr',
@@ -5577,6 +5888,14 @@ const quillNp = new Quill('#np-body-editor', {
     <button class="bn-item" onclick="switchPanelMobile('kanban',this)" aria-label="Kanban Board">
       <i class="ti ti-layout-kanban"></i>
       <span>Kanban</span>
+    </button>
+    <button class="bn-item" id="bn-gantt" onclick="switchPanelMobile('gantt',this)" aria-label="Gantt Chart">
+      <i class="ti ti-chart-gantt"></i>
+      <span>Gantt</span>
+    </button>
+    <button class="bn-item" id="bn-matrix" onclick="switchPanelMobile('matrix',this)" aria-label="Decision Matrix">
+      <i class="ti ti-layout-grid"></i>
+      <span>Matrix</span>
     </button>
     <button class="bn-item" onclick="switchPanelMobile('recurring',this)" aria-label="Recurring Task">
       <i class="ti ti-repeat"></i>
