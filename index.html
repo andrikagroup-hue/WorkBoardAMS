@@ -502,21 +502,21 @@ textarea { resize: vertical; }
 .todo-rate-bar { height: 6px; border-radius: 4px; background: #E1DCEE; overflow: hidden; }
 .todo-rate-fill { height: 100%; background: var(--accent); border-radius: 4px; }
 
-.todo-weeks { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 16px; }
-.todo-week-card { flex: 0 0 150px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 10px; text-align: center; }
+.todo-weeks { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.todo-week-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 10px; text-align: center; min-width: 0; }
 .todo-week-mini { display: flex; justify-content: space-between; font-size: 10px; color: var(--text2); background: var(--bg2); border-radius: 6px; padding: 3px 8px; margin-bottom: 4px; }
 .todo-week-mini-alt { background: #F1EEF7; }
 .todo-donut { width: 84px; height: 84px; border-radius: 50%; margin: 8px auto; display: flex; align-items: center; justify-content: center; }
 .todo-donut-hole { width: 58px; height: 58px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--text1); }
 .todo-week-label { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.4px; }
 
-.todo-week-tables { display: flex; gap: 12px; overflow-x: auto; }
+.todo-week-tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 .todo-nodate-title { font-size: 12px; font-weight: 700; color: var(--text2); margin: 22px 0 10px; padding-top: 14px; border-top: 0.5px solid var(--border); }
-.todo-week-table { flex: 0 0 220px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 8px; }
-.todo-week-table table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.todo-week-table { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 8px; min-width: 0; }
+.todo-week-table table { width: 100%; border-collapse: collapse; font-size: 11.5px; table-layout: fixed; }
 .todo-week-table th { background: var(--bg2); text-align: left; padding: 6px 8px; font-size: 10px; color: var(--text2); }
 .todo-week-table th:last-child, .todo-week-table td:last-child { text-align: right; width: 46px; }
-.todo-week-table td { padding: 8px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+.todo-week-table td { padding: 8px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; word-break: break-word; overflow-wrap: anywhere; }
 .todo-week-table tr:last-child td { border-bottom: none; }
 .todo-row-actions { display: inline-flex; gap: 8px; }
 .todo-row-actions i { cursor: pointer; font-size: 14px; color: var(--text3); padding: 2px; }
@@ -4351,7 +4351,7 @@ function renderTodoNoDate(all) {
   if (!noDate.length) { titleEl.style.display = 'none'; boxEl.innerHTML = ''; return; }
   titleEl.style.display = '';
   boxEl.innerHTML = `
-    <div class="todo-week-table" style="flex:1 1 100%">
+    <div class="todo-week-table" style="grid-column:span 2;justify-self:start;max-width:640px;width:100%">
       <table>
         <thead><tr><th>Tugas</th><th>Status</th><th></th></tr></thead>
         <tbody>
