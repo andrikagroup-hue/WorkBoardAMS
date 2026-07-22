@@ -287,6 +287,9 @@ textarea { resize: vertical; }
 .s-skipped { background: #EDE9FE; color: #5B21B6; }
 .s-on-hold { background: #FFF7ED; color: #C2410C; }
 .s-overdue { background: #FEE2E2; color: #7F1D1D; }
+.s-prio-low { background: #E3EFE1; color: #3F6C4A; }
+.s-prio-medium { background: #FBF1D6; color: #92661A; }
+.s-prio-high { background: #F6D9D6; color: #99372E; }
 .task-prog-bar { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-top: 3px; }
 .task-prog-fill { height: 100%; background: var(--accent); border-radius: 2px; }
 .tracker-add { background: var(--bg2); border-radius: var(--radius); padding: 12px; margin-top: 12px; }
@@ -1476,6 +1479,8 @@ textarea { resize: vertical; }
             <tr>
               <th>Subject</th>
               <th>Assignment</th>
+              <th>Priority</th>
+              <th>Category</th>
               <th>Status</th>
               <th>Schedule</th>
               <th>Start Date</th>
@@ -1486,7 +1491,7 @@ textarea { resize: vertical; }
             </tr>
           </thead>
           <tbody id="pt-tbody">
-            <tr><td colspan="9" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Memuat...</td></tr>
+            <tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Memuat...</td></tr>
           </tbody>
         </table>
 
@@ -1495,6 +1500,12 @@ textarea { resize: vertical; }
           <div class="form-row">
             <input id="pt-new-subject" placeholder="Subject (mis: NPWP PT)..." style="flex:2" />
             <input id="pt-new-assignment" placeholder="Assignment (mis: Notaris)" style="flex:1" />
+            <select id="pt-new-priority" title="Priority">
+              <option value="low">🟢 Low</option>
+              <option value="medium" selected>🟡 Medium</option>
+              <option value="high">🔴 High</option>
+            </select>
+            <input id="pt-new-category" placeholder="Category (mis: Work)" list="pt-category-list" style="flex:1" />
             <select id="pt-new-status">
               <option value="in_progress" selected>In Progress</option>
               <option value="done">Done</option>
@@ -1517,6 +1528,18 @@ textarea { resize: vertical; }
             </select>
             <button class="btn-sm btn-primary" id="pt-save-btn" onclick="addProjectRow()">Tambah</button>
           </div>
+          <datalist id="pt-category-list">
+            <option value="Work"></option>
+            <option value="Personal"></option>
+            <option value="Home"></option>
+            <option value="Family"></option>
+            <option value="Health"></option>
+            <option value="Finance"></option>
+            <option value="Study / Learning"></option>
+            <option value="Errands"></option>
+            <option value="Calls / Emails"></option>
+            <option value="Lainnya"></option>
+          </datalist>
         </div>
       </div>
 
@@ -3136,6 +3159,8 @@ const PT_STATUS_CLASS = {
   on_hold: 's-on-hold',
   overdue: 's-overdue'
 };
+const PT_PRIORITY_LABEL = { low: '🟢 Low', medium: '🟡 Medium', high: '🔴 High' };
+const PT_PRIORITY_CLASS = { low: 's-prio-low', medium: 's-prio-medium', high: 's-prio-high' };
 
 function onPtSearchInput() {
   clearTimeout(ptSearchDebounce);
@@ -3685,7 +3710,7 @@ async function generateDueRecurringTasks() {
 
 async function renderProjectTracker() {
   const tbody = document.getElementById('pt-tbody');
-  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Memuat...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Memuat...</td></tr>';
 
   const q = (document.getElementById('pt-search').value || '').trim().replace(/[%,]/g, '');
   const statusF = document.getElementById('pt-status-filter').value;
@@ -3701,15 +3726,15 @@ async function renderProjectTracker() {
   let data, error;
   try { ({ data, error } = await withTimeout(query)); }
   catch (e) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ ${e.message}</td></tr>`;
     return;
   }
   if (error) {
     if (error.message && error.message.includes('time_plan_tracker')) {
       document.getElementById('pt-migration-banner').style.display = 'block';
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Belum ada data.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Belum ada data.</td></tr>';
     } else {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ Gagal memuat: ${error.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ Gagal memuat: ${error.message}</td></tr>`;
     }
     return;
   }
@@ -3722,7 +3747,7 @@ async function renderProjectTracker() {
 function displayProjectTracker(data) {
   const tbody = document.getElementById('pt-tbody');
   if (!data || !data.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Tidak ada item yang sesuai.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Tidak ada item yang sesuai.</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(t => editingProjectId === t.id ? ptEditRow(t) : ptViewRow(t)).join('');
@@ -3732,6 +3757,8 @@ function ptViewRow(t) {
   return `<tr>
     <td>${escHtml(t.subject)}</td>
     <td>${escHtml(t.assignment || '-')}</td>
+    <td><span class="status-pill ${PT_PRIORITY_CLASS[t.priority] || 's-prog'}">${PT_PRIORITY_LABEL[t.priority] || '-'}</span></td>
+    <td style="font-size:12px">${escHtml(t.category || '-')}</td>
     <td><span class="status-pill ${PT_STATUS_CLASS[t.status] || 's-prog'}">${PT_STATUS_LABEL[t.status] || t.status}</span></td>
     <td style="font-size:12px">${escHtml(t.schedule_duration || '-')}</td>
     <td style="font-size:12px">${t.start_date ? fmtDate(t.start_date) : '-'}</td>
@@ -3749,6 +3776,12 @@ function ptEditRow(t) {
   return `<tr class="pt-edit-row">
     <td><input id="pt-edit-subject" value="${escAttr(t.subject)}" style="width:100%" /></td>
     <td><input id="pt-edit-assignment" value="${escAttr(t.assignment || '')}" style="width:100%" /></td>
+    <td><select id="pt-edit-priority" style="width:100%">
+      <option value="low" ${t.priority === 'low' ? 'selected' : ''}>🟢 Low</option>
+      <option value="medium" ${!t.priority || t.priority === 'medium' ? 'selected' : ''}>🟡 Medium</option>
+      <option value="high" ${t.priority === 'high' ? 'selected' : ''}>🔴 High</option>
+    </select></td>
+    <td><input id="pt-edit-category" value="${escAttr(t.category || '')}" list="pt-category-list" style="width:100%" /></td>
     <td><select id="pt-edit-status" style="width:100%">
       <option value="in_progress" ${t.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
       <option value="done" ${t.status === 'done' ? 'selected' : ''}>Done</option>
@@ -3791,6 +3824,8 @@ async function saveProjectRow(id) {
   const payload = {
     subject,
     assignment: document.getElementById('pt-edit-assignment').value.trim() || null,
+    priority: document.getElementById('pt-edit-priority').value,
+    category: document.getElementById('pt-edit-category').value.trim() || null,
     status: document.getElementById('pt-edit-status').value,
     schedule_duration: document.getElementById('pt-edit-schedule').value.trim() || null,
     start_date: document.getElementById('pt-edit-start').value || null,
@@ -3818,6 +3853,8 @@ async function addProjectRow() {
   const payload = {
     subject,
     assignment: document.getElementById('pt-new-assignment').value.trim() || null,
+    priority: document.getElementById('pt-new-priority').value,
+    category: document.getElementById('pt-new-category').value.trim() || null,
     status: document.getElementById('pt-new-status').value,
     schedule_duration: document.getElementById('pt-new-schedule').value.trim() || null,
     start_date: document.getElementById('pt-new-start').value || null,
@@ -3828,10 +3865,11 @@ async function addProjectRow() {
   };
   const { error } = await sb.from('time_plan_tracker').insert(payload);
   if (error) return alert('Gagal menambah: ' + error.message);
-  ['pt-new-subject', 'pt-new-assignment', 'pt-new-schedule', 'pt-new-notes'].forEach(id => document.getElementById(id).value = '');
+  ['pt-new-subject', 'pt-new-assignment', 'pt-new-schedule', 'pt-new-notes', 'pt-new-category'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('pt-new-start').value = '';
   document.getElementById('pt-new-due').value = '';
   document.getElementById('pt-new-status').value = 'in_progress';
+  document.getElementById('pt-new-priority').value = 'medium';
   document.getElementById('pt-new-privacy').value = 'false';
   await renderProjectTracker();
 }
