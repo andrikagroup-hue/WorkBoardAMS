@@ -491,7 +491,7 @@ textarea { resize: vertical; }
 .todo-month-picker { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .todo-month-picker input[type="month"] { font-size: 12px; }
 
-.todo-summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+.todo-summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 20px; }
 .todo-stat-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 10px 12px; text-align: center; }
 .todo-stat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; color: var(--text3); margin-bottom: 6px; }
 .todo-stat-value { font-size: 20px; font-weight: 700; color: var(--text1); }
@@ -511,14 +511,15 @@ textarea { resize: vertical; }
 .todo-week-label { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.4px; }
 
 .todo-week-tables { display: flex; gap: 12px; overflow-x: auto; }
-.todo-nodate-title { font-size: 12px; font-weight: 700; color: var(--text2); margin: 4px 0 8px; }
-.todo-week-table { flex: 0 0 220px; }
+.todo-nodate-title { font-size: 12px; font-weight: 700; color: var(--text2); margin: 22px 0 10px; padding-top: 14px; border-top: 0.5px solid var(--border); }
+.todo-week-table { flex: 0 0 220px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 8px; }
 .todo-week-table table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
 .todo-week-table th { background: var(--bg2); text-align: left; padding: 6px 8px; font-size: 10px; color: var(--text2); }
-.todo-week-table td { padding: 6px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
-.todo-row-actions { display: inline-flex; gap: 4px; margin-left: 6px; opacity: 0; transition: opacity 0.12s; }
-.todo-week-table tr:hover .todo-row-actions { opacity: 1; }
-.todo-row-actions i { cursor: pointer; font-size: 12px; color: var(--text3); }
+.todo-week-table th:last-child, .todo-week-table td:last-child { text-align: right; width: 46px; }
+.todo-week-table td { padding: 8px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+.todo-week-table tr:last-child td { border-bottom: none; }
+.todo-row-actions { display: inline-flex; gap: 8px; }
+.todo-row-actions i { cursor: pointer; font-size: 14px; color: var(--text3); padding: 2px; }
 .todo-row-actions i:hover { color: var(--danger); }
 .todo-status-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
 .status-done { background: #DCEFE9; color: #1F7A5C; }
@@ -4321,18 +4322,18 @@ function renderTodoDashboard(all) {
     return `
       <div class="todo-week-table">
         <table>
-          <thead><tr><th>Tugas</th><th>Status</th></tr></thead>
+          <thead><tr><th>Tugas</th><th>Status</th><th></th></tr></thead>
           <tbody>
             ${arr.map(t => `
               <tr>
+                <td>${t.text}</td>
+                <td><span class="todo-status-badge ${t.is_done ? 'status-done' : 'status-pending'}" onclick="toggleTodo('${t.id}',${t.is_done})">${t.is_done ? 'Selesai' : 'Belum Selesai'}</span></td>
                 <td>
-                  ${t.text}
                   <span class="todo-row-actions">
                     <i class="ti ti-pencil" onclick="editTodo('${t.id}')" title="Edit"></i>
                     <i class="ti ti-x" onclick="delTodo('${t.id}')" title="Hapus"></i>
                   </span>
                 </td>
-                <td><span class="todo-status-badge ${t.is_done ? 'status-done' : 'status-pending'}" onclick="toggleTodo('${t.id}',${t.is_done})">${t.is_done ? 'Selesai' : 'Belum Selesai'}</span></td>
               </tr>`).join('')}
           </tbody>
         </table>
@@ -4352,18 +4353,18 @@ function renderTodoNoDate(all) {
   boxEl.innerHTML = `
     <div class="todo-week-table" style="flex:1 1 100%">
       <table>
-        <thead><tr><th>Tugas</th><th>Status</th></tr></thead>
+        <thead><tr><th>Tugas</th><th>Status</th><th></th></tr></thead>
         <tbody>
           ${noDate.map(t => `
             <tr>
+              <td>${t.text}</td>
+              <td><span class="todo-status-badge ${t.is_done ? 'status-done' : 'status-pending'}" onclick="toggleTodo('${t.id}',${t.is_done})">${t.is_done ? 'Selesai' : 'Belum Selesai'}</span></td>
               <td>
-                ${t.text}
                 <span class="todo-row-actions">
                   <i class="ti ti-pencil" onclick="editTodo('${t.id}')" title="Edit"></i>
                   <i class="ti ti-x" onclick="delTodo('${t.id}')" title="Hapus"></i>
                 </span>
               </td>
-              <td><span class="todo-status-badge ${t.is_done ? 'status-done' : 'status-pending'}" onclick="toggleTodo('${t.id}',${t.is_done})">${t.is_done ? 'Selesai' : 'Belum Selesai'}</span></td>
             </tr>`).join('')}
         </tbody>
       </table>
