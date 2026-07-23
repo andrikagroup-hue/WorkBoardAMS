@@ -243,29 +243,42 @@ textarea { resize: vertical; }
 }
 .ev-del:hover { color: var(--danger); background: #FEE2E2; }
 
-/* ── Schedule ──────────────────────────────── */
+/* ── Schedule (gaya spreadsheet, warna tema WorkBoard) ── */
 .sched-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.sched-grid { display: grid; grid-template-columns: 60px 1fr; }
+.sched-grid-wrap {
+  border: 1px solid var(--border2); border-radius: var(--radius-lg);
+  overflow: hidden; background: var(--surface);
+}
+.sched-grid-header {
+  background: var(--accent); color: var(--sb-text);
+  padding: 10px 16px; font-size: 13px; font-weight: 600;
+  letter-spacing: .02em; display: flex; align-items: center; gap: 8px;
+  text-transform: uppercase;
+}
+.sched-grid-header i { font-size: 15px; }
+.sched-grid { display: grid; grid-template-columns: 72px 1fr; }
 .time-label {
-  font-size: 10px; color: var(--text3); padding: 8px 10px 8px 0;
+  font-size: 10.5px; color: var(--text3); padding: 4px 10px;
   text-align: right; border-right: 1.5px solid var(--border);
-  position: relative;
+  border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; justify-content: flex-end;
 }
-.time-label::after {
-  content: ''; position: absolute; right: -4px; top: 14px;
-  width: 7px; height: 7px; border-radius: 50%; background: var(--border2);
+.time-event {
+  padding: 3px 12px; min-height: 24px; border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center;
 }
-.time-event { padding: 8px 0 8px 14px; min-height: 50px; border-bottom: 0.5px solid var(--border); }
+/* Selang-seling baris — pakai warna netral tema (bg2), bukan biru */
+.time-label:nth-child(8n+5), .time-event:nth-child(8n+6) { background: var(--bg2); }
 .event-card {
-  padding: 6px 10px; border-radius: var(--radius); font-size: 12px;
-  border-left: 3px solid; margin-bottom: 4px; position: relative;
+  width: 100%; padding: 4px 10px; border-radius: 6px; font-size: 12px;
+  border-left: 3px solid; position: relative;
 }
-.ev-blue { background: #E8F1EF; border-color: #2F6364; color: #1F4443; }
+.ev-blue { background: #E8F1EF; border-color: var(--accent); color: #1F4443; }
 .ev-amber { background: #FFFBEB; border-color: #F59E0B; color: #92400E; }
 .ev-green { background: #F0FDF4; border-color: #22C55E; color: #166534; }
 .ev-purple { background: #FAF5FF; border-color: #A855F7; color: #6B21A8; }
 .ev-red { background: #FEF2F2; border-color: #EF4444; color: #991B1B; }
-.ev-title { font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
+.ev-title { font-weight: 500; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .ev-meta { font-size: 10px; opacity: 0.7; margin-top: 2px; display: flex; align-items: center; gap: 3px; }
 
 /* ── Tracker ───────────────────────────────── */
@@ -1486,9 +1499,12 @@ textarea { resize: vertical; }
           </div>
         </div>
 
-        <div class="sched-grid" id="sched-grid">
-          <div class="loading-msg" style="grid-column:1/-1">
-            <i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat jadwal...
+        <div class="sched-grid-wrap">
+          <div class="sched-grid-header" id="sched-grid-header"><i class="ti ti-clock"></i> <span id="sched-grid-header-text">Memuat tanggal...</span></div>
+          <div class="sched-grid" id="sched-grid">
+            <div class="loading-msg" style="grid-column:1/-1">
+              <i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat jadwal...
+            </div>
           </div>
         </div>
       </div>
@@ -3140,29 +3156,49 @@ async function renderSchedule() {
   displaySchedule(data || []);
 }
 
+// Generate deretan jam per 15 menit, mis. "06:00" s/d "20:45"
+function _scheduleTimeSlots(startH = 6, endH = 21) {
+  const slots = [];
+  for (let h = startH; h < endH; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      slots.push(String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0'));
+    }
+  }
+  return slots;
+}
+
+// Update judul bar di atas tabel jadwal, mis. "23 JULI 2026"
+function _updateScheduleHeader() {
+  const headerEl = document.getElementById('sched-grid-header-text');
+  if (!headerEl) return;
+  const dateInput = document.getElementById('sched-date');
+  const dStr = (dateInput && dateInput.value) || todayStr();
+  const d = new Date(dStr + 'T00:00:00');
+  const label = isNaN(d) ? dStr : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  headerEl.textContent = label;
+}
+
 // Render helper — dipanggil dari renderSchedule maupun search/filter global
 function displaySchedule(data) {
   const grid = document.getElementById('sched-grid');
-  if (!data || !data.length) {
-    grid.innerHTML = '<div class="empty-msg">Tidak ada jadwal yang sesuai.</div>';
-    return;
-  }
-  const hours = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'];
+  _updateScheduleHeader();
+  const slots = _scheduleTimeSlots();
   let html = '';
-  hours.forEach(h => {
+  slots.forEach(h => {
     const evs = (data || []).filter(e => e.time_start && e.time_start.substring(0,5) === h);
     html += `<div class="time-label">${h}</div><div class="time-event">`;
     evs.forEach(e => {
       html += `<div class="event-card ev-${e.category}" data-id="${e.id}">
         <div class="ev-title">${e.title}
-          <button class="ev-del" onclick="editSchedule('${e.id}')" aria-label="Edit" title="Edit"><i class="ti ti-pencil" aria-hidden="true"></i></button>
-          <button class="ev-del" onclick="delSchedule('${e.id}')" aria-label="Hapus"><i class="ti ti-x" aria-hidden="true"></i></button>
+          <span>
+            <button class="ev-del" onclick="editSchedule('${e.id}')" aria-label="Edit" title="Edit"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+            <button class="ev-del" onclick="delSchedule('${e.id}')" aria-label="Hapus"><i class="ti ti-x" aria-hidden="true"></i></button>
+          </span>
         </div>
         ${e.location ? `<div class="ev-meta"><i class="ti ti-map-pin" aria-hidden="true"></i> ${e.location}</div>` : ''}
         <div class="ev-meta">${e.is_private ? '🔒 ' : ''}<i class="ti ti-user" aria-hidden="true"></i> ${e.created_by || '-'}</div>
       </div>`;
     });
-    if (!evs.length) html += '<div style="height:8px"></div>';
     html += '</div>';
   });
   grid.innerHTML = html;
