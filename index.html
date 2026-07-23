@@ -281,6 +281,42 @@ textarea { resize: vertical; }
 .ev-title { font-weight: 500; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .ev-meta { font-size: 10px; opacity: 0.7; margin-top: 2px; display: flex; align-items: center; gap: 3px; }
 
+/* ── Schedule 3-kolom layout (gaya planner, warna tema WorkBoard) ── */
+.sched-layout { display: grid; grid-template-columns: 190px 1fr 230px; gap: 14px; align-items: start; }
+@media (max-width: 900px) {
+  .sched-layout { grid-template-columns: 1fr; }
+  .sched-col-left { display: flex; gap: 10px; }
+  .sched-col-left .sched-daybig { flex: 1; margin-bottom: 0; }
+  .sched-col-left .sched-side-card { flex: 1; margin-bottom: 0; }
+}
+.sched-daybig {
+  background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg);
+  padding: 16px 10px; margin-bottom: 14px; text-align: center;
+}
+.sched-daynum { font-size: 42px; font-weight: 800; color: var(--accent2); line-height: 1; }
+.sched-dayname { font-size: 14px; font-weight: 700; color: var(--text1); margin-top: 4px; }
+.sched-daymonth { font-size: 10.5px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+.sched-side-card {
+  background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg);
+  overflow: hidden; margin-bottom: 14px;
+}
+.sched-side-header {
+  background: var(--accent); color: var(--sb-text); padding: 8px 12px; font-size: 10.5px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  display: flex; align-items: center; gap: 6px;
+}
+.sched-side-header i { font-size: 13px; }
+.sched-side-body { padding: 12px; }
+.sched-week-list { padding: 4px 6px; }
+.sched-week-item { display: flex; gap: 10px; padding: 8px 6px; border-bottom: 0.5px solid var(--border); }
+.sched-week-item:last-child { border-bottom: none; }
+.sched-week-daynum { font-size: 19px; font-weight: 800; color: var(--accent); width: 30px; text-align: center; flex-shrink: 0; }
+.sched-week-info { flex: 1; min-width: 0; }
+.sched-week-dayname { font-size: 10.5px; font-weight: 700; color: var(--text1); text-transform: uppercase; letter-spacing: 0.3px; }
+.sched-week-events { font-size: 10.5px; color: var(--text2); margin-top: 2px; }
+.sched-week-event-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sched-week-empty { font-size: 10.5px; color: var(--text3); font-style: italic; }
+
 /* ── Tracker ───────────────────────────────── */
 .tracker-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
 .stat-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
@@ -1471,11 +1507,6 @@ textarea { resize: vertical; }
 
       <!-- ── Daily Schedule ─────────────────── -->
       <div class="panel active" id="panel-schedule">
-        <div class="sched-controls">
-          <label style="font-size:12px;color:var(--text2)">Tanggal:</label>
-          <input type="date" id="sched-date" class="input-today" onchange="renderSchedule()" style="font-size:12px" />
-        </div>
-
         <div class="form-box" id="sched-form" style="display:none">
           <div class="form-row">
             <input id="sched-time" type="time" value="08:00" style="max-width:110px" />
@@ -1499,11 +1530,42 @@ textarea { resize: vertical; }
           </div>
         </div>
 
-        <div class="sched-grid-wrap">
-          <div class="sched-grid-header" id="sched-grid-header"><i class="ti ti-clock"></i> <span id="sched-grid-header-text">Memuat tanggal...</span></div>
-          <div class="sched-grid" id="sched-grid">
-            <div class="loading-msg" style="grid-column:1/-1">
-              <i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat jadwal...
+        <div class="sched-layout">
+          <!-- Kolom kiri: tanggal besar + pemilih tanggal -->
+          <div class="sched-col-left">
+            <div class="sched-daybig">
+              <div class="sched-daynum" id="sched-daynum">–</div>
+              <div class="sched-dayname" id="sched-dayname">–</div>
+              <div class="sched-daymonth" id="sched-daymonth">–</div>
+            </div>
+            <div class="sched-side-card">
+              <div class="sched-side-header"><i class="ti ti-calendar"></i> View Schedule</div>
+              <div class="sched-side-body">
+                <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Tanggal</label>
+                <input type="date" id="sched-date" class="input-today" onchange="renderSchedule()" style="width:100%;box-sizing:border-box;font-size:12px" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Kolom tengah: grid jadwal per jam -->
+          <div class="sched-col-main">
+            <div class="sched-grid-wrap">
+              <div class="sched-grid-header" id="sched-grid-header"><i class="ti ti-clock"></i> <span id="sched-grid-header-text">Memuat tanggal...</span></div>
+              <div class="sched-grid" id="sched-grid">
+                <div class="loading-msg" style="grid-column:1/-1">
+                  <i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat jadwal...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kolom kanan: ringkasan 6 hari ke depan -->
+          <div class="sched-col-right">
+            <div class="sched-side-card">
+              <div class="sched-side-header"><i class="ti ti-calendar-stats"></i> Week at a Glance</div>
+              <div class="sched-week-list" id="sched-week-list">
+                <div class="loading-msg">Memuat...</div>
+              </div>
             </div>
           </div>
         </div>
@@ -3154,6 +3216,7 @@ async function renderSchedule() {
   scheduleEvents = data || [];
   document.getElementById('badge-sched').textContent = (data || []).length;
   displaySchedule(data || []);
+  renderScheduleWeekGlance(scheduleDate);
 }
 
 // Generate deretan jam per 15 menit, mis. "06:00" s/d "20:45"
@@ -3167,15 +3230,60 @@ function _scheduleTimeSlots(startH = 6, endH = 21) {
   return slots;
 }
 
-// Update judul bar di atas tabel jadwal, mis. "23 JULI 2026"
+// Update judul bar di atas tabel jadwal, mis. "23 JULI 2026", + kartu tanggal besar di kolom kiri
 function _updateScheduleHeader() {
   const headerEl = document.getElementById('sched-grid-header-text');
-  if (!headerEl) return;
   const dateInput = document.getElementById('sched-date');
   const dStr = (dateInput && dateInput.value) || todayStr();
   const d = new Date(dStr + 'T00:00:00');
-  const label = isNaN(d) ? dStr : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  headerEl.textContent = label;
+  const valid = !isNaN(d);
+  if (headerEl) {
+    headerEl.textContent = valid ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : dStr;
+  }
+  const dayNumEl = document.getElementById('sched-daynum');
+  const dayNameEl = document.getElementById('sched-dayname');
+  const dayMonthEl = document.getElementById('sched-daymonth');
+  if (dayNumEl) dayNumEl.textContent = valid ? d.getDate() : '–';
+  if (dayNameEl) dayNameEl.textContent = valid ? d.toLocaleDateString('id-ID', { weekday: 'long' }) : '–';
+  if (dayMonthEl) dayMonthEl.textContent = valid ? d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : '–';
+}
+
+// Isi kolom kanan "Week at a Glance" — ringkasan 6 hari setelah tanggal yang sedang dilihat
+async function renderScheduleWeekGlance(baseDateStr) {
+  const listEl = document.getElementById('sched-week-list');
+  if (!listEl) return;
+  const base = new Date((baseDateStr || todayStr()) + 'T00:00:00');
+  if (isNaN(base)) { listEl.innerHTML = ''; return; }
+  const days = [];
+  for (let i = 1; i <= 6; i++) {
+    const d = new Date(base);
+    d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+  const toStr = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const startStr = toStr(days[0]);
+  const endStr = toStr(days[days.length - 1]);
+  let data = [];
+  try {
+    const { data: rows } = await withTimeout(sb.from('schedule_events').select('*').gte('event_date', startStr).lte('event_date', endStr).order('time_start'));
+    data = applyPrivacy(rows) || [];
+  } catch (e) { /* biarkan kosong kalau gagal, jangan blokir panel utama */ }
+  listEl.innerHTML = days.map(d => {
+    const dStr = toStr(d);
+    const dayEvents = data.filter(e => e.event_date === dStr);
+    const dayName = d.toLocaleDateString('id-ID', { weekday: 'long' });
+    const evHtml = dayEvents.length
+      ? dayEvents.slice(0, 3).map(e => `<div class="sched-week-event-line">• ${e.title}</div>`).join('')
+        + (dayEvents.length > 3 ? `<div class="sched-week-event-line">+${dayEvents.length - 3} lainnya</div>` : '')
+      : `<div class="sched-week-empty">Tidak ada kegiatan</div>`;
+    return `<div class="sched-week-item">
+      <div class="sched-week-daynum">${d.getDate()}</div>
+      <div class="sched-week-info">
+        <div class="sched-week-dayname">${dayName}</div>
+        <div class="sched-week-events">${evHtml}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // Render helper — dipanggil dari renderSchedule maupun search/filter global
