@@ -385,8 +385,7 @@ textarea { resize: vertical; }
 .log-form-col { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
 .log-form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: 0.55; margin-bottom: 4px; }
 .log-status-select { font-weight: 700; border-radius: 6px; }
-.logbook-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: start; padding: 4px 14px 14px 38px; }
-.logbook-list.log-view-list { display: block; }
+.logbook-list { display: flex; align-items: stretch; flex: 1; min-height: 460px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,0.07); box-shadow: 0 2px 16px rgba(80,60,70,0.10); background: #fff; margin-top: 6px; }
 .log-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
 .log-table thead th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; opacity: 0.55; font-weight: 700; padding: 0 14px 4px; }
 .log-table tbody tr { cursor: pointer; }
@@ -501,7 +500,7 @@ textarea { resize: vertical; }
 .np-cream  { --np-bg: #FAF5EA; --np-accent: #E3C989; }
 
 @media (max-width: 720px) {
-  .notepad-binder { flex-direction: column; }
+  .notepad-binder, .logbook-list { flex-direction: column; }
   .np-index { width: 100%; max-height: 180px; border-right: none; border-bottom: 1px solid rgba(0,0,0,0.08); }
 }
 /* ── Global Search & Filter Bar ─────────────────── */
@@ -2643,6 +2642,7 @@ let currentPanel = 'schedule';
 let scheduleEvents = [];
 let trackerCache = [];
 let logbookCache = [];
+let logActiveId = null;
 let notesCache = [];
 let todoCache = [];
 
@@ -2967,7 +2967,7 @@ function updateGlobalSearchFilter(panelId) {
 }
 
 // ── Toggle tampilan Grid vs List — berlaku untuk Logbook & Notes (Notepad selalu mode binder) ──
-const VIEW_TOGGLE_PANELS = ['logbook', 'notes'];
+const VIEW_TOGGLE_PANELS = ['notes'];
 let logViewMode = localStorage.getItem('wb_log_view') || 'grid';
 let noteViewMode = localStorage.getItem('wb_note_view') || 'grid';
 function toggleCurrentView() {
@@ -5705,80 +5705,59 @@ async function delNpItem(id) {
 
 
 
-// Render helper — dipanggil dari filter maupun renderLogbook
+// Render helper — dipanggil dari filter maupun renderLogbook.
+// Tampilan "binder": daftar judul jadi index di kiri, isi catatan yang dipilih
+// ditampilkan penuh selebar panel di kanan — sama persis konsepnya dengan Notepad,
+// bedanya tetap ada tab kategori (All/Reports/Notes/Meetings/Issues) di atas.
 function displayLogbook(data) {
   const typeLabel = {meeting:'Meeting',report:'Report',note:'Note',issue:'Issue'};
   const list = document.getElementById('logbook-list');
-  list.classList.toggle('log-view-list', logViewMode === 'list');
-  if (!data || !data.length) { list.innerHTML = '<div class="empty-msg">No matching entries.</div>'; return; }
-  if (logViewMode === 'list') { displayLogbookList(data, typeLabel); return; }
-  const colors = ['sn-peach','sn-yellow','sn-mint','sn-blue','sn-lavender','sn-pink','sn-sage','sn-cream'];
-  const tapes  = ['sn-tape-peach','sn-tape-yellow','sn-tape-mint','sn-tape-blue','sn-tape-lavender','sn-tape-pink','sn-tape-sage','sn-tape-cream'];
-  list.innerHTML = data.map((l, i) => {
-    const c = colors[i % colors.length];
-    const tc = tapes[i % tapes.length];
-    const d = l.entry_date || (l.created_at ? new Date(l.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '');
-    const attachHtml = (l.attachments && l.attachments.length) ? `
-      <div class="log-attachments" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px" onclick="event.stopPropagation()">
-        ${l.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit" title="Unduh ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
-      </div>` : '';
-    const tItem = l.tracker_item_id ? trackerStatusMap[l.tracker_item_id] : null;
-    const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px" title="Terhubung ke Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
-    return `<div class="log-entry ${c}" onclick="this.classList.toggle('expanded')">
-      <span class="sn-tape-el ${tc}"></span>
-      <div class="log-header">
-        <span class="log-type lt-${l.type}" style="font-size:10px;font-weight:700">${typeLabel[l.type]||l.type}</span>
-        ${trackerBadge}
-        <span style="font-size:10px;opacity:0.6;margin-left:auto">${d}</span>
-      </div>
-      <div class="log-title" style="font-size:14px;font-weight:700;margin:4px 0 6px">${l.is_private?'🔒 ':''}${escHtml(l.title)}</div>
-      <div class="log-body" style="font-size:12px;opacity:0.8;line-height:1.5">${renderBody(l.body)}</div>
-      <div class="log-tags" style="margin-top:6px">${(l.tags||[]).map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
-      ${attachHtml}
-      <div style="display:flex;justify-content:flex-end;gap:4px;margin-top:8px">
-        <button class="ev-del" onclick="event.stopPropagation();aiSummarizeLog('${l.id}')" title="Ringkas dengan AI"><i class="ti ti-sparkles"></i></button>
-        <button class="ev-del" onclick="event.stopPropagation();editLog('${l.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
-        <button class="ev-del" onclick="event.stopPropagation();delLog('${l.id}')" title="Hapus"><i class="ti ti-x"></i></button>
-      </div>
+  if (!data || !data.length) { list.innerHTML = '<div class="empty-msg">No matching entries.</div>'; logActiveId = null; return; }
+  if (!logActiveId || !data.some(l => l.id === logActiveId)) logActiveId = data[0].id;
+
+  const indexHtml = data.map((l, i) => {
+    const c = NP_COLORS[i % NP_COLORS.length];
+    const d = l.entry_date ? new Date(l.entry_date + 'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : (l.created_at ? new Date(l.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '');
+    return `<div class="np-index-item ${c}${l.id === logActiveId ? ' active' : ''}" onclick="selectLogItem('${l.id}')">
+      <div class="np-index-title">${l.is_private?'🔒 ':''}${escHtml(l.title)}</div>
+      <div class="np-index-date">${d} · <span class="log-type lt-${l.type}" style="font-size:9px">${typeLabel[l.type]||l.type}</span></div>
     </div>`;
   }).join('');
+
+  const activeIdx = data.findIndex(l => l.id === logActiveId);
+  const active = data[activeIdx];
+  const activeColor = NP_COLORS[activeIdx % NP_COLORS.length];
+  const d = active.entry_date ? new Date(active.entry_date + 'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : (active.created_at ? new Date(active.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '');
+  const attachHtml = (active.attachments && active.attachments.length) ? `
+    <div class="log-attachments" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:12px">
+      ${active.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit" title="Unduh ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
+    </div>` : '';
+  const tItem = active.tracker_item_id ? trackerStatusMap[active.tracker_item_id] : null;
+  const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px;margin-left:6px" title="Terhubung ke Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
+
+  list.innerHTML = `
+    <div class="np-index">${indexHtml}</div>
+    <div class="np-page-wrap ${activeColor}">
+      <div class="np-page-header">
+        <div>
+          <div class="np-page-title">${active.is_private?'🔒 ':''}${escHtml(active.title)}</div>
+          <div class="np-page-date"><span class="log-type lt-${active.type}" style="margin-right:6px">${typeLabel[active.type]||active.type}</span>${d}${trackerBadge}</div>
+        </div>
+        <div class="np-page-actions">
+          <button class="ev-del" onclick="aiSummarizeLog('${active.id}')" title="Ringkas dengan AI"><i class="ti ti-sparkles"></i></button>
+          <button class="ev-del" onclick="editLog('${active.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+          <button class="ev-del" onclick="delLog('${active.id}')" title="Hapus"><i class="ti ti-x"></i></button>
+        </div>
+      </div>
+      <div class="np-page-body">${renderBody(active.body)}</div>
+      <div class="log-tags" style="margin-top:12px">${(active.tags||[]).map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
+      ${attachHtml}
+    </div>`;
 }
 
-// Mode List: tabel ringkas bergaya "DayBook" — Tanggal besar | Catatan (+lampiran),
-// tiap baris dikasih warna pastel yang sama dengan kartu Grid.
-function displayLogbookList(data, typeLabel) {
-  const colors = ['sn-peach','sn-yellow','sn-mint','sn-blue','sn-lavender','sn-pink','sn-sage','sn-cream'];
-  const list = document.getElementById('logbook-list');
-  const rows = data.map((l, i) => {
-    const c = colors[i % colors.length];
-    let dateObj = null;
-    if (l.entry_date) dateObj = new Date(l.entry_date + 'T00:00:00');
-    else if (l.created_at) dateObj = new Date(l.created_at);
-    const dayNum = dateObj ? dateObj.toLocaleDateString('id-ID', {day:'2-digit'}) : '–';
-    const monthYear = dateObj ? dateObj.toLocaleDateString('id-ID', {month:'short', year:'numeric'}) : '';
-    const tagsHtml = (l.tags||[]).map(t => `<span class="log-row-tag">#${t}</span>`).join('');
-    const attachHtml = (l.attachments && l.attachments.length) ? `
-      <div class="log-row-attachments">
-        ${l.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" onclick="event.stopPropagation()" title="Unduh ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
-      </div>` : '';
-    const tItem = l.tracker_item_id ? trackerStatusMap[l.tracker_item_id] : null;
-    const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px;margin-left:6px" title="Terhubung ke Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
-    return `<tr class="log-row ${c}" onclick="this.classList.toggle('expanded')">
-      <td><div class="log-date-day">${dayNum}</div><div class="log-date-month">${monthYear}</div></td>
-      <td>
-        <div class="log-row-title">${l.is_private?'🔒 ':''}${escHtml(l.title)}<span class="log-type lt-${l.type} log-row-type" style="opacity:1">${typeLabel[l.type]||l.type}</span>${trackerBadge}</div>
-        <div class="log-row-tags">${tagsHtml}</div>
-        ${attachHtml}
-        <div class="log-row-body-full">${renderBody(l.body)}</div>
-      </td>
-      <td class="log-row-actions" onclick="event.stopPropagation()">
-        <button class="ev-del" onclick="aiSummarizeLog('${l.id}')" title="Ringkas dengan AI"><i class="ti ti-sparkles"></i></button>
-        <button class="ev-del" onclick="editLog('${l.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
-        <button class="ev-del" onclick="delLog('${l.id}')" title="Hapus"><i class="ti ti-x"></i></button>
-      </td>
-    </tr>`;
-  }).join('');
-  list.innerHTML = `<table class="log-table"><thead><tr><th>Tanggal</th><th>Catatan</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+function selectLogItem(id) {
+  logActiveId = id;
+  displayLogbook(logbookCache);
 }
 
 let notesActiveId = null;
