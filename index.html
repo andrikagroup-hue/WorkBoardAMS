@@ -476,58 +476,40 @@ textarea { resize: vertical; }
 .note-body { font-size: 11px; color: var(--text2); line-height: 1.6; }
 .note-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 0.5px solid var(--border); }
 
-/* ── Notepad — gaya "digital planner" pastel + tab samping ─── */
+/* ── Notepad — gaya "binder": daftar tab di kiri, halaman penuh di kanan ─── */
 .notepad-wrap { display: flex; flex-direction: column; height: 100%; gap: 12px; }
 .notepad-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 0.5px solid var(--border); }
 .notepad-toolbar input { flex: 1; min-width: 180px; font-size: 13px; }
-.notepad-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; align-items: start; }
-.notepad-list.log-view-list { display: block; }
-.np-item {
-  border-radius: 3px 14px 14px 3px;
-  padding: 16px 26px 12px 18px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 2px 4px 12px rgba(80,60,70,0.10);
-  transition: transform 0.15s, box-shadow 0.15s;
-  min-height: 130px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 25px, rgba(60,40,50,0.055) 26px);
-  background-position: 0 46px;
-}
-.np-item:hover { transform: translateY(-3px); box-shadow: 4px 10px 20px rgba(80,60,70,0.16); }
-.np-item .np-item-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.np-item.expanded .np-item-body { display: block; -webkit-line-clamp: unset; }
-.np-item.np-pinned { box-shadow: 2px 4px 12px rgba(80,60,70,0.10), inset 0 3px 0 0 #E7A6B6; }
-.np-item::after {
-  content: '';
-  position: absolute;
-  top: 16px;
-  right: 0;
-  width: 9px;
-  height: 42px;
-  border-radius: 5px 0 0 5px;
-  box-shadow: -1px 1px 3px rgba(0,0,0,0.12);
-}
-.np-item-header { display: flex; align-items: center; gap: 8px; }
-.np-item-title { font-size: 15px; font-weight: 700; color: var(--text1); flex: 1; font-family: Georgia, 'Times New Roman', serif; }
-.np-item-date { font-size: 10px; color: var(--text3); white-space: nowrap; }
-.np-item-body { font-size: 12px; color: var(--text2); line-height: 1.7; }
+
+.notepad-binder { display: flex; align-items: stretch; flex: 1; min-height: 460px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,0.07); box-shadow: 0 2px 16px rgba(80,60,70,0.10); background: #fff; }
+.np-index { width: 250px; flex-shrink: 0; background: #F8F4EF; border-right: 1px solid rgba(0,0,0,0.08); overflow-y: auto; }
+.np-index-item { padding: 12px 20px 12px 14px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.055); position: relative; }
+.np-index-item:hover { background: rgba(0,0,0,0.03); }
+.np-index-item.active { background: var(--np-bg, #fff); }
+.np-index-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--np-accent, var(--accent)); }
+.np-index-item::after { content: ''; position: absolute; top: 12px; right: 5px; width: 7px; height: 24px; border-radius: 4px; background: var(--np-accent, transparent); opacity: 0.85; }
+.np-index-title { font-size: 12.5px; font-weight: 600; color: var(--text1); line-height: 1.4; padding-right: 10px; }
+.np-index-date { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+.np-page-wrap { flex: 1; overflow-y: auto; padding: 30px 36px; background-color: var(--np-bg, #fdfbf7); background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, rgba(60,40,50,0.06) 28px); background-position: 0 8px; }
+.np-page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px dashed rgba(0,0,0,0.16); }
+.np-page-title { font-size: 21px; font-weight: 700; font-family: Georgia, 'Times New Roman', serif; color: var(--text1); line-height: 1.35; }
+.np-page-date { font-size: 11px; color: var(--text3); margin-top: 4px; white-space: nowrap; }
+.np-page-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.np-page-body { font-size: 13.5px; line-height: 1.95; color: var(--text2); }
+.np-empty-page { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text3); font-size: 13px; }
 
 /* 5 palet pastel Notepad — sesuai referensi cover & tab */
-.np-pink   { background-color: #FBEEF1; }
-.np-pink::after   { background: #EFB3C2; }
-.np-lilac  { background-color: #F3EEF5; }
-.np-lilac::after  { background: #CDABDA; }
-.np-blue   { background-color: #ECF4F8; }
-.np-blue::after   { background: #A9CFE0; }
-.np-sage   { background-color: #F1F4E9; }
-.np-sage::after   { background: #B9C99B; }
-.np-cream  { background-color: #FAF5EA; }
-.np-cream::after  { background: #E3C989; }
+.np-pink   { --np-bg: #FBEEF1; --np-accent: #EFB3C2; }
+.np-lilac  { --np-bg: #F3EEF5; --np-accent: #CDABDA; }
+.np-blue   { --np-bg: #ECF4F8; --np-accent: #A9CFE0; }
+.np-sage   { --np-bg: #F1F4E9; --np-accent: #B9C99B; }
+.np-cream  { --np-bg: #FAF5EA; --np-accent: #E3C989; }
+
+@media (max-width: 720px) {
+  .notepad-binder { flex-direction: column; }
+  .np-index { width: 100%; max-height: 180px; border-right: none; border-bottom: 1px solid rgba(0,0,0,0.08); }
+}
 /* ── Global Search & Filter Bar ─────────────────── */
 .top-bar { align-items: center; flex-wrap: wrap; gap: 8px; }
 .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -580,10 +562,10 @@ textarea { resize: vertical; }
 .ql-snow .ql-picker { color: var(--text2); }
 .ql-snow .ql-picker-options { background: var(--bg); border: 1px solid var(--border2); }
 /* Body content area — render HTML */
-.log-body ul, .log-body ol, .note-body ul, .note-body ol, .np-item-body ul, .np-item-body ol { padding-left: 18px; margin: 4px 0; }
-.log-body p, .note-body p, .np-item-body p { margin: 0 0 4px 0; }
-.log-body strong, .note-body strong, .np-item-body strong { font-weight: 600; }
-.log-body em, .note-body em, .np-item-body em { font-style: italic; }
+.log-body ul, .log-body ol, .note-body ul, .note-body ol, .np-page-body ul, .np-page-body ol { padding-left: 18px; margin: 4px 0; }
+.log-body p, .note-body p, .np-page-body p { margin: 0 0 6px 0; }
+.log-body strong, .note-body strong, .np-page-body strong { font-weight: 600; }
+.log-body em, .note-body em, .np-page-body em { font-style: italic; }
 
 .np-edit-btns { display: flex; gap: 6px; justify-content: flex-end; }
 
@@ -1991,7 +1973,7 @@ ALTER TABLE logbook_entries
             </div>
           </div>
 
-          <div class="notepad-list" id="notepad-list">
+          <div class="notepad-binder" id="notepad-list">
             <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...</div>
           </div>
         </div>
@@ -2990,14 +2972,12 @@ function updateGlobalSearchFilter(panelId) {
   }
 }
 
-// ── Toggle tampilan Grid vs List — berlaku untuk Logbook, Notes, Notepad ──
-const VIEW_TOGGLE_PANELS = ['logbook', 'notes', 'notepad'];
+// ── Toggle tampilan Grid vs List — berlaku untuk Logbook & Notes (Notepad selalu mode binder) ──
+const VIEW_TOGGLE_PANELS = ['logbook', 'notes'];
 let logViewMode = localStorage.getItem('wb_log_view') || 'grid';
 let noteViewMode = localStorage.getItem('wb_note_view') || 'grid';
-let npViewMode = localStorage.getItem('wb_np_view') || 'grid';
 function toggleCurrentView() {
   if (currentPanel === 'notes') { toggleNoteView(); }
-  else if (currentPanel === 'notepad') { toggleNpView(); }
   else { toggleLogView(); }
 }
 function toggleLogView() {
@@ -3012,16 +2992,10 @@ function toggleNoteView() {
   updateLogViewIcon();
   _applyGlobalSearchFilter();
 }
-function toggleNpView() {
-  npViewMode = (npViewMode === 'grid') ? 'list' : 'grid';
-  localStorage.setItem('wb_np_view', npViewMode);
-  updateLogViewIcon();
-  _applyGlobalSearchFilter();
-}
 function updateLogViewIcon() {
   const icon = document.getElementById('log-view-icon');
   if (!icon) return;
-  const mode = currentPanel === 'notes' ? noteViewMode : currentPanel === 'notepad' ? npViewMode : logViewMode;
+  const mode = currentPanel === 'notes' ? noteViewMode : logViewMode;
   icon.className = 'ti ' + (mode === 'grid' ? 'ti-list' : 'ti-layout-grid') + ' ';
 }
 
@@ -5587,6 +5561,8 @@ async function renameUser() {
 }
 let notepadCache = [];
 let editingNpId = null;
+let npActiveId = null;
+const NP_COLORS = ['np-pink', 'np-lilac', 'np-blue', 'np-sage', 'np-cream'];
 
 async function renderNotepad() {
   let _np;
@@ -5598,53 +5574,52 @@ async function renderNotepad() {
   displayNotepad(data || []);
 }
 
+// Tampilan "binder": daftar judul jadi tab di kiri, isi catatan yang dipilih
+// ditampilkan penuh selebar panel di kanan — supaya catatan panjang enak dibaca.
 function displayNotepad(items) {
-  const list = document.getElementById('notepad-list');
-  list.classList.toggle('log-view-list', npViewMode === 'list');
-  if (!items.length) { list.innerHTML = '<div class="empty-msg">Belum ada catatan. Klik "+ Catatan Baru" untuk mulai.</div>'; return; }
-  if (npViewMode === 'list') { displayNotepadList(items); return; }
-  const colors = ['np-pink','np-lilac','np-blue','np-sage','np-cream'];
-  list.innerHTML = items.map((n, i) => {
-    const c = colors[i % colors.length];
+  const wrap = document.getElementById('notepad-list');
+  if (!items.length) {
+    wrap.innerHTML = '<div class="empty-msg">Belum ada catatan. Klik "+ Catatan Baru" untuk mulai.</div>';
+    npActiveId = null;
+    return;
+  }
+  if (!npActiveId || !items.some(n => n.id === npActiveId)) npActiveId = items[0].id;
+
+  const indexHtml = items.map((n, i) => {
+    const c = NP_COLORS[i % NP_COLORS.length];
     const d = n.created_at ? new Date(n.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '';
-    return `<div class="np-item ${c}${n.is_pinned?' np-pinned':''}" id="np-item-${n.id}" onclick="this.classList.toggle('expanded')">
-      <div class="np-item-header">
-        <span class="np-item-title" style="font-size:14px;font-weight:700;flex:1">${n.is_pinned?'📌 ':''}${escHtml(n.title)}</span>
-        <span class="np-item-date" style="font-size:10px;opacity:0.55">${d}</span>
-      </div>
-      <div class="np-item-body" style="font-size:12px;opacity:0.8;line-height:1.5">${renderBody(n.body)}</div>
-      <div style="display:flex;justify-content:flex-end;gap:4px;margin-top:8px">
-        <button class="ev-del" onclick="event.stopPropagation();editNpItem('${n.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
-        <button class="ev-del" onclick="event.stopPropagation();toggleNpPin('${n.id}',${n.is_pinned})" title="${n.is_pinned?'Unpin':'Pin'}"><i class="ti ti-pin"></i></button>
-        <button class="ev-del" onclick="event.stopPropagation();delNpItem('${n.id}')" title="Hapus"><i class="ti ti-x"></i></button>
-      </div>
+    return `<div class="np-index-item ${c}${n.id === npActiveId ? ' active' : ''}" onclick="selectNpItem('${n.id}')">
+      <div class="np-index-title">${n.is_pinned?'📌 ':''}${escHtml(n.title)}</div>
+      <div class="np-index-date">${d}</div>
     </div>`;
   }).join('');
+
+  const activeIdx = items.findIndex(n => n.id === npActiveId);
+  const active = items[activeIdx];
+  const activeColor = NP_COLORS[activeIdx % NP_COLORS.length];
+  const d = active.created_at ? new Date(active.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '';
+
+  wrap.innerHTML = `
+    <div class="np-index">${indexHtml}</div>
+    <div class="np-page-wrap ${activeColor}">
+      <div class="np-page-header">
+        <div>
+          <div class="np-page-title">${active.is_pinned?'📌 ':''}${escHtml(active.title)}</div>
+          <div class="np-page-date">${d}</div>
+        </div>
+        <div class="np-page-actions">
+          <button class="ev-del" onclick="editNpItem('${active.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+          <button class="ev-del" onclick="toggleNpPin('${active.id}',${active.is_pinned})" title="${active.is_pinned?'Unpin':'Pin'}"><i class="ti ti-pin"></i></button>
+          <button class="ev-del" onclick="delNpItem('${active.id}')" title="Hapus"><i class="ti ti-x"></i></button>
+        </div>
+      </div>
+      <div class="np-page-body">${renderBody(active.body)}</div>
+    </div>`;
 }
 
-// Mode List untuk Notepad — sama gaya dengan Logbook List (tabel ringkas per baris)
-function displayNotepadList(items) {
-  const colors = ['np-pink','np-lilac','np-blue','np-sage','np-cream'];
-  const list = document.getElementById('notepad-list');
-  const rows = items.map((n, i) => {
-    const c = colors[i % colors.length];
-    const dateObj = n.created_at ? new Date(n.created_at) : null;
-    const dayNum = dateObj ? dateObj.toLocaleDateString('id-ID', {day:'2-digit'}) : '–';
-    const monthYear = dateObj ? dateObj.toLocaleDateString('id-ID', {month:'short', year:'numeric'}) : '';
-    return `<tr class="log-row ${c}" onclick="this.classList.toggle('expanded')">
-      <td><div class="log-date-day">${dayNum}</div><div class="log-date-month">${monthYear}</div></td>
-      <td>
-        <div class="log-row-title">${n.is_pinned?'📌 ':''}${escHtml(n.title)}</div>
-        <div class="log-row-body-full">${renderBody(n.body)}</div>
-      </td>
-      <td class="log-row-actions" onclick="event.stopPropagation()">
-        <button class="ev-del" onclick="editNpItem('${n.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
-        <button class="ev-del" onclick="toggleNpPin('${n.id}',${n.is_pinned})" title="${n.is_pinned?'Unpin':'Pin'}"><i class="ti ti-pin"></i></button>
-        <button class="ev-del" onclick="delNpItem('${n.id}')" title="Hapus"><i class="ti ti-x"></i></button>
-      </td>
-    </tr>`;
-  }).join('');
-  list.innerHTML = `<table class="log-table"><thead><tr><th>Tanggal</th><th>Catatan</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+function selectNpItem(id) {
+  npActiveId = id;
+  displayNotepad(notepadCache);
 }
 
 function escHtml(s) {
