@@ -385,7 +385,7 @@ textarea { resize: vertical; }
 .log-form-col { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
 .log-form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: 0.55; margin-bottom: 4px; }
 .log-status-select { font-weight: 700; border-radius: 6px; }
-.logbook-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: start; }
+.logbook-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: start; padding: 4px 14px 14px 38px; }
 .logbook-list.log-view-list { display: block; }
 .log-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
 .log-table thead th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; opacity: 0.55; font-weight: 700; padding: 0 14px 4px; }
@@ -420,6 +420,43 @@ textarea { resize: vertical; }
 .log-body { font-size: 12px; color: var(--text2); margin-top: 4px; line-height: 1.6; }
 .log-tags { display: flex; gap: 4px; margin-top: 7px; flex-wrap: wrap; }
 .tag { font-size: 10px; padding: 2px 7px; border-radius: 6px; background: var(--bg2); color: var(--text2); }
+
+/* ── Logbook: Binder look ─────────────────────
+   Kartu kategori jadi "tab pembatas binder" berwarna pastel,
+   form & daftar catatan dikasih strip lubang ring di kiri
+   + garis-garis tipis ala kertas folio, biar berasa binder asli. */
+.binder-tabs-row { display: flex; gap: 6px; margin-bottom: 0; flex-wrap: wrap; align-items: flex-end; position: relative; z-index: 1; }
+.binder-tab {
+  border: none; cursor: pointer; font-size: 11.5px; font-weight: 700; letter-spacing: .01em;
+  padding: 9px 16px 10px; border-radius: 8px 8px 0 0; color: var(--text2); background: var(--bg2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.10); transition: transform .15s, box-shadow .15s, opacity .15s;
+  position: relative; top: 3px; opacity: 0.75;
+}
+.binder-tab:hover { transform: translateY(-2px); opacity: 0.95; }
+.binder-tab.active { top: 0; opacity: 1; box-shadow: 0 -2px 7px rgba(0,0,0,0.12); z-index: 1; }
+.binder-tab.bt-all     { background: var(--surface); color: var(--text1); border: 0.5px solid var(--border2); }
+.binder-tab.bt-meeting { background: #EDE9FE; color: #5B21B6; }
+.binder-tab.bt-report  { background: #D8E8E6; color: #1F4443; }
+.binder-tab.bt-note    { background: #DCFCE7; color: #166534; }
+.binder-tab.bt-issue   { background: #FEE2E2; color: #991B1B; }
+.logbook-binder { position: relative; border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg); overflow: hidden; background: var(--bg2); }
+.binder-ring-strip {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 26px; z-index: 1;
+  background-color: var(--bg2); border-right: 0.5px solid var(--border);
+  background-image: radial-gradient(circle, var(--surface) 6px, transparent 6.5px);
+  background-size: 100% 36px; background-position: 0 16px; background-repeat: repeat-y;
+}
+.logbook-page {
+  position: relative; margin-bottom: 14px; padding: 16px 16px 16px 38px !important;
+  background-color: var(--surface);
+  background-image: repeating-linear-gradient(var(--surface) 0px, var(--surface) 27px, rgba(47,99,100,0.08) 28px);
+}
+.log-type.lt-meeting { background: #EDE9FE; color: #5B21B6; }
+.log-type.lt-report  { background: #D8E8E6; color: #1F4443; }
+.log-type.lt-note    { background: #DCFCE7; color: #166534; }
+.log-type.lt-issue   { background: #FEE2E2; color: #991B1B; }
+.log-type-picker .binder-tab { padding: 6px 12px 6px; border-radius: 999px; top: 0; opacity: 0.6; }
+.log-type-picker .binder-tab.active { opacity: 1; box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
 
 /* ── Notes ─────────────────────────────────── */
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; align-items: start; }
@@ -1305,12 +1342,12 @@ textarea { resize: vertical; }
           <button style="background:none;border:none;cursor:pointer;color:#475569;font-size:15px;padding:4px;line-height:1;display:flex;align-items:center" onclick="renameUser()" title="Ubah nama saya"><i class="ti ti-pencil"></i></button>
         </div>
         <div class="search-filter-wrap" id="global-search-wrap" style="display:none">
-          <input class="global-search" id="global-search-input" placeholder="Cari..." oninput="applyGlobalSearch()" autocomplete="off">
+          <input class="global-search" id="global-search-input" placeholder="Search..." oninput="applyGlobalSearch()" autocomplete="off">
           <select class="global-filter" id="global-filter-select" onchange="applyGlobalFilter()">
-            <option value="">Semua</option>
+            <option value="">All</option>
           </select>
         </div>
-        <button class="btn-sm" id="log-view-toggle" onclick="toggleCurrentView()" title="Ganti tampilan Grid/List" style="display:none">
+        <button class="btn-sm" id="log-view-toggle" onclick="toggleCurrentView()" title="Switch Grid/List view" style="display:none">
           <i class="ti ti-list" id="log-view-icon" aria-hidden="true"></i>
         </button>
         <div class="export-dropdown" id="export-dropdown">
@@ -1318,17 +1355,17 @@ textarea { resize: vertical; }
             <i class="ti ti-download" aria-hidden="true"></i> Export <i class="ti ti-chevron-down" style="font-size:11px"></i>
           </button>
           <div class="export-menu" id="export-menu">
-            <button class="export-menu-item" onclick="exportData(); closeExportMenu()"><i class="ti ti-file-text"></i> Backup JSON (semua data)</button>
+            <button class="export-menu-item" onclick="exportData(); closeExportMenu()"><i class="ti ti-file-text"></i> JSON Backup (all data)</button>
             <button class="export-menu-item" onclick="exportCurrentToExcel()"><i class="ti ti-file-spreadsheet"></i> Excel (.xlsx)</button>
             <button class="export-menu-item" onclick="exportCurrentToPDF()"><i class="ti ti-file-type-pdf"></i> PDF</button>
             <button class="export-menu-item" onclick="exportCurrentToPNG()"><i class="ti ti-photo"></i> Screenshot PNG</button>
           </div>
         </div>
-        <button id="workBreakAlarm_btn" onclick="workBreakAlarm_openModal()" title="Atur Work-Break Alarm">
+        <button id="workBreakAlarm_btn" onclick="workBreakAlarm_openModal()" title="Set up Work-Break Alarm">
           ⏰ Work Alarm
         </button>
         <button class="btn-sm btn-primary" onclick="handleAdd()">
-          <i class="ti ti-plus" aria-hidden="true"></i> Tambah
+          <i class="ti ti-plus" aria-hidden="true"></i> Add
         </button>
       </div>
     </div>
@@ -1391,11 +1428,11 @@ textarea { resize: vertical; }
           </div>
         </div>
 
-        <!-- Jadwal Istirahat Siang -->
+        <!-- Lunch Break Schedule -->
         <div class="wba-info-box">
-          <div class="wba-info-title">⏰ Jadwal Istirahat Siang:</div>
-          <div class="wba-info-item">⏰ 12:00 Waktunya Istirahat 1 Jam</div>
-          <div class="wba-info-item">⏰ 13:00 Kembali Kerja Lagi</div>
+          <div class="wba-info-title">⏰ Lunch Break Schedule:</div>
+          <div class="wba-info-item">⏰ 12:00 Time for a 1-Hour Break</div>
+          <div class="wba-info-item">⏰ 13:00 Back to Work</div>
         </div>
 
         <div class="wba-btn-row">
@@ -1749,58 +1786,78 @@ ALTER TABLE logbook_entries
   ADD COLUMN IF NOT EXISTS tracker_item_id UUID REFERENCES time_plan_tracker(id) ON DELETE SET NULL;</code>
           <button onclick="document.getElementById('logbook-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
         </div>
-        <div class="form-box" id="log-form" style="display:none">
-          <div class="log-form-grid">
-            <div class="log-form-col" style="flex:2">
-              <label class="log-form-label">Aktivitas</label>
-              <input id="log-title" placeholder="Judul catatan logbook..." oninput="autosaveLogDraft()" />
-              <select id="log-type" style="margin-top:6px" onchange="autosaveLogDraft()">
-                <option value="meeting">Rapat</option>
-                <option value="report">Laporan</option>
-                <option value="note">Catatan</option>
-                <option value="issue">Masalah</option>
-              </select>
-            </div>
-            <div class="log-form-col">
-              <label class="log-form-label">Tanggal</label>
-              <input type="date" id="log-entry-date" onchange="autosaveLogDraft()" />
-            </div>
-            <div class="log-form-col">
-              <label class="log-form-label">Status</label>
-              <select id="log-tracker-link" class="log-status-select" onchange="updateLogStatusColor();autosaveLogDraft()" title="Hubungkan catatan ini ke item di Time Plan Tracker — status akan ikut otomatis dari sana">
-                <option value="">— Tidak dihubungkan ke Tracker —</option>
-              </select>
-            </div>
-            <div class="log-form-col">
-              <label class="log-form-label">Privasi</label>
-              <select id="log-privacy" title="Siapa yang bisa lihat data ini" onchange="autosaveLogDraft()">
-                <option value="false">🌐 Publik</option>
-                <option value="true">🔒 Privat</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:4px;margin-top:4px">
-            <label class="log-form-label">Catatan / Notes</label>
-            <div class="quill-editor-wrap" style="width:100%"><div id="log-body-editor"></div></div>
-          </div>
-          <div class="form-row">
-            <input id="log-tags-in" placeholder="Tag (pisahkan koma — contoh: keuangan, ops, hr)" oninput="autosaveLogDraft()" />
-          </div>
-          <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:6px">
-            <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px">
-              <i class="ti ti-paperclip"></i> Lampiran (PDF, gambar, Word, Excel — bisa lebih dari satu)
-            </label>
-            <input type="file" id="log-files" multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv" style="font-size:12px" onchange="handleLogFileSelect()" />
-            <div id="log-attach-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
-          </div>
-          <div class="form-actions">
-            <button class="btn-sm" onclick="closeLogForm()">Batal</button>
-            <button class="btn-sm btn-primary" id="log-save-btn" onclick="saveLog()">Simpan ke Logbook</button>
-          </div>
+
+        <!-- Binder divider tabs — filter kategori entri (gantiin dropdown "Semua" bawaan khusus di Logbook) -->
+        <div class="binder-tabs-row" id="logbook-binder-tabs">
+          <button type="button" class="binder-tab bt-all active" onclick="logBinderFilter('', this)">All</button>
+          <button type="button" class="binder-tab bt-report" onclick="logBinderFilter('report', this)">Reports</button>
+          <button type="button" class="binder-tab bt-note" onclick="logBinderFilter('note', this)">Notes</button>
+          <button type="button" class="binder-tab bt-meeting" onclick="logBinderFilter('meeting', this)">Meetings</button>
+          <button type="button" class="binder-tab bt-issue" onclick="logBinderFilter('issue', this)">Issues</button>
         </div>
 
-        <div class="logbook-list" id="logbook-list">
-          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat logbook...</div>
+        <div class="logbook-binder">
+          <div class="binder-ring-strip"></div>
+
+          <div class="form-box logbook-page" id="log-form" style="display:none">
+            <div class="log-form-grid">
+              <div class="log-form-col" style="flex:2">
+                <label class="log-form-label">Activity</label>
+                <input id="log-title" placeholder="Entry title..." oninput="autosaveLogDraft()" />
+                <div class="log-type-picker" style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+                  <button type="button" class="binder-tab bt-report" data-val="report" onclick="setLogType('report')">Report</button>
+                  <button type="button" class="binder-tab bt-note" data-val="note" onclick="setLogType('note')">Note</button>
+                  <button type="button" class="binder-tab bt-meeting active" data-val="meeting" onclick="setLogType('meeting')">Meeting</button>
+                  <button type="button" class="binder-tab bt-issue" data-val="issue" onclick="setLogType('issue')">Issue</button>
+                </div>
+                <select id="log-type" style="display:none" onchange="autosaveLogDraft()">
+                  <option value="report">Report</option>
+                  <option value="note">Note</option>
+                  <option value="meeting" selected>Meeting</option>
+                  <option value="issue">Issue</option>
+                </select>
+              </div>
+              <div class="log-form-col">
+                <label class="log-form-label">Date</label>
+                <input type="date" id="log-entry-date" onchange="autosaveLogDraft()" />
+              </div>
+              <div class="log-form-col">
+                <label class="log-form-label">Status</label>
+                <select id="log-tracker-link" class="log-status-select" onchange="updateLogStatusColor();autosaveLogDraft()" title="Hubungkan catatan ini ke item di Time Plan Tracker — status akan ikut otomatis dari sana">
+                  <option value="">— Not linked to Tracker —</option>
+                </select>
+              </div>
+              <div class="log-form-col">
+                <label class="log-form-label">Privacy</label>
+                <select id="log-privacy" title="Siapa yang bisa lihat data ini" onchange="autosaveLogDraft()">
+                  <option value="false">🌐 Public</option>
+                  <option value="true">🔒 Private</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:4px;margin-top:4px">
+              <label class="log-form-label">Notes</label>
+              <div class="quill-editor-wrap" style="width:100%"><div id="log-body-editor"></div></div>
+            </div>
+            <div class="form-row">
+              <input id="log-tags-in" placeholder="Tags (comma separated — e.g. finance, ops, hr)" oninput="autosaveLogDraft()" />
+            </div>
+            <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+              <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px">
+                <i class="ti ti-paperclip"></i> Attachments (PDF, image, Word, Excel — multiple allowed)
+              </label>
+              <input type="file" id="log-files" multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv" style="font-size:12px" onchange="handleLogFileSelect()" />
+              <div id="log-attach-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-sm" onclick="closeLogForm()">Cancel</button>
+              <button class="btn-sm btn-primary" id="log-save-btn" onclick="saveLog()">Save to Logbook</button>
+            </div>
+          </div>
+
+          <div class="logbook-list" id="logbook-list">
+            <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading logbook...</div>
+          </div>
         </div>
       </div>
 
@@ -2769,13 +2826,13 @@ async function switchPanel(id, el) {
 // sumber data (cache hasil render terakhir), dan fungsi untuk menampilkan ulang.
 const PANEL_FILTER_CONFIG = {
   schedule: {
-    placeholder: 'Cari judul atau lokasi...',
+    placeholder: 'Search title or location...',
     options: [
-      { value: 'blue', label: '🔵 Umum' },
-      { value: 'amber', label: '🟡 Penting' },
-      { value: 'green', label: '🟢 Selesai' },
+      { value: 'blue', label: '🔵 General' },
+      { value: 'amber', label: '🟡 Important' },
+      { value: 'green', label: '🟢 Done' },
       { value: 'purple', label: '🟣 Meeting' },
-      { value: 'red', label: '🔴 Darurat' }
+      { value: 'red', label: '🔴 Urgent' }
     ],
     searchKeys: ['title', 'location'],
     match: (e, val) => e.category === val,
@@ -2783,7 +2840,7 @@ const PANEL_FILTER_CONFIG = {
     display: displaySchedule
   },
   tracker: {
-    placeholder: 'Cari nama kegiatan / PIC...',
+    placeholder: 'Search activity name / PIC...',
     options: [
       { value: 'prog', label: 'In Progress' },
       { value: 'done', label: 'Done' },
@@ -2798,12 +2855,12 @@ const PANEL_FILTER_CONFIG = {
     display: displayTracker
   },
   logbook: {
-    placeholder: 'Cari judul atau isi catatan...',
+    placeholder: 'Search title or note content...',
     options: [
-      { value: 'meeting', label: 'Rapat' },
-      { value: 'report', label: 'Laporan' },
-      { value: 'note', label: 'Catatan' },
-      { value: 'issue', label: 'Masalah' }
+      { value: 'report', label: 'Reports' },
+      { value: 'note', label: 'Notes' },
+      { value: 'meeting', label: 'Meetings' },
+      { value: 'issue', label: 'Issues' }
     ],
     searchKeys: ['title', 'body'],
     match: (l, val) => l.type === val,
@@ -2811,12 +2868,12 @@ const PANEL_FILTER_CONFIG = {
     display: displayLogbook
   },
   notes: {
-    placeholder: 'Cari judul atau isi notes...',
+    placeholder: 'Search title or note content...',
     options: [
-      { value: 'finance', label: 'Keuangan' },
-      { value: 'ops', label: 'Operasional' },
-      { value: 'hr', label: 'SDM / HR' },
-      { value: 'strat', label: 'Strategi' }
+      { value: 'finance', label: 'Finance' },
+      { value: 'ops', label: 'Operations' },
+      { value: 'hr', label: 'HR' },
+      { value: 'strat', label: 'Strategy' }
     ],
     searchKeys: ['title', 'body'],
     match: (n, val) => n.category === val,
@@ -2824,13 +2881,13 @@ const PANEL_FILTER_CONFIG = {
     display: _renderNoteCards
   },
   todo: {
-    placeholder: 'Cari tugas atau penerima tugas...',
+    placeholder: 'Search task or assignee...',
     options: [
-      { value: 'open', label: 'Belum Selesai' },
-      { value: 'done', label: 'Selesai' },
-      { value: 'high', label: '🔴 Prioritas Tinggi' },
-      { value: 'med', label: '🟡 Sedang' },
-      { value: 'low', label: '🔵 Rendah' }
+      { value: 'open', label: 'Not Done' },
+      { value: 'done', label: 'Done' },
+      { value: 'high', label: '🔴 High Priority' },
+      { value: 'med', label: '🟡 Medium' },
+      { value: 'low', label: '🔵 Low' }
     ],
     searchKeys: ['text', 'assigned_to'],
     match: (t, val) => {
@@ -2842,7 +2899,7 @@ const PANEL_FILTER_CONFIG = {
     display: displayTodo
   },
   notepad: {
-    placeholder: 'Cari judul atau isi catatan...',
+    placeholder: 'Search title or note content...',
     options: [],
     searchKeys: ['title', 'body'],
     match: null,
@@ -2868,12 +2925,26 @@ function updateGlobalSearchFilter(panelId) {
 
   wrap.style.display = 'flex';
   searchInput.value = '';
-  searchInput.placeholder = cfg.placeholder || 'Cari...';
+  searchInput.placeholder = cfg.placeholder || 'Search...';
 
-  filterSelect.innerHTML = '<option value="">Semua</option>' +
+  filterSelect.innerHTML = '<option value="">All</option>' +
     cfg.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
   filterSelect.value = '';
   filterSelect.style.display = cfg.options.length ? '' : 'none';
+
+  // Logbook punya tab warna-warni ala pembatas binder buat filter kategori,
+  // jadi dropdown "Semua" bawaan disembunyikan di panel ini (tetap dipakai di balik layar).
+  const binderTabs = document.getElementById('logbook-binder-tabs');
+  if (binderTabs) {
+    if (panelId === 'logbook') {
+      filterSelect.style.display = 'none';
+      binderTabs.style.display = 'flex';
+      binderTabs.querySelectorAll('.binder-tab').forEach(b => b.classList.remove('active'));
+      binderTabs.querySelector('.bt-all').classList.add('active');
+    } else {
+      binderTabs.style.display = 'none';
+    }
+  }
 
   const viewToggleBtn = document.getElementById('log-view-toggle');
   if (viewToggleBtn) {
@@ -2943,6 +3014,32 @@ function _applyGlobalSearchFilter() {
 function applyGlobalSearch() { _applyGlobalSearchFilter(); }
 function applyGlobalFilter() { _applyGlobalSearchFilter(); }
 
+// Klik tab pembatas binder (All/Reports/Notes/Meetings/Issues) di Logbook —
+// nyalain nilai yang sama ke dropdown filter tersembunyi lalu pakai logic filter yang sudah ada.
+function logBinderFilter(val, btn) {
+  const filterSelect = document.getElementById('global-filter-select');
+  if (filterSelect) filterSelect.value = val;
+  document.querySelectorAll('#logbook-binder-tabs .binder-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyGlobalFilter();
+}
+
+// Klik salah satu tab kategori (Report/Note/Meeting/Issue) di form Tambah/Edit Logbook —
+// set nilai ke <select id="log-type"> tersembunyi biar saveLog()/editLog() tetap jalan seperti biasa.
+function setLogType(val) {
+  document.getElementById('log-type').value = val;
+  syncLogTypeTabs();
+  autosaveLogDraft();
+}
+// Nyalain tab yang sesuai dengan nilai <select id="log-type"> saat ini
+// (dipanggil tiap kali nilainya diisi lewat kode, misal saat buka form Edit).
+function syncLogTypeTabs() {
+  const val = document.getElementById('log-type').value;
+  document.querySelectorAll('.log-type-picker .binder-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.val === val);
+  });
+}
+
 function hideAllForms() {
   ['sched-form','log-form','note-form','rt-form'].forEach(id => {
     const el = document.getElementById(id);
@@ -2989,16 +3086,16 @@ async function handleAdd() {
 async function populateTrackerLinkOptions(selectedId) {
   const sel = document.getElementById('log-tracker-link');
   if (!sel) return;
-  sel.innerHTML = '<option value="">Memuat daftar Tracker...</option>';
+  sel.innerHTML = '<option value="">Loading Tracker list...</option>';
   try {
     const { data, error } = await sb.from('time_plan_tracker').select('id,subject,status').order('created_at', { ascending: false }).limit(200);
     if (error) throw error;
     const items = data || [];
-    sel.innerHTML = '<option value="" data-status="">— Tidak dihubungkan ke Tracker —</option>' +
+    sel.innerHTML = '<option value="" data-status="">— Not linked to Tracker —</option>' +
       items.map(t => `<option value="${t.id}" data-status="${t.status}">${escHtml(t.subject)} — ${PT_STATUS_LABEL[t.status] || t.status}</option>`).join('');
     sel.value = selectedId || '';
   } catch (e) {
-    sel.innerHTML = '<option value="">— Gagal memuat daftar Tracker —</option>';
+    sel.innerHTML = '<option value="">— Failed to load Tracker list —</option>';
   }
   updateLogStatusColor();
 }
@@ -4109,7 +4206,7 @@ async function renderLogbook() {
     return;
   }
   if (!data || !data.length) {
-    document.getElementById('logbook-list').innerHTML = '<div class="empty-msg">Belum ada catatan logbook.</div>';
+    document.getElementById('logbook-list').innerHTML = '<div class="empty-msg">No logbook entries yet.</div>';
     return;
   }
   await refreshTrackerStatusMap(logbookCache);
@@ -4260,6 +4357,7 @@ async function editLog(id) {
   editingLogId = id;
   document.getElementById('log-title').value = l.title || '';
   document.getElementById('log-type').value = l.type || 'meeting';
+  syncLogTypeTabs();
   document.getElementById('log-privacy').value = l.is_private ? 'true' : 'false';
   document.getElementById('log-entry-date').value = l.entry_date || todayStr();
   quillLog.root.innerHTML = l.body || '';
@@ -4278,6 +4376,7 @@ function resetLogForm() {
   editingLogId = null;
   document.getElementById('log-title').value = '';
   document.getElementById('log-type').value = 'meeting';
+  syncLogTypeTabs();
   document.getElementById('log-privacy').value = 'false';
   document.getElementById('log-entry-date').value = todayStr();
   quillLog.setText('');
@@ -4288,9 +4387,9 @@ function resetLogForm() {
   if (fileInput) fileInput.value = '';
   renderAttachPreview();
   const trackerSel = document.getElementById('log-tracker-link');
-  if (trackerSel) trackerSel.innerHTML = '<option value="" data-status="">— Tidak dihubungkan ke Tracker —</option>';
+  if (trackerSel) trackerSel.innerHTML = '<option value="" data-status="">— Not linked to Tracker —</option>';
   updateLogStatusColor();
-  document.getElementById('log-save-btn').textContent = 'Simpan ke Logbook';
+  document.getElementById('log-save-btn').textContent = 'Save to Logbook';
 }
 
 // ── Auto-save draft Logbook ke localStorage ──
@@ -4334,6 +4433,7 @@ function maybeRestoreLogDraft() {
   }
   document.getElementById('log-title').value = draft.title || '';
   document.getElementById('log-type').value = draft.type || 'meeting';
+  syncLogTypeTabs();
   document.getElementById('log-privacy').value = draft.privacy || 'false';
   document.getElementById('log-entry-date').value = draft.entryDate || todayStr();
   document.getElementById('log-tags-in').value = draft.tags || '';
@@ -5604,10 +5704,10 @@ async function delNpItem(id) {
 
 // Render helper — dipanggil dari filter maupun renderLogbook
 function displayLogbook(data) {
-  const typeLabel = {meeting:'Rapat',report:'Laporan',note:'Catatan',issue:'Masalah'};
+  const typeLabel = {meeting:'Meeting',report:'Report',note:'Note',issue:'Issue'};
   const list = document.getElementById('logbook-list');
   list.classList.toggle('log-view-list', logViewMode === 'list');
-  if (!data || !data.length) { list.innerHTML = '<div class="empty-msg">Tidak ada catatan yang sesuai.</div>'; return; }
+  if (!data || !data.length) { list.innerHTML = '<div class="empty-msg">No matching entries.</div>'; return; }
   if (logViewMode === 'list') { displayLogbookList(data, typeLabel); return; }
   const colors = ['sn-peach','sn-yellow','sn-mint','sn-blue','sn-lavender','sn-pink','sn-sage','sn-cream'];
   const tapes  = ['sn-tape-peach','sn-tape-yellow','sn-tape-mint','sn-tape-blue','sn-tape-lavender','sn-tape-pink','sn-tape-sage','sn-tape-cream'];
@@ -5624,7 +5724,7 @@ function displayLogbook(data) {
     return `<div class="log-entry ${c}" onclick="this.classList.toggle('expanded')">
       <span class="sn-tape-el ${tc}"></span>
       <div class="log-header">
-        <span class="log-type" style="font-size:10px;font-weight:700;opacity:0.7">${typeLabel[l.type]||l.type}</span>
+        <span class="log-type lt-${l.type}" style="font-size:10px;font-weight:700">${typeLabel[l.type]||l.type}</span>
         ${trackerBadge}
         <span style="font-size:10px;opacity:0.6;margin-left:auto">${d}</span>
       </div>
@@ -5663,7 +5763,7 @@ function displayLogbookList(data, typeLabel) {
     return `<tr class="log-row ${c}" onclick="this.classList.toggle('expanded')">
       <td><div class="log-date-day">${dayNum}</div><div class="log-date-month">${monthYear}</div></td>
       <td>
-        <div class="log-row-title">${l.is_private?'🔒 ':''}${escHtml(l.title)}<span class="log-row-type">${typeLabel[l.type]||l.type}</span>${trackerBadge}</div>
+        <div class="log-row-title">${l.is_private?'🔒 ':''}${escHtml(l.title)}<span class="log-type lt-${l.type} log-row-type" style="opacity:1">${typeLabel[l.type]||l.type}</span>${trackerBadge}</div>
         <div class="log-row-tags">${tagsHtml}</div>
         ${attachHtml}
         <div class="log-row-body-full">${renderBody(l.body)}</div>
@@ -8215,16 +8315,16 @@ function initWorkBreakAlarm() {
 
   function _toastBreak() {
     const msgs = {
-      pomodoro:       ['⏰ WAKTUNYA ISTIRAHAT!', 'Ambil waktu 5 menit untuk istirahat.'],
-      short_pomodoro: ['⏰ WAKTUNYA ISTIRAHAT!', 'Ambil waktu 5 menit untuk istirahat.'],
-      flowtime:       ['⏰ WAKTUNYA ISTIRAHAT!', 'Istirahat sesuai kebutuhan, kamu yang tentukan.'],
-      custom:         ['⏰ WAKTUNYA ISTIRAHAT!', `Ambil waktu ${prefs.customBreak} menit untuk istirahat.`],
+      pomodoro:       ['⏰ TIME FOR A BREAK!', 'Take 5 minutes to rest.'],
+      short_pomodoro: ['⏰ TIME FOR A BREAK!', 'Take 5 minutes to rest.'],
+      flowtime:       ['⏰ TIME FOR A BREAK!', 'Rest as long as you need — you decide.'],
+      custom:         ['⏰ TIME FOR A BREAK!', `Take ${prefs.customBreak} minutes to rest.`],
     };
     const [m, s] = msgs[prefs.mode] || msgs.pomodoro;
     _showToast(m, s, false);
   }
   function _toastWork() {
-    _showToast('💪 WAKTUNYA KERJA LAGI!', 'Fokus kembali sampai jam kerja selesai.', true);
+    _showToast('💪 TIME TO WORK AGAIN!', 'Get back to focus until work hours end.', true);
   }
 
   // ── CLOCK-BASED TICK (jantung utama) ───────────────
@@ -8240,10 +8340,10 @@ function initWorkBreakAlarm() {
     // ── 1. Fixed break 12:00 & 13:00 ──
     if (h === 12 && m === 0 && _lastFixed !== 'break12') {
       _lastFixed = 'break12';
-      _showToast('⏰ WAKTUNYA ISTIRAHAT SEBENTAR!', 'Ambil waktu 60 menit untuk istirahat.', false);
+      _showToast('⏰ TIME FOR A SHORT BREAK!', 'Take 60 minutes to rest.', false);
     } else if (h === 13 && m === 0 && _lastFixed !== 'work13') {
       _lastFixed = 'work13';
-      _showToast('💪 WAKTUNYA KERJA LAGI!', 'Fokus kembali sampai jam kerja selesai.', true);
+      _showToast('💪 TIME TO WORK AGAIN!', 'Get back to focus until work hours end.', true);
     } else if (h !== 12 && h !== 13) {
       _lastFixed = null; // reset agar bisa muncul lagi hari berikutnya / jam berikutnya
     }
