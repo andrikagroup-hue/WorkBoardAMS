@@ -55,7 +55,7 @@
   --sb-bg: #2F6364;
   --sb-bg2: #24504F;
   --sb-text: #F3EFE7;
-  --sb-text-dim: #A9CBC7;
+  --sb-text-dim: #D3E6E3;
   --sb-active-bg: #3D7F7E;
 }
 
@@ -5601,7 +5601,7 @@ function displayNotepad(items) {
           <button class="ev-del" onclick="delNpItem('${active.id}')" title="Hapus"><i class="ti ti-x"></i></button>
         </div>
       </div>
-      <div class="np-page-body">${renderBody(active.body)}</div>
+      <div class="np-page-body ql-editor" style="padding:0">${renderBody(active.body)}</div>
     </div>`;
 }
 
@@ -5743,7 +5743,7 @@ function displayLogbook(data) {
           <button class="ev-del" onclick="delLog('${active.id}')" title="Hapus"><i class="ti ti-x"></i></button>
         </div>
       </div>
-      <div class="np-page-body">${renderBody(active.body)}</div>
+      <div class="np-page-body ql-editor" style="padding:0">${renderBody(active.body)}</div>
       <div class="log-tags" style="margin-top:12px">${(active.tags||[]).map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
       ${attachHtml}
     </div>`;
@@ -5790,7 +5790,7 @@ function _renderNoteCards(data) {
           <button class="ev-del" onclick="delNote('${active.id}')" title="Hapus"><i class="ti ti-x"></i></button>
         </div>
       </div>
-      <div class="np-page-body">${renderBody(active.body)}</div>
+      <div class="np-page-body ql-editor" style="padding:0">${renderBody(active.body)}</div>
       <div style="margin-top:18px;font-size:11px;opacity:0.55">${active.is_private?'🔒 ':''}${active.created_by||''}</div>
     </div>`;
 }
@@ -6086,7 +6086,7 @@ function renderChatThread(messages) {
       ${avatarHtml}
       <div class="chat-bubble-row ${own ? 'own' : 'other'}">
         ${!own ? `<div class="chat-sender">${escHtml(m.sender || 'Pengguna')}</div>` : ''}
-        ${m.body ? `<div class="chat-bubble">${renderBody(m.body)}</div>` : ''}
+        ${m.body ? `<div class="chat-bubble ql-editor" style="padding:0">${renderBody(m.body)}</div>` : ''}
         ${attachHtml}
         <div class="chat-time">${time}${m.is_edited ? ' · <span class="chat-edited-tag">diedit</span>' : ''}${actionsHtml}</div>
       </div>
