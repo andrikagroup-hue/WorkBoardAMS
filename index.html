@@ -439,14 +439,8 @@ textarea { resize: vertical; }
 .binder-tab.bt-note    { background: #DCFCE7; color: #166534; }
 .binder-tab.bt-issue   { background: #FEE2E2; color: #991B1B; }
 .logbook-binder { position: relative; border-radius: 0 var(--radius-lg) var(--radius-lg) var(--radius-lg); overflow: hidden; background: var(--bg2); }
-.binder-ring-strip {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 26px; z-index: 1;
-  background-color: var(--bg2); border-right: 0.5px solid var(--border);
-  background-image: radial-gradient(circle, var(--surface) 6px, transparent 6.5px);
-  background-size: 100% 36px; background-position: 0 16px; background-repeat: repeat-y;
-}
 .logbook-page {
-  position: relative; margin-bottom: 14px; padding: 16px 16px 16px 38px !important;
+  position: relative; margin-bottom: 14px; padding: 16px !important;
   background-color: var(--surface);
   background-image: repeating-linear-gradient(var(--surface) 0px, var(--surface) 27px, rgba(47,99,100,0.08) 28px);
 }
@@ -1809,7 +1803,6 @@ ALTER TABLE logbook_entries
         </div>
 
         <div class="logbook-binder">
-          <div class="binder-ring-strip"></div>
 
           <div class="form-box logbook-page" id="log-form" style="display:none">
             <div class="log-form-grid">
@@ -4197,6 +4190,7 @@ async function renderLogbook() {
   try {
     ({ data, error } = await withTimeout(
       sb.from('logbook_entries').select('*')
+        .order('entry_date', { ascending: false })
         .order('created_at', { ascending: false }).limit(50)
     ));
     data = applyPrivacy(data);
