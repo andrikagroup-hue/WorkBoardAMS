@@ -476,18 +476,18 @@ textarea { resize: vertical; }
 
 .notepad-binder { display: flex; align-items: stretch; flex: 1; min-height: 460px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,0.07); box-shadow: 0 2px 16px rgba(80,60,70,0.10); background: #fff; }
 .np-index { width: 250px; flex-shrink: 0; background: #F8F4EF; border-right: 1px solid rgba(0,0,0,0.08); overflow-y: auto; }
-.np-index-item { padding: 12px 20px 12px 14px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.055); position: relative; }
+.np-index-item { padding: 12px 20px 12px 20px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.055); position: relative; z-index: 1; }
 .np-index-item:hover { background: rgba(0,0,0,0.03); }
 .np-index-item.active { background: var(--np-bg, #fff); }
 .np-index-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--np-accent, var(--accent)); }
 .np-index-item::after { content: ''; position: absolute; top: 12px; right: 5px; width: 7px; height: 24px; border-radius: 4px; background: var(--np-accent, transparent); opacity: 0.85; }
-.np-index-title { font-size: 12.5px; font-weight: 600; color: var(--text1); line-height: 1.4; padding-right: 10px; }
-.np-index-date { font-size: 10px; color: var(--text3); margin-top: 3px; }
+.np-index-title { font-size: 12.5px; font-weight: 600; color: var(--text1); line-height: 1.4; padding-right: 10px; position: relative; z-index: 1; }
+.np-index-date { font-size: 12px; font-weight: 600; color: var(--text2); margin-top: 4px; }
 
 .np-page-wrap { flex: 1; overflow-y: auto; padding: 30px 36px; background-color: var(--np-bg, #fdfbf7); background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, rgba(60,40,50,0.06) 28px); background-position: 0 8px; }
 .np-page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px dashed rgba(0,0,0,0.16); }
 .np-page-title { font-size: 21px; font-weight: 700; font-family: Georgia, 'Times New Roman', serif; color: var(--text1); line-height: 1.35; }
-.np-page-date { font-size: 11px; color: var(--text3); margin-top: 4px; white-space: nowrap; }
+.np-page-date { font-size: 14px; font-weight: 600; color: var(--text2); margin-top: 5px; white-space: nowrap; }
 .np-page-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .np-page-body { font-size: 13.5px; line-height: 1.95; color: var(--text2); }
 .np-empty-page { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text3); font-size: 13px; }
