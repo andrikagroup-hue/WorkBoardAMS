@@ -57,6 +57,7 @@
   --sb-text: #F3EFE7;
   --sb-text-dim: #D3E6E3;
   --sb-active-bg: #3D7F7E;
+  --sb-accent: #F3EFE7;
 }
 
 body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text1); }
@@ -76,7 +77,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
 .sb-date { font-size: 11px; color: var(--sb-text); margin-top: 8px; padding: 4px 8px; background: rgba(255,255,255,0.08); border-radius: 6px; display: inline-block; }
 .sb-user { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 5px 8px; background: rgba(192,138,62,0.20); border-radius: 6px; }
 .sb-user-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
-.sb-user-name { font-size: 11px; color: var(--brand); font-weight: 600; }
+.sb-user-name { font-size: 11px; color: var(--sb-accent); font-weight: 600; }
 /* ── Flyout Sidebar Navigation ── */
 .nav-section { padding: 3px 8px; }
 
@@ -1210,7 +1211,7 @@ textarea { resize: vertical; }
         WorkBoard
       </div>
       <div class="sb-sub">Manajemen Harian Perusahaan</div>
-      <div style="font-size:10px;color:var(--brand);font-weight:600;margin-top:2px;letter-spacing:0.3px">PT. ANDRIKA MITRA SOLUSI</div>
+      <div style="font-size:10px;color:var(--sb-accent);font-weight:600;margin-top:2px;letter-spacing:0.3px">PT. ANDRIKA MITRA SOLUSI</div>
       <div class="sb-date" id="sidebar-date">—</div>
       <div class="sb-user">
         <div class="sb-user-dot"></div>
@@ -8178,7 +8179,7 @@ async function loadVaultEntries() {
 
   const catEl = document.getElementById('vault-search-category');
   if (catEl) {
-    const cats = [...new Set(passVaultCache.map(p => p.category || 'Lainnya'))].sort();
+    const cats = [...new Set(passVaultCache.map(p => p.category || 'Other'))].sort();
     const current = catEl.value;
     catEl.innerHTML = '<option value="all">All Categories</option>'
       + cats.map(c => `<option value="${escHtml(c)}" ${current === c ? 'selected' : ''}>${escHtml(c)}</option>`).join('');
@@ -8236,12 +8237,14 @@ function renderVaultList() {
 
   const grouped = {};
   filtered.forEach(p => {
-    const kat = p.category || 'Lainnya';
+    const kat = p.category || 'Other';
     if (!grouped[kat]) grouped[kat] = [];
     grouped[kat].push(p);
   });
 
-  listEl.innerHTML = Object.entries(grouped).map(([kat, items]) => {
+  listEl.innerHTML = Object.entries(grouped)
+    .sort((a, b) => a[0].localeCompare(b[0], undefined, { sensitivity: 'base' }))
+    .map(([kat, items]) => {
     const style = vaultCatStyle(kat);
     return `
     <div class="link-group">
