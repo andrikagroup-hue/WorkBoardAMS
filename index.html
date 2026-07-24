@@ -2460,105 +2460,146 @@ ON CONFLICT DO NOTHING;</code>
 
         <!-- Banner setup jika tabel belum ada -->
         <div id="passvault-setup-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup diperlukan:</strong> Tabel <code>password_vault</code> belum ada. Jalankan SQL ini di
-          <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh:<br>
-          <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:8px;margin-top:8px;font-size:11px;user-select:all;white-space:pre-wrap">CREATE TABLE IF NOT EXISTS password_vault (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  label text NOT NULL,
-  tipe text DEFAULT 'Password',
-  akun text,
-  nilai text NOT NULL,
-  kategori text DEFAULT 'Lainnya',
-  catatan text,
-  is_private boolean DEFAULT true,
-  created_by text,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE password_vault ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "read_password_vault" ON password_vault FOR SELECT USING (true);
-CREATE POLICY "manage_password_vault" ON password_vault FOR ALL USING (true) WITH CHECK (true);</code>
+          ⚠️ <strong>Setup diperlukan:</strong> Tabel <code>vault_keys</code> / <code>password_vault_v2</code> belum ada. Jalankan SQL yang sudah diberikan sebelumnya di
+          <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, lalu refresh halaman.
           <button onclick="document.getElementById('passvault-setup-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Tutup</button>
         </div>
 
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:#1e40af">
-          🔐 Catatan keamanan: password di sini tersimpan di database perusahaan (tidak terenkripsi tambahan). Jangan simpan password pribadi di luar keperluan kerja, dan gunakan mode <strong>Privat</strong> untuk akun yang tidak perlu dilihat tim lain.
+        <!-- STATE 1: user belum punya vault sama sekali -->
+        <div id="vault-state-new" style="display:none;max-width:420px;margin:20px auto">
+          <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:var(--radius-lg);padding:20px 22px;color:#fff;margin-bottom:16px">
+            <div style="font-size:16px;font-weight:700;margin-bottom:5px">🔐 Setup Password Vault</div>
+            <div style="font-size:12px;opacity:.9;line-height:1.5">Vault ini terenkripsi end-to-end — datanya cuma bisa dibuka oleh kamu sendiri lewat Master Password. Admin, AMS, bahkan Claude sekalipun tidak bisa melihat isinya.</div>
+          </div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Master Password (min. 8 karakter)</label>
+          <input type="password" id="vault-setup-pw1" class="form-input" style="font-size:13px;width:100%;margin-bottom:10px">
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Ulangi Master Password</label>
+          <input type="password" id="vault-setup-pw2" class="form-input" style="font-size:13px;width:100%;margin-bottom:14px">
+          <button class="btn-sm btn-primary" style="width:100%;justify-content:center" onclick="setupVault()"><i class="ti ti-shield-lock"></i> Buat Vault</button>
+          <div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5">⚠️ Setelah ini kamu akan diberi <strong>Recovery Key</strong> satu kali. Kalau Master Password DAN Recovery Key sama-sama hilang, data vault tidak bisa dipulihkan siapapun — termasuk oleh Supabase atau Claude.</div>
         </div>
 
-        <!-- Header + tombol tambah -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-          <div style="font-size:13px;font-weight:600;color:var(--text1)">🔐 Password Manager — Simpan Password & PIN Rapi</div>
-          <div style="display:flex;gap:6px">
-            <select id="passvault-filter-kat" class="global-filter" style="font-size:12px" onchange="renderPasswordVault()">
-              <option value="all">Semua Kategori</option>
-            </select>
+        <!-- STATE 2: recovery key ditampilkan sekali setelah setup -->
+        <div id="vault-state-recovery" style="display:none;max-width:420px;margin:20px auto">
+          <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:var(--radius-lg);padding:16px">
+            <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px">🔑 Recovery Key Kamu</div>
+            <div style="font-size:11.5px;color:#92400e;margin-bottom:10px">Simpan ini sekarang di tempat aman (tulis di kertas / password manager lain). Halaman ini <strong>tidak akan menampilkannya lagi.</strong></div>
+            <div id="vault-recovery-display" style="font-family:monospace;font-size:19px;font-weight:700;text-align:center;letter-spacing:2px;background:#fff;border:1px dashed #f59e0b;border-radius:8px;padding:14px;margin-bottom:10px;user-select:all"></div>
+            <button class="btn-sm" style="width:100%;justify-content:center" onclick="copyRecoveryKey()"><i class="ti ti-copy"></i> Salin Recovery Key</button>
+          </div>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text2);margin:14px 0">
+            <input type="checkbox" id="vault-recovery-confirm" onchange="document.getElementById('vault-recovery-continue-btn').disabled=!this.checked" style="margin-top:2px">
+            Saya sudah menyimpan Recovery Key ini di tempat yang aman
+          </label>
+          <button class="btn-sm btn-primary" style="width:100%;justify-content:center" id="vault-recovery-continue-btn" disabled onclick="confirmRecoverySaved()">Lanjut ke Vault</button>
+        </div>
+
+        <!-- STATE 3: vault sudah ada tapi terkunci -->
+        <div id="vault-state-locked" style="display:none;max-width:380px;margin:20px auto">
+          <div style="text-align:center;margin-bottom:16px">
+            <div style="font-size:32px;margin-bottom:6px">🔒</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text1)">Vault Terkunci</div>
+            <div style="font-size:11.5px;color:var(--text3)">Masukkan Master Password untuk membuka</div>
+          </div>
+          <input type="password" id="vault-unlock-pw" class="form-input" placeholder="Master Password" style="font-size:13px;width:100%;margin-bottom:8px" onkeydown="if(event.key==='Enter')unlockVault()">
+          <div id="vault-unlock-error" style="display:none;color:var(--danger);font-size:11.5px;margin-bottom:8px"></div>
+          <button class="btn-sm btn-primary" style="width:100%;justify-content:center" onclick="unlockVault()"><i class="ti ti-lock-open"></i> Buka Vault</button>
+          <div style="text-align:center;margin-top:12px">
+            <a style="font-size:11.5px;color:var(--accent);cursor:pointer" onclick="showRecoveryUnlock()">Lupa Master Password? Pakai Recovery Key</a>
+          </div>
+          <div id="vault-recovery-unlock-box" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+            <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Recovery Key</label>
+            <input type="text" id="vault-unlock-recovery" class="form-input" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" style="font-size:13px;width:100%;margin-bottom:8px">
+            <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Master Password Baru</label>
+            <input type="password" id="vault-new-pw-after-recovery" class="form-input" style="font-size:13px;width:100%;margin-bottom:10px">
+            <button class="btn-sm btn-primary" style="width:100%;justify-content:center" onclick="unlockWithRecoveryKey()"><i class="ti ti-key"></i> Buka & Ganti Password</button>
+          </div>
+        </div>
+
+        <!-- STATE 4: vault terbuka -->
+        <div id="vault-state-unlocked" style="display:none">
+
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:#166534;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <span>🔓 Vault terbuka — data ini terenkripsi end-to-end, hanya kamu yang bisa membacanya.</span>
+            <button class="btn-sm" onclick="lockVaultManual()"><i class="ti ti-lock"></i> Kunci Vault</button>
+          </div>
+
+          <!-- Password Finder -->
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px">
+            <div style="font-size:12.5px;font-weight:600;margin-bottom:8px">🔍 Password Finder</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+              <input type="text" id="vault-search-account" class="form-input" placeholder="Account Name" style="font-size:12px;width:100%" oninput="renderVaultList()">
+              <select id="vault-search-category" class="form-input" style="font-size:12px;width:100%" onchange="renderVaultList()">
+                <option value="all">Semua Kategori</option>
+              </select>
+              <input type="text" id="vault-search-company" class="form-input" placeholder="Company" style="font-size:12px;width:100%" oninput="renderVaultList()">
+            </div>
+          </div>
+
+          <!-- Header + tombol tambah -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div style="font-size:13px;font-weight:600;color:var(--text1)">🔐 Password Entry</div>
             <button class="btn-sm btn-primary" onclick="openPassForm()"><i class="ti ti-plus"></i> Tambah Password</button>
           </div>
-        </div>
 
-        <!-- Form tambah/edit password -->
-        <div id="pass-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">
-          <div style="font-size:12.5px;font-weight:600;margin-bottom:10px" id="pass-form-title">➕ Tambah Password Baru</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div style="grid-column:1/-1">
-              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Nama / Judul *</label>
-              <input type="text" id="pass-label" class="form-input" placeholder="cth: Email Gmail Admin, Login Website AMS, No Rekening BCA..." style="font-size:12px;width:100%">
-            </div>
-            <div>
-              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Tipe</label>
-              <input type="text" id="pass-tipe" class="form-input" list="pass-tipe-list" placeholder="Password / PIN / bebas..." style="font-size:12px;width:100%">
-              <datalist id="pass-tipe-list">
-                <option value="Password">
-                <option value="PIN">
-                <option value="Passphrase">
-                <option value="Kode Akses">
-                <option value="Kunci/PIN Kartu">
-              </datalist>
-            </div>
-            <div>
-              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Kategori</label>
-              <input type="text" id="pass-kategori" class="form-input" list="pass-kategori-list" placeholder="cth: Email, Website, Rekening Bank, Perangkat..." style="font-size:12px;width:100%">
-              <datalist id="pass-kategori-list">
-                <option value="Email">
-                <option value="Website">
-                <option value="Rekening Bank">
-                <option value="Perangkat (HP/Laptop)">
-                <option value="Lainnya">
-              </datalist>
-            </div>
-            <div>
-              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Username / Email / No. Rekening (opsional)</label>
-              <input type="text" id="pass-akun" class="form-input" placeholder="cth: andri@andrikagroup.com" style="font-size:12px;width:100%">
-            </div>
-            <div>
-              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Password / PIN *</label>
-              <div style="display:flex;gap:4px">
-                <input type="password" id="pass-nilai" class="form-input" placeholder="Isi password/PIN..." style="font-size:12px;width:100%">
-                <button type="button" class="btn-sm" onclick="togglePassFormMask()" title="Lihat/sembunyikan" id="pass-nilai-eye"><i class="ti ti-eye"></i></button>
+          <!-- Form tambah/edit password -->
+          <div id="pass-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">
+            <div style="font-size:12.5px;font-weight:600;margin-bottom:10px" id="pass-form-title">➕ Tambah Password Baru</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Account Name *</label>
+                <input type="text" id="vf-accountname" class="form-input" placeholder="cth: Email Kantor" style="font-size:12px;width:100%">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Category</label>
+                <input type="text" id="vf-category" class="form-input" list="vf-category-list" placeholder="cth: Email, Rekening Bank..." style="font-size:12px;width:100%">
+                <datalist id="vf-category-list">
+                  <option value="Email"><option value="Social Media"><option value="Rekening Bank">
+                  <option value="Website"><option value="Perangkat"><option value="Lainnya">
+                </datalist>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Company</label>
+                <input type="text" id="vf-company" class="form-input" placeholder="cth: Google, BCA..." style="font-size:12px;width:100%">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Link</label>
+                <input type="text" id="vf-link" class="form-input" placeholder="cth: www.gmail.com" style="font-size:12px;width:100%">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Username</label>
+                <input type="text" id="vf-username" class="form-input" placeholder="cth: andri@andrikagroup.com" style="font-size:12px;width:100%">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Email</label>
+                <input type="text" id="vf-email" class="form-input" placeholder="cth: andri@gmail.com" style="font-size:12px;width:100%">
+              </div>
+              <div style="grid-column:1/-1">
+                <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Password *</label>
+                <div style="display:flex;gap:4px">
+                  <input type="password" id="vf-password" class="form-input" placeholder="Isi password..." style="font-size:12px;width:100%">
+                  <button type="button" class="btn-sm" onclick="togglePassFormMask()" title="Lihat/sembunyikan" id="pass-nilai-eye"><i class="ti ti-eye"></i></button>
+                  <button type="button" class="btn-sm" onclick="generatePasswordIntoField()" title="Generate password acak"><i class="ti ti-dice-5"></i></button>
+                </div>
+              </div>
+              <div style="grid-column:1/-1">
+                <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Notes</label>
+                <input type="text" id="vf-notes" class="form-input" placeholder="Catatan tambahan..." style="font-size:12px;width:100%">
               </div>
             </div>
-            <div>
-              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Privasi</label>
-              <select id="pass-privacy" title="Siapa yang bisa lihat data ini" style="font-size:12px;width:100%">
-                <option value="true">🔒 Privat (hanya saya)</option>
-                <option value="false">🌐 Publik (tim bisa lihat)</option>
-              </select>
-            </div>
-            <div style="grid-column:1/-1">
-              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Catatan (boleh isi link website, akan jadi bisa diklik)</label>
-              <input type="text" id="pass-catatan" class="form-input" placeholder="cth: https://mail.google.com — untuk login email kantor" style="font-size:12px;width:100%">
+            <input type="hidden" id="vf-editing-id">
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn-sm btn-primary" onclick="savePass()"><i class="ti ti-device-floppy"></i> Simpan</button>
+              <button class="btn-sm" onclick="closePassForm()">Batal</button>
             </div>
           </div>
-          <input type="hidden" id="pass-editing-id">
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button class="btn-sm btn-primary" onclick="savePass()"><i class="ti ti-device-floppy"></i> Simpan</button>
-            <button class="btn-sm" onclick="closePassForm()">Batal</button>
+
+          <!-- Daftar password -->
+          <div id="passvault-list">
+            <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat password...</div>
           </div>
         </div>
 
-        <!-- Daftar password -->
-        <div id="passvault-list">
-          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat password...</div>
-        </div>
       </div>
 
       <!-- ── FAQ / Panduan ──────────────────────── -->
@@ -2665,6 +2706,8 @@ async function renameUserEverywhere(oldName, newName) {
     sb.from('attendance').update({ user_name: newName }).eq('user_name', oldName),
     sb.from('leave_requests').update({ user_name: newName }).eq('user_name', oldName),
     sb.from('password_vault').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('password_vault_v2').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('vault_keys').update({ user_name: newName }).eq('user_name', oldName),
     sb.from('recurring_templates').update({ created_by: newName }).eq('created_by', oldName),
   ];
 
@@ -2807,8 +2850,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (badge) badge.textContent = count > 0 ? count : '—';
   }).catch(() => {});
 
-  // Hitung jumlah password vault untuk badge sidebar
-  sb.from('password_vault').select('id', { count: 'exact', head: true }).then(({ count }) => {
+  // Hitung jumlah password vault untuk badge sidebar (khusus milik user ini — vault privat per orang)
+  sb.from('password_vault_v2').select('id', { count: 'exact', head: true }).eq('created_by', getUser()).then(({ count }) => {
     const badge = document.getElementById('badge-passvault');
     if (badge) badge.textContent = count > 0 ? count : '—';
   }).catch(() => {});
@@ -7875,65 +7918,297 @@ async function deleteLink(id) {
 }
 
 // ── Password Manager ────────────────────────────────────────
-let passVaultCache = [];
-let passVaultRevealed = {}; // { [id]: true } — card yang sedang ditampilkan (bukan disensor)
+// ============================================
+// PASSWORD VAULT — End-to-End Encrypted (E2EE)
+// Prinsip: DEK (Data Encryption Key) TIDAK PERNAH dikirim ke server dalam
+// bentuk asli. Server (Supabase) cuma menyimpan versi DEK yang "dibungkus"
+// (wrapped) oleh Master Password atau Recovery Key masing-masing user.
+// Proses derive key & enkripsi/dekripsi 100% terjadi di browser (Web Crypto API).
+// ============================================
+let vaultDEK = null;         // CryptoKey aktif di memori tab ini saja — hilang saat refresh/tutup tab
+let vaultKeysRow = null;     // baris vault_keys milik user yang sedang login
+let vaultPendingRecoveryKey = null; // recovery key mentah, hanya hidup sesaat sebelum di-generate ulang jadi null
+let passVaultCache = [];     // hasil DEKRIPSI, hanya di memori (tidak pernah disimpan ke localStorage)
+let passVaultRevealed = {};
 
-function linkifyCatatan(text) {
-  if (!text) return '';
-  const escaped = escHtml(text);
-  return escaped.replace(/(https?:\/\/[^\s<]+)/g, url => `<a href="${url}" target="_blank" onclick="event.stopPropagation()">${url}</a>`);
+// ── Helper base64 ────────────────────────────
+function vaultB64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function vaultUnb64(str) { return Uint8Array.from(atob(str), c => c.charCodeAt(0)).buffer; }
+
+// ── Derive AES key dari password + salt (PBKDF2) ──
+async function deriveVaultKey(password, saltB64) {
+  const salt = vaultUnb64(saltB64);
+  const baseKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' },
+    baseKey, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']
+  );
+}
+function vaultNewSalt() { return vaultB64(crypto.getRandomValues(new Uint8Array(16))); }
+
+// ── Generate Recovery Key (mudah dibaca, tanpa 0/O/1/I biar gak ketuker) ──
+function generateRecoveryKeyString() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const rnd = crypto.getRandomValues(new Uint8Array(20));
+  let raw = '';
+  for (let i = 0; i < 20; i++) raw += alphabet[rnd[i] % alphabet.length];
+  return raw.match(/.{1,4}/g).join('-');
 }
 
-function maskValue(v) {
-  return '•'.repeat(Math.min(Math.max((v || '').length, 6), 14));
+// ── Bungkus (wrap) & buka bungkus (unwrap) DEK dengan key turunan password ──
+async function vaultWrapDEK(dek, wrappingKey) {
+  const raw = await crypto.subtle.exportKey('raw', dek);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const wrapped = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, wrappingKey, raw);
+  return { wrapped: vaultB64(wrapped), iv: vaultB64(iv) };
+}
+async function vaultUnwrapDEK(wrappedB64, ivB64, wrappingKey) {
+  const iv = vaultUnb64(ivB64);
+  const raw = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, wrappingKey, vaultUnb64(wrappedB64));
+  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
 }
 
+// ── Enkripsi/dekripsi 1 entry password (semua field jadi 1 blok JSON) ──
+async function vaultEncryptEntry(obj, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = new TextEncoder().encode(JSON.stringify(obj));
+  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+  return { data_encrypted: vaultB64(cipher), iv: vaultB64(iv) };
+}
+async function vaultDecryptEntry(dataEncryptedB64, ivB64, key) {
+  const iv = vaultUnb64(ivB64);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, vaultUnb64(dataEncryptedB64));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+// ── Router utama: dipanggil setiap kali panel Password Manager dibuka ──
 async function renderPasswordVault() {
-  const listEl = document.getElementById('passvault-list');
-  const filterEl = document.getElementById('passvault-filter-kat');
-  if (!listEl) return;
-  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat...</div>';
+  ['vault-state-new', 'vault-state-recovery', 'vault-state-locked', 'vault-state-unlocked'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
 
   const { data, error } = await withTimeout(
-    sb.from('password_vault').select('*').order('created_at')
+    sb.from('vault_keys').select('*').eq('user_name', getUser()).maybeSingle()
   );
 
   if (error) {
-    if (error.message?.includes('password_vault') || error.code === '42P01') {
+    if (error.message?.includes('vault_keys') || error.code === '42P01') {
       document.getElementById('passvault-setup-banner').style.display = 'block';
-      listEl.innerHTML = '<div class="empty-msg">Tabel belum ada — ikuti petunjuk setup di atas.</div>';
     } else {
-      listEl.innerHTML = `<div class="empty-msg">Gagal memuat: ${error.message}</div>`;
+      alert('Gagal memuat vault: ' + error.message);
     }
     return;
   }
 
-  passVaultCache = applyPrivacy(data || []);
+  vaultKeysRow = data || null;
 
-  // Update badge count
+  if (!vaultKeysRow) {
+    document.getElementById('vault-state-new').style.display = 'block';
+  } else if (!vaultDEK) {
+    document.getElementById('vault-state-locked').style.display = 'block';
+  } else {
+    document.getElementById('vault-state-unlocked').style.display = 'block';
+    await loadVaultEntries();
+  }
+}
+
+// ── STATE 1 → 2: bikin vault baru ──
+async function setupVault() {
+  const pw1 = document.getElementById('vault-setup-pw1').value;
+  const pw2 = document.getElementById('vault-setup-pw2').value;
+  if (pw1.length < 8) return alert('Master Password minimal 8 karakter.');
+  if (pw1 !== pw2) return alert('Master Password tidak sama, coba ulangi.');
+
+  const dek = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+
+  const saltMaster = vaultNewSalt();
+  const masterKey = await deriveVaultKey(pw1, saltMaster);
+  const wrappedMaster = await vaultWrapDEK(dek, masterKey);
+
+  const recoveryKeyStr = generateRecoveryKeyString();
+  const saltRecovery = vaultNewSalt();
+  const recoveryKey = await deriveVaultKey(recoveryKeyStr, saltRecovery);
+  const wrappedRecovery = await vaultWrapDEK(dek, recoveryKey);
+
+  const { error } = await withTimeout(sb.from('vault_keys').insert({
+    user_name: getUser(),
+    salt_master: saltMaster,
+    salt_recovery: saltRecovery,
+    dek_wrapped_master: wrappedMaster.wrapped,
+    iv_wrapped_master: wrappedMaster.iv,
+    dek_wrapped_recovery: wrappedRecovery.wrapped,
+    iv_wrapped_recovery: wrappedRecovery.iv
+  }));
+  if (error) return alert('Gagal membuat vault: ' + error.message);
+
+  vaultDEK = dek;
+  vaultPendingRecoveryKey = recoveryKeyStr;
+  document.getElementById('vault-state-new').style.display = 'none';
+  document.getElementById('vault-recovery-display').textContent = recoveryKeyStr;
+  document.getElementById('vault-state-recovery').style.display = 'block';
+}
+
+function copyRecoveryKey() {
+  if (!vaultPendingRecoveryKey) return;
+  navigator.clipboard.writeText(vaultPendingRecoveryKey).catch(() => {});
+}
+
+async function confirmRecoverySaved() {
+  vaultPendingRecoveryKey = null; // hilangkan dari memori, tidak akan ditampilkan lagi
+  document.getElementById('vault-state-recovery').style.display = 'none';
+  document.getElementById('vault-state-unlocked').style.display = 'block';
+  await loadVaultEntries();
   const badge = document.getElementById('badge-passvault');
-  if (badge) badge.textContent = passVaultCache.length || '—';
+  if (badge) badge.textContent = '0';
+}
 
-  // Update dropdown filter kategori
-  if (filterEl) {
-    const cats = [...new Set(passVaultCache.map(p => p.kategori || 'Lainnya'))].sort();
-    const current = filterEl.value;
-    filterEl.innerHTML = '<option value="all">Semua Kategori</option>'
-      + cats.map(c => `<option value="${escHtml(c)}" ${current===c?'selected':''}>${escHtml(c)}</option>`).join('');
+// ── STATE 3: buka vault pakai Master Password ──
+async function unlockVault() {
+  const pw = document.getElementById('vault-unlock-pw').value;
+  const errEl = document.getElementById('vault-unlock-error');
+  errEl.style.display = 'none';
+  if (!pw) return;
+  try {
+    const masterKey = await deriveVaultKey(pw, vaultKeysRow.salt_master);
+    vaultDEK = await vaultUnwrapDEK(vaultKeysRow.dek_wrapped_master, vaultKeysRow.iv_wrapped_master, masterKey);
+  } catch (e) {
+    errEl.textContent = 'Master Password salah. Coba lagi atau pakai Recovery Key.';
+    errEl.style.display = 'block';
+    return;
+  }
+  document.getElementById('vault-unlock-pw').value = '';
+  document.getElementById('vault-state-locked').style.display = 'none';
+  document.getElementById('vault-state-unlocked').style.display = 'block';
+  await loadVaultEntries();
+}
+
+function showRecoveryUnlock() {
+  document.getElementById('vault-recovery-unlock-box').style.display = 'block';
+}
+
+// ── Buka vault pakai Recovery Key, lalu set Master Password baru ──
+async function unlockWithRecoveryKey() {
+  const recoveryInput = document.getElementById('vault-unlock-recovery').value.trim().toUpperCase();
+  const newPw = document.getElementById('vault-new-pw-after-recovery').value;
+  if (!recoveryInput) return alert('Isi Recovery Key dulu.');
+  if (newPw.length < 8) return alert('Master Password baru minimal 8 karakter.');
+
+  let dek;
+  try {
+    const recoveryKey = await deriveVaultKey(recoveryInput, vaultKeysRow.salt_recovery);
+    dek = await vaultUnwrapDEK(vaultKeysRow.dek_wrapped_recovery, vaultKeysRow.iv_wrapped_recovery, recoveryKey);
+  } catch (e) {
+    return alert('Recovery Key salah. Periksa kembali penulisannya.');
   }
 
-  const filterVal = filterEl?.value || 'all';
-  const filtered = filterVal === 'all' ? passVaultCache : passVaultCache.filter(p => (p.kategori||'Lainnya') === filterVal);
+  // Set Master Password baru — bungkus ulang DEK yang sama dengan password baru
+  const saltMaster = vaultNewSalt();
+  const masterKey = await deriveVaultKey(newPw, saltMaster);
+  const wrappedMaster = await vaultWrapDEK(dek, masterKey);
 
-  if (!filtered.length) {
-    listEl.innerHTML = '<div class="empty-msg">Belum ada password tersimpan. Klik "+ Tambah Password" untuk mulai.</div>';
+  const { error } = await withTimeout(sb.from('vault_keys').update({
+    salt_master: saltMaster,
+    dek_wrapped_master: wrappedMaster.wrapped,
+    iv_wrapped_master: wrappedMaster.iv
+  }).eq('user_name', getUser()));
+  if (error) return alert('Gagal menyimpan Master Password baru: ' + error.message);
+
+  vaultDEK = dek;
+  vaultKeysRow.salt_master = saltMaster;
+  vaultKeysRow.dek_wrapped_master = wrappedMaster.wrapped;
+  vaultKeysRow.iv_wrapped_master = wrappedMaster.iv;
+
+  document.getElementById('vault-unlock-recovery').value = '';
+  document.getElementById('vault-new-pw-after-recovery').value = '';
+  document.getElementById('vault-state-locked').style.display = 'none';
+  document.getElementById('vault-state-unlocked').style.display = 'block';
+  alert('Master Password baru berhasil diset. Vault terbuka.');
+  await loadVaultEntries();
+}
+
+// ── Kunci vault manual (hapus DEK dari memori) ──
+function lockVaultManual() {
+  vaultDEK = null;
+  passVaultCache = [];
+  passVaultRevealed = {};
+  document.getElementById('vault-state-unlocked').style.display = 'none';
+  document.getElementById('vault-state-locked').style.display = 'block';
+}
+
+// ── Ambil semua entry milik user ini & dekripsi di browser ──
+async function loadVaultEntries() {
+  const listEl = document.getElementById('passvault-list');
+  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Memuat & mendekripsi...</div>';
+
+  const { data, error } = await withTimeout(
+    sb.from('password_vault_v2').select('*').eq('created_by', getUser()).order('created_at')
+  );
+  if (error) {
+    if (error.message?.includes('password_vault_v2') || error.code === '42P01') {
+      document.getElementById('passvault-setup-banner').style.display = 'block';
+    }
+    listEl.innerHTML = `<div class="empty-msg">Gagal memuat: ${error.message}</div>`;
     return;
   }
 
-  // Kelompokkan per kategori
+  passVaultCache = [];
+  for (const row of (data || [])) {
+    try {
+      const decrypted = await vaultDecryptEntry(row.data_encrypted, row.iv, vaultDEK);
+      passVaultCache.push({ id: row.id, ...decrypted });
+    } catch (e) {
+      // Entry gagal didekripsi (misal DEK tidak cocok) — lewati, jangan sampai bikin seluruh list error
+      console.warn('Gagal dekripsi entry', row.id, e);
+    }
+  }
+
+  const badge = document.getElementById('badge-passvault');
+  if (badge) badge.textContent = passVaultCache.length || '—';
+
+  const catEl = document.getElementById('vault-search-category');
+  if (catEl) {
+    const cats = [...new Set(passVaultCache.map(p => p.category || 'Lainnya'))].sort();
+    const current = catEl.value;
+    catEl.innerHTML = '<option value="all">Semua Kategori</option>'
+      + cats.map(c => `<option value="${escHtml(c)}" ${current === c ? 'selected' : ''}>${escHtml(c)}</option>`).join('');
+  }
+
+  renderVaultList();
+}
+
+function maskValue(v) { return '•'.repeat(Math.min(Math.max((v || '').length, 6), 14)); }
+function linkifyPlain(url) {
+  if (!url) return '';
+  const escaped = escHtml(url);
+  const href = /^https?:\/\//i.test(url) ? url : 'https://' + url;
+  return `<a href="${href}" target="_blank" onclick="event.stopPropagation()">${escaped}</a>`;
+}
+
+// ── Render list (dipanggil ulang tiap kali search/filter berubah) ──
+function renderVaultList() {
+  const listEl = document.getElementById('passvault-list');
+  if (!listEl) return;
+
+  const qAccount = (document.getElementById('vault-search-account')?.value || '').toLowerCase().trim();
+  const qCompany = (document.getElementById('vault-search-company')?.value || '').toLowerCase().trim();
+  const qCategory = document.getElementById('vault-search-category')?.value || 'all';
+
+  const filtered = passVaultCache.filter(p => {
+    if (qAccount && !(p.accountName || '').toLowerCase().includes(qAccount)) return false;
+    if (qCompany && !(p.company || '').toLowerCase().includes(qCompany)) return false;
+    if (qCategory !== 'all' && (p.category || 'Lainnya') !== qCategory) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div class="empty-msg">Belum ada password yang cocok. Klik "+ Tambah Password" untuk mulai.</div>';
+    return;
+  }
+
   const grouped = {};
   filtered.forEach(p => {
-    const kat = p.kategori || 'Lainnya';
+    const kat = p.category || 'Lainnya';
     if (!grouped[kat]) grouped[kat] = [];
     grouped[kat].push(p);
   });
@@ -7943,23 +8218,24 @@ async function renderPasswordVault() {
       <div class="link-group-title">${escHtml(kat)}</div>
       ${items.map(p => {
         const revealed = !!passVaultRevealed[p.id];
-        const displayVal = revealed ? escHtml(p.nilai) : maskValue(p.nilai);
+        const displayVal = revealed ? escHtml(p.password) : maskValue(p.password);
         return `
         <div class="pass-card">
           <div class="pass-icon">🔑</div>
           <div class="pass-info">
             <div class="pass-label">
-              ${escHtml(p.label)}
-              <span class="pass-type-badge">${escHtml(p.tipe || 'Password')}</span>
-              ${p.is_private ? '🔒' : '🌐'}
+              ${escHtml(p.accountName)}
+              ${p.company ? `<span class="pass-type-badge">${escHtml(p.company)}</span>` : ''}
             </div>
-            ${p.akun ? `<div class="pass-akun"><i class="ti ti-user" style="font-size:11px"></i> ${escHtml(p.akun)}</div>` : ''}
+            ${p.username ? `<div class="pass-akun"><i class="ti ti-user" style="font-size:11px"></i> ${escHtml(p.username)}</div>` : ''}
+            ${p.email ? `<div class="pass-akun"><i class="ti ti-mail" style="font-size:11px"></i> ${escHtml(p.email)}</div>` : ''}
+            ${p.link ? `<div class="pass-akun"><i class="ti ti-link" style="font-size:11px"></i> ${linkifyPlain(p.link)}</div>` : ''}
             <div class="pass-value-row">
               <span class="pass-value-box" id="pass-value-${p.id}">${displayVal}</span>
               <button class="btn-sm" title="${revealed ? 'Sembunyikan' : 'Lihat'}" onclick="toggleCardMask('${p.id}')"><i class="ti ti-${revealed ? 'eye-off' : 'eye'}"></i></button>
               <button class="btn-sm" title="Salin" onclick="copyPassValue('${p.id}')"><i class="ti ti-copy"></i></button>
             </div>
-            ${p.catatan ? `<div class="pass-note">${linkifyCatatan(p.catatan)}</div>` : ''}
+            ${p.notes ? `<div class="pass-note">${escHtml(p.notes)}</div>` : ''}
           </div>
           <div class="pass-actions">
             <button class="btn-sm" title="Edit" onclick="openPassForm('${p.id}')"><i class="ti ti-pencil"></i></button>
@@ -7976,8 +8252,7 @@ function toggleCardMask(id) {
   passVaultRevealed[id] = !passVaultRevealed[id];
   const item = passVaultCache.find(p => p.id === id);
   const box = document.getElementById('pass-value-' + id);
-  if (box && item) box.textContent = passVaultRevealed[id] ? item.nilai : maskValue(item.nilai);
-  // Update icon on the toggle button without a full re-render
+  if (box && item) box.textContent = passVaultRevealed[id] ? item.password : maskValue(item.password);
   const btn = box?.parentElement?.querySelector('button[onclick^="toggleCardMask"] i');
   if (btn) btn.className = passVaultRevealed[id] ? 'ti ti-eye-off' : 'ti ti-eye';
 }
@@ -7985,22 +8260,35 @@ function toggleCardMask(id) {
 function copyPassValue(id) {
   const item = passVaultCache.find(p => p.id === id);
   if (!item) return;
-  navigator.clipboard.writeText(item.nilai).then(() => {
+  navigator.clipboard.writeText(item.password).then(() => {
     const box = document.getElementById('pass-value-' + id);
     if (!box) return;
     const original = box.textContent;
     box.textContent = 'Disalin!';
-    setTimeout(() => { box.textContent = passVaultRevealed[id] ? item.nilai : maskValue(item.nilai); }, 1000);
+    setTimeout(() => { box.textContent = passVaultRevealed[id] ? item.password : maskValue(item.password); }, 1000);
   }).catch(() => alert('Gagal menyalin. Coba salin manual.'));
 }
 
 function togglePassFormMask() {
-  const input = document.getElementById('pass-nilai');
+  const input = document.getElementById('vf-password');
   const icon = document.querySelector('#pass-nilai-eye i');
   if (!input) return;
   const isPassword = input.type === 'password';
   input.type = isPassword ? 'text' : 'password';
   if (icon) icon.className = isPassword ? 'ti ti-eye-off' : 'ti ti-eye';
+}
+
+// ── Random Password Generator ──
+function generatePasswordIntoField() {
+  const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*_-';
+  const rnd = crypto.getRandomValues(new Uint8Array(16));
+  let pw = '';
+  for (let i = 0; i < 16; i++) pw += charset[rnd[i] % charset.length];
+  const input = document.getElementById('vf-password');
+  input.type = 'text';
+  input.value = pw;
+  const icon = document.querySelector('#pass-nilai-eye i');
+  if (icon) icon.className = 'ti ti-eye-off';
 }
 
 function openPassForm(id) {
@@ -8009,34 +8297,30 @@ function openPassForm(id) {
   form.style.display = 'block';
   form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-  // Reset masked input ke mode password setiap buka form
-  const nilaiInput = document.getElementById('pass-nilai');
+  const pwInput = document.getElementById('vf-password');
   const eyeIcon = document.querySelector('#pass-nilai-eye i');
-  if (nilaiInput) nilaiInput.type = 'password';
+  if (pwInput) pwInput.type = 'password';
   if (eyeIcon) eyeIcon.className = 'ti ti-eye';
 
   if (id) {
     const item = passVaultCache.find(p => p.id === id);
     if (!item) return;
     titleEl.textContent = '✏️ Edit Password';
-    document.getElementById('pass-label').value = item.label || '';
-    document.getElementById('pass-tipe').value = item.tipe || '';
-    document.getElementById('pass-kategori').value = item.kategori || '';
-    document.getElementById('pass-akun').value = item.akun || '';
-    document.getElementById('pass-nilai').value = item.nilai || '';
-    document.getElementById('pass-catatan').value = item.catatan || '';
-    document.getElementById('pass-privacy').value = item.is_private === false ? 'false' : 'true';
-    document.getElementById('pass-editing-id').value = id;
+    document.getElementById('vf-accountname').value = item.accountName || '';
+    document.getElementById('vf-category').value = item.category || '';
+    document.getElementById('vf-company').value = item.company || '';
+    document.getElementById('vf-link').value = item.link || '';
+    document.getElementById('vf-username').value = item.username || '';
+    document.getElementById('vf-email').value = item.email || '';
+    document.getElementById('vf-password').value = item.password || '';
+    document.getElementById('vf-notes').value = item.notes || '';
+    document.getElementById('vf-editing-id').value = id;
   } else {
     titleEl.textContent = '➕ Tambah Password Baru';
-    document.getElementById('pass-label').value = '';
-    document.getElementById('pass-tipe').value = '';
-    document.getElementById('pass-kategori').value = '';
-    document.getElementById('pass-akun').value = '';
-    document.getElementById('pass-nilai').value = '';
-    document.getElementById('pass-catatan').value = '';
-    document.getElementById('pass-privacy').value = 'true';
-    document.getElementById('pass-editing-id').value = '';
+    ['vf-accountname','vf-category','vf-company','vf-link','vf-username','vf-email','vf-password','vf-notes'].forEach(fid => {
+      document.getElementById(fid).value = '';
+    });
+    document.getElementById('vf-editing-id').value = '';
   }
 }
 
@@ -8045,45 +8329,40 @@ function closePassForm() {
 }
 
 async function savePass() {
-  const label = document.getElementById('pass-label').value.trim();
-  const tipe  = document.getElementById('pass-tipe').value.trim() || 'Password';
-  const kat   = document.getElementById('pass-kategori').value.trim() || 'Lainnya';
-  const akun  = document.getElementById('pass-akun').value.trim();
-  const nilai = document.getElementById('pass-nilai').value;
-  const catatan = document.getElementById('pass-catatan').value.trim();
-  const isPrivate = document.getElementById('pass-privacy').value === 'true';
-  const editId = document.getElementById('pass-editing-id').value;
+  const accountName = document.getElementById('vf-accountname').value.trim();
+  const category = document.getElementById('vf-category').value.trim() || 'Lainnya';
+  const company = document.getElementById('vf-company').value.trim();
+  const link = document.getElementById('vf-link').value.trim();
+  const username = document.getElementById('vf-username').value.trim();
+  const email = document.getElementById('vf-email').value.trim();
+  const password = document.getElementById('vf-password').value;
+  const notes = document.getElementById('vf-notes').value.trim();
+  const editId = document.getElementById('vf-editing-id').value;
 
-  if (!label) return alert('Nama / judul harus diisi!');
-  if (!nilai) return alert('Password / PIN harus diisi!');
+  if (!accountName) return alert('Account Name harus diisi!');
+  if (!password) return alert('Password harus diisi!');
 
-  const payload = {
-    label, tipe, kategori: kat,
-    akun: akun || null,
-    nilai,
-    catatan: catatan || null,
-    is_private: isPrivate,
-    created_by: getUser()
-  };
+  const entryObj = { accountName, category, company, link, username, email, password, notes };
+  const { data_encrypted, iv } = await vaultEncryptEntry(entryObj, vaultDEK);
 
   let error;
   if (editId) {
-    ({ error } = await withTimeout(sb.from('password_vault').update(payload).eq('id', editId)));
+    ({ error } = await withTimeout(sb.from('password_vault_v2').update({ data_encrypted, iv, updated_at: new Date().toISOString() }).eq('id', editId)));
   } else {
-    ({ error } = await withTimeout(sb.from('password_vault').insert(payload)));
+    ({ error } = await withTimeout(sb.from('password_vault_v2').insert({ data_encrypted, iv, created_by: getUser() })));
   }
 
   if (error) return alert('Gagal menyimpan: ' + error.message);
   closePassForm();
-  await renderPasswordVault();
+  await loadVaultEntries();
 }
 
 async function deletePass(id) {
   if (!confirm('Hapus password ini? Tindakan ini tidak bisa dibatalkan.')) return;
-  const { error } = await withTimeout(sb.from('password_vault').delete().eq('id', id));
+  const { error } = await withTimeout(sb.from('password_vault_v2').delete().eq('id', id));
   if (error) return alert('Gagal hapus: ' + error.message);
   delete passVaultRevealed[id];
-  await renderPasswordVault();
+  await loadVaultEntries();
 }
 
 // ── Export Excel absensi ────────────────────────────────────
