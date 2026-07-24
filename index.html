@@ -713,19 +713,22 @@ textarea { resize: vertical; }
 .link-url-text { font-size: 11px; color: var(--accent); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .link-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
 .link-actions { display: flex; gap: 5px; flex-shrink: 0; }
-.pass-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-bottom: 4px; }
-.pass-card { display:flex; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px 14px; }
-.pass-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
-.pass-icon { font-size: 16px; flex-shrink: 0; }
-.pass-info { flex: 1; min-width: 0; }
-.pass-label { font-size: 13px; font-weight: 600; color: var(--text1); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.pass-akun { font-size: 11px; color: var(--text2); margin-top: 1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pass-value-row { display:flex; align-items:center; gap:6px; margin-top:2px; }
-.pass-value-box { font-family: monospace; font-size: 12.5px; color: var(--text1); background: var(--bg2); border:1px solid var(--border); border-radius:6px; padding:3px 8px; letter-spacing:1px; user-select:all; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
-.pass-note { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.pass-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 10px; margin-bottom: 4px; align-items: start; }
+.pass-card { display:flex; flex-direction:column; gap:5px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; }
+.pass-card:hover { box-shadow: 0 4px 14px rgba(47,99,100,0.10); transform: translateY(-1px); border-color: var(--border2); }
+.pass-card-top { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.pass-icon { font-size: 13px; flex-shrink: 0; opacity: 0.85; }
+.pass-info { flex: 1; min-width: 0; display:flex; flex-direction:column; gap:3px; }
+.pass-label { font-size: 12.5px; font-weight: 600; color: var(--text1); display:flex; align-items:center; gap:5px; flex-wrap:wrap; min-width:0; }
+.pass-label-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pass-akun { font-size: 10.5px; color: var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:4px; }
+.pass-value-row { display:flex; align-items:center; gap:5px; margin-top:1px; }
+.pass-value-box { font-family: monospace; font-size: 11.5px; color: var(--text1); background: var(--bg2); border:1px solid var(--border); border-radius:6px; padding:2px 7px; letter-spacing:0.5px; user-select:all; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pass-note { font-size: 10.5px; color: var(--text3); margin-top: 1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pass-note a { color: var(--accent); }
-.pass-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.pass-type-badge { font-size:9px; font-weight:600; padding:1px 6px; border-radius:8px; background:var(--bg2); color:var(--text3); border:1px solid var(--border); }
+.pass-actions { display: flex; gap: 3px; flex-shrink: 0; }
+.pass-type-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px; background:var(--bg2); color:var(--text3); border:1px solid var(--border); flex-shrink:0; }
+.pass-card .btn-sm { width:24px; height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; font-size:11px; }
 
 /* ── AI Modal (Puter.js) ─────────────────────────────────── */
 .ai-modal-overlay { display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; padding:20px; }
@@ -8243,22 +8246,22 @@ function renderVaultList() {
         const revealed = !!passVaultRevealed[p.id];
         const displayVal = revealed ? escHtml(p.password) : maskValue(p.password);
         return `
-        <div class="pass-card" style="border-left:4px solid ${style.border}">
+        <div class="pass-card" style="border-left:3px solid ${style.border}">
           <div class="pass-card-top">
             <div class="pass-label">
               <span class="pass-icon">🔑</span>
-              ${escHtml(p.accountName)}
+              <span class="pass-label-name">${escHtml(p.accountName)}</span>
+              ${p.company ? `<span class="pass-type-badge" style="background:${style.bg};color:${style.fg};border-color:${style.border}">${escHtml(p.company)}</span>` : ''}
             </div>
             <div class="pass-actions">
               <button class="btn-sm" title="Edit" onclick="openPassForm('${p.id}')"><i class="ti ti-pencil"></i></button>
               <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" title="Hapus" onclick="deletePass('${p.id}')"><i class="ti ti-trash"></i></button>
             </div>
           </div>
-          ${p.company ? `<span class="pass-type-badge" style="background:${style.bg};color:${style.fg};border-color:${style.border};font-weight:700;align-self:flex-start">${escHtml(p.company)}</span>` : ''}
           <div class="pass-info">
-            ${p.username ? `<div class="pass-akun"><i class="ti ti-user" style="font-size:11px"></i> ${escHtml(p.username)}</div>` : ''}
-            ${p.email ? `<div class="pass-akun"><i class="ti ti-mail" style="font-size:11px"></i> ${escHtml(p.email)}</div>` : ''}
-            ${p.link ? `<div class="pass-akun"><i class="ti ti-link" style="font-size:11px"></i> ${linkifyPlain(p.link)}</div>` : ''}
+            ${p.username ? `<div class="pass-akun"><i class="ti ti-user" style="font-size:10px"></i> ${escHtml(p.username)}</div>` : ''}
+            ${p.email ? `<div class="pass-akun"><i class="ti ti-mail" style="font-size:10px"></i> ${escHtml(p.email)}</div>` : ''}
+            ${p.link ? `<div class="pass-akun"><i class="ti ti-link" style="font-size:10px"></i> ${linkifyPlain(p.link)}</div>` : ''}
             <div class="pass-value-row">
               <span class="pass-value-box" id="pass-value-${p.id}">${displayVal}</span>
               <button class="btn-sm" title="${revealed ? 'Sembunyikan' : 'Lihat'}" onclick="toggleCardMask('${p.id}')"><i class="ti ti-${revealed ? 'eye-off' : 'eye'}"></i></button>
