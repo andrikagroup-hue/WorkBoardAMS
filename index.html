@@ -8186,6 +8186,24 @@ function linkifyPlain(url) {
 }
 
 // ── Render list (dipanggil ulang tiap kali search/filter berubah) ──
+// ── Warna per kategori (konsisten tiap kali muncul, dihitung dari nama kategori) ──
+const VAULT_CAT_PALETTE = [
+  { bg: '#fce7f3', fg: '#9d174d', border: '#f9a8d4' }, // pink
+  { bg: '#ffedd5', fg: '#9a3412', border: '#fdba74' }, // peach
+  { bg: '#fef9c3', fg: '#854d0e', border: '#fde047' }, // kuning
+  { bg: '#dcfce7', fg: '#166534', border: '#86efac' }, // hijau
+  { bg: '#dbeafe', fg: '#1e40af', border: '#93c5fd' }, // biru
+  { bg: '#ede9fe', fg: '#5b21b6', border: '#c4b5fd' }, // ungu
+  { bg: '#ffe4e6', fg: '#9f1239', border: '#fda4af' }, // rose
+  { bg: '#e0f2fe', fg: '#075985', border: '#7dd3fc' }, // sky
+];
+function vaultCatStyle(category) {
+  const str = category || 'Lainnya';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return VAULT_CAT_PALETTE[hash % VAULT_CAT_PALETTE.length];
+}
+
 function renderVaultList() {
   const listEl = document.getElementById('passvault-list');
   if (!listEl) return;
@@ -8213,19 +8231,21 @@ function renderVaultList() {
     grouped[kat].push(p);
   });
 
-  listEl.innerHTML = Object.entries(grouped).map(([kat, items]) => `
+  listEl.innerHTML = Object.entries(grouped).map(([kat, items]) => {
+    const style = vaultCatStyle(kat);
+    return `
     <div class="link-group">
-      <div class="link-group-title">${escHtml(kat)}</div>
+      <div class="link-group-title" style="display:inline-block;padding:4px 12px;border-radius:6px;background:${style.bg};color:${style.fg};border-bottom:none;font-size:11px">${escHtml(kat)}</div>
       ${items.map(p => {
         const revealed = !!passVaultRevealed[p.id];
         const displayVal = revealed ? escHtml(p.password) : maskValue(p.password);
         return `
-        <div class="pass-card">
+        <div class="pass-card" style="border-left:4px solid ${style.border}">
           <div class="pass-icon">🔑</div>
           <div class="pass-info">
             <div class="pass-label">
               ${escHtml(p.accountName)}
-              ${p.company ? `<span class="pass-type-badge">${escHtml(p.company)}</span>` : ''}
+              ${p.company ? `<span class="pass-type-badge" style="background:${style.bg};color:${style.fg};border-color:${style.border};font-weight:700">${escHtml(p.company)}</span>` : ''}
             </div>
             ${p.username ? `<div class="pass-akun"><i class="ti ti-user" style="font-size:11px"></i> ${escHtml(p.username)}</div>` : ''}
             ${p.email ? `<div class="pass-akun"><i class="ti ti-mail" style="font-size:11px"></i> ${escHtml(p.email)}</div>` : ''}
@@ -8245,7 +8265,8 @@ function renderVaultList() {
       `;
       }).join('')}
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function toggleCardMask(id) {
