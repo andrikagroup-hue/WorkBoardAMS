@@ -2544,7 +2544,10 @@ ON CONFLICT DO NOTHING;</code>
           <!-- Header + tombol tambah -->
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
             <div style="font-size:13px;font-weight:600;color:var(--text1)">🔐 Password Entry</div>
-            <button class="btn-sm btn-primary" onclick="openPassForm()"><i class="ti ti-plus"></i> Tambah Password</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-sm" onclick="bulkImportOldData()" title="Import sekali-jalan data lama yang sudah kamu kumpulkan"><i class="ti ti-upload"></i> Import Data Lama</button>
+              <button class="btn-sm btn-primary" onclick="openPassForm()"><i class="ti ti-plus"></i> Tambah Password</button>
+            </div>
           </div>
 
           <!-- Form tambah/edit password -->
@@ -2560,7 +2563,9 @@ ON CONFLICT DO NOTHING;</code>
                 <input type="text" id="vf-category" class="form-input" list="vf-category-list" placeholder="cth: Email, Rekening Bank..." style="font-size:12px;width:100%">
                 <datalist id="vf-category-list">
                   <option value="Email"><option value="Social Media"><option value="Rekening Bank">
-                  <option value="Website"><option value="Perangkat"><option value="Lainnya">
+                  <option value="Website"><option value="Perangkat"><option value="Hosting">
+                  <option value="CMS / Admin Panel"><option value="Tools / SaaS"><option value="Pemerintah">
+                  <option value="API Key"><option value="Lainnya">
                 </datalist>
               </div>
               <div>
@@ -8393,6 +8398,58 @@ async function deletePass(id) {
   if (error) return alert('Gagal hapus: ' + error.message);
   delete passVaultRevealed[id];
   await loadVaultEntries();
+}
+
+// ── Import sekali-jalan: data lama yang dikumpulkan manual ──
+// PENTING: hapus tombol & fungsi ini dari kode setelah dipakai sekali,
+// karena password di bawah ini tersimpan sebagai teks biasa di file sumber
+// (baru terenkripsi SAAT dikirim ke Supabase, bukan di file ini).
+const BULK_IMPORT_DATA = [
+  { accountName: 'Andri', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'andri@andrikagroup.com', email: 'andri@andrikagroup.com', password: '$andriPTandrika', notes: '' },
+  { accountName: 'Dedi', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'dedi@andrikagroup.com', email: 'dedi@andrikagroup.com', password: '$dediPTandrika', notes: '' },
+  { accountName: 'Ratu', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'ratu@andrikagroup.com', email: 'ratu@andrikagroup.com', password: 'Hwx7JTPpQb4AFk3', notes: 'Ada 2 kandidat password, cek mana yang aktif: alternatif = $ratuPTandrika' },
+  { accountName: 'Info', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'info@andrikagroup.com', email: 'info@andrikagroup.com', password: '$infoPTandrika', notes: '' },
+  { accountName: 'Sales', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'sales@andrikagroup.com', email: 'sales@andrikagroup.com', password: '$salesPTandrika', notes: '' },
+  { accountName: 'Admin', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'admin@andrikagroup.com', email: 'admin@andrikagroup.com', password: '$adminPTandrika', notes: '' },
+  { accountName: 'HR', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'hr@andrikagroup.com', email: 'hr@andrikagroup.com', password: '$hrPTandrika', notes: '' },
+  { accountName: 'GA', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'ga@andrikagroup.com', email: 'ga@andrikagroup.com', password: '$gaPTandrika', notes: '' },
+  { accountName: 'WH', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'wh@andrikagroup.com', email: 'wh@andrikagroup.com', password: '$whPTandrika', notes: '' },
+  { accountName: 'BD', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'bd@andrikagroup.com', email: 'bd@andrikagroup.com', password: '$bdPTandrika', notes: '' },
+  { accountName: 'FA', category: 'Email Official', company: 'AndrikaGroup', link: 'https://melayu.sharehostserver.com:2096/webmaillogout.cgi', username: 'fa@andrikagroup.com', email: 'fa@andrikagroup.com', password: '$faPTandrika', notes: '' },
+  { accountName: 'AMS Hosting cPanel', category: 'Hosting', company: 'ptams.id', link: 'https://www.domosquare.com/hosting/cpanel', username: 'pta45603', email: '', password: 'L2AK3[Pdl35(gd', notes: 'Domain: ptams.id' },
+  { accountName: 'Samsung Account', category: 'Perangkat', company: '', link: '', username: '', email: 'andriptams@gmail.com', password: '@ptamsjd15', notes: '' },
+  { accountName: 'OSS / Coretax', category: 'Pemerintah', company: '', link: '', username: 'andrikagroup@gmail.com / 1000000008660147', email: 'andrikagroup@gmail.com', password: 'PTandrika2026$', notes: '' },
+  { accountName: 'Gmail AndrikaGroup', category: 'Email', company: 'Google', link: 'www.gmail.com', username: '', email: 'andrikagroup@gmail.com', password: '@amsjd15', notes: '' },
+  { accountName: 'Email Pak Andri', category: 'Email', company: 'Google', link: 'www.gmail.com', username: '', email: 'andriptams@gmail.com', password: '@ptams123', notes: '' },
+  { accountName: 'Email SKK', category: 'Email', company: 'Sumber Karya Kasih', link: '', username: '', email: 'sales@sumberkaryakasih.com', password: 'Bismillah*09092019', notes: '' },
+  { accountName: 'eProc AirNav', category: 'Tools / SaaS', company: 'Sumber Karya Kasih', link: '', username: 'sales@sumberkaryakasih.com', email: '', password: 'Ym25mt', notes: '' },
+  { accountName: 'Kledo', category: 'Tools / SaaS', company: '', link: 'https://app.kledo.com', username: 'andrikagroup@gmail.com', email: '', password: 'NfWGuJ2s', notes: '' },
+  { accountName: 'Supabase', category: 'Tools / SaaS', company: '', link: 'https://supabase.com/', username: '', email: '', password: '@PTamsjd152', notes: 'Project: workboard' },
+  { accountName: 'Netlify siAKUN', category: 'Tools / SaaS', company: '', link: 'https://app.netlify.com/projects/siakunams/overview', username: '', email: '', password: '@PTamsjd152', notes: '' },
+  { accountName: 'siAKUN App Login', category: 'CMS / Admin Panel', company: '', link: '', username: 'admin', email: '', password: 'ANDRIKAMASTER2026', notes: '' },
+  { accountName: 'Amdalnet - ANDRI AJIS', category: 'Pemerintah', company: '', link: '', username: '', email: '', password: '', notes: 'No. Registrasi: 69ff0eccbc8f8. Usaha: Reparasi Peralatan Komunikasi. Tidak ada password, hanya info registrasi.' },
+  { accountName: 'WordPress AndrikaGroup', category: 'CMS / Admin Panel', company: '', link: 'https://andrikagroup.com/wp-login.php', username: 'ratu', email: '', password: 'Miu1AFIw@O!', notes: '' },
+];
+
+async function bulkImportOldData() {
+  if (!vaultDEK) return alert('Buka (unlock) vault dulu sebelum import.');
+  if (!confirm(`Ini akan menambahkan ${BULK_IMPORT_DATA.length} entry password lama ke vault kamu. Lanjutkan?`)) return;
+
+  let success = 0, failed = 0;
+  for (const entry of BULK_IMPORT_DATA) {
+    try {
+      const { data_encrypted, iv } = await vaultEncryptEntry(entry, vaultDEK);
+      const { error } = await withTimeout(sb.from('password_vault_v2').insert({ data_encrypted, iv, created_by: getUser() }));
+      if (error) throw error;
+      success++;
+    } catch (e) {
+      console.warn('Gagal import entry:', entry.accountName, e);
+      failed++;
+    }
+  }
+
+  await loadVaultEntries();
+  alert(`Import selesai: ${success} berhasil, ${failed} gagal.\n\nJangan lupa: hapus tombol "Import Data Lama" ini dari kode setelah dipakai, karena password di dalamnya masih tersimpan sebagai teks biasa di file index.html.\n\nCatatan tambahan yang perlu kamu cek manual:\n1. Entry "Ratu" (Email Official) — ada 2 kandidat password, cek mana yang aktif.\n2. API Key Anthropic lama SUDAH BOCOR (sempat dikirim di chat) — revoke & buat baru di platform.claude.com, lalu tambahkan manual lewat tombol "+ Tambah Password".`);
 }
 
 // ── Export Excel absensi ────────────────────────────────────
