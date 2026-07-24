@@ -713,16 +713,18 @@ textarea { resize: vertical; }
 .link-url-text { font-size: 11px; color: var(--accent); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .link-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
 .link-actions { display: flex; gap: 5px; flex-shrink: 0; }
-.pass-card { display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; margin-bottom:8px; }
-.pass-icon { font-size: 20px; flex-shrink: 0; width: 30px; text-align: center; }
+.pass-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-bottom: 4px; }
+.pass-card { display:flex; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px 14px; }
+.pass-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
+.pass-icon { font-size: 16px; flex-shrink: 0; }
 .pass-info { flex: 1; min-width: 0; }
 .pass-label { font-size: 13px; font-weight: 600; color: var(--text1); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.pass-akun { font-size: 11px; color: var(--text2); margin-top: 1px; }
-.pass-value-row { display:flex; align-items:center; gap:6px; margin-top:4px; }
-.pass-value-box { font-family: monospace; font-size: 12.5px; color: var(--text1); background: var(--bg2); border:1px solid var(--border); border-radius:6px; padding:3px 8px; letter-spacing:1px; user-select:all; }
-.pass-note { font-size: 11px; color: var(--text3); margin-top: 3px; }
+.pass-akun { font-size: 11px; color: var(--text2); margin-top: 1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pass-value-row { display:flex; align-items:center; gap:6px; margin-top:2px; }
+.pass-value-box { font-family: monospace; font-size: 12.5px; color: var(--text1); background: var(--bg2); border:1px solid var(--border); border-radius:6px; padding:3px 8px; letter-spacing:1px; user-select:all; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.pass-note { font-size: 11px; color: var(--text3); margin-top: 2px; }
 .pass-note a { color: var(--accent); }
-.pass-actions { display: flex; gap: 5px; flex-shrink: 0; }
+.pass-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .pass-type-badge { font-size:9px; font-weight:600; padding:1px 6px; border-radius:8px; background:var(--bg2); color:var(--text3); border:1px solid var(--border); }
 
 /* ── AI Modal (Puter.js) ─────────────────────────────────── */
@@ -8236,17 +8238,24 @@ function renderVaultList() {
     return `
     <div class="link-group">
       <div class="link-group-title" style="display:inline-block;padding:4px 12px;border-radius:6px;background:${style.bg};color:${style.fg};border-bottom:none;font-size:11px">${escHtml(kat)}</div>
+      <div class="pass-grid">
       ${items.map(p => {
         const revealed = !!passVaultRevealed[p.id];
         const displayVal = revealed ? escHtml(p.password) : maskValue(p.password);
         return `
         <div class="pass-card" style="border-left:4px solid ${style.border}">
-          <div class="pass-icon">🔑</div>
-          <div class="pass-info">
+          <div class="pass-card-top">
             <div class="pass-label">
+              <span class="pass-icon">🔑</span>
               ${escHtml(p.accountName)}
-              ${p.company ? `<span class="pass-type-badge" style="background:${style.bg};color:${style.fg};border-color:${style.border};font-weight:700">${escHtml(p.company)}</span>` : ''}
             </div>
+            <div class="pass-actions">
+              <button class="btn-sm" title="Edit" onclick="openPassForm('${p.id}')"><i class="ti ti-pencil"></i></button>
+              <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" title="Hapus" onclick="deletePass('${p.id}')"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+          ${p.company ? `<span class="pass-type-badge" style="background:${style.bg};color:${style.fg};border-color:${style.border};font-weight:700;align-self:flex-start">${escHtml(p.company)}</span>` : ''}
+          <div class="pass-info">
             ${p.username ? `<div class="pass-akun"><i class="ti ti-user" style="font-size:11px"></i> ${escHtml(p.username)}</div>` : ''}
             ${p.email ? `<div class="pass-akun"><i class="ti ti-mail" style="font-size:11px"></i> ${escHtml(p.email)}</div>` : ''}
             ${p.link ? `<div class="pass-akun"><i class="ti ti-link" style="font-size:11px"></i> ${linkifyPlain(p.link)}</div>` : ''}
@@ -8257,13 +8266,10 @@ function renderVaultList() {
             </div>
             ${p.notes ? `<div class="pass-note">${escHtml(p.notes)}</div>` : ''}
           </div>
-          <div class="pass-actions">
-            <button class="btn-sm" title="Edit" onclick="openPassForm('${p.id}')"><i class="ti ti-pencil"></i></button>
-            <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" title="Hapus" onclick="deletePass('${p.id}')"><i class="ti ti-trash"></i></button>
-          </div>
         </div>
       `;
       }).join('')}
+      </div>
     </div>
   `;
   }).join('');
