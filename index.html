@@ -1679,7 +1679,7 @@ textarea { resize: vertical; }
               <th>Due On</th>
               <th>Notes</th>
               <th>Akses</th>
-              <th>Aksi</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="pt-tbody">
@@ -2007,7 +2007,7 @@ ALTER TABLE logbook_entries
 
         <div class="todo-month-picker">
           <input type="month" id="todo-month-input" onchange="renderTodoDashboard(todoCache)" />
-          <button class="btn-sm" onclick="document.getElementById('todo-month-input').value=todayStr().substring(0,7);renderTodoDashboard(todoCache)">Bulan Ini</button>
+          <button class="btn-sm" onclick="document.getElementById('todo-month-input').value=todayStr().substring(0,7);renderTodoDashboard(todoCache)">This Month</button>
           <span style="font-size:10.5px;color:var(--text3)">*only tasks with a deadline date are included in this report</span>
         </div>
 
@@ -2017,7 +2017,7 @@ ALTER TABLE logbook_entries
           </div>
           <div class="todo-weeks" id="todo-weeks"></div>
           <div class="todo-week-tables" id="todo-week-tables"></div>
-          <div class="todo-nodate-title" id="todo-nodate-title" style="display:none">Tugas Tanpa Deadline</div>
+          <div class="todo-nodate-title" id="todo-nodate-title" style="display:none">Tasks Without Deadline</div>
           <div class="todo-week-tables" id="todo-nodate"></div>
         </div>
 
@@ -2082,7 +2082,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
         <div class="chat-wrap" id="chat-wrap">
           <div class="chat-sidebar">
             <div class="chat-sb-section">
-              <div class="chat-sb-label"><span>Umum</span></div>
+              <div class="chat-sb-label"><span>General</span></div>
               <div id="chat-list-umum"><div class="chat-empty-list">Loading...</div></div>
             </div>
             <div class="chat-sb-section">
@@ -2115,7 +2115,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
         <div class="result-filter-bar">
           <label style="font-size:12px;color:var(--text2);font-weight:500">📅 Periode:</label>
           <input type="month" id="result-month-input" style="font-size:12px" onchange="renderResult()" />
-          <button class="btn-sm" onclick="document.getElementById('result-month-input').value=todayStr().substring(0,7);renderResult()">Bulan Ini</button>
+          <button class="btn-sm" onclick="document.getElementById('result-month-input').value=todayStr().substring(0,7);renderResult()">This Month</button>
           <span id="result-period-label" style="font-size:11px;color:var(--text3);margin-left:4px"></span>
         </div>
 
@@ -3654,10 +3654,10 @@ async function kanbanChangeStatus(id, newStatus) {
 
 // ── DECISION MATRIX (Eisenhower) — gabungan todos + time_plan_tracker ──
 const MATRIX_QUADRANTS = [
-  { urgent: true,  important: true,  label: '🔴 Kerjakan Sekarang', sub: 'Urgent & Penting', color: '#EF4444' },
-  { urgent: false, important: true,  label: '🔵 Jadwalkan',         sub: 'Penting, Tidak Urgent', color: '#2F6364' },
-  { urgent: true,  important: false, label: '🟡 Delegasikan',       sub: 'Urgent, Tidak Penting', color: '#F59E0B' },
-  { urgent: false, important: false, label: '⚪ Nanti / Eliminasi', sub: 'Tidak Urgent, Tidak Penting', color: '#94A3B8' }
+  { urgent: true,  important: true,  label: '🔴 Do Now', sub: 'Urgent & Important', color: '#EF4444' },
+  { urgent: false, important: true,  label: '🔵 Schedule',         sub: 'Important, Not Urgent', color: '#2F6364' },
+  { urgent: true,  important: false, label: '🟡 Delegate',       sub: 'Urgent, Not Important', color: '#F59E0B' },
+  { urgent: false, important: false, label: '⚪ Later / Eliminate', sub: 'Not Urgent, Not Important', color: '#94A3B8' }
 ];
 let matrixCache = [];
 
@@ -4833,7 +4833,7 @@ function renderTodoDashboard(all) {
     return `
       <div class="todo-week-table">
         <table>
-          <thead><tr><th>Tugas</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Task</th><th>Status</th><th></th></tr></thead>
           <tbody>
             ${arr.map(t => `
               <tr>
@@ -4854,7 +4854,7 @@ function renderTodoDashboard(all) {
   renderTodoNoDate(all);
 }
 
-// Tugas tanpa tanggal deadline — ditampilkan terpisah, tidak terikat bulan/minggu manapun
+// Tasks with no deadline date — shown separately, not tied to any month/week
 function renderTodoNoDate(all) {
   const noDate = all.filter(t => !t.due_date).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
   const titleEl = document.getElementById('todo-nodate-title');
@@ -4864,7 +4864,7 @@ function renderTodoNoDate(all) {
   boxEl.innerHTML = `
     <div class="todo-week-table" style="grid-column:span 2;justify-self:start;max-width:640px;width:100%">
       <table>
-        <thead><tr><th>Tugas</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Task</th><th>Status</th><th></th></tr></thead>
         <tbody>
           ${noDate.map(t => `
             <tr>
@@ -5019,9 +5019,9 @@ async function renderResult() {
   const schedDone = sd.filter(e => e.category === 'green').length;
   const trkDone = tr.filter(t => t.status === 'done').length;
   document.getElementById('result-stats').innerHTML = `
-    <div class="res-card rc-blue"><div class="res-label">Jadwal Bulan Ini</div><div class="res-val">${sd.length}</div><div class="res-trend">${schedDone} selesai</div></div>
-    <div class="res-card rc-green"><div class="res-label">Tugas Tracker</div><div class="res-val">${trkDone}/${tr.length}</div><div class="res-trend">${tr.length ? Math.round(trkDone/tr.length*100) : 0}% selesai</div></div>
-    <div class="res-card rc-amber"><div class="res-label">Log Bulan Ini</div><div class="res-val">${ld.length}</div><div class="res-trend">catatan logbook</div></div>
+    <div class="res-card rc-blue"><div class="res-label">Schedule This Month</div><div class="res-val">${sd.length}</div><div class="res-trend">${schedDone} done</div></div>
+    <div class="res-card rc-green"><div class="res-label">Tracker Tasks</div><div class="res-val">${trkDone}/${tr.length}</div><div class="res-trend">${tr.length ? Math.round(trkDone/tr.length*100) : 0}% done</div></div>
+    <div class="res-card rc-amber"><div class="res-label">Log This Month</div><div class="res-val">${ld.length}</div><div class="res-trend">logbook entries</div></div>
     <div class="res-card rc-purple"><div class="res-label">Notes Aktif</div><div class="res-val">${nd.length}</div><div class="res-trend">dokumen catatan</div></div>
   `;
 
@@ -6045,7 +6045,7 @@ async function ensureUmumChannel() {
   const existing = chatChannels.find(c => c.type === 'umum');
   if (existing) return existing;
   const { data, error } = await sb.from('chat_channels')
-    .insert({ type: 'umum', name: 'Umum', created_by: getUser() })
+    .insert({ type: 'umum', name: 'General', created_by: getUser() })
     .select().single();
   if (error) { throw error; }
   chatChannels.push(data);
@@ -7263,7 +7263,7 @@ async function renderAbsenRekap() {
       <thead><tr>
         <th>Name</th><th>Status</th><th>Clock In</th><th>Clock Out</th>
         <th>Late</th><th>Location</th><th>Photo</th><th>Notes</th>
-        ${isAdmin ? '<th>Aksi</th>' : ''}
+        ${isAdmin ? '<th>Action</th>' : ''}
       </tr></thead><tbody>`;
 
     for (const row of filtered) {
