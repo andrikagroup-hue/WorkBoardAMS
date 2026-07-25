@@ -3746,7 +3746,7 @@ async function renderGantt() {
     grid.innerHTML = `<div class="gantt-empty" style="color:#e53e3e">⚠️ Failed to load: ${error.message}</div>`;
     return;
   }
-  ganttCache = data || [];
+  ganttCache = applyPrivacy(data || []);
   displayGanttFromCache();
 }
 
