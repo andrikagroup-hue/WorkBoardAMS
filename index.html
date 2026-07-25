@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WorkBoard AMS — Manajemen Harian Perusahaan</title>
+  <title>WorkBoard AMS — Daily Company Management</title>
 
   <!-- ── PWA: bisa di-"Add to Home Screen" jadi kayak app ── -->
   <link rel="manifest" href="manifest.json">
@@ -1397,7 +1397,7 @@ textarea { resize: vertical; }
       <div class="top-title" id="panel-title">Daily Schedule</div>
       <div class="top-actions">
         <div style="display:flex;align-items:center;gap:5px">
-          <button class="user-pill-mobile" id="user-pill-mobile" onclick="switchUser()" title="Masuk sebagai pengguna lain">
+          <button class="user-pill-mobile" id="user-pill-mobile" onclick="switchUser()" title="Switch to another user">
             <i class="ti ti-user-circle"></i> <span id="user-name-mobile">—</span> <i class="ti ti-arrows-exchange" style="font-size:10px;opacity:.7"></i>
           </button>
           <button style="background:none;border:none;cursor:pointer;color:#475569;font-size:15px;padding:4px;line-height:1;display:flex;align-items:center" onclick="renameUser()" title="Change my name"><i class="ti ti-pencil"></i></button>
@@ -1746,11 +1746,11 @@ textarea { resize: vertical; }
       <div class="panel" id="panel-gantt">
         <div class="gantt-toolbar">
           <div class="gantt-month-nav">
-            <button onclick="ganttChangeMonth(-1)" aria-label="Bulan sebelumnya" title="Bulan sebelumnya"><i class="ti ti-chevron-left"></i></button>
+            <button onclick="ganttChangeMonth(-1)" aria-label="Previous month" title="Previous month"><i class="ti ti-chevron-left"></i></button>
             <span class="gantt-month-label" id="gantt-month-label">-</span>
-            <button onclick="ganttChangeMonth(1)" aria-label="Bulan berikutnya" title="Bulan berikutnya"><i class="ti ti-chevron-right"></i></button>
+            <button onclick="ganttChangeMonth(1)" aria-label="Next month" title="Next month"><i class="ti ti-chevron-right"></i></button>
           </div>
-          <button onclick="ganttGoToday()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:12px">Hari ini</button>
+          <button onclick="ganttGoToday()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:12px">Today</button>
           <select class="global-filter" id="gantt-status-filter" onchange="displayGanttFromCache()">
             <option value="">All Statuses</option>
             <option value="not_started">⬜ Not Started</option>
@@ -1800,24 +1800,24 @@ textarea { resize: vertical; }
         <div class="form-box" id="rt-form" style="display:none">
           <div class="log-form-grid">
             <div class="log-form-col">
-              <label class="log-form-label">Jenis</label>
+              <label class="log-form-label">Type</label>
               <select id="rt-target" onchange="toggleRecurringFieldsVisibility()">
                 <option value="schedule">📅 Daily Schedule</option>
                 <option value="tracker">📋 Time Plan Tracker</option>
               </select>
             </div>
             <div class="log-form-col">
-              <label class="log-form-label">Frekuensi</label>
+              <label class="log-form-label">Frequency</label>
               <select id="rt-frequency">
-                <option value="daily">Harian</option>
-                <option value="weekly" selected>Mingguan</option>
-                <option value="biweekly">2 Mingguan</option>
-                <option value="monthly4week">4 Mingguan</option>
-                <option value="monthly">Bulanan</option>
-                <option value="bimonthly">Per 2 Bulan</option>
-                <option value="quarterly">Kuartal (3 Bulan)</option>
-                <option value="biannual">Semester (6 Bulan)</option>
-                <option value="annual">Tahunan</option>
+                <option value="daily">Daily</option>
+                <option value="weekly" selected>Weekly</option>
+                <option value="biweekly">Biweekly</option>
+                <option value="monthly4week">Every 4 Weeks</option>
+                <option value="monthly">Monthly</option>
+                <option value="bimonthly">Every 2 Months</option>
+                <option value="quarterly">Quarterly (3 Months)</option>
+                <option value="biannual">Biannual (6 Months)</option>
+                <option value="annual">Annual</option>
               </select>
             </div>
             <div class="log-form-col">
@@ -1825,10 +1825,10 @@ textarea { resize: vertical; }
               <input type="date" id="rt-start-date" />
             </div>
             <div class="log-form-col">
-              <label class="log-form-label">Privasi</label>
+              <label class="log-form-label">Privacy</label>
               <select id="rt-privacy">
                 <option value="false">🌐 Public</option>
-                <option value="true">🔒 Privat</option>
+                <option value="true">🔒 Private</option>
               </select>
             </div>
           </div>
@@ -1860,7 +1860,7 @@ textarea { resize: vertical; }
 
         <div id="rt-list-wrap">
           <table class="rt-table">
-            <thead><tr><th>Jenis</th><th>Judul / Aktivitas</th><th>Frekuensi</th><th>Generate Berikutnya</th><th>Aktif</th><th></th></tr></thead>
+            <thead><tr><th>Type</th><th>Title / Activity</th><th>Frequency</th><th>Next Generation</th><th>Active</th><th></th></tr></thead>
             <tbody id="rt-tbody"><tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading...</td></tr></tbody>
           </table>
         </div>
@@ -1957,7 +1957,7 @@ ALTER TABLE logbook_entries
         </div>
         <div class="form-box" id="note-form" style="display:none">
           <div class="form-row">
-            <input id="note-title-in" placeholder="Judul catatan..." style="flex:2" />
+            <input id="note-title-in" placeholder="Note title..." style="flex:2" />
             <select id="note-cat-in">
               <option value="finance">Keuangan</option>
               <option value="ops">Operasional</option>
@@ -1991,12 +1991,12 @@ ALTER TABLE logbook_entries
         <div class="todo-toolbar">
           <input id="todo-input" placeholder="Add new task..." onkeydown="if(event.key==='Enter')addTodo()" />
           <select id="todo-prio">
-            <option value="high">Prioritas Tinggi</option>
-            <option value="med" selected>Sedang</option>
-            <option value="low">Rendah</option>
+            <option value="high">High Priority</option>
+            <option value="med" selected>Medium</option>
+            <option value="low">Low</option>
           </select>
           <input id="todo-due" type="date" title="Deadline" />
-          <input id="todo-assign" placeholder="Ditugaskan ke..." style="max-width:140px" />
+          <input id="todo-assign" placeholder="Assigned to..." style="max-width:140px" />
           <select id="todo-privacy" title="Who can view this data" style="display:none">
             <option value="false">🌐 Public</option>
             <option value="true" selected>🔒 Privat</option>
@@ -2035,7 +2035,7 @@ ALTER TABLE logbook_entries
             <button class="btn-sm btn-primary" onclick="openNpForm()"><i class="ti ti-plus" aria-hidden="true"></i> New Note</button>
           </div>
           <div class="np-edit-area" id="np-form">
-            <input id="np-title" placeholder="Judul catatan..." />
+            <input id="np-title" placeholder="Note title..." />
             <div class="quill-editor-wrap"><div id="np-body-editor"></div></div>
             <div class="np-edit-btns">
               <button class="btn-sm" onclick="closeNpForm()">Cancel</button>
@@ -2143,11 +2143,11 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
         <!-- Grafik kehadiran harian dalam bulan -->
         <div class="chart-section" style="margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div class="chart-title" style="margin-bottom:0">Grafik Kehadiran Harian</div>
+            <div class="chart-title" style="margin-bottom:0">Daily Attendance Chart</div>
             <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
-              <span><span style="display:inline-block;width:10px;height:10px;background:#22C55E;border-radius:2px;margin-right:3px"></span>Hadir</span>
-              <span><span style="display:inline-block;width:10px;height:10px;background:#F59E0B;border-radius:2px;margin-right:3px"></span>Terlambat</span>
-              <span><span style="display:inline-block;width:10px;height:10px;background:#94A3B8;border-radius:2px;margin-right:3px"></span>Tidak Hadir</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#22C55E;border-radius:2px;margin-right:3px"></span>Present</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#F59E0B;border-radius:2px;margin-right:3px"></span>Late</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#94A3B8;border-radius:2px;margin-right:3px"></span>Absent</span>
             </div>
           </div>
           <div class="absen-daily-chart" id="absen-daily-chart">
@@ -2166,13 +2166,13 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
               <thead>
                 <tr>
                   <th>Employee</th>
-                  <th>✅ Hadir</th>
-                  <th>⚠️ Terlambat</th>
-                  <th>📝 Izin</th>
-                  <th>🤒 Sakit</th>
-                  <th>🏖️ Cuti</th>
-                  <th>⏱️ Total Jam</th>
-                  <th>⏰ Rata-rata Terlambat</th>
+                  <th>✅ Present</th>
+                  <th>⚠️ Late</th>
+                  <th>📝 Leave</th>
+                  <th>🤒 Sick</th>
+                  <th>🏖️ Time Off</th>
+                  <th>⏱️ Total Hours</th>
+                  <th>⏰ Avg Late</th>
                 </tr>
               </thead>
               <tbody id="result-absen-tbody">
@@ -2183,7 +2183,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
         </div>
 
         <!-- ── SEKSI AKTIVITAS KERJA ── -->
-        <div class="res-section-title"><i class="ti ti-chart-bar"></i> Aktivitas Kerja</div>
+        <div class="res-section-title"><i class="ti ti-chart-bar"></i> Work Activity</div>
 
         <!-- Grafik Schedule harian -->
         <div class="chart-section" style="margin-bottom:12px">
@@ -2244,7 +2244,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
           <button onclick="document.getElementById('attend-keterangan-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
         <div id="absen-today-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px">
-          <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:10px">📋 Status Absen Hari Ini — <span id="absen-today-date"></span></div>
+          <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:10px">📋 Today's Attendance Status — <span id="absen-today-date"></span></div>
           <div id="absen-today-info" style="font-size:12px;color:var(--text2)"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading...</div>
           <div id="absen-action-btns" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
         </div>
@@ -2252,21 +2252,21 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
           <input type="date" id="absen-filter-date" style="font-size:12px" onchange="renderAbsenRekap()" />
           <select id="absen-filter-status" class="global-filter" onchange="renderAbsenRekap()" style="font-size:12px">
             <option value="">All Statuses</option>
-            <option value="hadir">✅ Hadir</option>
-            <option value="terlambat">⚠️ Terlambat</option>
-            <option value="izin">📝 Izin</option>
-            <option value="sakit">🤒 Sakit</option>
-            <option value="cuti">🏖️ Cuti</option>
+            <option value="hadir">✅ Present</option>
+            <option value="terlambat">⚠️ Late</option>
+            <option value="izin">📝 Leave</option>
+            <option value="sakit">🤒 Sick</option>
+            <option value="cuti">🏖️ Time Off</option>
           </select>
-          <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Ajukan Izin / Sakit / Cuti</button>
+          <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Request Leave / Sick / Time Off</button>
         </div>
         <div class="form-box" id="absen-leave-form" style="display:none;margin-bottom:12px">
-          <div style="font-size:13px;font-weight:600;margin-bottom:10px">📝 Ajukan Izin / Sakit / Cuti</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px">📝 Request Leave / Sick / Time Off</div>
           <div class="form-row">
             <select id="leave-type" style="max-width:140px">
-              <option value="izin">📝 Izin</option>
-              <option value="sakit">🤒 Sakit</option>
-              <option value="cuti">🏖️ Cuti</option>
+              <option value="izin">📝 Leave</option>
+              <option value="sakit">🤒 Sick</option>
+              <option value="cuti">🏖️ Time Off</option>
             </select>
             <input type="date" id="leave-date-from" />
             <input type="date" id="leave-date-to" />
@@ -2276,7 +2276,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
           </div>
           <div class="form-actions">
             <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='none'">Cancel</button>
-            <button class="btn-sm btn-primary" onclick="submitLeave()">Ajukan</button>
+            <button class="btn-sm btn-primary" onclick="submitLeave()">Submit</button>
           </div>
         </div>
         <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:8px">📊 Attendance Summary</div>
@@ -2312,7 +2312,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
         <!-- Panel: Manage Leave -->
         <div id="admin-section-leave" style="display:none">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-            <div style="font-size:13px;font-weight:600;color:var(--text1)">📋 Pengajuan Izin / Sakit / Cuti</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text1)">📋 Leave / Sick / Time Off Requests</div>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
               <select id="admin-leave-filter" class="global-filter" style="font-size:12px" onchange="renderAdminLeave()">
                 <option value="all">All Statuses</option>
@@ -2322,9 +2322,9 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
               </select>
               <select id="admin-leave-type" class="global-filter" style="font-size:12px" onchange="renderAdminLeave()">
                 <option value="all">All Types</option>
-                <option value="izin">📝 Izin</option>
-                <option value="sakit">🤒 Sakit</option>
-                <option value="cuti">🏖️ Cuti</option>
+                <option value="izin">📝 Leave</option>
+                <option value="sakit">🤒 Sick</option>
+                <option value="cuti">🏖️ Time Off</option>
               </select>
               <button class="btn-sm" onclick="renderAdminLeave()"><i class="ti ti-refresh"></i> Refresh</button>
             </div>
@@ -2341,7 +2341,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
           <strong>⚙️ Leave Management</strong> — Approve, reject, or delete employee leave/sick/time-off requests.
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-          <div style="font-size:13px;font-weight:600;color:var(--text1)">📋 Pengajuan Izin / Sakit / Cuti</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text1)">📋 Leave / Sick / Time Off Requests</div>
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
             <select id="admin-leave-filter2" class="global-filter" style="font-size:12px" onchange="renderAdminLeaveStandalone()">
               <option value="all">All Statuses</option>
@@ -2351,9 +2351,9 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
             </select>
             <select id="admin-leave-type2" class="global-filter" style="font-size:12px" onchange="renderAdminLeaveStandalone()">
               <option value="all">All Types</option>
-              <option value="izin">📝 Izin</option>
-              <option value="sakit">🤒 Sakit</option>
-              <option value="cuti">🏖️ Cuti</option>
+              <option value="izin">📝 Leave</option>
+              <option value="sakit">🤒 Sick</option>
+              <option value="cuti">🏖️ Time Off</option>
             </select>
             <button class="btn-sm" onclick="renderAdminLeaveStandalone()"><i class="ti ti-refresh"></i> Refresh</button>
           </div>
@@ -2416,10 +2416,10 @@ ON CONFLICT DO NOTHING;</code>
             </div>
             <div>
               <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Category</label>
-              <input type="text" id="link-kategori" class="form-input" placeholder="cth: Keuangan, SDM, Website..." style="font-size:12px;width:100%">
+              <input type="text" id="link-kategori" class="form-input" placeholder="e.g: Finance, HR, Website..." style="font-size:12px;width:100%">
             </div>
             <div>
-              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Emoji ikon</label>
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Icon</label>
               <input type="hidden" id="link-emoji" value="🔗">
               <div style="position:relative">
                 <button type="button" id="emoji-picker-btn" onclick="toggleEmojiPicker()"
@@ -2428,24 +2428,24 @@ ON CONFLICT DO NOTHING;</code>
                   <span style="font-size:11px;color:var(--text3)">Click to choose an icon</span>
                 </button>
                 <div id="emoji-picker-popup" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:999;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);width:320px;max-height:280px;overflow-y:auto">
-                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin-bottom:6px">UMUM</div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin-bottom:6px">GENERAL</div>
                   <div class="emoji-grid" id="emoji-grid-umum"></div>
-                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">BISNIS & KERJA</div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">BUSINESS & WORK</div>
                   <div class="emoji-grid" id="emoji-grid-bisnis"></div>
-                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">TEKNOLOGI</div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">TECHNOLOGY</div>
                   <div class="emoji-grid" id="emoji-grid-tech"></div>
-                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">KEUANGAN & DATA</div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">FINANCE & DATA</div>
                   <div class="emoji-grid" id="emoji-grid-finance"></div>
-                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">KOMUNIKASI</div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">COMMUNICATION</div>
                   <div class="emoji-grid" id="emoji-grid-komun"></div>
-                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">LAINNYA</div>
+                  <div style="font-size:10px;font-weight:600;color:var(--text3);margin:10px 0 6px">OTHER</div>
                   <div class="emoji-grid" id="emoji-grid-lain"></div>
                 </div>
               </div>
             </div>
             <div style="grid-column:1/-1">
-              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Deskripsi singkat</label>
-              <input type="text" id="link-deskripsi" class="form-input" placeholder="Keterangan singkat apa fungsi link ini..." style="font-size:12px;width:100%">
+              <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Short description</label>
+              <input type="text" id="link-deskripsi" class="form-input" placeholder="Brief description of what this link is for..." style="font-size:12px;width:100%">
             </div>
           </div>
           <input type="hidden" id="link-editing-id">
@@ -2618,7 +2618,7 @@ ON CONFLICT DO NOTHING;</code>
         <div style="max-width:720px;margin:0 auto">
           <div style="background:linear-gradient(135deg,#2563eb,#1d4ed8);border-radius:var(--radius-lg);padding:20px 24px;color:#fff;margin-bottom:18px">
             <div style="font-size:18px;font-weight:700;margin-bottom:4px">📖 Panduan WorkBoard AMS</div>
-            <div style="font-size:12px;opacity:0.85">PT. Andrika Mitra Solusi — Manajemen Harian Perusahaan</div>
+            <div style="font-size:12px;opacity:0.85">PT. Andrika Mitra Solusi — Daily Company Management</div>
           </div>
 
           <div id="faq-list"></div>
@@ -3699,7 +3699,7 @@ function displayMatrix(data) {
         </div>
         <div class="matrix-card-toggles">
           <button class="matrix-toggle ${t.is_urgent ? 'on' : ''}" onclick="toggleMatrixFlag('${t._src}','${t.id}','is_urgent',${!!t.is_urgent})">🔥 Urgent</button>
-          <button class="matrix-toggle ${t.is_important ? 'on' : ''}" onclick="toggleMatrixFlag('${t._src}','${t.id}','is_important',${!!t.is_important})">⭐ Penting</button>
+          <button class="matrix-toggle ${t.is_important ? 'on' : ''}" onclick="toggleMatrixFlag('${t._src}','${t.id}','is_important',${!!t.is_important})">⭐ Important</button>
         </div>
       </div>
     `).join('');
@@ -3865,8 +3865,8 @@ function displayGantt(allData) {
 // generateDueRecurringTasks() cek template yang jadwalnya sudah lewat/hari ini, lalu bikin
 // entri asli otomatis di Daily Schedule / Time Plan Tracker, dan majukan next_run.
 const RT_FREQ_LABEL = {
-  daily: 'Harian', weekly: 'Mingguan', biweekly: '2 Mingguan', monthly4week: '4 Mingguan',
-  monthly: 'Bulanan', bimonthly: 'Per 2 Bulan', quarterly: 'Kuartal', biannual: 'Semester', annual: 'Tahunan'
+  daily: 'Daily', weekly: 'Weekly', biweekly: 'Biweekly', monthly4week: 'Every 4 Weeks',
+  monthly: 'Monthly', bimonthly: 'Every 2 Months', quarterly: 'Quarterly', biannual: 'Biannual', annual: 'Annual'
 };
 let recurringCache = [];
 let editingRecurringId = null;
@@ -3939,7 +3939,7 @@ function displayRecurringTemplates(data) {
       <td>${t.is_private ? '🔒 ' : ''}${escHtml(label)}</td>
       <td><span class="rt-freq-badge">${RT_FREQ_LABEL[t.frequency] || t.frequency}</span></td>
       <td style="font-size:12px">${fmtDate(t.next_run)}</td>
-      <td><input type="checkbox" class="rt-toggle" ${t.is_active ? 'checked' : ''} onchange="toggleRecurringActive('${t.id}', this.checked)" title="Aktif/Nonaktifkan"></td>
+      <td><input type="checkbox" class="rt-toggle" ${t.is_active ? 'checked' : ''} onchange="toggleRecurringActive('${t.id}', this.checked)" title="Enable/Disable"></td>
       <td style="white-space:nowrap">
         <button class="ev-del" onclick="editRecurringTemplate('${t.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
         <button class="ev-del" onclick="delRecurringTemplate('${t.id}')" title="Delete"><i class="ti ti-x"></i></button>
@@ -5022,7 +5022,7 @@ async function renderResult() {
     <div class="res-card rc-blue"><div class="res-label">Schedule This Month</div><div class="res-val">${sd.length}</div><div class="res-trend">${schedDone} done</div></div>
     <div class="res-card rc-green"><div class="res-label">Tracker Tasks</div><div class="res-val">${trkDone}/${tr.length}</div><div class="res-trend">${tr.length ? Math.round(trkDone/tr.length*100) : 0}% done</div></div>
     <div class="res-card rc-amber"><div class="res-label">Log This Month</div><div class="res-val">${ld.length}</div><div class="res-trend">logbook entries</div></div>
-    <div class="res-card rc-purple"><div class="res-label">Notes Aktif</div><div class="res-val">${nd.length}</div><div class="res-trend">dokumen catatan</div></div>
+    <div class="res-card rc-purple"><div class="res-label">Active Notes</div><div class="res-val">${nd.length}</div><div class="res-trend">note documents</div></div>
   `;
 
   // ── Hitung ringkasan absensi bulan ──
@@ -5119,7 +5119,7 @@ async function renderResult() {
         }
       });
       const totalJamStr = totalMenit > 0
-        ? Math.floor(totalMenit / 60) + 'j ' + Math.round(totalMenit % 60) + 'm'
+        ? Math.floor(totalMenit / 60) + 'h ' + Math.round(totalMenit % 60) + 'm'
         : '—';
 
       // Rata-rata keterlambatan
@@ -5127,7 +5127,7 @@ async function renderResult() {
       const avgTerlambat = terlambatRecs.length
         ? Math.round(terlambatRecs.reduce((s, r) => s + (r.terlambat_menit || 0), 0) / terlambatRecs.length)
         : 0;
-      const avgTerlambatStr = avgTerlambat ? avgTerlambat + ' mnt' : '—';
+      const avgTerlambatStr = avgTerlambat ? avgTerlambat + ' min' : '—';
 
       resultAbsenCache.push({ nama: name, hadir: cnt.hadir, terlambat: cnt.terlambat, izin: cnt.izin, sakit: cnt.sakit, cuti: cnt.cuti, totalJam: totalJamStr, avgTerlambat: avgTerlambatStr });
 
@@ -5432,7 +5432,7 @@ async function runAiOnText(title, plainText, instruction) {
     console.error('AI error:', err);
     let msg = 'An unknown error occurred. Check the browser Console (F12) for details.';
     try { if (err && typeof err.message === 'string') msg = err.message; } catch (e) {}
-    document.getElementById('ai-modal-body').innerHTML = `<span style="color:var(--danger)">Gagal memproses: ${escHtml(msg)}</span>`;
+    document.getElementById('ai-modal-body').innerHTML = `<span style="color:var(--danger)">Failed to process: ${escHtml(msg)}</span>`;
   }
 }
 
@@ -5922,7 +5922,7 @@ function displayLogbook(data) {
   const d = active.entry_date ? new Date(active.entry_date + 'T00:00:00').toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}) : (active.created_at ? new Date(active.created_at).toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}) : '');
   const attachHtml = (active.attachments && active.attachments.length) ? `
     <div class="log-attachments" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:12px">
-      ${active.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit" title="Unduh ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
+      ${active.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit" title="Download ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
     </div>` : '';
   const tItem = active.tracker_item_id ? trackerStatusMap[active.tracker_item_id] : null;
   const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px;margin-left:6px" title="Terhubung ke Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
@@ -6272,7 +6272,7 @@ function renderChatThread(messages) {
     const time = m.created_at ? new Date(m.created_at).toLocaleString('en-US', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
     const attachHtml = (m.attachments && m.attachments.length) ? `
       <div class="chat-attach-list">
-        ${m.attachments.map(a => `<a class="chat-attach-chip" href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" title="Unduh ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
+        ${m.attachments.map(a => `<a class="chat-attach-chip" href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" title="Download ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
       </div>` : '';
     const actionsHtml = own ? `
       <span class="chat-msg-actions">
@@ -6574,7 +6574,7 @@ function renderChatDMPickerList(names) {
       ? new Date(lastSeen).toLocaleString('en-US', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})
       : null;
     const statusDot = isOnline
-      ? `<span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block;flex-shrink:0" title="Sedang online"></span>`
+      ? `<span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block;flex-shrink:0" title="Online now"></span>`
       : `<span style="width:8px;height:8px;border-radius:50%;background:#CBD5E1;display:inline-block;flex-shrink:0" title="${lastSeenStr ? 'Last online: ' + lastSeenStr : 'Never been online'}"></span>`;
     const subText = isOnline
       ? `<span style="font-size:10px;color:#22C55E">● Sedang online</span>`
@@ -6901,7 +6901,7 @@ function absenTimeStr(ts) {
 }
 
 function absenStatusLabel(status) {
-  const map = { hadir:'✅ Hadir', terlambat:'⚠️ Terlambat', izin:'📝 Izin', sakit:'🤒 Sakit', cuti:'🏖️ Cuti' };
+  const map = { hadir:'✅ Present', terlambat:'⚠️ Late', izin:'📝 Leave', sakit:'🤒 Sick', cuti:'🏖️ Time Off' };
   return map[status] || status;
 }
 
@@ -7022,14 +7022,14 @@ async function renderAbsenToday() {
       infoEl.innerHTML = `<span style="color:var(--text3)">Haven't clocked in today.</span>`;
       btnEl.innerHTML = `
         <button class="btn-sm btn-primary" onclick="doClockIn()"><i class="ti ti-login"></i> Clock In</button>
-        <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Izin / Sakit / Cuti</button>`;
+        <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Leave / Sick / Time Off</button>`;
     } else if (data.clock_in && !data.clock_out) {
       // Clocked in, not yet clocked out
       const late = data.terlambat_menit > 0 ? ` <span style="color:#F59E0B">(${data.terlambat_menit} min late)</span>` : '';
       infoEl.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${absenStatusLabel(data.status)}</span>
-          <span>🕐 Masuk: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
+          <span>🕐 Clock In: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
           ${data.keterangan ? `<span style="font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:3px 8px">📝 Reason: ${escHtml(data.keterangan)}</span>` : ''}
           ${data.lat_in ? `<span style="color:var(--text3);font-size:11px">📍 GPS: ${data.lat_in.toFixed(5)}, ${data.lng_in.toFixed(5)}</span>` : ''}
           ${data.foto_in ? `<img src="${data.foto_in}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;margin-top:4px" />` : ''}
@@ -7042,15 +7042,15 @@ async function renderAbsenToday() {
       infoEl.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${absenStatusLabel(data.status)}</span>
-          <span>🕐 Masuk: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
+          <span>🕐 Clock In: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
           ${data.keterangan ? `<span style="font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:3px 8px">📝 Reason: ${escHtml(data.keterangan)}</span>` : ''}
-          <span>🕔 Pulang: <strong>${absenTimeStr(data.clock_out)}</strong></span>
+          <span>🕔 Clock Out: <strong>${absenTimeStr(data.clock_out)}</strong></span>
           <span style="color:var(--text3);font-size:11px">⏱️ Total work: ${Math.floor(dur/60)}h ${dur%60}m</span>
-          ${data.lat_in ? `<span style="color:var(--text3);font-size:11px">📍 Masuk: <a href="https://maps.google.com/?q=${data.lat_in},${data.lng_in}" target="_blank" style="color:var(--accent)">${data.lat_in.toFixed(5)}, ${data.lng_in.toFixed(5)}</a></span>` : ''}
-          ${data.lat_out ? `<span style="color:var(--text3);font-size:11px">📍 Pulang: <a href="https://maps.google.com/?q=${data.lat_out},${data.lng_out}" target="_blank" style="color:var(--accent)">${data.lat_out.toFixed(5)}, ${data.lng_out.toFixed(5)}</a></span>` : ''}
+          ${data.lat_in ? `<span style="color:var(--text3);font-size:11px">📍 Clock In: <a href="https://maps.google.com/?q=${data.lat_in},${data.lng_in}" target="_blank" style="color:var(--accent)">${data.lat_in.toFixed(5)}, ${data.lng_in.toFixed(5)}</a></span>` : ''}
+          ${data.lat_out ? `<span style="color:var(--text3);font-size:11px">📍 Clock Out: <a href="https://maps.google.com/?q=${data.lat_out},${data.lng_out}" target="_blank" style="color:var(--accent)">${data.lat_out.toFixed(5)}, ${data.lng_out.toFixed(5)}</a></span>` : ''}
           <div style="display:flex;gap:6px;margin-top:4px">
-            ${data.foto_in ? `<img src="${data.foto_in}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Foto Masuk" />` : ''}
-            ${data.foto_out ? `<img src="${data.foto_out}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Foto Pulang" />` : ''}
+            ${data.foto_in ? `<img src="${data.foto_in}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Clock-in photo" />` : ''}
+            ${data.foto_out ? `<img src="${data.foto_out}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Clock-out photo" />` : ''}
           </div>
         </div>`;
       btnEl.innerHTML = `<span style="font-size:12px;color:var(--success)">✅ Today's attendance is complete</span>`;
@@ -7082,11 +7082,11 @@ async function doClockIn() {
         <div style="font-size:12px;font-weight:600;color:#92400E;margin-bottom:8px">
           ⚠️ You're ${terlambatMenit} minutes late — please provide a reason:
         </div>
-        <textarea id="alasan-terlambat-input" rows="3" placeholder="Contoh: Macet, ban bocor, urusan keluarga..." 
+        <textarea id="alasan-terlambat-input" rows="3" placeholder="e.g: Traffic, flat tire, family matters..." 
           style="width:100%;border:1px solid #F59E0B;border-radius:6px;padding:8px;font-size:12px;resize:none;box-sizing:border-box"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
           <button onclick="cancelClockIn()" style="padding:5px 14px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);font-size:12px;cursor:pointer">Cancel</button>
-          <button onclick="proceedClockIn(${terlambatMenit},'${status}','${today}')" style="padding:5px 14px;background:#F59E0B;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Lanjut Clock In →</button>
+          <button onclick="proceedClockIn(${terlambatMenit},'${status}','${today}')" style="padding:5px 14px;background:#F59E0B;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Continue Clock In →</button>
         </div>
       </div>`;
     return; // tunggu user isi alasan
@@ -7275,15 +7275,15 @@ async function renderAbsenRekap() {
         <td style="font-weight:500">${escHtml(row.user_name)}</td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${absenStatusColor(row.status)}22;color:${absenStatusColor(row.status)};font-weight:600">${absenStatusLabel(row.status)}</span></td>
         <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : absenTimeStr(row.clock_in)}</td>
-        <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : (absenTimeStr(row.clock_out) + (dur ? `<br><span style="font-size:10px;color:var(--text3)">${Math.floor(dur/60)}j ${dur%60}m</span>` : ''))}</td>
-        <td>${row.terlambat_menit > 0 ? `<span style="color:#F59E0B">${row.terlambat_menit} mnt</span>` : '—'}</td>
+        <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : (absenTimeStr(row.clock_out) + (dur ? `<br><span style="font-size:10px;color:var(--text3)">${Math.floor(dur/60)}h ${dur%60}m</span>` : ''))}</td>
+        <td>${row.terlambat_menit > 0 ? `<span style="color:#F59E0B">${row.terlambat_menit} min</span>` : '—'}</td>
         <td style="font-size:10px">
-          ${row.lat_in ? `<a href="https://maps.google.com/?q=${row.lat_in},${row.lng_in}" target="_blank" style="color:var(--accent)">📍 Masuk</a>` : '—'}
-          ${row.lat_out ? `<br><a href="https://maps.google.com/?q=${row.lat_out},${row.lng_out}" target="_blank" style="color:var(--accent)">📍 Pulang</a>` : ''}
+          ${row.lat_in ? `<a href="https://maps.google.com/?q=${row.lat_in},${row.lng_in}" target="_blank" style="color:var(--accent)">📍 Clock In</a>` : '—'}
+          ${row.lat_out ? `<br><a href="https://maps.google.com/?q=${row.lat_out},${row.lng_out}" target="_blank" style="color:var(--accent)">📍 Clock Out</a>` : ''}
         </td>
         <td>
-          ${row.foto_in ? `<img src="${row.foto_in}" style="width:36px;height:36px;border-radius:6px;object-fit:cover" title="Foto Masuk" />` : ''}
-          ${row.foto_out ? `<img src="${row.foto_out}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;margin-left:2px" title="Foto Pulang" />` : ''}
+          ${row.foto_in ? `<img src="${row.foto_in}" style="width:36px;height:36px;border-radius:6px;object-fit:cover" title="Clock-in photo" />` : ''}
+          ${row.foto_out ? `<img src="${row.foto_out}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;margin-left:2px" title="Clock-out photo" />` : ''}
         </td>
         <td style="font-size:11px;color:var(--text2)">
           ${row.keterangan ? (row.terlambat_menit > 0 ? `<span style="color:#92400E">⚠️ ${escHtml(row.keterangan)}</span>` : escHtml(row.keterangan)) : '—'}
@@ -7454,7 +7454,7 @@ async function _renderAdminLeaveInto(listEl, filterSelectEl, typeSelectEl) {
 ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
       </div>`;
     } else {
-      listEl.innerHTML = `<div class="empty-msg">Gagal memuat data: ${error.message}</div>`;
+      listEl.innerHTML = `<div class="empty-msg">Failed to load data: ${error.message}</div>`;
     }
     return;
   }
@@ -7463,6 +7463,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
     return;
   }
   const tipeIcon    = { izin: '📝', sakit: '🤒', cuti: '🏖️' };
+  const tipeLabel   = { izin: 'Leave', sakit: 'Sick', cuti: 'Time Off' };
   const statusLabel = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
   listEl.innerHTML = data.map(lv => {
     const st = lv.status || 'pending';
@@ -7476,9 +7477,9 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
       <div class="admin-leave-info">
         <div class="admin-leave-name">${escHtml(lv.user_name || '—')}</div>
         <div class="admin-leave-meta">
-          <span class="admin-leave-badge alb-${tipe}">${tipeIcon[tipe]||''} ${tipe.charAt(0).toUpperCase()+tipe.slice(1)}</span>
+          <span class="admin-leave-badge alb-${tipe}">${tipeIcon[tipe]||''} ${tipeLabel[tipe] || tipe}</span>
           &nbsp;${dari} to ${sampai}${durStr ? ' <span style="color:var(--text3)">('+durStr+')</span>' : ''}
-          &nbsp;·&nbsp;Diajukan: ${diajukan}
+          &nbsp;·&nbsp;Submitted: ${diajukan}
         </div>
         ${lv.alasan ? `<div class="admin-leave-alasan">"${escHtml(lv.alasan)}"</div>` : ''}
         ${lv.catatan_admin ? `<div style="font-size:11px;margin-top:4px;color:#1F4443"><i class="ti ti-message"></i> Admin note: ${escHtml(lv.catatan_admin)}</div>` : ''}
@@ -7487,7 +7488,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
         <span class="admin-leave-badge alb-${st}">${statusLabel[st] || st}</span>
         ${st !== 'approved' ? `<button class="btn-sm" style="color:var(--success);border-color:var(--success)" onclick="adminUpdateLeaveStatus('${lv.id}','approved')"><i class="ti ti-check"></i> Approve</button>` : ''}
         ${st !== 'rejected' ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminUpdateLeaveStatus('${lv.id}','rejected')"><i class="ti ti-x"></i> Reject</button>` : ''}
-        ${st !== 'pending' ? `<button class="btn-sm" onclick="adminUpdateLeaveStatus('${lv.id}','pending')" title="Reset ke menunggu"><i class="ti ti-refresh"></i> Reset</button>` : ''}
+        ${st !== 'pending' ? `<button class="btn-sm" onclick="adminUpdateLeaveStatus('${lv.id}','pending')" title="Reset to pending"><i class="ti ti-refresh"></i> Reset</button>` : ''}
         <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteLeave('${lv.id}')"><i class="ti ti-trash"></i></button>
       </div>
     </div>`;
@@ -7798,7 +7799,7 @@ function renderFaq() {
     </div>
   `).join('') + `
     <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1px solid #bae6fd;border-radius:var(--radius-lg);padding:14px 16px;margin-top:8px;font-size:12px;color:#0c4a6e">
-      <div style="font-weight:700;margin-bottom:4px">💡 Butuh bantuan lebih lanjut?</div>
+      <div style="font-weight:700;margin-bottom:4px">💡 Need more help?</div>
       Contact the company admin or check the <strong>Work Talk</strong> panel to coordinate with the team.
     </div>
   `;
@@ -8628,7 +8629,7 @@ async function checkNewChatMessages() {
 
     // Browser notification
     if ('Notification' in window && Notification.permission === 'granted') {
-      const n = new Notification('💬 WorkBoard — Pesan Baru', {
+      const n = new Notification('💬 WorkBoard — New Message', {
         body: latest.sender + ': ' + (latest.body || '').substring(0, 80),
         icon: 'apple-touch-icon.png',
         badge: 'apple-touch-icon.png',
