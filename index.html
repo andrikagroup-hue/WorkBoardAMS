@@ -6655,11 +6655,84 @@ const quillToolbar = [
   ['clean']
 ];
 
+// Keep the original number when pasted HTML contains an ordered list that
+// starts above 1 (for example ChatGPT sections 3, 4, 5, 6). Quill 1.3.7
+// otherwise removes the HTML start/value attributes and restarts every block at 1.
+function preservePastedListNumbers(html) {
+  if (!html || !/<ol[\s>]/i.test(html)) return html;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  let changed = false;
+
+  doc.querySelectorAll('script,style,iframe,object,embed').forEach(el => el.remove());
+  Array.from(doc.querySelectorAll('ol')).forEach(ol => {
+    const items = Array.from(ol.children).filter(el => el.tagName === 'LI');
+    let nextNumber = parseInt(ol.getAttribute('start') || '1', 10);
+    if (!Number.isFinite(nextNumber)) nextNumber = 1;
+
+    const hasCustomStart = (ol.hasAttribute('start') && nextNumber !== 1)
+      || items.some(li => li.hasAttribute('value'));
+    if (!hasCustomStart) return;
+
+    const replacement = doc.createDocumentFragment();
+    items.forEach(li => {
+      const explicitValue = parseInt(li.getAttribute('value') || '', 10);
+      if (Number.isFinite(explicitValue)) nextNumber = explicitValue;
+
+      const line = doc.createElement('p');
+      const number = doc.createElement('strong');
+      number.textContent = nextNumber + '. ';
+      line.appendChild(number);
+
+      const nestedLists = [];
+      Array.from(li.childNodes).forEach(node => {
+        if (node.nodeType === 1 && node.matches('ol,ul')) {
+          nestedLists.push(node);
+        } else if (node.nodeType === 1 && node.matches('p,div,h1,h2,h3,h4,h5,h6')) {
+          Array.from(node.childNodes).forEach(child => line.appendChild(child));
+        } else {
+          line.appendChild(node);
+        }
+      });
+
+      replacement.appendChild(line);
+      nestedLists.forEach(list => replacement.appendChild(list));
+      nextNumber++;
+    });
+
+    ol.replaceWith(replacement);
+    changed = true;
+  });
+
+  return changed ? doc.body.innerHTML : html;
+}
+
+function installSmartPaste(quill) {
+  quill.root.addEventListener('paste', event => {
+    const clipboard = event.clipboardData;
+    const originalHtml = clipboard ? clipboard.getData('text/html') : '';
+    if (!originalHtml) return;
+
+    const fixedHtml = preservePastedListNumbers(originalHtml);
+    if (fixedHtml === originalHtml) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const range = quill.getSelection(true) || { index: quill.getLength() - 1, length: 0 };
+    const pasted = quill.clipboard.convert(fixedHtml);
+    const Delta = Quill.import('delta');
+    const change = new Delta().retain(range.index).delete(range.length).concat(pasted);
+    quill.updateContents(change, 'user');
+    quill.setSelection(range.index + Math.max(0, pasted.length() - 1), 0, 'silent');
+  }, true);
+}
+
 const quillLog = new Quill('#log-body-editor', {
   theme: 'snow',
   modules: { toolbar: quillToolbar },
   placeholder: 'Isi catatan, hasil keputusan, tindak lanjut, notulensi...'
 });
+installSmartPaste(quillLog);
 quillLog.on('text-change', autosaveLogDraft);
 
 const quillNote = new Quill('#note-body-editor', {
@@ -6667,12 +6740,14 @@ const quillNote = new Quill('#note-body-editor', {
   modules: { toolbar: quillToolbar },
   placeholder: 'Isi catatan penting perusahaan...'
 });
+installSmartPaste(quillNote);
 
 const quillNp = new Quill('#np-body-editor', {
   theme: 'snow',
   modules: { toolbar: quillToolbar },
   placeholder: 'Tulis catatan di sini...'
 });
+installSmartPaste(quillNp);
 
 </script>
 <!-- Bottom Navigation for Mobile -->
