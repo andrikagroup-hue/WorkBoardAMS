@@ -203,6 +203,13 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
 .content { padding: 16px 20px; flex: 1; }
 .panel { display: none; }
 .panel.active { display: block; }
+.panel-add-toolbar {
+  display: flex; align-items: center; justify-content: flex-end;
+  margin-bottom: 10px;
+}
+@media (max-width: 560px) {
+  .panel-add-toolbar .btn-sm { width: 100%; justify-content: center; }
+}
 
 /* ── Shared form fields ─────────────────────── */
 input, textarea, select {
@@ -1425,9 +1432,6 @@ textarea { resize: vertical; }
         <button id="workBreakAlarm_btn" onclick="workBreakAlarm_openModal()" title="Set up Work-Break Alarm">
           ⏰ Work Alarm
         </button>
-        <button class="btn-sm btn-primary" onclick="handleAdd()">
-          <i class="ti ti-plus" aria-hidden="true"></i> Add
-        </button>
       </div>
     </div>
 
@@ -1513,6 +1517,11 @@ textarea { resize: vertical; }
 
       <!-- ── Daily Schedule ─────────────────── -->
       <div class="panel active" id="panel-schedule">
+        <div class="panel-add-toolbar">
+          <button class="btn-sm btn-primary" onclick="handleAdd()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Add Schedule
+          </button>
+        </div>
         <div class="form-box" id="sched-form" style="display:none">
           <div class="form-row">
             <input id="sched-time" type="time" value="08:00" style="max-width:110px" />
@@ -1797,6 +1806,11 @@ textarea { resize: vertical; }
           <button onclick="document.getElementById('rt-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e;display:block">Close</button>
         </div>
 
+        <div class="panel-add-toolbar">
+          <button class="btn-sm btn-primary" onclick="handleAdd()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Add Recurring Task
+          </button>
+        </div>
         <div class="form-box" id="rt-form" style="display:none">
           <div class="log-form-grid">
             <div class="log-form-col">
@@ -1877,6 +1891,11 @@ ALTER TABLE logbook_entries
           <button onclick="document.getElementById('logbook-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
 
+        <div class="panel-add-toolbar">
+          <button class="btn-sm btn-primary" onclick="handleAdd()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Add Logbook
+          </button>
+        </div>
         <!-- Binder divider tabs — filter entries by category (replaces the default "All" dropdown, specific to Logbook) -->
         <div class="binder-tabs-row" id="logbook-binder-tabs">
           <button type="button" class="binder-tab bt-all active" onclick="logBinderFilter('', this)">All</button>
@@ -1954,6 +1973,11 @@ ALTER TABLE logbook_entries
       <div class="panel" id="panel-notes">
         <div style="background:#F3EEF5;border:1px solid #D7BEE3;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#5B3A6B;display:flex;align-items:center;gap:6px">
           🔒 <strong>Private Notes</strong> — Only you can see your own notes.
+        </div>
+        <div class="panel-add-toolbar">
+          <button class="btn-sm btn-primary" onclick="handleAdd()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Add Note
+          </button>
         </div>
         <div class="form-box" id="note-form" style="display:none">
           <div class="form-row">
@@ -7799,7 +7823,7 @@ function renderFaq() {
     {
       section: '📅 Daily Schedule',
       items: [
-        { q: 'How do I add a schedule item?', a: 'Click the <strong>+ Add</strong> button in the top-right corner, fill in the time, activity title, location, and category, then click Save.' },
+        { q: 'How do I add a schedule item?', a: 'Open Daily Schedule, click <strong>+ Add Schedule</strong> inside the panel, fill in the time, activity title, location, and category, then click Save.' },
         { q: 'What do the category colors mean?', a: '🔵 General = regular activity · 🟡 Important = high priority · 🟢 Done = already completed · 🟣 Meeting = a meeting · 🔴 Urgent = pressing.' },
         { q: 'What is Private mode?', a: 'A schedule item set to Private can only be seen by you. Public items can be seen by all team members.' },
       ]
