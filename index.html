@@ -698,7 +698,26 @@ textarea { resize: vertical; }
 .act-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
 
 /* ── Quick Links panel ──────────────────── */
-.link-group { margin-bottom: 18px; }
+.link-group {
+  --link-accent: #2D6262;
+  --link-soft: #DFF1F0;
+  --link-border: #A9CECB;
+  margin-bottom: 16px; padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--link-border); border-radius: 12px;
+}
+.link-theme-0 { --link-accent:#2D6262; --link-soft:#DFF1F0; --link-border:#A9CECB; }
+.link-theme-1 { --link-accent:#6B4E7A; --link-soft:#F1E9F6; --link-border:#D4B8E0; }
+.link-theme-2 { --link-accent:#2E5F87; --link-soft:#E5F1F8; --link-border:#B5D2E5; }
+.link-theme-3 { --link-accent:#805A18; --link-soft:#FFF4D7; --link-border:#EACF8C; }
+.link-theme-4 { --link-accent:#8A4C60; --link-soft:#FBEAF0; --link-border:#E4BCC9; }
+.link-theme-5 { --link-accent:#506B3D; --link-soft:#EDF4E8; --link-border:#BED0B1; }
+.link-group-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 10px; padding: 8px 10px;
+  background: var(--link-soft); border-left: 5px solid var(--link-accent);
+  border-radius: 8px;
+}
 .links-import-status {
   display: none; margin: -4px 0 14px; padding: 8px 10px;
   border: 1px solid var(--border); border-radius: var(--radius);
@@ -708,27 +727,64 @@ textarea { resize: vertical; }
 .links-import-status.success { background: #ecfdf5; border-color: #86efac; color: #166534; }
 .links-import-status.error { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
 .link-group-title {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
-  color: var(--text3); margin-bottom: 8px; padding-bottom: 5px;
-  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.65px;
+  color: var(--link-accent);
+}
+.link-group-icon { font-size: 16px; line-height: 1; }
+.link-group-count {
+  flex-shrink: 0; padding: 3px 8px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--link-border);
+  color: var(--link-accent); font-size: 10.5px; font-weight: 700;
+}
+.link-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
 }
 .link-card {
-  display: flex; align-items: center; gap: 12px;
-  background: var(--surface); border: 0.5px solid var(--border);
-  border-radius: var(--radius); padding: 11px 14px; margin-bottom: 7px;
-  cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start; gap: 9px; min-height: 82px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 9px; padding: 10px; margin: 0;
+  cursor: pointer; transition: border-color 0.12s, box-shadow 0.12s, transform 0.12s;
   text-decoration: none; color: inherit;
 }
-.link-card:hover { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
-.link-emoji { font-size: 22px; flex-shrink: 0; width: 34px; text-align: center; }
+.link-card:hover {
+  border-color: var(--link-accent);
+  box-shadow: 0 4px 12px rgba(47, 99, 100, 0.14);
+  transform: translateY(-1px);
+}
+.link-emoji {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 9px;
+  background: var(--link-soft); color: var(--link-accent);
+  font-size: 19px; flex-shrink: 0; text-align: center;
+}
 .emoji-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
 .emoji-btn { font-size: 18px; padding: 4px; border: none; background: transparent; border-radius: 6px; cursor: pointer; transition: background .15s; line-height: 1; }
 .emoji-btn:hover { background: var(--bg2); }
 .link-info { flex: 1; min-width: 0; }
-.link-label { font-size: 13px; font-weight: 600; color: var(--text1); }
+.link-label { font-size: 12.5px; font-weight: 700; color: var(--text1); line-height: 1.3; }
 .link-url-text { font-size: 11px; color: var(--accent); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.link-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.link-actions { display: flex; gap: 5px; flex-shrink: 0; }
+.link-desc {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; font-size: 10.5px; line-height: 1.35;
+  color: var(--text3); margin-top: 3px;
+}
+.link-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.link-actions .btn-sm { padding: 4px 6px; }
+@media (max-width: 1250px) {
+  .link-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 920px) {
+  .link-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .link-group { padding: 8px; }
+  .link-grid { grid-template-columns: 1fr; }
+  .link-group-title { font-size: 11.5px; }
+  .link-card { min-height: 76px; }
+}
 .pass-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 10px; margin-bottom: 4px; align-items: start; }
 .pass-card { display:flex; flex-direction:column; gap:5px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; }
 .pass-card:hover { box-shadow: 0 4px 14px rgba(47,99,100,0.10); transform: translateY(-1px); border-color: var(--border2); }
@@ -7748,6 +7804,24 @@ async function adminDeleteUser(targetName) {
 
 let linksCache = [];
 
+function getLinkCategoryVisual(category) {
+  const key = String(category || 'Lainnya').trim().toLowerCase();
+  const known = [
+    { match: /company|website/, theme: 0, icon: '🌐' },
+    { match: /(^|\s)ai($|\s)|artificial|technology|tech/, theme: 1, icon: '✨' },
+    { match: /finance|keuangan|account|invoice/, theme: 2, icon: '💰' },
+    { match: /tool|utility|reference|kiblat/, theme: 3, icon: '🧰' },
+    { match: /sosmed|social|communication|marketing/, theme: 4, icon: '💬' },
+    { match: /hr|sdm|people|employee|team/, theme: 5, icon: '👥' }
+  ];
+  const selected = known.find(item => item.match.test(key));
+  if (selected) return selected;
+
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash) + key.charCodeAt(i);
+  return { theme: Math.abs(hash) % 6, icon: '📁' };
+}
+
 async function renderLinks() {
   const listEl = document.getElementById('links-list');
   const filterEl = document.getElementById('links-filter-kat');
@@ -7798,25 +7872,36 @@ async function renderLinks() {
     grouped[kat].push(l);
   });
 
-  listEl.innerHTML = Object.entries(grouped).map(([kat, items]) => `
-    <div class="link-group">
-      <div class="link-group-title">${escHtml(kat)}</div>
-      ${items.map(l => `
-        <div class="link-card" onclick="window.open('${escHtml(l.url)}','_blank')">
-          <div class="link-emoji">${l.emoji || '🔗'}</div>
-          <div class="link-info">
-            <div class="link-label">${escHtml(l.label)}</div>
-            <div class="link-url-text">${escHtml(l.url)}</div>
-            ${l.deskripsi ? `<div class="link-desc">${escHtml(l.deskripsi)}</div>` : ''}
+  listEl.innerHTML = Object.entries(grouped).map(([kat, items]) => {
+    const visual = getLinkCategoryVisual(kat);
+    return `
+      <section class="link-group link-theme-${visual.theme}">
+        <div class="link-group-header">
+          <div class="link-group-title">
+            <span class="link-group-icon">${visual.icon}</span>
+            <span>${escHtml(kat)}</span>
           </div>
-          <div class="link-actions" onclick="event.stopPropagation()">
-            <button class="btn-sm" title="Edit" onclick="openLinkForm('${l.id}')"><i class="ti ti-pencil"></i></button>
-            <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" title="Delete" onclick="deleteLink('${l.id}')"><i class="ti ti-trash"></i></button>
-          </div>
+          <span class="link-group-count">${items.length} ${items.length === 1 ? 'link' : 'links'}</span>
         </div>
-      `).join('')}
-    </div>
-  `).join('');
+        <div class="link-grid">
+          ${items.map(l => `
+            <div class="link-card" onclick="window.open('${escHtml(l.url)}','_blank')">
+              <div class="link-emoji">${l.emoji || '🔗'}</div>
+              <div class="link-info">
+                <div class="link-label">${escHtml(l.label)}</div>
+                <div class="link-url-text">${escHtml(l.url)}</div>
+                ${l.deskripsi ? `<div class="link-desc">${escHtml(l.deskripsi)}</div>` : ''}
+              </div>
+              <div class="link-actions" onclick="event.stopPropagation()">
+                <button class="btn-sm" title="Edit" onclick="openLinkForm('${l.id}')"><i class="ti ti-pencil"></i></button>
+                <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" title="Delete" onclick="deleteLink('${l.id}')"><i class="ti ti-trash"></i></button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+    `;
+  }).join('');
 }
 
 function showLinksImportStatus(message, type = '') {
