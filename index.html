@@ -699,6 +699,14 @@ textarea { resize: vertical; }
 
 /* ── Quick Links panel ──────────────────── */
 .link-group { margin-bottom: 18px; }
+.links-import-status {
+  display: none; margin: -4px 0 14px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg2); color: var(--text2); font-size: 11.5px;
+}
+.links-import-status.show { display: block; }
+.links-import-status.success { background: #ecfdf5; border-color: #86efac; color: #166534; }
+.links-import-status.error { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
 .link-group-title {
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
   color: var(--text3); margin-bottom: 8px; padding-bottom: 5px;
@@ -2418,13 +2426,18 @@ ON CONFLICT DO NOTHING;</code>
         <!-- Header + tombol tambah -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
           <div style="font-size:13px;font-weight:600;color:var(--text1)">🔗 Quick Links — Access to All Tools & Websites</div>
-          <div style="display:flex;gap:6px">
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
             <select id="links-filter-kat" class="global-filter" style="font-size:12px" onchange="renderLinks()">
               <option value="all">All Categories</option>
             </select>
+            <input type="file" id="links-csv-input" accept=".csv,text/csv" style="display:none" onchange="importLinksCsv(event)">
+            <button type="button" class="btn-sm" id="links-import-btn" onclick="document.getElementById('links-csv-input').click()">
+              <i class="ti ti-upload"></i> Import CSV
+            </button>
             <button class="btn-sm btn-primary" onclick="openLinkForm()"><i class="ti ti-plus"></i> Add Link</button>
           </div>
         </div>
+        <div id="links-import-status" class="links-import-status" role="status" aria-live="polite"></div>
 
         <!-- Add/edit link form -->
         <div id="link-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px">
@@ -7806,6 +7819,209 @@ async function renderLinks() {
   `).join('');
 }
 
+function showLinksImportStatus(message, type = '') {
+  const statusEl = document.getElementById('links-import-status');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.className = `links-import-status show${type ? ' ' + type : ''}`;
+}
+
+function countCsvDelimiterOutsideQuotes(text, delimiter) {
+  let count = 0;
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '"') {
+      if (inQuotes && text[i + 1] === '"') i++;
+      else inQuotes = !inQuotes;
+    } else if (!inQuotes && text[i] === delimiter) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function parseLinksCsv(text) {
+  const source = String(text || '').replace(/^\uFEFF/, '');
+  const firstRecord = source.split(/\r?\n/, 1)[0] || '';
+  const semicolons = countCsvDelimiterOutsideQuotes(firstRecord, ';');
+  const commas = countCsvDelimiterOutsideQuotes(firstRecord, ',');
+  const delimiter = semicolons > commas ? ';' : ',';
+
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < source.length; i++) {
+    const char = source[i];
+    if (inQuotes) {
+      if (char === '"' && source[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        cell += char;
+      }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === delimiter) {
+      row.push(cell.trim());
+      cell = '';
+    } else if (char === '\n') {
+      row.push(cell.trim());
+      if (row.some(value => value !== '')) rows.push(row);
+      row = [];
+      cell = '';
+    } else if (char !== '\r') {
+      cell += char;
+    }
+  }
+
+  if (inQuotes) throw new Error('The CSV contains an unclosed quotation mark.');
+  row.push(cell.trim());
+  if (row.some(value => value !== '')) rows.push(row);
+  return rows;
+}
+
+function normalizeCsvHeader(value) {
+  return String(value || '')
+    .replace(/^\uFEFF/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function cleanImportedLinkUrl(value) {
+  try {
+    const parsed = new URL(String(value || '').trim());
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    return parsed.href;
+  } catch (_) {
+    return null;
+  }
+}
+
+function importedLinkUrlKey(value) {
+  const cleaned = cleanImportedLinkUrl(value);
+  if (!cleaned) return null;
+  const parsed = new URL(cleaned);
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+  const port = parsed.port ? ':' + parsed.port : '';
+  const path = parsed.pathname.replace(/\/+$/, '') || '/';
+  return `${host}${port}${path}${parsed.search}`.toLowerCase();
+}
+
+async function importLinksCsv(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  const importBtn = document.getElementById('links-import-btn');
+  if (!file) return;
+
+  if (file.size > 1024 * 1024) {
+    input.value = '';
+    return alert('The CSV file is too large. The maximum size is 1 MB.');
+  }
+
+  if (importBtn) {
+    importBtn.disabled = true;
+    importBtn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Importing...';
+  }
+  showLinksImportStatus('Reading and checking the CSV file...');
+
+  try {
+    const rows = parseLinksCsv(await file.text());
+    if (rows.length < 2) throw new Error('The CSV has no data rows.');
+
+    const headers = rows[0].map(normalizeCsvHeader);
+    const labelIndex = headers.findIndex(header =>
+      ['perusahaan', 'company', 'company name', 'name', 'name / label', 'label'].includes(header)
+    );
+    const urlIndex = headers.findIndex(header =>
+      ['website resmi', 'official website', 'website', 'url', 'link'].includes(header)
+    );
+
+    if (labelIndex < 0 || urlIndex < 0) {
+      throw new Error('Required columns were not found. Use "Perusahaan" and "Website Resmi", or "Company" and "URL".');
+    }
+
+    const { data: existingData, error: loadError } = await withTimeout(
+      sb.from('app_links').select('label,url,urutan'),
+      15000
+    );
+    if (loadError) throw loadError;
+
+    const existing = existingData || [];
+    const knownUrlKeys = new Set(existing.map(link => importedLinkUrlKey(link.url)).filter(Boolean));
+    const maxOrder = existing.reduce((max, link) => Math.max(max, Number(link.urutan) || 0), 0);
+    const pending = [];
+    let skippedDuplicates = 0;
+    let skippedInvalid = 0;
+
+    rows.slice(1).forEach(rowData => {
+      const label = String(rowData[labelIndex] || '').trim();
+      const url = cleanImportedLinkUrl(rowData[urlIndex]);
+      const urlKey = importedLinkUrlKey(url);
+
+      if (!label || !url || !urlKey) {
+        skippedInvalid++;
+        return;
+      }
+      if (knownUrlKeys.has(urlKey)) {
+        skippedDuplicates++;
+        return;
+      }
+
+      knownUrlKeys.add(urlKey);
+      pending.push({
+        label,
+        url,
+        kategori: 'Company Website',
+        deskripsi: 'Official company website',
+        emoji: '🌐',
+        urutan: maxOrder + pending.length + 1
+      });
+    });
+
+    if (!pending.length) {
+      showLinksImportStatus(
+        `No new links were imported. ${skippedDuplicates} duplicate(s) and ${skippedInvalid} invalid row(s) were skipped.`
+      );
+      return;
+    }
+
+    const confirmed = confirm(
+      `Import ${pending.length} new link(s) from "${file.name}"?\n\n` +
+      `${skippedDuplicates} duplicate(s) and ${skippedInvalid} invalid row(s) will be skipped.`
+    );
+    if (!confirmed) {
+      showLinksImportStatus('Import cancelled. No data was changed.');
+      return;
+    }
+
+    const { error: insertError } = await withTimeout(
+      sb.from('app_links').insert(pending),
+      20000
+    );
+    if (insertError) throw insertError;
+
+    await renderLinks();
+    showLinksImportStatus(
+      `${pending.length} link(s) imported successfully. ${skippedDuplicates} duplicate(s) and ${skippedInvalid} invalid row(s) were skipped.`,
+      'success'
+    );
+  } catch (error) {
+    showLinksImportStatus(`Import failed: ${error.message || error}`, 'error');
+  } finally {
+    input.value = '';
+    if (importBtn) {
+      importBtn.disabled = false;
+      importBtn.innerHTML = '<i class="ti ti-upload"></i> Import CSV';
+    }
+  }
+}
+
 // ── FAQ / Panduan ──────────────────────────────────────────────
 function renderFaq() {
   const el = document.getElementById('faq-list');
@@ -7866,6 +8082,7 @@ function renderFaq() {
       items: [
         { q: 'What is Quick Links?', a: 'A panel for saving and accessing all of the company\'s important links in one place. Examples: SiAkun, company website, cloud documents, etc.' },
         { q: 'How do I add a new link?', a: 'Open the <strong>All Links</strong> panel, click <strong>+ Add Link</strong>, fill in the name, URL, category, and emoji, then save.' },
+        { q: 'How do I import company websites from CSV?', a: 'Open <strong>All Links</strong>, click <strong>Import CSV</strong>, and choose a CSV containing the columns Company and URL. Existing links are skipped automatically.' },
       ]
     },
     {
