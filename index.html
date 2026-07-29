@@ -253,6 +253,32 @@ textarea { resize: vertical; }
 }
 .ev-del:hover { color: var(--danger); background: #FEE2E2; }
 
+
+/* ── Today Focus — ADHD-friendly daily start ───────────── */
+.today-focus-hero { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px; }
+.today-focus-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.today-focus-title { font-size:20px; font-weight:800; color:var(--text1); }
+.today-focus-sub { font-size:11.5px; color:var(--text2); margin-top:3px; }
+.quick-capture { display:flex; gap:8px; align-items:center; }
+.quick-capture input { flex:1; min-width:0; font-size:14px; padding:10px 12px; }
+.focus-grid { display:grid; grid-template-columns:1.25fr .9fr; gap:14px; }
+.focus-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; }
+.focus-card-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--text2); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
+.focus-task { border:1px solid var(--border); border-radius:9px; padding:10px; margin-bottom:8px; background:var(--bg1, var(--surface)); }
+.focus-task:last-child { margin-bottom:0; }
+.focus-task-main { display:flex; gap:9px; align-items:flex-start; }
+.focus-rank { width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
+.focus-task-text { font-size:13px; font-weight:700; line-height:1.4; }
+.focus-task-meta { font-size:10.5px; color:var(--text3); margin-top:3px; }
+.focus-task-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:9px; padding-left:33px; }
+.focus-mini-btn { border:1px solid var(--border2); background:var(--surface); border-radius:6px; padding:4px 8px; font-size:10.5px; cursor:pointer; color:var(--text2); }
+.focus-mini-btn:hover { background:var(--bg2); }
+.focus-empty { font-size:12px; color:var(--text3); padding:14px 4px; text-align:center; }
+.focus-stat { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.focus-stat:last-child { border-bottom:none; }
+.focus-stat strong { font-size:18px; }
+@media (max-width:760px) { .focus-grid { grid-template-columns:1fr; } .today-focus-head { flex-direction:column; } .quick-capture { flex-direction:column; align-items:stretch; } .quick-capture .btn-sm { justify-content:center; } }
+
 /* ── Schedule (gaya spreadsheet, warna tema WorkBoard) ── */
 .sched-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .sched-grid-wrap {
@@ -1310,7 +1336,11 @@ textarea { resize: vertical; }
           <i class="ti ti-chevron-right nav-arrow"></i>
         </button>
         <div class="nav-submenu">
-          <button class="nav-sub-item active" id="nsub-schedule" onclick="switchPanel('schedule',this)">
+          <button class="nav-sub-item active" id="nsub-focus" onclick="switchPanel('focus',this)">
+            <i class="ti ti-target-arrow"></i> Today Focus
+            <span class="nav-badge badge-red" id="badge-focus">0</span>
+          </button>
+          <button class="nav-sub-item" id="nsub-schedule" onclick="switchPanel('schedule',this)">
             <i class="ti ti-calendar-event"></i> Daily Schedule
             <span class="nav-badge badge-blue" id="badge-sched">0</span>
           </button>
@@ -1467,7 +1497,7 @@ textarea { resize: vertical; }
   <!-- ── Main ───────────────────────────────── -->
   <div class="main">
     <div class="top-bar">
-      <div class="top-title" id="panel-title">Daily Schedule</div>
+      <div class="top-title" id="panel-title">Today Focus</div>
       <div class="top-actions">
         <div style="display:flex;align-items:center;gap:5px">
           <button class="user-pill-mobile" id="user-pill-mobile" onclick="switchUser()" title="Switch to another user">
@@ -1581,8 +1611,45 @@ textarea { resize: vertical; }
 
     <div class="content">
 
+
+      <!-- ── Today Focus ───────────────────── -->
+      <div class="panel active" id="panel-focus">
+        <div class="today-focus-hero">
+          <div class="today-focus-head">
+            <div>
+              <div class="today-focus-title">Today Focus</div>
+              <div class="today-focus-sub">Capture first. Organize later. WorkBoard will keep today visible.</div>
+            </div>
+            <button class="btn-sm" onclick="renderTodayFocus()"><i class="ti ti-refresh"></i> Refresh</button>
+          </div>
+          <div class="quick-capture">
+            <input id="focus-quick-input" placeholder="Type one thing you need to remember..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
+            <button class="btn-sm btn-primary" id="focus-quick-btn" onclick="quickCaptureTodo()"><i class="ti ti-plus"></i> Add for Today</button>
+          </div>
+          <div id="focus-capture-status" style="font-size:10.5px;color:var(--text3);margin-top:6px"></div>
+        </div>
+        <div class="focus-grid">
+          <div class="focus-card">
+            <div class="focus-card-title"><span>🎯 Do Now — Top 3</span><button class="focus-mini-btn" onclick="switchPanel('todo',document.getElementById('nsub-todo'))">Open To Do</button></div>
+            <div id="focus-top3"><div class="loading-msg">Loading today's focus...</div></div>
+          </div>
+          <div class="focus-card">
+            <div class="focus-card-title">Today Overview</div>
+            <div id="focus-overview"><div class="loading-msg">Loading...</div></div>
+          </div>
+          <div class="focus-card">
+            <div class="focus-card-title">📞 Follow Up Today</div>
+            <div id="focus-followups"></div>
+          </div>
+          <div class="focus-card">
+            <div class="focus-card-title">⏳ Waiting for Reply</div>
+            <div id="focus-waiting"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Daily Schedule ─────────────────── -->
-      <div class="panel active" id="panel-schedule">
+      <div class="panel" id="panel-schedule">
         <div class="panel-add-toolbar">
           <button class="btn-sm btn-primary" onclick="handleAdd()">
             <i class="ti ti-plus" aria-hidden="true"></i> Add Schedule
@@ -2860,7 +2927,7 @@ async function renameUserEverywhere(oldName, newName) {
 // ============================================
 
 // ── State ─────────────────────────────────
-let currentPanel = 'schedule';
+let currentPanel = 'focus';
 
 // Cache data hasil render terakhir (dipakai supaya tombol Edit bisa ambil data tanpa query ulang)
 let scheduleEvents = [];
@@ -2890,7 +2957,8 @@ let chatChannelsLoaded = false;
 // supaya filter privat/publik langsung ter-update sesuai pengguna yang baru)
 async function refreshCurrentPanel() {
   applyAdminVisibility();
-  if (currentPanel === 'schedule') await renderSchedule();
+  if (currentPanel === 'focus') await renderTodayFocus();
+  else if (currentPanel === 'schedule') await renderSchedule();
   else if (currentPanel === 'tracker') { await renderTracker(); await renderProjectTracker(); }
   else if (currentPanel === 'logbook') await renderLogbook();
   else if (currentPanel === 'notes') await renderNotes();
@@ -2942,10 +3010,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Auto-open Daily group on first load
   const ngDaily = document.getElementById('ng-daily');
   if (ngDaily) ngDaily.classList.add('open');
-  await renderSchedule();
+  await renderTodayFocus();
   generateDueRecurringTasks().then(() => {
     // Kalau ada entri baru yang barusan digenerate & lagi lihat Daily Schedule, refresh biar langsung kelihatan
     if (currentPanel === 'schedule') renderSchedule();
+    if (currentPanel === 'focus') renderTodayFocus();
   }).catch(() => {});
   updateDailyProgress();
   loadChatLastRead();
@@ -3014,6 +3083,7 @@ async function switchPanel(id, el) {
   currentPanel = id;
 
   const titles = {
+    focus: 'Today Focus',
     schedule: 'Daily Schedule',
     tracker: 'Time Plan Tracker',
     kanban: 'Kanban Board',
@@ -3038,7 +3108,8 @@ async function switchPanel(id, el) {
   hideAllForms();
   openNavGroupForPanel(id);
 
-  if (id === 'schedule') await renderSchedule();
+  if (id === 'focus') await renderTodayFocus();
+  else if (id === 'schedule') await renderSchedule();
   else if (id === 'tracker') { await renderTracker(); await renderProjectTracker(); }
   else if (id === 'kanban') await renderKanban();
   else if (id === 'gantt') await renderGantt();
@@ -4885,6 +4956,110 @@ async function delNote(id) {
   await renderNotes();
 }
 
+// ── TODAY FOCUS ─────────────────────────────
+function focusEscape(v) {
+  return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+function focusIsFollowUp(t) {
+  return /follow\s*up|follow-up|hubungi|kontak|telepon|call|remind|ingatkan|cek lagi|tanyakan/i.test(t.text || '');
+}
+function focusIsWaiting(t) {
+  return /waiting|wait for|menunggu|nunggu|awaiting|pending reply|belum dibalas|belum ada jawaban/i.test(t.text || '');
+}
+function focusScore(t, today) {
+  let score = 0;
+  if (t.due_date && t.due_date < today) score += 1000;
+  if (t.due_date === today) score += 700;
+  if (focusIsFollowUp(t)) score += 300;
+  if (t.priority === 'high') score += 200;
+  else if (t.priority === 'med') score += 100;
+  if (!t.due_date) score += 20;
+  return score;
+}
+function focusDateLabel(t, today) {
+  if (!t.due_date) return 'No deadline';
+  if (t.due_date < today) return 'Overdue · ' + t.due_date;
+  if (t.due_date === today) return 'Due today';
+  return 'Due ' + t.due_date;
+}
+function focusTaskHtml(t, rank='') {
+  const today = todayStr();
+  return `<div class="focus-task">
+    <div class="focus-task-main">
+      ${rank ? `<div class="focus-rank">${rank}</div>` : ''}
+      <div><div class="focus-task-text">${focusEscape(t.text)}</div>
+      <div class="focus-task-meta">${focusEscape(focusDateLabel(t,today))} · ${(prioLabel[t.priority] || t.priority || 'Medium')}</div></div>
+    </div>
+    <div class="focus-task-actions"${rank ? '' : ' style="padding-left:0"'}>
+      <button class="focus-mini-btn" onclick="focusDone('${t.id}')">✓ Done</button>
+      <button class="focus-mini-btn" onclick="focusTomorrow('${t.id}')">Tomorrow</button>
+      <button class="focus-mini-btn" onclick="focusOpenTodo('${t.id}')">Open</button>
+    </div>
+  </div>`;
+}
+async function renderTodayFocus() {
+  const top = document.getElementById('focus-top3');
+  if (!top) return;
+  try {
+    const { data, error } = await withTimeout(sb.from('todos').select('*').order('due_date', { ascending: true }).limit(500));
+    if (error) throw error;
+    todoCache = applyOwner(data || []);
+    const open = todoCache.filter(t => !t.is_done);
+    const today = todayStr();
+    const ranked = [...open].sort((a,b) => focusScore(b,today)-focusScore(a,today));
+    const top3 = ranked.slice(0,3);
+    const overdue = open.filter(t => t.due_date && t.due_date < today);
+    const dueToday = open.filter(t => t.due_date === today);
+    const follow = open.filter(t => focusIsFollowUp(t) && (!t.due_date || t.due_date <= today)).slice(0,5);
+    const waiting = open.filter(focusIsWaiting).slice(0,5);
+    top.innerHTML = top3.length ? top3.map((t,i)=>focusTaskHtml(t,i+1)).join('') : '<div class="focus-empty">Nothing urgent. Add one small next step above.</div>';
+    document.getElementById('focus-followups').innerHTML = follow.length ? follow.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">No follow-up detected for today.</div>';
+    document.getElementById('focus-waiting').innerHTML = waiting.length ? waiting.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">No waiting items detected.</div>';
+    document.getElementById('focus-overview').innerHTML = `
+      <div class="focus-stat"><span>Open tasks</span><strong>${open.length}</strong></div>
+      <div class="focus-stat"><span>Due today</span><strong>${dueToday.length}</strong></div>
+      <div class="focus-stat"><span>Overdue</span><strong>${overdue.length}</strong></div>
+      <div class="focus-stat"><span>Done today</span><strong>${todoCache.filter(t => t.is_done && t.done_at && String(t.done_at).slice(0,10)===today).length}</strong></div>`;
+    const badge = document.getElementById('badge-focus');
+    if (badge) badge.textContent = Math.min(99, overdue.length + dueToday.length);
+  } catch (e) {
+    top.innerHTML = `<div class="empty-msg" style="color:var(--danger)">Could not load Today Focus: ${focusEscape(e.message)}</div>`;
+  }
+}
+async function quickCaptureTodo() {
+  const input = document.getElementById('focus-quick-input');
+  const btn = document.getElementById('focus-quick-btn');
+  const status = document.getElementById('focus-capture-status');
+  const text = (input?.value || '').trim();
+  if (!text) { input?.focus(); return; }
+  btn.disabled = true;
+  status.textContent = 'Saving...';
+  const { error } = await sb.from('todos').insert({ text, priority:'med', due_date:todayStr(), assigned_to:null, is_private:true, created_by:getUser() });
+  btn.disabled = false;
+  if (error) { status.textContent = 'Failed: ' + error.message; return; }
+  input.value = '';
+  status.textContent = 'Added to today ✓';
+  setTimeout(() => { if (status.textContent === 'Added to today ✓') status.textContent = ''; }, 2500);
+  await renderTodayFocus();
+  updateDailyProgress();
+}
+async function focusDone(id) {
+  await sb.from('todos').update({ is_done:true, done_at:new Date().toISOString() }).eq('id',id);
+  await renderTodayFocus();
+  updateDailyProgress();
+}
+async function focusTomorrow(id) {
+  const d = new Date(); d.setDate(d.getDate()+1);
+  const due = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  await sb.from('todos').update({ due_date:due }).eq('id',id);
+  await renderTodayFocus();
+}
+async function focusOpenTodo(id) {
+  await switchPanel('todo', document.getElementById('nsub-todo'));
+  editTodo(id);
+  document.getElementById('todo-input')?.focus();
+}
+
 // ── TO DO ──────────────────────────────────
 async function renderTodo() {
   let _td;
@@ -5781,6 +5956,7 @@ function setupRealtime() {
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'todos' }, () => {
       if (currentPanel === 'todo') renderTodo();
+      if (currentPanel === 'focus') renderTodayFocus();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_channels' }, () => {
       if (currentPanel === 'chat') renderChat();
@@ -5827,6 +6003,7 @@ function toggleNavGroup(groupId) {
 // Open the nav-group that contains the given panel id
 function openNavGroupForPanel(panelId) {
   const map = {
+    focus: 'ng-daily',
     schedule: 'ng-daily', tracker: 'ng-daily', kanban: 'ng-daily', gantt: 'ng-daily', matrix: 'ng-daily', recurring: 'ng-daily', logbook: 'ng-daily',
     notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
@@ -6971,7 +7148,12 @@ restoreTodoDraft();
 <!-- Bottom Navigation for Mobile -->
 <nav class="bottom-nav" id="bottom-nav" aria-label="Navigasi bawah">
   <div class="bottom-nav-inner">
-    <button class="bn-item active" onclick="switchPanelMobile('schedule',this)" aria-label="Daily Schedule">
+    <button class="bn-item active" onclick="switchPanelMobile('focus',this)" aria-label="Today Focus">
+      <i class="ti ti-target-arrow"></i>
+      <span>Focus</span>
+      <span class="bn-badge hidden" id="bn-badge-focus"></span>
+    </button>
+    <button class="bn-item" onclick="switchPanelMobile('schedule',this)" aria-label="Daily Schedule">
       <i class="ti ti-calendar-event"></i>
       <span>Schedule</span>
       <span class="bn-badge hidden" id="bn-badge-sched"></span>
@@ -7081,6 +7263,7 @@ function switchPanelMobile(id, el) {
 // Sync bottom nav badges with sidebar badges
 function syncBottomNavBadges() {
   var map = {
+    'focus':   'badge-focus',
     'sched':   'badge-sched',
     'track':   'badge-track',
     'log':     'badge-log',
@@ -7109,7 +7292,7 @@ function syncBottomNavBadges() {
 
 // Observe badge changes
 var badgeObserver = new MutationObserver(syncBottomNavBadges);
-['badge-sched','badge-track','badge-log','badge-notes','badge-todo','badge-notepad','badge-chat','badge-absen','badge-links'].forEach(function(id) {
+['badge-focus','badge-sched','badge-track','badge-log','badge-notes','badge-todo','badge-notepad','badge-chat','badge-absen','badge-links'].forEach(function(id) {
   var el = document.getElementById(id);
   if (el) badgeObserver.observe(el, { childList: true, subtree: true, characterData: true });
 });
