@@ -289,6 +289,8 @@ textarea { resize: vertical; }
 .focus-soft-note { font-size:10.5px; color:var(--text3); line-height:1.45; margin-top:7px; }
 .focus-mini-btn.focus-snooze { color:#7C5A16; background:#FFF8E8; }
 .focus-badge-count { font-size:10px; min-width:20px; text-align:center; padding:2px 7px; border-radius:999px; background:var(--bg2); color:var(--text2); }
+.focus-card.focus-captured { border-left:3px solid var(--accent); }
+.focus-card.focus-inbox { border-left:3px solid var(--accent2); }
 @media (max-width:760px) { .focus-grid { grid-template-columns:1fr; } .today-focus-head { flex-direction:column; } .quick-capture { flex-direction:column; align-items:stretch; } .quick-capture .btn-sm { justify-content:center; } }
 
 /* ── Schedule (gaya spreadsheet, warna tema WorkBoard) ── */
@@ -1664,6 +1666,14 @@ textarea { resize: vertical; }
           <div class="focus-card">
             <div class="focus-card-title"><span>⏳ Waiting for Reply</span><span class="focus-badge-count" id="focus-wait-count">0</span></div>
             <div id="focus-waiting"></div>
+          </div>
+          <div class="focus-card focus-captured">
+            <div class="focus-card-title"><span>✅ Added for Today</span><span class="focus-badge-count" id="focus-today-count">0</span></div>
+            <div id="focus-captured-today"></div>
+          </div>
+          <div class="focus-card focus-inbox">
+            <div class="focus-card-title"><span>📥 Inbox / Later</span><span class="focus-badge-count" id="focus-inbox-count">0</span></div>
+            <div id="focus-inbox"></div>
           </div>
         </div>
       </div>
@@ -4981,15 +4991,24 @@ function focusEscape(v) {
   return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
 function focusIsFollowUp(t) {
-  return /^\[Follow Up\]/i.test(t.text || '') || /follow\s*up|follow-up|hubungi|kontak|telepon|call|remind|ingatkan|cek lagi|tanyakan/i.test(t.text || '');
+  const text = t.text || '';
+  if (/^\[Waiting\]|^\[Inbox\]/i.test(text)) return false;
+  return /^\[Follow Up\]/i.test(text) || /follow\s*up|follow-up|hubungi|kontak|telepon|call|remind|ingatkan|cek lagi|tanyakan/i.test(text);
 }
 function focusIsWaiting(t) {
-  return /^\[Waiting\]/i.test(t.text || '') || /waiting|wait for|menunggu|nunggu|awaiting|pending reply|belum dibalas|belum ada jawaban/i.test(t.text || '');
+  const text = t.text || '';
+  if (/^\[Follow Up\]|^\[Inbox\]/i.test(text)) return false;
+  return /^\[Waiting\]/i.test(text) || /waiting|wait for|menunggu|nunggu|awaiting|pending reply|belum dibalas|belum ada jawaban/i.test(text);
 }
+function focusIsInbox(t) { return /^\[Inbox\]/i.test(t.text || ''); }
+function focusIsCapturedToday(t) { return /^\[Today\]/i.test(t.text || ''); }
 let focusCaptureMode = 'today';
 function setFocusCaptureMode(mode, btn) {
   focusCaptureMode = mode;
   document.querySelectorAll('[data-focus-mode]').forEach(el => el.classList.toggle('active', el === btn));
+  const actionLabels = { today:'Add for Today', followup:'Save Follow Up', waiting:'Save Waiting', inbox:'Save to Inbox' };
+  const quickBtn = document.getElementById('focus-quick-btn');
+  if (quickBtn) quickBtn.innerHTML = `<i class="ti ti-plus"></i> ${actionLabels[mode] || 'Save'}`;
   document.getElementById('focus-quick-input')?.focus();
 }
 function focusSnoozeKey() { return 'wb_focus_snooze_' + getUser(); }
@@ -5033,7 +5052,7 @@ function focusTaskHtml(t, rank='') {
   return `<div class="focus-task">
     <div class="focus-task-main">
       ${rank ? `<div class="focus-rank">${rank}</div>` : ''}
-      <div><div class="focus-task-text">${focusEscape(String(t.text || '').replace(/^\[(Follow Up|Waiting)\]\s*/i,''))}</div>
+      <div><div class="focus-task-text">${focusEscape(String(t.text || '').replace(/^\[(Follow Up|Waiting|Today|Inbox)\]\s*/i,''))}</div>
       <div class="focus-task-meta">${focusEscape(focusDateLabel(t,today))} · ${(prioLabel[t.priority] || t.priority || 'Medium')}</div></div>
     </div>
     <div class="focus-task-actions"${rank ? '' : ' style="padding-left:0"'}>
@@ -5062,11 +5081,17 @@ async function renderTodayFocus() {
     const dueToday = open.filter(t => t.due_date === today);
     const follow = open.filter(t => focusIsFollowUp(t) && (!t.due_date || t.due_date <= today)).slice(0,5);
     const waiting = open.filter(focusIsWaiting).slice(0,5);
+    const capturedToday = open.filter(t => focusIsCapturedToday(t) && t.due_date === today).slice(0,10);
+    const inbox = open.filter(focusIsInbox).slice(0,10);
     top.innerHTML = nowTask.length ? `<div class="focus-one-now">${focusTaskHtml(nowTask[0],1)}</div>${nextTasks.length ? `<div class="focus-next-wrap"><div class="focus-next-label">Up next — only after the first one</div>${nextTasks.map((t,i)=>focusTaskHtml(t,i+2)).join('')}</div>` : ''}<div class="focus-soft-note">Feeling stuck? Do only the smallest visible action, then press Done.</div>` : '<div class="focus-empty">Your focus is clear. Add one small next step above.</div>';
     document.getElementById('focus-followups').innerHTML = follow.length ? follow.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">No follow-up detected for today.</div>';
     document.getElementById('focus-waiting').innerHTML = waiting.length ? waiting.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">Nothing is waiting for a reply.</div>';
+    document.getElementById('focus-captured-today').innerHTML = capturedToday.length ? capturedToday.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">Nothing newly added for today.</div>';
+    document.getElementById('focus-inbox').innerHTML = inbox.length ? inbox.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">Your inbox is empty.</div>';
     document.getElementById('focus-follow-count').textContent = follow.length;
     document.getElementById('focus-wait-count').textContent = waiting.length;
+    document.getElementById('focus-today-count').textContent = capturedToday.length;
+    document.getElementById('focus-inbox-count').textContent = inbox.length;
     document.getElementById('focus-greeting').textContent = focusGreetingText();
     document.getElementById('focus-overview').innerHTML = `
       <div class="focus-stat"><span>Still open</span><strong>${openAll.length}</strong></div>
@@ -5085,11 +5110,11 @@ async function quickCaptureTodo() {
   const status = document.getElementById('focus-capture-status');
   const raw = (input?.value || '').trim();
   if (!raw) { input?.focus(); return; }
-  let text = raw;
+  let text = '[Today] ' + raw;
   let dueDate = todayStr();
   if (focusCaptureMode === 'followup') text = '[Follow Up] ' + raw;
   if (focusCaptureMode === 'waiting') { text = '[Waiting] ' + raw; dueDate = null; }
-  if (focusCaptureMode === 'inbox') dueDate = null;
+  if (focusCaptureMode === 'inbox') { text = '[Inbox] ' + raw; dueDate = null; }
   btn.disabled = true;
   status.textContent = 'Saving...';
   const { error } = await sb.from('todos').insert({ text, priority:'med', due_date:dueDate, assigned_to:null, is_private:true, created_by:getUser() });
