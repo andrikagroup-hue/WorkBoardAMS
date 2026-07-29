@@ -293,6 +293,56 @@ textarea { resize: vertical; }
 .focus-card.focus-inbox { border-left:3px solid var(--accent2); }
 @media (max-width:760px) { .focus-grid { grid-template-columns:1fr; } .today-focus-head { flex-direction:column; } .quick-capture { flex-direction:column; align-items:stretch; } .quick-capture .btn-sm { justify-content:center; } }
 
+
+/* ── ADHD Workspace Navigation & Centers ───────────── */
+.nav-home { margin-bottom: 4px; }
+.nav-home .nav-item { --icon-bg: rgba(255,255,255,0.18); --icon-fg: #F3EFE7; }
+#ng-projects > .nav-item { --icon-bg: rgba(126,170,204,0.22); --icon-fg: #8FC0E3; }
+#ng-projects > .nav-item:hover { --icon-bg: #8FC0E3; --icon-fg: #17384B; }
+.project-workspace-tabs {
+  display:none; align-items:center; gap:7px; flex-wrap:wrap;
+  background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius-lg);
+  padding:9px; margin-bottom:12px; position:sticky; top:52px; z-index:8;
+  box-shadow:0 2px 10px rgba(0,0,0,.05);
+}
+.project-workspace-tabs.show { display:flex; }
+.project-workspace-label { font-size:11px; font-weight:800; color:var(--text2); margin:0 5px 0 2px; text-transform:uppercase; letter-spacing:.05em; }
+.project-tab {
+  border:1px solid var(--border2); background:var(--surface); color:var(--text2);
+  border-radius:999px; padding:6px 10px; font-size:11px; cursor:pointer;
+  display:inline-flex; align-items:center; gap:5px;
+}
+.project-tab:hover { background:var(--bg2); }
+.project-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
+.adhd-center-hero { background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:16px; margin-bottom:14px; }
+.adhd-center-title { font-size:20px; font-weight:800; color:var(--text1); }
+.adhd-center-sub { font-size:11.5px; color:var(--text2); margin-top:4px; }
+.adhd-capture-row { display:flex; gap:8px; margin-top:12px; align-items:center; }
+.adhd-capture-row input { flex:1; min-width:0; font-size:14px; padding:10px 12px; }
+.brain-list, .follow-center-grid { display:grid; gap:10px; }
+.follow-center-grid { grid-template-columns:1fr 1fr; }
+.adhd-card { background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:13px; }
+.adhd-card-title { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11px; font-weight:800; color:var(--text2); text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px; }
+.brain-item { border:1px solid var(--border); border-radius:10px; padding:11px; background:var(--surface); }
+.brain-item-text { font-size:12.5px; font-weight:650; color:var(--text1); margin-bottom:8px; }
+.brain-item-actions { display:flex; gap:6px; flex-wrap:wrap; }
+.brain-action { border:1px solid var(--border2); background:var(--surface); color:var(--text2); border-radius:7px; padding:5px 8px; font-size:10.5px; cursor:pointer; }
+.brain-action:hover { background:var(--bg2); }
+.next-action-btn { border:none; background:var(--brand); color:#fff; border-radius:8px; padding:9px 13px; font-size:12px; font-weight:750; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+.next-action-btn:hover { filter:brightness(.95); }
+.log-smart-suggestion { position:fixed; right:18px; bottom:22px; width:min(360px,calc(100vw - 30px)); background:var(--surface); border:1px solid var(--border2); border-radius:12px; box-shadow:0 14px 34px rgba(0,0,0,.18); padding:14px; z-index:200; }
+.log-smart-suggestion-title { font-size:13px; font-weight:800; margin-bottom:4px; }
+.log-smart-suggestion-sub { font-size:11px; color:var(--text2); margin-bottom:10px; line-height:1.45; }
+.log-smart-suggestion-actions { display:flex; gap:6px; flex-wrap:wrap; }
+@media (max-width:760px) {
+  .project-workspace-tabs { top:48px; overflow-x:auto; flex-wrap:nowrap; }
+  .project-workspace-label { display:none; }
+  .project-tab { flex-shrink:0; }
+  .follow-center-grid { grid-template-columns:1fr; }
+  .adhd-capture-row { flex-direction:column; align-items:stretch; }
+  .adhd-capture-row .btn-sm { justify-content:center; }
+}
+
 /* ── Schedule (gaya spreadsheet, warna tema WorkBoard) ── */
 .sched-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .sched-grid-wrap {
@@ -1342,6 +1392,15 @@ textarea { resize: vertical; }
 
     <div class="nav-section" style="padding-top:8px">
 
+      <!-- HOME -->
+      <div class="nav-home">
+        <button class="nav-item active" id="nsub-focus" onclick="switchPanel('focus',this)" title="Home">
+          <i class="ti ti-home nav-icon"></i>
+          <span class="nav-label-text">Home</span>
+          <span class="nav-badge badge-red" id="badge-focus">0</span>
+        </button>
+      </div>
+
       <!-- DAILY -->
       <div class="nav-group" id="ng-daily">
         <button class="nav-item" onclick="toggleNavGroup('ng-daily')" title="Daily">
@@ -1350,29 +1409,9 @@ textarea { resize: vertical; }
           <i class="ti ti-chevron-right nav-arrow"></i>
         </button>
         <div class="nav-submenu">
-          <button class="nav-sub-item active" id="nsub-focus" onclick="switchPanel('focus',this)">
-            <i class="ti ti-target-arrow"></i> Today Focus
-            <span class="nav-badge badge-red" id="badge-focus">0</span>
-          </button>
           <button class="nav-sub-item" id="nsub-schedule" onclick="switchPanel('schedule',this)">
             <i class="ti ti-calendar-event"></i> Daily Schedule
             <span class="nav-badge badge-blue" id="badge-sched">0</span>
-          </button>
-          <button class="nav-sub-item" id="nsub-tracker" onclick="switchPanel('tracker',this)">
-            <i class="ti ti-clock"></i> Time Plan Tracker
-            <span class="nav-badge badge-amber" id="badge-track">0</span>
-          </button>
-          <button class="nav-sub-item" id="nsub-kanban" onclick="switchPanel('kanban',this)">
-            <i class="ti ti-layout-kanban"></i> Kanban Board
-          </button>
-          <button class="nav-sub-item" id="nsub-gantt" onclick="switchPanel('gantt',this)">
-            <i class="ti ti-timeline"></i> Gantt Chart
-          </button>
-          <button class="nav-sub-item" id="nsub-matrix" onclick="switchPanel('matrix',this)">
-            <i class="ti ti-layout-grid"></i> Decision Matrix
-          </button>
-          <button class="nav-sub-item" id="nsub-recurring" onclick="switchPanel('recurring',this)">
-            <i class="ti ti-repeat"></i> Recurring Task
           </button>
           <button class="nav-sub-item" id="nsub-logbook" onclick="switchPanel('logbook',this)">
             <i class="ti ti-book"></i> Logbook
@@ -1381,14 +1420,37 @@ textarea { resize: vertical; }
         </div>
       </div>
 
-      <!-- TASKS -->
-      <div class="nav-group" id="ng-tasks">
-        <button class="nav-item" onclick="toggleNavGroup('ng-tasks')" title="Tasks">
-          <i class="ti ti-checklist nav-icon"></i>
-          <span class="nav-label-text">Tasks</span>
+      <!-- PROJECTS -->
+      <div class="nav-group" id="ng-projects">
+        <button class="nav-item" onclick="toggleNavGroup('ng-projects')" title="Projects">
+          <i class="ti ti-folders nav-icon"></i>
+          <span class="nav-label-text">Projects</span>
           <i class="ti ti-chevron-right nav-arrow"></i>
         </button>
         <div class="nav-submenu">
+          <button class="nav-sub-item" id="nsub-projects" onclick="switchProjectView(lastProjectView || 'tracker',this)">
+            <i class="ti ti-layout-dashboard"></i> Projects Workspace
+            <span class="nav-badge badge-amber" id="badge-track">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- PERSONAL -->
+      <div class="nav-group" id="ng-tasks">
+        <button class="nav-item" onclick="toggleNavGroup('ng-tasks')" title="Personal">
+          <i class="ti ti-user-heart nav-icon"></i>
+          <span class="nav-label-text">Personal</span>
+          <i class="ti ti-chevron-right nav-arrow"></i>
+        </button>
+        <div class="nav-submenu">
+          <button class="nav-sub-item" id="nsub-brain" onclick="switchPanel('brain',this)">
+            <i class="ti ti-bulb"></i> Brain Dump
+            <span class="nav-badge badge-amber" id="badge-brain">0</span>
+          </button>
+          <button class="nav-sub-item" id="nsub-followup" onclick="switchPanel('followup',this)">
+            <i class="ti ti-phone-call"></i> Follow Up Center
+            <span class="nav-badge badge-red" id="badge-followup">0</span>
+          </button>
           <button class="nav-sub-item" id="nsub-notes" onclick="switchPanel('notes',this)">
             <i class="ti ti-notes"></i> Notes
             <span class="nav-badge badge-blue" id="badge-notes">0</span>
@@ -1451,9 +1513,9 @@ textarea { resize: vertical; }
 
       <!-- QUICK LINKS -->
       <div class="nav-group" id="ng-links">
-        <button class="nav-item" onclick="toggleNavGroup('ng-links')" title="Quick Links">
+        <button class="nav-item" onclick="toggleNavGroup('ng-links')" title="Resources">
           <i class="ti ti-link nav-icon"></i>
-          <span class="nav-label-text">Quick Links</span>
+          <span class="nav-label-text">Resources</span>
           <i class="ti ti-chevron-right nav-arrow"></i>
         </button>
         <div class="nav-submenu">
@@ -1511,7 +1573,7 @@ textarea { resize: vertical; }
   <!-- ── Main ───────────────────────────────── -->
   <div class="main">
     <div class="top-bar">
-      <div class="top-title" id="panel-title">Today Focus</div>
+      <div class="top-title" id="panel-title">Home</div>
       <div class="top-actions">
         <div style="display:flex;align-items:center;gap:5px">
           <button class="user-pill-mobile" id="user-pill-mobile" onclick="switchUser()" title="Switch to another user">
@@ -1632,10 +1694,10 @@ textarea { resize: vertical; }
           <div class="today-focus-head">
             <div>
               <div class="today-focus-greeting" id="focus-greeting"></div>
-              <div class="today-focus-title">Today Focus</div>
-              <div class="today-focus-sub">Choose only one next step. Everything else can wait.</div>
+              <div class="today-focus-title">Home</div>
+              <div class="today-focus-sub">Your next step stays visible. Capture everything else without organizing it now.</div>
             </div>
-            <button class="btn-sm" onclick="renderTodayFocus()"><i class="ti ti-refresh"></i> Refresh</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="next-action-btn" onclick="showNextAction()"><i class="ti ti-player-play"></i> What should I do next?</button><button class="btn-sm" onclick="renderTodayFocus()"><i class="ti ti-refresh"></i> Refresh</button></div>
           </div>
           <div class="quick-capture">
             <input id="focus-quick-input" placeholder="Dump it here — anything you must not forget..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
@@ -1660,11 +1722,11 @@ textarea { resize: vertical; }
             <div id="focus-overview"><div class="loading-msg">Loading...</div></div>
           </div>
           <div class="focus-card">
-            <div class="focus-card-title"><span>📞 Follow Up Today</span><span class="focus-badge-count" id="focus-follow-count">0</span></div>
+            <div class="focus-card-title"><span>📞 Follow Up Today</span><span><button class="focus-mini-btn" onclick="switchPanel('followup',document.getElementById('nsub-followup'))">Open Center</button> <span class="focus-badge-count" id="focus-follow-count">0</span></span></div>
             <div id="focus-followups"></div>
           </div>
           <div class="focus-card">
-            <div class="focus-card-title"><span>⏳ Waiting for Reply</span><span class="focus-badge-count" id="focus-wait-count">0</span></div>
+            <div class="focus-card-title"><span>⏳ Waiting for Reply</span><span><button class="focus-mini-btn" onclick="switchPanel('followup',document.getElementById('nsub-followup'))">Open Center</button> <span class="focus-badge-count" id="focus-wait-count">0</span></span></div>
             <div id="focus-waiting"></div>
           </div>
           <div class="focus-card focus-captured">
@@ -1672,10 +1734,19 @@ textarea { resize: vertical; }
             <div id="focus-captured-today"></div>
           </div>
           <div class="focus-card focus-inbox">
-            <div class="focus-card-title"><span>📥 Inbox / Later</span><span class="focus-badge-count" id="focus-inbox-count">0</span></div>
+            <div class="focus-card-title"><span>📥 Brain Dump</span><span><button class="focus-mini-btn" onclick="switchPanel('brain',document.getElementById('nsub-brain'))">Organize</button> <span class="focus-badge-count" id="focus-inbox-count">0</span></span></div>
             <div id="focus-inbox"></div>
           </div>
         </div>
+      </div>
+
+      <div class="project-workspace-tabs" id="project-workspace-tabs" aria-label="Projects workspace views">
+        <span class="project-workspace-label">Projects</span>
+        <button class="project-tab" data-project-view="tracker" onclick="switchProjectView('tracker')"><i class="ti ti-clock"></i> Tracker</button>
+        <button class="project-tab" data-project-view="kanban" onclick="switchProjectView('kanban')"><i class="ti ti-layout-kanban"></i> Kanban</button>
+        <button class="project-tab" data-project-view="gantt" onclick="switchProjectView('gantt')"><i class="ti ti-timeline"></i> Gantt</button>
+        <button class="project-tab" data-project-view="matrix" onclick="switchProjectView('matrix')"><i class="ti ti-layout-grid"></i> Matrix</button>
+        <button class="project-tab" data-project-view="recurring" onclick="switchProjectView('recurring')"><i class="ti ti-repeat"></i> Recurring</button>
       </div>
 
       <!-- ── Daily Schedule ─────────────────── -->
@@ -2129,6 +2200,47 @@ ALTER TABLE logbook_entries
 
           <div class="logbook-list" id="logbook-list">
             <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading logbook...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Brain Dump ─────────────────────── -->
+      <div class="panel" id="panel-brain">
+        <div class="adhd-center-hero">
+          <div class="adhd-center-title">🧠 Brain Dump</div>
+          <div class="adhd-center-sub">Capture first. Decide later. One sentence is enough.</div>
+          <div class="adhd-capture-row">
+            <input id="brain-input" placeholder="Type anything you do not want to forget..." oninput="saveBrainDraft()" onkeydown="if(event.key==='Enter')quickBrainDump()" />
+            <button class="btn-sm btn-primary" id="brain-save-btn" onclick="quickBrainDump()"><i class="ti ti-plus"></i> Capture</button>
+          </div>
+          <div id="brain-status" class="focus-capture-hint"></div>
+        </div>
+        <div class="adhd-card">
+          <div class="adhd-card-title"><span>Unsorted thoughts</span><span class="focus-badge-count" id="brain-panel-count">0</span></div>
+          <div class="brain-list" id="brain-list"><div class="loading-msg">Loading brain dump...</div></div>
+        </div>
+      </div>
+
+      <!-- ── Follow Up Center ───────────────── -->
+      <div class="panel" id="panel-followup">
+        <div class="adhd-center-hero">
+          <div class="adhd-center-title">📞 Follow Up Center</div>
+          <div class="adhd-center-sub">See who needs a message and what is still waiting for a reply.</div>
+          <div class="adhd-capture-row">
+            <input id="follow-center-input" placeholder="Example: Ask Pak Gani about SPH approval..." onkeydown="if(event.key==='Enter')quickFollowCenter()" />
+            <select id="follow-center-mode" style="max-width:160px"><option value="followup">Follow Up</option><option value="waiting">Waiting Reply</option></select>
+            <button class="btn-sm btn-primary" id="follow-center-save" onclick="quickFollowCenter()"><i class="ti ti-plus"></i> Save</button>
+          </div>
+          <div id="follow-center-status" class="focus-capture-hint"></div>
+        </div>
+        <div class="follow-center-grid">
+          <div class="adhd-card">
+            <div class="adhd-card-title"><span>📞 Needs follow-up</span><span class="focus-badge-count" id="follow-center-follow-count">0</span></div>
+            <div id="follow-center-follow"><div class="loading-msg">Loading...</div></div>
+          </div>
+          <div class="adhd-card">
+            <div class="adhd-card-title"><span>⏳ Waiting for reply</span><span class="focus-badge-count" id="follow-center-wait-count">0</span></div>
+            <div id="follow-center-wait"><div class="loading-msg">Loading...</div></div>
           </div>
         </div>
       </div>
@@ -2988,8 +3100,14 @@ let chatChannelsLoaded = false;
 async function refreshCurrentPanel() {
   applyAdminVisibility();
   if (currentPanel === 'focus') await renderTodayFocus();
+  else if (currentPanel === 'brain') await renderBrainDump();
+  else if (currentPanel === 'followup') await renderFollowUpCenter();
   else if (currentPanel === 'schedule') await renderSchedule();
   else if (currentPanel === 'tracker') { await renderTracker(); await renderProjectTracker(); }
+  else if (currentPanel === 'kanban') await renderKanban();
+  else if (currentPanel === 'gantt') await renderGantt();
+  else if (currentPanel === 'matrix') await renderMatrix();
+  else if (currentPanel === 'recurring') await renderRecurring();
   else if (currentPanel === 'logbook') await renderLogbook();
   else if (currentPanel === 'notes') await renderNotes();
   else if (currentPanel === 'todo') await renderTodo();
@@ -3037,9 +3155,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   todayInputs.forEach(el => { el.value = todayStr(); });
 
   applyAdminVisibility(); // tampilkan/sembunyikan menu Settings
-  // Auto-open Daily group on first load
-  const ngDaily = document.getElementById('ng-daily');
-  if (ngDaily) ngDaily.classList.add('open');
+  // Home is the first, standalone ADHD-friendly entry point.
   await renderTodayFocus();
   generateDueRecurringTasks().then(() => {
     // Kalau ada entri baru yang barusan digenerate & lagi lihat Daily Schedule, refresh biar langsung kelihatan
@@ -3113,13 +3229,15 @@ async function switchPanel(id, el) {
   currentPanel = id;
 
   const titles = {
-    focus: 'Today Focus',
+    focus: 'Home',
+    brain: 'Brain Dump',
+    followup: 'Follow Up Center',
     schedule: 'Daily Schedule',
-    tracker: 'Time Plan Tracker',
-    kanban: 'Kanban Board',
-    gantt: 'Gantt Chart',
-    matrix: 'Decision Matrix',
-    recurring: 'Recurring Task',
+    tracker: 'Projects',
+    kanban: 'Projects',
+    gantt: 'Projects',
+    matrix: 'Projects',
+    recurring: 'Projects',
     logbook: 'Logbook',
     notes: 'Notes',
     todo: 'To Do',
@@ -3134,11 +3252,14 @@ async function switchPanel(id, el) {
     faq: '📖 Guide & FAQ'
   };
   document.getElementById('panel-title').textContent = titles[id] || id;
+  syncProjectWorkspaceTabs(id);
   updateGlobalSearchFilter(id);
   hideAllForms();
   openNavGroupForPanel(id);
 
   if (id === 'focus') await renderTodayFocus();
+  else if (id === 'brain') await renderBrainDump();
+  else if (id === 'followup') await renderFollowUpCenter();
   else if (id === 'schedule') await renderSchedule();
   else if (id === 'tracker') { await renderTracker(); await renderProjectTracker(); }
   else if (id === 'kanban') await renderKanban();
@@ -4743,6 +4864,7 @@ async function saveLog() {
   resetLogForm();
   document.getElementById('log-form').style.display = 'none';
   await renderLogbook();
+  showLogActionSuggestion(payload);
 }
 
 // Isi form dengan data logbook yang dipilih untuk diedit
@@ -4987,6 +5109,159 @@ async function delNote(id) {
 }
 
 // ── TODAY FOCUS ─────────────────────────────
+
+const PROJECT_VIEWS = ['tracker','kanban','gantt','matrix','recurring'];
+let lastProjectView = localStorage.getItem('wb_last_project_view') || 'tracker';
+function syncProjectWorkspaceTabs(id) {
+  const bar = document.getElementById('project-workspace-tabs');
+  const isProject = PROJECT_VIEWS.includes(id);
+  if (bar) bar.classList.toggle('show', isProject);
+  if (isProject) {
+    lastProjectView = id;
+    localStorage.setItem('wb_last_project_view', id);
+  }
+  document.querySelectorAll('[data-project-view]').forEach(btn => btn.classList.toggle('active', btn.dataset.projectView === id));
+}
+async function switchProjectView(id, el) {
+  if (!PROJECT_VIEWS.includes(id)) id = 'tracker';
+  const nav = el || document.getElementById('nsub-projects');
+  await switchPanel(id, nav);
+  if (nav) nav.classList.add('active');
+}
+async function openProjectsMobile(el) {
+  await switchProjectView(lastProjectView || 'tracker', document.getElementById('nsub-projects'));
+  document.querySelectorAll('.bn-item').forEach(btn => btn.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+function showNextAction() {
+  const card = document.querySelector('#focus-top3 .focus-task');
+  if (!card) { document.getElementById('focus-quick-input')?.focus(); return; }
+  card.scrollIntoView({ behavior:'smooth', block:'center' });
+  if (card.animate) card.animate([{transform:'scale(1)'},{transform:'scale(1.015)'},{transform:'scale(1)'}],{duration:520});
+}
+function brainDraftKey() { return 'wb_brain_draft_' + getUser(); }
+function saveBrainDraft() {
+  const input = document.getElementById('brain-input');
+  if (input) localStorage.setItem(brainDraftKey(), input.value || '');
+}
+function restoreBrainDraft() {
+  const input = document.getElementById('brain-input');
+  if (input && !input.value) input.value = localStorage.getItem(brainDraftKey()) || '';
+}
+function brainItemHtml(t) {
+  const clean = String(t.text || '').replace(/^\[Inbox\]\s*/i,'');
+  return `<div class="brain-item"><div class="brain-item-text">${focusEscape(clean)}</div><div class="brain-item-actions">
+    <button class="brain-action" onclick="organizeBrainItem('${t.id}','today')">Today</button>
+    <button class="brain-action" onclick="organizeBrainItem('${t.id}','followup')">Follow Up</button>
+    <button class="brain-action" onclick="organizeBrainItem('${t.id}','waiting')">Waiting</button>
+    <button class="brain-action" onclick="focusOpenTodo('${t.id}')">Edit</button>
+    <button class="brain-action" onclick="focusDone('${t.id}')">Archive</button>
+  </div></div>`;
+}
+async function renderBrainDump() {
+  const list = document.getElementById('brain-list');
+  if (!list) return;
+  restoreBrainDraft();
+  try {
+    const {data,error} = await withTimeout(sb.from('todos').select('*').order('due_date',{ascending:true}).limit(500));
+    if (error) throw error;
+    const items = applyOwner(data || []).filter(t => !t.is_done && focusIsInbox(t));
+    list.innerHTML = items.length ? items.map(brainItemHtml).join('') : '<div class="focus-empty">Brain dump is clear. Capture anything above.</div>';
+    document.getElementById('brain-panel-count').textContent = items.length;
+    const badge = document.getElementById('badge-brain'); if (badge) badge.textContent = items.length;
+  } catch(e) { list.innerHTML = `<div class="empty-msg" style="color:var(--danger)">Could not load Brain Dump: ${focusEscape(e.message)}</div>`; }
+}
+async function quickBrainDump() {
+  const input = document.getElementById('brain-input');
+  const status = document.getElementById('brain-status');
+  const btn = document.getElementById('brain-save-btn');
+  const raw = (input?.value || '').trim();
+  if (!raw) { input?.focus(); return; }
+  btn.disabled = true; status.textContent = 'Saving...';
+  const {error} = await sb.from('todos').insert({text:'[Inbox] '+raw,priority:'med',due_date:null,assigned_to:null,is_private:true,created_by:getUser()});
+  btn.disabled = false;
+  if (error) { status.textContent = 'Failed: '+error.message; return; }
+  input.value=''; localStorage.removeItem(brainDraftKey()); status.textContent='Captured ✓';
+  await renderBrainDump();
+  setTimeout(()=>{ if(status.textContent==='Captured ✓') status.textContent=''; },2200);
+}
+async function organizeBrainItem(id, mode) {
+  const {data,error} = await sb.from('todos').select('text').eq('id',id).single();
+  if (error || !data) return alert('Could not organize this item.');
+  const raw = String(data.text || '').replace(/^\[(Inbox|Today|Follow Up|Waiting)\]\s*/i,'');
+  let text='[Today] '+raw, due=todayStr();
+  if (mode==='followup') text='[Follow Up] '+raw;
+  if (mode==='waiting') { text='[Waiting] '+raw; due=null; }
+  const {error:updateError}=await sb.from('todos').update({text,due_date:due}).eq('id',id);
+  if (updateError) return alert('Failed: '+updateError.message);
+  await renderBrainDump();
+  await renderTodayFocus();
+}
+async function quickFollowCenter() {
+  const input=document.getElementById('follow-center-input');
+  const mode=document.getElementById('follow-center-mode')?.value || 'followup';
+  const status=document.getElementById('follow-center-status');
+  const btn=document.getElementById('follow-center-save');
+  const raw=(input?.value || '').trim();
+  if(!raw){input?.focus();return;}
+  const text=(mode==='waiting'?'[Waiting] ':'[Follow Up] ')+raw;
+  const due=mode==='waiting'?null:todayStr();
+  btn.disabled=true; status.textContent='Saving...';
+  const {error}=await sb.from('todos').insert({text,priority:'med',due_date:due,assigned_to:null,is_private:true,created_by:getUser()});
+  btn.disabled=false;
+  if(error){status.textContent='Failed: '+error.message;return;}
+  input.value=''; status.textContent='Saved ✓';
+  await renderFollowUpCenter();
+  setTimeout(()=>{if(status.textContent==='Saved ✓')status.textContent='';},2200);
+}
+async function renderFollowUpCenter() {
+  const followWrap=document.getElementById('follow-center-follow');
+  const waitWrap=document.getElementById('follow-center-wait');
+  if(!followWrap || !waitWrap) return;
+  try {
+    const {data,error}=await withTimeout(sb.from('todos').select('*').order('due_date',{ascending:true}).limit(500));
+    if(error) throw error;
+    const open=applyOwner(data || []).filter(t=>!t.is_done && !isFocusSnoozed(t.id));
+    const follow=open.filter(focusIsFollowUp);
+    const waiting=open.filter(t => focusIsWaiting(t) && !focusIsFollowUp(t));
+    followWrap.innerHTML=follow.length?follow.map(t=>focusTaskHtml(t)).join(''):'<div class="focus-empty">No follow-up items.</div>';
+    waitWrap.innerHTML=waiting.length?waiting.map(t=>focusTaskHtml(t)).join(''):'<div class="focus-empty">Nothing is waiting for a reply.</div>';
+    document.getElementById('follow-center-follow-count').textContent=follow.length;
+    document.getElementById('follow-center-wait-count').textContent=waiting.length;
+    const badge=document.getElementById('badge-followup'); if(badge) badge.textContent=follow.length+waiting.length;
+  } catch(e) {
+    followWrap.innerHTML=`<div class="empty-msg" style="color:var(--danger)">${focusEscape(e.message)}</div>`;
+    waitWrap.innerHTML='';
+  }
+}
+function stripRichText(html) { const d=document.createElement('div'); d.innerHTML=html || ''; return (d.textContent || '').trim(); }
+function detectLogAction(payload) {
+  const text=(payload.title+' '+stripRichText(payload.body)).toLowerCase();
+  const waiting=/menunggu|nunggu|belum dibalas|belum balas|waiting|awaiting|pending reply|pending approval|procurement/.test(text);
+  const follow=/follow\s*up|follow-up|hubungi|kontak|telepon|whatsapp|call|ingatkan|tanyakan|cek lagi/.test(text);
+  return follow ? 'followup' : waiting ? 'waiting' : null;
+}
+function showLogActionSuggestion(payload) {
+  const kind=detectLogAction(payload); if(!kind) return;
+  document.getElementById('log-smart-suggestion')?.remove();
+  const box=document.createElement('div'); box.id='log-smart-suggestion'; box.className='log-smart-suggestion';
+  const label=kind==='followup'?'Follow Up':'Waiting Reply';
+  const title=document.createElement('div'); title.className='log-smart-suggestion-title'; title.textContent='Smart next-step suggestion';
+  const sub=document.createElement('div'); sub.className='log-smart-suggestion-sub'; sub.innerHTML=`This Logbook entry may belong in <strong>${label}</strong>. Add it so it will not be buried in the Logbook.`;
+  const actions=document.createElement('div'); actions.className='log-smart-suggestion-actions';
+  const add=document.createElement('button'); add.className='btn-sm btn-primary'; add.textContent='Add '+label;
+  add.addEventListener('click', async()=>{ await createTaskFromLogSuggestion(kind,payload.title); box.remove(); });
+  const later=document.createElement('button'); later.className='btn-sm'; later.textContent='Not now'; later.addEventListener('click',()=>box.remove());
+  actions.append(add,later); box.append(title,sub,actions); document.body.appendChild(box);
+}
+async function createTaskFromLogSuggestion(kind,title) {
+  const text=(kind==='waiting'?'[Waiting] ':'[Follow Up] ')+title;
+  const due=kind==='waiting'?null:todayStr();
+  const {error}=await sb.from('todos').insert({text,priority:'med',due_date:due,assigned_to:null,is_private:true,created_by:getUser()});
+  if(error) return alert('Failed: '+error.message);
+  if(currentPanel==='focus') await renderTodayFocus();
+}
+
 function focusEscape(v) {
   return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
@@ -5025,6 +5300,8 @@ async function focusSnooze(id) {
   map[id] = Date.now() + (30 * 60 * 1000);
   localStorage.setItem(focusSnoozeKey(), JSON.stringify(map));
   await renderTodayFocus();
+  if (currentPanel === 'followup') await renderFollowUpCenter();
+  if (currentPanel === 'brain') await renderBrainDump();
 }
 function focusGreetingText() {
   const h = new Date().getHours();
@@ -5079,19 +5356,23 @@ async function renderTodayFocus() {
     const nextTasks = top3.slice(1);
     const overdue = open.filter(t => t.due_date && t.due_date < today);
     const dueToday = open.filter(t => t.due_date === today);
-    const follow = open.filter(t => focusIsFollowUp(t) && (!t.due_date || t.due_date <= today)).slice(0,5);
-    const waiting = open.filter(focusIsWaiting).slice(0,5);
-    const capturedToday = open.filter(t => focusIsCapturedToday(t) && t.due_date === today).slice(0,10);
-    const inbox = open.filter(focusIsInbox).slice(0,10);
+    const followAll = open.filter(focusIsFollowUp);
+    const waitingAll = open.filter(t => focusIsWaiting(t) && !focusIsFollowUp(t));
+    const capturedTodayAll = open.filter(t => focusIsCapturedToday(t) && t.due_date === today);
+    const inboxAll = open.filter(focusIsInbox);
+    const follow = followAll.filter(t => !t.due_date || t.due_date <= today).slice(0,5);
+    const waiting = waitingAll.slice(0,5);
+    const capturedToday = capturedTodayAll.slice(0,10);
+    const inbox = inboxAll.slice(0,10);
     top.innerHTML = nowTask.length ? `<div class="focus-one-now">${focusTaskHtml(nowTask[0],1)}</div>${nextTasks.length ? `<div class="focus-next-wrap"><div class="focus-next-label">Up next — only after the first one</div>${nextTasks.map((t,i)=>focusTaskHtml(t,i+2)).join('')}</div>` : ''}<div class="focus-soft-note">Feeling stuck? Do only the smallest visible action, then press Done.</div>` : '<div class="focus-empty">Your focus is clear. Add one small next step above.</div>';
     document.getElementById('focus-followups').innerHTML = follow.length ? follow.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">No follow-up detected for today.</div>';
     document.getElementById('focus-waiting').innerHTML = waiting.length ? waiting.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">Nothing is waiting for a reply.</div>';
     document.getElementById('focus-captured-today').innerHTML = capturedToday.length ? capturedToday.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">Nothing newly added for today.</div>';
     document.getElementById('focus-inbox').innerHTML = inbox.length ? inbox.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">Your inbox is empty.</div>';
-    document.getElementById('focus-follow-count').textContent = follow.length;
-    document.getElementById('focus-wait-count').textContent = waiting.length;
-    document.getElementById('focus-today-count').textContent = capturedToday.length;
-    document.getElementById('focus-inbox-count').textContent = inbox.length;
+    document.getElementById('focus-follow-count').textContent = followAll.length;
+    document.getElementById('focus-wait-count').textContent = waitingAll.length;
+    document.getElementById('focus-today-count').textContent = capturedTodayAll.length;
+    document.getElementById('focus-inbox-count').textContent = inboxAll.length;
     document.getElementById('focus-greeting').textContent = focusGreetingText();
     document.getElementById('focus-overview').innerHTML = `
       <div class="focus-stat"><span>Still open</span><strong>${openAll.length}</strong></div>
@@ -5100,6 +5381,8 @@ async function renderTodayFocus() {
       <div class="focus-stat"><span>Done today</span><strong>${todoCache.filter(t => t.is_done && t.done_at && String(t.done_at).slice(0,10)===today).length}</strong></div>`;
     const badge = document.getElementById('badge-focus');
     if (badge) badge.textContent = Math.min(99, overdue.length + dueToday.length);
+    const brainBadge = document.getElementById('badge-brain'); if (brainBadge) brainBadge.textContent = inboxAll.length;
+    const followBadge = document.getElementById('badge-followup'); if (followBadge) followBadge.textContent = followAll.length + waitingAll.length;
   } catch (e) {
     top.innerHTML = `<div class="empty-msg" style="color:var(--danger)">Could not load Today Focus: ${focusEscape(e.message)}</div>`;
   }
@@ -5130,6 +5413,8 @@ async function quickCaptureTodo() {
 async function focusDone(id) {
   await sb.from('todos').update({ is_done:true, done_at:new Date().toISOString() }).eq('id',id);
   await renderTodayFocus();
+  if (currentPanel === 'brain') await renderBrainDump();
+  if (currentPanel === 'followup') await renderFollowUpCenter();
   updateDailyProgress();
 }
 async function focusTomorrow(id) {
@@ -5137,6 +5422,8 @@ async function focusTomorrow(id) {
   const due = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   await sb.from('todos').update({ due_date:due }).eq('id',id);
   await renderTodayFocus();
+  if (currentPanel === 'followup') await renderFollowUpCenter();
+  if (currentPanel === 'brain') await renderBrainDump();
 }
 async function focusOpenTodo(id) {
   await switchPanel('todo', document.getElementById('nsub-todo'));
@@ -5144,7 +5431,7 @@ async function focusOpenTodo(id) {
   document.getElementById('todo-input')?.focus();
 }
 
-setInterval(() => { if (currentPanel === 'focus') renderTodayFocus(); }, 60000);
+setInterval(() => { if (currentPanel === 'focus') renderTodayFocus(); if (currentPanel === 'followup') renderFollowUpCenter(); }, 60000);
 
 // ── TO DO ──────────────────────────────────
 async function renderTodo() {
@@ -6043,6 +6330,8 @@ function setupRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'todos' }, () => {
       if (currentPanel === 'todo') renderTodo();
       if (currentPanel === 'focus') renderTodayFocus();
+      if (currentPanel === 'brain') renderBrainDump();
+      if (currentPanel === 'followup') renderFollowUpCenter();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_channels' }, () => {
       if (currentPanel === 'chat') renderChat();
@@ -6089,9 +6378,9 @@ function toggleNavGroup(groupId) {
 // Open the nav-group that contains the given panel id
 function openNavGroupForPanel(panelId) {
   const map = {
-    focus: 'ng-daily',
-    schedule: 'ng-daily', tracker: 'ng-daily', kanban: 'ng-daily', gantt: 'ng-daily', matrix: 'ng-daily', recurring: 'ng-daily', logbook: 'ng-daily',
-    notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
+    schedule: 'ng-daily', logbook: 'ng-daily',
+    tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects', recurring: 'ng-projects',
+    brain: 'ng-tasks', followup: 'ng-tasks', notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
     absen: 'ng-hr',
     result: 'ng-reports',
@@ -6100,6 +6389,7 @@ function openNavGroupForPanel(panelId) {
     adminusers: 'ng-settings', adminleave: 'ng-settings'
   };
   const groupId = map[panelId];
+  if (panelId === 'focus') { document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open')); return; }
   if (!groupId) return;
   document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open'));
   const grp = document.getElementById(groupId);
@@ -7234,93 +7524,23 @@ restoreTodoDraft();
 <!-- Bottom Navigation for Mobile -->
 <nav class="bottom-nav" id="bottom-nav" aria-label="Navigasi bawah">
   <div class="bottom-nav-inner">
-    <button class="bn-item active" onclick="switchPanelMobile('focus',this)" aria-label="Today Focus">
-      <i class="ti ti-target-arrow"></i>
-      <span>Focus</span>
-      <span class="bn-badge hidden" id="bn-badge-focus"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('schedule',this)" aria-label="Daily Schedule">
-      <i class="ti ti-calendar-event"></i>
-      <span>Schedule</span>
-      <span class="bn-badge hidden" id="bn-badge-sched"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('tracker',this)" aria-label="Time Plan Tracker">
-      <i class="ti ti-clock"></i>
-      <span>Tracker</span>
-      <span class="bn-badge hidden" id="bn-badge-track"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('kanban',this)" aria-label="Kanban Board">
-      <i class="ti ti-layout-kanban"></i>
-      <span>Kanban</span>
-    </button>
-    <button class="bn-item" id="bn-gantt" onclick="switchPanelMobile('gantt',this)" aria-label="Gantt Chart">
-      <i class="ti ti-timeline"></i>
-      <span>Gantt</span>
-    </button>
-    <button class="bn-item" id="bn-matrix" onclick="switchPanelMobile('matrix',this)" aria-label="Decision Matrix">
-      <i class="ti ti-layout-grid"></i>
-      <span>Matrix</span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('recurring',this)" aria-label="Recurring Task">
-      <i class="ti ti-repeat"></i>
-      <span>Berulang</span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('logbook',this)" aria-label="Logbook">
-      <i class="ti ti-book"></i>
-      <span>Logbook</span>
-      <span class="bn-badge hidden" id="bn-badge-log"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('notes',this)" aria-label="Notes">
-      <i class="ti ti-notes"></i>
-      <span>Notes</span>
-      <span class="bn-badge hidden" id="bn-badge-notes"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('todo',this)" aria-label="To Do">
-      <i class="ti ti-checkbox"></i>
-      <span>To Do</span>
-      <span class="bn-badge hidden" id="bn-badge-todo"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('notepad',this)" aria-label="Notepad">
-      <i class="ti ti-notebook"></i>
-      <span>Notepad</span>
-      <span class="bn-badge hidden" id="bn-badge-notepad"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('chat',this)" aria-label="Work Talk">
-      <i class="ti ti-message-circle-2"></i>
-      <span>Work Talk</span>
-      <span class="bn-badge hidden" id="bn-badge-chat"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('absen',this)" aria-label="Absensi">
-      <i class="ti ti-fingerprint"></i>
-      <span>Absensi</span>
-      <span class="bn-badge hidden" id="bn-badge-absen"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('result',this)" aria-label="Result">
-      <i class="ti ti-chart-bar"></i>
-      <span>Result</span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('links',this)" aria-label="All Links">
-      <i class="ti ti-link"></i>
-      <span>Links</span>
-      <span class="bn-badge hidden" id="bn-badge-links"></span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('passvault',this)" aria-label="Password Manager">
-      <i class="ti ti-lock"></i>
-      <span>Password</span>
-      <span class="bn-badge hidden" id="bn-badge-passvault"></span>
-    </button>
-    <button class="bn-item" id="bn-admin-users" style="display:none" onclick="switchPanelMobile('adminusers',this)" aria-label="Manage Users">
-      <i class="ti ti-users-group"></i>
-      <span>Users</span>
-    </button>
-    <button class="bn-item" id="bn-admin-leave" style="display:none" onclick="switchPanelMobile('adminleave',this)" aria-label="Leave Management">
-      <i class="ti ti-calendar-off"></i>
-      <span>Leaves</span>
-    </button>
-    <button class="bn-item" onclick="switchPanelMobile('faq',this)" aria-label="Help">
-      <i class="ti ti-help-circle"></i>
-      <span>Help</span>
-    </button>
+    <button class="bn-item active" onclick="switchPanelMobile('focus',this)" aria-label="Home"><i class="ti ti-home"></i><span>Home</span><span class="bn-badge hidden" id="bn-badge-focus"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('schedule',this)" aria-label="Daily Schedule"><i class="ti ti-calendar-event"></i><span>Schedule</span><span class="bn-badge hidden" id="bn-badge-sched"></span></button>
+    <button class="bn-item" onclick="openProjectsMobile(this)" aria-label="Projects"><i class="ti ti-folders"></i><span>Projects</span><span class="bn-badge hidden" id="bn-badge-track"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('logbook',this)" aria-label="Logbook"><i class="ti ti-book"></i><span>Logbook</span><span class="bn-badge hidden" id="bn-badge-log"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('brain',this)" aria-label="Brain Dump"><i class="ti ti-bulb"></i><span>Brain</span><span class="bn-badge hidden" id="bn-badge-brain"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('followup',this)" aria-label="Follow Up Center"><i class="ti ti-phone-call"></i><span>Follow Up</span><span class="bn-badge hidden" id="bn-badge-followup"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('notes',this)" aria-label="Notes"><i class="ti ti-notes"></i><span>Notes</span><span class="bn-badge hidden" id="bn-badge-notes"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('todo',this)" aria-label="To Do"><i class="ti ti-checkbox"></i><span>To Do</span><span class="bn-badge hidden" id="bn-badge-todo"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('notepad',this)" aria-label="Notepad"><i class="ti ti-notebook"></i><span>Notepad</span><span class="bn-badge hidden" id="bn-badge-notepad"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('chat',this)" aria-label="Work Talk"><i class="ti ti-message-circle-2"></i><span>Talk</span><span class="bn-badge hidden" id="bn-badge-chat"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('absen',this)" aria-label="Attendance"><i class="ti ti-fingerprint"></i><span>Attendance</span><span class="bn-badge hidden" id="bn-badge-absen"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('result',this)" aria-label="Reports"><i class="ti ti-chart-bar"></i><span>Reports</span></button>
+    <button class="bn-item" onclick="switchPanelMobile('links',this)" aria-label="Resources"><i class="ti ti-link"></i><span>Resources</span><span class="bn-badge hidden" id="bn-badge-links"></span></button>
+    <button class="bn-item" onclick="switchPanelMobile('passvault',this)" aria-label="Password Manager"><i class="ti ti-lock"></i><span>Password</span><span class="bn-badge hidden" id="bn-badge-passvault"></span></button>
+    <button class="bn-item" id="bn-admin-users" style="display:none" onclick="switchPanelMobile('adminusers',this)" aria-label="Manage Users"><i class="ti ti-users-group"></i><span>Users</span></button>
+    <button class="bn-item" id="bn-admin-leave" style="display:none" onclick="switchPanelMobile('adminleave',this)" aria-label="Leave Management"><i class="ti ti-calendar-off"></i><span>Leaves</span></button>
+    <button class="bn-item" onclick="switchPanelMobile('faq',this)" aria-label="Help"><i class="ti ti-help-circle"></i><span>Help</span></button>
   </div>
 </nav>
 
@@ -7329,7 +7549,7 @@ restoreTodoDraft();
 function switchPanelMobile(id, el) {
   // Call the existing switchPanel, passing a fake sidebar nav-item element
   // We need to find the matching sidebar nav-item to keep active state in sync
-  var sidebarItems = document.querySelectorAll('.sidebar .nav-item');
+  var sidebarItems = document.querySelectorAll('.sidebar .nav-item, .sidebar .nav-sub-item');
   var matchingSidebarItem = null;
   sidebarItems.forEach(function(item) {
     var onclick = item.getAttribute('onclick') || '';
@@ -7351,6 +7571,8 @@ function syncBottomNavBadges() {
   var map = {
     'focus':   'badge-focus',
     'sched':   'badge-sched',
+    'brain':   'badge-brain',
+    'followup':'badge-followup',
     'track':   'badge-track',
     'log':     'badge-log',
     'notes':   'badge-notes',
@@ -7378,7 +7600,7 @@ function syncBottomNavBadges() {
 
 // Observe badge changes
 var badgeObserver = new MutationObserver(syncBottomNavBadges);
-['badge-focus','badge-sched','badge-track','badge-log','badge-notes','badge-todo','badge-notepad','badge-chat','badge-absen','badge-links'].forEach(function(id) {
+['badge-focus','badge-sched','badge-track','badge-brain','badge-followup','badge-log','badge-notes','badge-todo','badge-notepad','badge-chat','badge-absen','badge-links','badge-passvault'].forEach(function(id) {
   var el = document.getElementById(id);
   if (el) badgeObserver.observe(el, { childList: true, subtree: true, characterData: true });
 });
@@ -7386,8 +7608,14 @@ var badgeObserver = new MutationObserver(syncBottomNavBadges);
 // Also sync when panel switches via desktop sidebar
 (function() {
   var origSwitchPanel = switchPanel;
-  window.switchPanel = function(id, el) {
-    origSwitchPanel(id, el);
+  window.switchPanel = async function(id, el) {
+    await origSwitchPanel(id, el);
+    if (PROJECT_VIEWS.includes(id)) {
+      document.querySelectorAll('.bn-item').forEach(function(b) { b.classList.remove('active'); });
+      var projectBtn = Array.from(document.querySelectorAll('.bn-item')).find(function(btn) { return (btn.getAttribute('onclick') || '').indexOf('openProjectsMobile') !== -1; });
+      if (projectBtn) projectBtn.classList.add('active');
+      return;
+    }
     // Sync bottom nav active state when switched from sidebar
     document.querySelectorAll('.bn-item').forEach(function(btn) {
       var onclick = btn.getAttribute('onclick') || '';
