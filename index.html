@@ -228,6 +228,8 @@ textarea { resize: vertical; }
 .form-row input, .form-row select, .form-row textarea { flex: 1; min-width: 100px; }
 .form-row textarea { min-height: 60px; }
 .form-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+.draft-status { font-size: 10.5px; color: var(--text3); margin-right: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 24px; }
+.draft-status.saved { color: #166534; }
 
 /* ── Section title ─────────────────────────── */
 .section-title {
@@ -2022,6 +2024,7 @@ ALTER TABLE logbook_entries
               <div id="log-attach-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
             </div>
             <div class="form-actions">
+              <span class="draft-status" id="draft-status-logbook"></span>
               <button class="btn-sm" onclick="closeLogForm()">Cancel</button>
               <button class="btn-sm btn-primary" id="log-save-btn" onclick="saveLog()">Save to Logbook</button>
             </div>
@@ -2045,8 +2048,8 @@ ALTER TABLE logbook_entries
         </div>
         <div class="form-box" id="note-form" style="display:none">
           <div class="form-row">
-            <input id="note-title-in" placeholder="Note title..." style="flex:2" />
-            <select id="note-cat-in">
+            <input id="note-title-in" placeholder="Note title..." style="flex:2" oninput="autosaveNoteDraft()" />
+            <select id="note-cat-in" onchange="autosaveNoteDraft()">
               <option value="finance">Keuangan</option>
               <option value="ops">Operasional</option>
               <option value="hr">SDM / HR</option>
@@ -2061,6 +2064,7 @@ ALTER TABLE logbook_entries
             <div class="quill-editor-wrap"><div id="note-body-editor"></div></div>
           </div>
           <div class="form-actions">
+            <span class="draft-status" id="draft-status-notes"></span>
             <button class="btn-sm" onclick="closeNoteForm()">Cancel</button>
             <button class="btn-sm btn-primary" id="note-save-btn" onclick="saveNote()">Save Note</button>
           </div>
@@ -2077,19 +2081,20 @@ ALTER TABLE logbook_entries
           🔒 <strong>Private To Do</strong> — Only you can see your own task list.
         </div>
         <div class="todo-toolbar">
-          <input id="todo-input" placeholder="Add new task..." onkeydown="if(event.key==='Enter')addTodo()" />
-          <select id="todo-prio">
+          <input id="todo-input" placeholder="Add new task..." oninput="autosaveTodoDraft()" onkeydown="if(event.key==='Enter')addTodo()" />
+          <select id="todo-prio" onchange="autosaveTodoDraft()">
             <option value="high">High Priority</option>
             <option value="med" selected>Medium</option>
             <option value="low">Low</option>
           </select>
-          <input id="todo-due" type="date" title="Deadline" />
-          <input id="todo-assign" placeholder="Assigned to..." style="max-width:140px" />
+          <input id="todo-due" type="date" title="Deadline" onchange="autosaveTodoDraft()" />
+          <input id="todo-assign" placeholder="Assigned to..." style="max-width:140px" oninput="autosaveTodoDraft()" />
           <select id="todo-privacy" title="Who can view this data" style="display:none">
             <option value="false">🌐 Public</option>
             <option value="true" selected>🔒 Privat</option>
           </select>
-          <button class="btn-sm" id="todo-cancel-btn" onclick="resetTodoForm()" style="display:none">Cancel Edit</button>
+          <span class="draft-status" id="draft-status-todo"></span>
+          <button class="btn-sm" id="todo-cancel-btn" onclick="discardTodoDraftAndReset()" style="display:none">Cancel Edit</button>
           <button class="btn-sm btn-primary" id="todo-save-btn" onclick="addTodo()">Add</button>
         </div>
 
@@ -2123,9 +2128,10 @@ ALTER TABLE logbook_entries
             <button class="btn-sm btn-primary" onclick="openNpForm()"><i class="ti ti-plus" aria-hidden="true"></i> New Note</button>
           </div>
           <div class="np-edit-area" id="np-form">
-            <input id="np-title" placeholder="Note title..." />
+            <input id="np-title" placeholder="Note title..." oninput="autosaveNotepadDraft()" />
             <div class="quill-editor-wrap"><div id="np-body-editor"></div></div>
             <div class="np-edit-btns">
+              <span class="draft-status" id="draft-status-notepad"></span>
               <button class="btn-sm" onclick="closeNpForm()">Cancel</button>
               <button class="btn-sm btn-primary" id="np-save-btn" onclick="saveNpItem()">Save</button>
             </div>
@@ -3269,10 +3275,8 @@ function hideAllForms() {
     if (el) el.style.display = 'none';
   });
   resetScheduleForm();
-  resetLogForm();
-  resetNoteForm();
+  // Draft-enabled forms keep their current values while switching panels.
   resetTrackerForm();
-  resetTodoForm();
   resetRecurringForm();
 }
 
@@ -3294,12 +3298,12 @@ async function handleAdd() {
     const el = document.getElementById(formId);
     const willOpen = el.style.display === 'none';
     el.style.display = willOpen ? 'block' : 'none';
-    // saat form ditutup, kembalikan ke mode "tambah baru" supaya tidak nyangkut di mode edit
-    if (!willOpen && resetMap[currentPanel]) resetMap[currentPanel]();
+    // Menutup lewat tombol Add hanya menyembunyikan form; draft tetap aman.
     if (willOpen && currentPanel === 'logbook') {
       await populateTrackerLinkOptions('');
       maybeRestoreLogDraft();
     }
+    if (willOpen && currentPanel === 'notes') restoreNoteDraft();
     if (willOpen && currentPanel === 'recurring') resetRecurringForm();
   }
 }
@@ -4659,6 +4663,7 @@ async function editLog(id) {
   document.getElementById('log-save-btn').textContent = 'Update';
   document.getElementById('log-form').style.display = 'block';
   await populateTrackerLinkOptions(l.tracker_item_id || '');
+  maybeRestoreLogDraft();
 }
 
 // Kembalikan form ke mode "tambah baru"
@@ -4682,45 +4687,66 @@ function resetLogForm() {
   document.getElementById('log-save-btn').textContent = 'Save to Logbook';
 }
 
-// ── Auto-save draft Logbook ke localStorage ──
-// Supaya isi catatan yang lagi diketik TIDAK HILANG kalau tab browser ke-tutup
-// or switch menus by accident before getting to click "Save".
-// Hanya untuk catatan BARU (bukan yang lagi diedit), biar tidak ketimpa draft lama.
-let logDraftDebounce = null;
+// ── Draft Protection — global, per user, per panel, per record ──
+// Draft text is stored only in this browser. Attachments and Password Manager fields
+// are deliberately excluded. The snapshot is captured immediately on every change,
+// then written after a short debounce so the last characters survive panel switches.
+const WB_DRAFT_PREFIX = 'wb_draft_v1';
+const draftTimers = {};
+function draftScope(panel, recordId = '') { return `${panel}:${recordId || 'new'}`; }
+function draftKey(scope) { return `${WB_DRAFT_PREFIX}:${encodeURIComponent(getUser())}:${scope}`; }
+function setDraftStatus(panel, text = 'Draft saved ✓', saved = true) {
+  const el = document.getElementById(`draft-status-${panel}`);
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle('saved', saved);
+}
+function saveDraftSnapshot(scope, snapshot, panel, delay = 450) {
+  const meaningful = Object.values(snapshot || {}).some(v => {
+    const x = String(v ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    return x.length > 0;
+  });
+  if (!meaningful) return;
+  clearTimeout(draftTimers[scope]);
+  setDraftStatus(panel, 'Saving draft…', false);
+  draftTimers[scope] = setTimeout(() => {
+    try {
+      localStorage.setItem(draftKey(scope), JSON.stringify({ ...snapshot, savedAt: new Date().toISOString() }));
+      setDraftStatus(panel);
+    } catch (e) { setDraftStatus(panel, 'Draft could not be saved', false); }
+  }, delay);
+}
+function loadDraft(scope) {
+  try { const raw = localStorage.getItem(draftKey(scope)); return raw ? JSON.parse(raw) : null; }
+  catch (e) { return null; }
+}
+function clearDraft(scope, panel) {
+  clearTimeout(draftTimers[scope]);
+  try { localStorage.removeItem(draftKey(scope)); } catch (e) {}
+  setDraftStatus(panel, '');
+}
+function hasDraft(scope) { return !!loadDraft(scope); }
+function confirmDiscardDraft(scope) {
+  return !hasDraft(scope) || confirm('Discard this unsaved draft?');
+}
+
+function currentLogDraftScope() { return draftScope('logbook', editingLogId || ''); }
 function autosaveLogDraft() {
-  if (editingLogId) return;
-  clearTimeout(logDraftDebounce);
-  logDraftDebounce = setTimeout(() => {
-    const draft = {
-      title: document.getElementById('log-title').value,
-      type: document.getElementById('log-type').value,
-      privacy: document.getElementById('log-privacy').value,
-      entryDate: document.getElementById('log-entry-date').value,
-      tags: document.getElementById('log-tags-in').value,
-      trackerLink: document.getElementById('log-tracker-link').value,
-      body: quillLog ? quillLog.root.innerHTML : ''
-    };
-    // Jangan simpan draft kosong (form baru dibuka, belum diisi apa-apa)
-    if (!draft.title && !draft.tags && (!draft.body || draft.body === '<p><br></p>')) return;
-    try { localStorage.setItem('wb_log_draft', JSON.stringify(draft)); } catch (e) {}
-  }, 500);
+  const snapshot = {
+    title: document.getElementById('log-title').value,
+    type: document.getElementById('log-type').value,
+    privacy: document.getElementById('log-privacy').value,
+    entryDate: document.getElementById('log-entry-date').value,
+    tags: document.getElementById('log-tags-in').value,
+    trackerLink: document.getElementById('log-tracker-link').value,
+    body: quillLog ? quillLog.root.innerHTML : ''
+  };
+  saveDraftSnapshot(currentLogDraftScope(), snapshot, 'logbook');
 }
-function clearLogDraft() {
-  try { localStorage.removeItem('wb_log_draft'); } catch (e) {}
-}
-// Called when the Add Logbook form opens — if there's an old draft, offer to resume it.
+function clearLogDraft() { clearDraft(currentLogDraftScope(), 'logbook'); }
 function maybeRestoreLogDraft() {
-  if (editingLogId) return;
-  let raw;
-  try { raw = localStorage.getItem('wb_log_draft'); } catch (e) { raw = null; }
-  if (!raw) return;
-  let draft;
-  try { draft = JSON.parse(raw); } catch (e) { return; }
-  if (!draft) return;
-  if (!confirm('There\u2019s a Logbook entry that wasn\u2019t saved (maybe it got closed or you switched menus). Do you want to resume from there?')) {
-    clearLogDraft();
-    return;
-  }
+  const draft = loadDraft(currentLogDraftScope());
+  if (!draft) { setDraftStatus('logbook', ''); return; }
   document.getElementById('log-title').value = draft.title || '';
   document.getElementById('log-type').value = draft.type || 'meeting';
   syncLogTypeTabs();
@@ -4729,13 +4755,17 @@ function maybeRestoreLogDraft() {
   document.getElementById('log-tags-in').value = draft.tags || '';
   if (quillLog) quillLog.root.innerHTML = draft.body || '';
   const trackerSel = document.getElementById('log-tracker-link');
-  if (trackerSel && draft.trackerLink) { trackerSel.value = draft.trackerLink; updateLogStatusColor(); }
+  if (trackerSel && draft.trackerLink) trackerSel.value = draft.trackerLink;
+  updateLogStatusColor();
+  setDraftStatus('logbook', 'Draft restored ✓');
 }
 
 function closeLogForm() {
+  const scope = currentLogDraftScope();
+  if (!confirmDiscardDraft(scope)) return;
+  clearDraft(scope, 'logbook');
   document.getElementById('log-form').style.display = 'none';
   resetLogForm();
-  clearLogDraft();
 }
 
 async function delLog(id) {
@@ -4772,6 +4802,23 @@ async function renderNotes() {
   _renderNoteCards(data || []);
 }
 
+function currentNoteDraftScope() { return draftScope('notes', editingNoteId || ''); }
+function autosaveNoteDraft() {
+  saveDraftSnapshot(currentNoteDraftScope(), {
+    title: document.getElementById('note-title-in').value,
+    category: document.getElementById('note-cat-in').value,
+    body: quillNote ? quillNote.root.innerHTML : ''
+  }, 'notes');
+}
+function restoreNoteDraft() {
+  const d = loadDraft(currentNoteDraftScope());
+  if (!d) { setDraftStatus('notes', ''); return; }
+  document.getElementById('note-title-in').value = d.title || '';
+  document.getElementById('note-cat-in').value = d.category || 'finance';
+  if (quillNote) quillNote.root.innerHTML = d.body || '';
+  setDraftStatus('notes', 'Draft restored ✓');
+}
+
 async function saveNote() {
   const title = document.getElementById('note-title-in').value.trim();
   if (!title) return alert('Title is required!');
@@ -4789,6 +4836,7 @@ async function saveNote() {
     ({ error } = await sb.from('notes').insert(payload));
   }
   if (error) return alert('Failed: ' + error.message);
+  clearDraft(currentNoteDraftScope(), 'notes');
   resetNoteForm();
   document.getElementById('note-form').style.display = 'none';
   await renderNotes();
@@ -4805,6 +4853,7 @@ function editNote(id) {
   quillNote.root.innerHTML = n.body || '';
   document.getElementById('note-save-btn').textContent = 'Update';
   document.getElementById('note-form').style.display = 'block';
+  restoreNoteDraft();
 }
 
 // Kembalikan form ke mode "tambah baru"
@@ -4812,12 +4861,15 @@ function resetNoteForm() {
   editingNoteId = null;
   document.getElementById('note-title-in').value = '';
   document.getElementById('note-cat-in').value = 'finance';
-  document.getElementById('note-privacy').value = 'false';
+  document.getElementById('note-privacy').value = 'true';
   quillNote.setText('');
   document.getElementById('note-save-btn').textContent = 'Save Note';
 }
 
 function closeNoteForm() {
+  const scope = currentNoteDraftScope();
+  if (!confirmDiscardDraft(scope)) return;
+  clearDraft(scope, 'notes');
   document.getElementById('note-form').style.display = 'none';
   resetNoteForm();
 }
@@ -5001,6 +5053,31 @@ function renderTodoFlatList(all) {
   `).join('');
 }
 
+function currentTodoDraftScope() { return draftScope('todo', editingTodoId || ''); }
+function autosaveTodoDraft() {
+  saveDraftSnapshot(currentTodoDraftScope(), {
+    text: document.getElementById('todo-input').value,
+    priority: document.getElementById('todo-prio').value,
+    dueDate: document.getElementById('todo-due').value,
+    assignedTo: document.getElementById('todo-assign').value
+  }, 'todo');
+}
+function restoreTodoDraft() {
+  const d = loadDraft(currentTodoDraftScope());
+  if (!d) { setDraftStatus('todo', ''); return; }
+  document.getElementById('todo-input').value = d.text || '';
+  document.getElementById('todo-prio').value = d.priority || 'med';
+  document.getElementById('todo-due').value = d.dueDate || '';
+  document.getElementById('todo-assign').value = d.assignedTo || '';
+  setDraftStatus('todo', 'Draft restored ✓');
+}
+function discardTodoDraftAndReset() {
+  const scope = currentTodoDraftScope();
+  if (!confirmDiscardDraft(scope)) return;
+  clearDraft(scope, 'todo');
+  resetTodoForm();
+}
+
 async function addTodo() {
   const text = document.getElementById('todo-input').value.trim();
   if (!text) return;
@@ -5019,6 +5096,7 @@ async function addTodo() {
     ({ error } = await sb.from('todos').insert(payload));
   }
   if (error) return alert('Failed: ' + error.message);
+  clearDraft(currentTodoDraftScope(), 'todo');
   resetTodoForm();
   await renderTodo();
 }
@@ -5035,6 +5113,7 @@ function editTodo(id) {
   document.getElementById('todo-privacy').value = t.is_private ? 'true' : 'false';
   document.getElementById('todo-save-btn').textContent = 'Update';
   document.getElementById('todo-cancel-btn').style.display = 'inline-block';
+  restoreTodoDraft();
 }
 
 // Kembalikan form ke mode "tambah baru"
@@ -5913,16 +5992,35 @@ function filterNotepad() {
   ));
 }
 
+function currentNotepadDraftScope() { return draftScope('notepad', editingNpId || ''); }
+function autosaveNotepadDraft() {
+  saveDraftSnapshot(currentNotepadDraftScope(), {
+    title: document.getElementById('np-title').value,
+    body: quillNp ? quillNp.root.innerHTML : ''
+  }, 'notepad');
+}
+function restoreNotepadDraft() {
+  const d = loadDraft(currentNotepadDraftScope());
+  if (!d) { setDraftStatus('notepad', ''); return; }
+  document.getElementById('np-title').value = d.title || '';
+  if (quillNp) quillNp.root.innerHTML = d.body || '';
+  setDraftStatus('notepad', 'Draft restored ✓');
+}
+
 function openNpForm(title='', body='') {
   editingNpId = null;
   document.getElementById('np-title').value = title;
   if (typeof quillNp !== 'undefined') quillNp.root.innerHTML = body || '';
   document.getElementById('np-save-btn').textContent = 'Save';
   document.getElementById('np-form').classList.add('open');
+  restoreNotepadDraft();
   document.getElementById('np-title').focus();
 }
 
 function closeNpForm() {
+  const scope = currentNotepadDraftScope();
+  if (!confirmDiscardDraft(scope)) return;
+  clearDraft(scope, 'notepad');
   editingNpId = null;
   document.getElementById('np-title').value = '';
   if (typeof quillNp !== 'undefined') quillNp.setText('');
@@ -5960,7 +6058,11 @@ async function saveNpItem() {
     }
     return;
   }
-  closeNpForm();
+  clearDraft(currentNotepadDraftScope(), 'notepad');
+  editingNpId = null;
+  document.getElementById('np-title').value = '';
+  if (typeof quillNp !== 'undefined') quillNp.setText('');
+  document.getElementById('np-form').classList.remove('open');
   await renderNotepad();
 }
 
@@ -5973,6 +6075,7 @@ function editNpItem(id) {
   document.getElementById('np-save-btn').textContent = 'Update';
   document.getElementById('np-form').classList.add('open');
   document.getElementById('np-title').focus();
+  restoreNotepadDraft();
   document.getElementById('np-form').scrollIntoView({behavior:'smooth'});
 }
 
@@ -6298,17 +6401,19 @@ async function openChatChannel(channelId, isUserClick) {
       <div id="chat-edit-indicator" style="display:none;font-size:11px;color:var(--accent);padding:4px 12px 0;align-items:center;gap:6px">
         <i class="ti ti-pencil"></i> Editing message — <a href="javascript:void(0)" onclick="cancelChatEdit()" style="color:var(--accent)">Cancel</a>
       </div>
-      <div class="chat-compose" style="position:relative">
+      <div class="chat-compose" style="position:relative;flex-wrap:wrap">
+        <span class="draft-status" id="draft-status-chat" style="width:100%;order:-1"></span>
         <input type="file" id="chat-file-input" multiple style="display:none" onchange="onChatFilesPicked(event)" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv">
         <button class="chat-icon-btn" title="Lampirkan file" onclick="document.getElementById('chat-file-input').click()"><i class="ti ti-paperclip"></i></button>
         <button class="chat-icon-btn" title="Emoji" id="chat-emoji-btn" onclick="toggleChatEmojiPicker(event)"><i class="ti ti-mood-smile"></i></button>
-        <textarea id="chat-input" rows="2" placeholder="${window.matchMedia('(pointer: coarse)').matches ? 'Tulis pesan... (ketuk tombol kirim →)' : 'Tulis pesan... (Enter kirim, Shift+Enter baris baru)'}" onkeydown="onChatInputKeydown(event)" oninput="autoGrowChatInput(this)"></textarea>
+        <textarea id="chat-input" rows="2" placeholder="${window.matchMedia('(pointer: coarse)').matches ? 'Tulis pesan... (ketuk tombol kirim →)' : 'Tulis pesan... (Enter kirim, Shift+Enter baris baru)'}" onkeydown="onChatInputKeydown(event)" oninput="autoGrowChatInput(this);autosaveChatDraft()"></textarea>
         <button class="chat-icon-btn chat-send" title="Send" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
       </div>
     </div>
   `;
   chatAttachments = [];
   editingChatMessageId = null;
+  restoreChatDraft();
   // Tunggu sebentar agar DOM chat-thread sudah ter-render sebelum load pesan
   await new Promise(r => requestAnimationFrame(() => setTimeout(r, 30)));
   await loadChatMessages(channelId);
@@ -6423,6 +6528,22 @@ function renderChatAttachPreview() {
   `).join('');
 }
 
+function currentChatDraftScope() { return draftScope('chat', activeChatChannelId || 'none'); }
+function autosaveChatDraft() {
+  if (editingChatMessageId) return;
+  const input = document.getElementById('chat-input');
+  if (!input || !activeChatChannelId) return;
+  saveDraftSnapshot(currentChatDraftScope(), { text: input.value }, 'chat');
+}
+function restoreChatDraft() {
+  const input = document.getElementById('chat-input');
+  if (!input || !activeChatChannelId) return;
+  const d = loadDraft(currentChatDraftScope());
+  if (!d) { setDraftStatus('chat', ''); return; }
+  input.value = d.text || '';
+  autoGrowChatInput(input);
+}
+
 async function sendChatMessage() {
   const input = document.getElementById('chat-input');
   const text = (input.value || '').trim();
@@ -6467,6 +6588,7 @@ async function sendChatMessage() {
     input.value = text;
     return;
   }
+  clearDraft(currentChatDraftScope(), 'chat');
   markChatChannelRead(activeChatChannelId);
   await loadChatMessages(activeChatChannelId);
 }
@@ -6834,6 +6956,7 @@ const quillNote = new Quill('#note-body-editor', {
   placeholder: 'Isi catatan penting perusahaan...'
 });
 installSmartPaste(quillNote);
+quillNote.on('text-change', autosaveNoteDraft);
 
 const quillNp = new Quill('#np-body-editor', {
   theme: 'snow',
@@ -6841,6 +6964,8 @@ const quillNp = new Quill('#np-body-editor', {
   placeholder: 'Tulis catatan di sini...'
 });
 installSmartPaste(quillNp);
+quillNp.on('text-change', autosaveNotepadDraft);
+restoreTodoDraft();
 
 </script>
 <!-- Bottom Navigation for Mobile -->
