@@ -258,6 +258,12 @@ textarea { resize: vertical; }
 .today-focus-hero { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 14px; }
 .today-focus-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
 .today-focus-title { font-size:20px; font-weight:800; color:var(--text1); }
+.today-focus-greeting { font-size:12px; font-weight:700; color:var(--accent); margin-bottom:3px; }
+.focus-capture-hint { font-size:10.5px; color:var(--text3); margin-top:7px; }
+.focus-capture-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.focus-mode-btn { border:1px solid var(--border2); background:var(--surface); color:var(--text2); border-radius:999px; padding:5px 9px; font-size:10.5px; cursor:pointer; }
+.focus-mode-btn:hover { background:var(--bg2); }
+.focus-mode-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
 .today-focus-sub { font-size:11.5px; color:var(--text2); margin-top:3px; }
 .quick-capture { display:flex; gap:8px; align-items:center; }
 .quick-capture input { flex:1; min-width:0; font-size:14px; padding:10px 12px; }
@@ -277,6 +283,12 @@ textarea { resize: vertical; }
 .focus-stat { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 0; border-bottom:1px solid var(--border); font-size:12px; }
 .focus-stat:last-child { border-bottom:none; }
 .focus-stat strong { font-size:18px; }
+.focus-next-wrap { margin-top:10px; border-top:1px dashed var(--border2); padding-top:9px; }
+.focus-next-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--text3); margin-bottom:7px; }
+.focus-one-now .focus-task { border-width:2px; border-color:var(--accent); box-shadow:0 3px 12px rgba(47,99,100,.10); }
+.focus-soft-note { font-size:10.5px; color:var(--text3); line-height:1.45; margin-top:7px; }
+.focus-mini-btn.focus-snooze { color:#7C5A16; background:#FFF8E8; }
+.focus-badge-count { font-size:10px; min-width:20px; text-align:center; padding:2px 7px; border-radius:999px; background:var(--bg2); color:var(--text2); }
 @media (max-width:760px) { .focus-grid { grid-template-columns:1fr; } .today-focus-head { flex-direction:column; } .quick-capture { flex-direction:column; align-items:stretch; } .quick-capture .btn-sm { justify-content:center; } }
 
 /* ── Schedule (gaya spreadsheet, warna tema WorkBoard) ── */
@@ -1617,20 +1629,28 @@ textarea { resize: vertical; }
         <div class="today-focus-hero">
           <div class="today-focus-head">
             <div>
+              <div class="today-focus-greeting" id="focus-greeting"></div>
               <div class="today-focus-title">Today Focus</div>
-              <div class="today-focus-sub">Capture first. Organize later. WorkBoard will keep today visible.</div>
+              <div class="today-focus-sub">Choose only one next step. Everything else can wait.</div>
             </div>
             <button class="btn-sm" onclick="renderTodayFocus()"><i class="ti ti-refresh"></i> Refresh</button>
           </div>
           <div class="quick-capture">
-            <input id="focus-quick-input" placeholder="Type one thing you need to remember..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
+            <input id="focus-quick-input" placeholder="Dump it here — anything you must not forget..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
             <button class="btn-sm btn-primary" id="focus-quick-btn" onclick="quickCaptureTodo()"><i class="ti ti-plus"></i> Add for Today</button>
           </div>
+          <div class="focus-capture-actions" aria-label="Quick capture type">
+            <button class="focus-mode-btn active" data-focus-mode="today" onclick="setFocusCaptureMode('today',this)">Today</button>
+            <button class="focus-mode-btn" data-focus-mode="followup" onclick="setFocusCaptureMode('followup',this)">Follow Up</button>
+            <button class="focus-mode-btn" data-focus-mode="waiting" onclick="setFocusCaptureMode('waiting',this)">Waiting Reply</button>
+            <button class="focus-mode-btn" data-focus-mode="inbox" onclick="setFocusCaptureMode('inbox',this)">Inbox / Later</button>
+          </div>
+          <div class="focus-capture-hint">No form. Write one sentence, then press Enter.</div>
           <div id="focus-capture-status" style="font-size:10.5px;color:var(--text3);margin-top:6px"></div>
         </div>
         <div class="focus-grid">
           <div class="focus-card">
-            <div class="focus-card-title"><span>🎯 Do Now — Top 3</span><button class="focus-mini-btn" onclick="switchPanel('todo',document.getElementById('nsub-todo'))">Open To Do</button></div>
+            <div class="focus-card-title"><span>🎯 One Thing Now</span><button class="focus-mini-btn" onclick="switchPanel('todo',document.getElementById('nsub-todo'))">Open To Do</button></div>
             <div id="focus-top3"><div class="loading-msg">Loading today's focus...</div></div>
           </div>
           <div class="focus-card">
@@ -1638,11 +1658,11 @@ textarea { resize: vertical; }
             <div id="focus-overview"><div class="loading-msg">Loading...</div></div>
           </div>
           <div class="focus-card">
-            <div class="focus-card-title">📞 Follow Up Today</div>
+            <div class="focus-card-title"><span>📞 Follow Up Today</span><span class="focus-badge-count" id="focus-follow-count">0</span></div>
             <div id="focus-followups"></div>
           </div>
           <div class="focus-card">
-            <div class="focus-card-title">⏳ Waiting for Reply</div>
+            <div class="focus-card-title"><span>⏳ Waiting for Reply</span><span class="focus-badge-count" id="focus-wait-count">0</span></div>
             <div id="focus-waiting"></div>
           </div>
         </div>
@@ -4961,10 +4981,36 @@ function focusEscape(v) {
   return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 }
 function focusIsFollowUp(t) {
-  return /follow\s*up|follow-up|hubungi|kontak|telepon|call|remind|ingatkan|cek lagi|tanyakan/i.test(t.text || '');
+  return /^\[Follow Up\]/i.test(t.text || '') || /follow\s*up|follow-up|hubungi|kontak|telepon|call|remind|ingatkan|cek lagi|tanyakan/i.test(t.text || '');
 }
 function focusIsWaiting(t) {
-  return /waiting|wait for|menunggu|nunggu|awaiting|pending reply|belum dibalas|belum ada jawaban/i.test(t.text || '');
+  return /^\[Waiting\]/i.test(t.text || '') || /waiting|wait for|menunggu|nunggu|awaiting|pending reply|belum dibalas|belum ada jawaban/i.test(t.text || '');
+}
+let focusCaptureMode = 'today';
+function setFocusCaptureMode(mode, btn) {
+  focusCaptureMode = mode;
+  document.querySelectorAll('[data-focus-mode]').forEach(el => el.classList.toggle('active', el === btn));
+  document.getElementById('focus-quick-input')?.focus();
+}
+function focusSnoozeKey() { return 'wb_focus_snooze_' + getUser(); }
+function getFocusSnoozes() { try { return JSON.parse(localStorage.getItem(focusSnoozeKey()) || '{}'); } catch { return {}; } }
+function isFocusSnoozed(id) {
+  const map = getFocusSnoozes();
+  const until = Number(map[id] || 0);
+  if (!until) return false;
+  if (until <= Date.now()) { delete map[id]; localStorage.setItem(focusSnoozeKey(), JSON.stringify(map)); return false; }
+  return true;
+}
+async function focusSnooze(id) {
+  const map = getFocusSnoozes();
+  map[id] = Date.now() + (30 * 60 * 1000);
+  localStorage.setItem(focusSnoozeKey(), JSON.stringify(map));
+  await renderTodayFocus();
+}
+function focusGreetingText() {
+  const h = new Date().getHours();
+  const part = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  return `${part}, ${getUser()}.`;
 }
 function focusScore(t, today) {
   let score = 0;
@@ -4987,11 +5033,12 @@ function focusTaskHtml(t, rank='') {
   return `<div class="focus-task">
     <div class="focus-task-main">
       ${rank ? `<div class="focus-rank">${rank}</div>` : ''}
-      <div><div class="focus-task-text">${focusEscape(t.text)}</div>
+      <div><div class="focus-task-text">${focusEscape(String(t.text || '').replace(/^\[(Follow Up|Waiting)\]\s*/i,''))}</div>
       <div class="focus-task-meta">${focusEscape(focusDateLabel(t,today))} · ${(prioLabel[t.priority] || t.priority || 'Medium')}</div></div>
     </div>
     <div class="focus-task-actions"${rank ? '' : ' style="padding-left:0"'}>
       <button class="focus-mini-btn" onclick="focusDone('${t.id}')">✓ Done</button>
+      <button class="focus-mini-btn focus-snooze" onclick="focusSnooze('${t.id}')">Later 30m</button>
       <button class="focus-mini-btn" onclick="focusTomorrow('${t.id}')">Tomorrow</button>
       <button class="focus-mini-btn" onclick="focusOpenTodo('${t.id}')">Open</button>
     </div>
@@ -5004,21 +5051,27 @@ async function renderTodayFocus() {
     const { data, error } = await withTimeout(sb.from('todos').select('*').order('due_date', { ascending: true }).limit(500));
     if (error) throw error;
     todoCache = applyOwner(data || []);
-    const open = todoCache.filter(t => !t.is_done);
+    const openAll = todoCache.filter(t => !t.is_done);
+    const open = openAll.filter(t => !isFocusSnoozed(t.id));
     const today = todayStr();
     const ranked = [...open].sort((a,b) => focusScore(b,today)-focusScore(a,today));
     const top3 = ranked.slice(0,3);
+    const nowTask = top3.slice(0,1);
+    const nextTasks = top3.slice(1);
     const overdue = open.filter(t => t.due_date && t.due_date < today);
     const dueToday = open.filter(t => t.due_date === today);
     const follow = open.filter(t => focusIsFollowUp(t) && (!t.due_date || t.due_date <= today)).slice(0,5);
     const waiting = open.filter(focusIsWaiting).slice(0,5);
-    top.innerHTML = top3.length ? top3.map((t,i)=>focusTaskHtml(t,i+1)).join('') : '<div class="focus-empty">Nothing urgent. Add one small next step above.</div>';
+    top.innerHTML = nowTask.length ? `<div class="focus-one-now">${focusTaskHtml(nowTask[0],1)}</div>${nextTasks.length ? `<div class="focus-next-wrap"><div class="focus-next-label">Up next — only after the first one</div>${nextTasks.map((t,i)=>focusTaskHtml(t,i+2)).join('')}</div>` : ''}<div class="focus-soft-note">Feeling stuck? Do only the smallest visible action, then press Done.</div>` : '<div class="focus-empty">Your focus is clear. Add one small next step above.</div>';
     document.getElementById('focus-followups').innerHTML = follow.length ? follow.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">No follow-up detected for today.</div>';
-    document.getElementById('focus-waiting').innerHTML = waiting.length ? waiting.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">No waiting items detected.</div>';
+    document.getElementById('focus-waiting').innerHTML = waiting.length ? waiting.map(t=>focusTaskHtml(t)).join('') : '<div class="focus-empty">Nothing is waiting for a reply.</div>';
+    document.getElementById('focus-follow-count').textContent = follow.length;
+    document.getElementById('focus-wait-count').textContent = waiting.length;
+    document.getElementById('focus-greeting').textContent = focusGreetingText();
     document.getElementById('focus-overview').innerHTML = `
-      <div class="focus-stat"><span>Open tasks</span><strong>${open.length}</strong></div>
-      <div class="focus-stat"><span>Due today</span><strong>${dueToday.length}</strong></div>
-      <div class="focus-stat"><span>Overdue</span><strong>${overdue.length}</strong></div>
+      <div class="focus-stat"><span>Still open</span><strong>${openAll.length}</strong></div>
+      <div class="focus-stat"><span>For today</span><strong>${dueToday.length}</strong></div>
+      <div class="focus-stat"><span>Needs attention</span><strong>${overdue.length}</strong></div>
       <div class="focus-stat"><span>Done today</span><strong>${todoCache.filter(t => t.is_done && t.done_at && String(t.done_at).slice(0,10)===today).length}</strong></div>`;
     const badge = document.getElementById('badge-focus');
     if (badge) badge.textContent = Math.min(99, overdue.length + dueToday.length);
@@ -5030,16 +5083,22 @@ async function quickCaptureTodo() {
   const input = document.getElementById('focus-quick-input');
   const btn = document.getElementById('focus-quick-btn');
   const status = document.getElementById('focus-capture-status');
-  const text = (input?.value || '').trim();
-  if (!text) { input?.focus(); return; }
+  const raw = (input?.value || '').trim();
+  if (!raw) { input?.focus(); return; }
+  let text = raw;
+  let dueDate = todayStr();
+  if (focusCaptureMode === 'followup') text = '[Follow Up] ' + raw;
+  if (focusCaptureMode === 'waiting') { text = '[Waiting] ' + raw; dueDate = null; }
+  if (focusCaptureMode === 'inbox') dueDate = null;
   btn.disabled = true;
   status.textContent = 'Saving...';
-  const { error } = await sb.from('todos').insert({ text, priority:'med', due_date:todayStr(), assigned_to:null, is_private:true, created_by:getUser() });
+  const { error } = await sb.from('todos').insert({ text, priority:'med', due_date:dueDate, assigned_to:null, is_private:true, created_by:getUser() });
   btn.disabled = false;
   if (error) { status.textContent = 'Failed: ' + error.message; return; }
   input.value = '';
-  status.textContent = 'Added to today ✓';
-  setTimeout(() => { if (status.textContent === 'Added to today ✓') status.textContent = ''; }, 2500);
+  const savedLabel = focusCaptureMode === 'today' ? 'Added for today ✓' : focusCaptureMode === 'followup' ? 'Follow-up saved ✓' : focusCaptureMode === 'waiting' ? 'Waiting item saved ✓' : 'Saved to inbox ✓';
+  status.textContent = savedLabel;
+  setTimeout(() => { if (status.textContent === savedLabel) status.textContent = ''; }, 2500);
   await renderTodayFocus();
   updateDailyProgress();
 }
@@ -5059,6 +5118,8 @@ async function focusOpenTodo(id) {
   editTodo(id);
   document.getElementById('todo-input')?.focus();
 }
+
+setInterval(() => { if (currentPanel === 'focus') renderTodayFocus(); }, 60000);
 
 // ── TO DO ──────────────────────────────────
 async function renderTodo() {
