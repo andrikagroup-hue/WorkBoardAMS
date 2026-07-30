@@ -298,6 +298,31 @@ textarea { resize: vertical; }
 .focus-next-details summary::before { content:'›'; display:inline-block; margin-right:6px; transition:transform .15s ease; }
 .focus-next-details[open] summary::before { transform:rotate(90deg); }
 .focus-next-details .focus-task { margin-top:7px; }
+
+/* Home visual grouping — calm pastel palette inspired by Logbook */
+.today-focus-hero {
+  background:#F4EFF2;
+  border-color:#D8CBD2;
+  box-shadow:0 3px 14px rgba(85,65,75,.06);
+}
+.today-focus-hero .quick-capture input { background:rgba(255,255,255,.82); border-color:#CFC1C8; }
+.focus-card { box-shadow:0 2px 10px rgba(80,60,70,.045); }
+.focus-card .focus-task { background:rgba(255,255,255,.72); }
+.focus-card-now { background:#EEF4EC; border-color:#C8D5C3; }
+.focus-card-overview { background:#F7F1E7; border-color:#DED1BC; }
+.focus-card-followup { background:#F8EEF1; border-color:#E1C8CF; }
+.focus-card-waiting { background:#EEF3F6; border-color:#C8D6DE; }
+.focus-card-today { background:#EFF5EE; border-color:#C9D8C5; border-left:3px solid #9CB795; }
+.focus-card-brain { background:#F3EFF6; border-color:#D4C7DC; border-left:3px solid #B8A3C6; }
+.focus-card-title { color:#5E5650; }
+.focus-mode-btn[data-focus-mode="today"] { background:#EEF4EC; border-color:#C8D5C3; }
+.focus-mode-btn[data-focus-mode="followup"] { background:#F8EEF1; border-color:#E1C8CF; }
+.focus-mode-btn[data-focus-mode="waiting"] { background:#EEF3F6; border-color:#C8D6DE; }
+.focus-mode-btn[data-focus-mode="inbox"] { background:#F3EFF6; border-color:#D4C7DC; }
+.focus-mode-btn[data-focus-mode="today"].active { background:#DCE8D8; color:#35513A; border-color:#9FB39A; }
+.focus-mode-btn[data-focus-mode="followup"].active { background:#EEDCE1; color:#6E3F4B; border-color:#C8A6AF; }
+.focus-mode-btn[data-focus-mode="waiting"].active { background:#DDE9EF; color:#375665; border-color:#A8BEC9; }
+.focus-mode-btn[data-focus-mode="inbox"].active { background:#E5DDEC; color:#584664; border-color:#B9A7C4; }
 @media (max-width:760px) { .focus-grid { grid-template-columns:1fr; } .today-focus-head { flex-direction:column; } .quick-capture { flex-direction:column; align-items:stretch; } .quick-capture .btn-sm { justify-content:center; } }
 
 
@@ -1476,14 +1501,6 @@ body.mobile-hub-open { overflow:hidden; }
           <i class="ti ti-chevron-right nav-arrow"></i>
         </button>
         <div class="nav-submenu">
-          <button class="nav-sub-item" id="nsub-brain" onclick="switchPanel('brain',this)">
-            <i class="ti ti-bulb"></i> Brain Dump
-            <span class="nav-badge badge-amber" id="badge-brain">0</span>
-          </button>
-          <button class="nav-sub-item" id="nsub-followup" onclick="switchPanel('followup',this)">
-            <i class="ti ti-phone-call"></i> Follow Up Center
-            <span class="nav-badge badge-red" id="badge-followup">0</span>
-          </button>
           <button class="nav-sub-item" id="nsub-notes" onclick="switchPanel('notes',this)">
             <i class="ti ti-notes"></i> Notes
             <span class="nav-badge badge-blue" id="badge-notes">0</span>
@@ -1728,7 +1745,7 @@ body.mobile-hub-open { overflow:hidden; }
             <div>
               <div class="today-focus-greeting" id="focus-greeting"></div>
               <div class="today-focus-title">Home</div>
-              <div class="today-focus-sub">Your next step stays visible. Capture everything else without organizing it now.</div>
+              <div class="today-focus-sub">Write it once, then choose where it belongs: Today, Follow Up, Waiting, or Brain Dump.</div>
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="next-action-btn" onclick="showNextAction()"><i class="ti ti-player-play"></i> What should I do next?</button><button class="btn-sm" onclick="renderTodayFocus()"><i class="ti ti-refresh"></i> Refresh</button></div>
           </div>
@@ -1740,34 +1757,34 @@ body.mobile-hub-open { overflow:hidden; }
             <button class="focus-mode-btn active" data-focus-mode="today" onclick="setFocusCaptureMode('today',this)">Today</button>
             <button class="focus-mode-btn" data-focus-mode="followup" onclick="setFocusCaptureMode('followup',this)">Follow Up</button>
             <button class="focus-mode-btn" data-focus-mode="waiting" onclick="setFocusCaptureMode('waiting',this)">Waiting Reply</button>
-            <button class="focus-mode-btn" data-focus-mode="inbox" onclick="setFocusCaptureMode('inbox',this)">Inbox / Later</button>
+            <button class="focus-mode-btn" data-focus-mode="inbox" onclick="setFocusCaptureMode('inbox',this)">Brain Dump</button>
           </div>
-          <div class="focus-capture-hint">No form. Write one sentence, then press Enter.</div>
+          <div class="focus-capture-hint">One input only. Pick a type when helpful, then press Enter.</div>
           <div id="focus-capture-status" style="font-size:10.5px;color:var(--text3);margin-top:6px"></div>
         </div>
         <div class="focus-grid">
-          <div class="focus-card">
+          <div class="focus-card focus-card-now">
             <div class="focus-card-title"><span>🎯 One Thing Now</span><button class="focus-mini-btn" onclick="switchPanel('todo',document.getElementById('nsub-todo'))">Open To Do</button></div>
             <div id="focus-top3"><div class="loading-msg">Loading today's focus...</div></div>
           </div>
-          <div class="focus-card">
+          <div class="focus-card focus-card-overview">
             <div class="focus-card-title">Today Overview</div>
             <div id="focus-overview"><div class="loading-msg">Loading...</div></div>
           </div>
-          <div class="focus-card" id="focus-card-followups">
-            <div class="focus-card-title"><span>📞 Follow Up Today</span><span><button class="focus-mini-btn" onclick="switchPanel('followup',document.getElementById('nsub-followup'))">Open Center</button> <span class="focus-badge-count" id="focus-follow-count">0</span></span></div>
+          <div class="focus-card focus-card-followup" id="focus-card-followups">
+            <div class="focus-card-title"><span>📞 Follow Up Today</span><span class="focus-badge-count" id="focus-follow-count">0</span></div>
             <div id="focus-followups"></div>
           </div>
-          <div class="focus-card" id="focus-card-waiting">
-            <div class="focus-card-title"><span>⏳ Waiting for Reply</span><span><button class="focus-mini-btn" onclick="switchPanel('followup',document.getElementById('nsub-followup'))">Open Center</button> <span class="focus-badge-count" id="focus-wait-count">0</span></span></div>
+          <div class="focus-card focus-card-waiting" id="focus-card-waiting">
+            <div class="focus-card-title"><span>⏳ Waiting for Reply</span><span class="focus-badge-count" id="focus-wait-count">0</span></div>
             <div id="focus-waiting"></div>
           </div>
-          <div class="focus-card focus-captured" id="focus-card-captured">
+          <div class="focus-card focus-captured focus-card-today" id="focus-card-captured">
             <div class="focus-card-title"><span>✅ Added for Today</span><span class="focus-badge-count" id="focus-today-count">0</span></div>
             <div id="focus-captured-today"></div>
           </div>
-          <div class="focus-card focus-inbox" id="focus-card-inbox">
-            <div class="focus-card-title"><span>📥 Brain Dump</span><span><button class="focus-mini-btn" onclick="switchPanel('brain',document.getElementById('nsub-brain'))">Organize</button> <span class="focus-badge-count" id="focus-inbox-count">0</span></span></div>
+          <div class="focus-card focus-inbox focus-card-brain" id="focus-card-inbox">
+            <div class="focus-card-title"><span>🧠 Brain Dump</span><span class="focus-badge-count" id="focus-inbox-count">0</span></div>
             <div id="focus-inbox"></div>
           </div>
         </div>
@@ -3253,6 +3270,10 @@ function startChatPolling() {
 
 // ── Panel switching ────────────────────────
 async function switchPanel(id, el) {
+  if (id === 'brain' || id === 'followup') {
+    id = 'focus';
+    el = document.getElementById('nsub-focus');
+  }
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   // Remove active from both old nav-item and new nav-sub-item
   document.querySelectorAll('.nav-item, .nav-sub-item').forEach(n => n.classList.remove('active'));
@@ -5314,7 +5335,7 @@ let focusCaptureMode = 'today';
 function setFocusCaptureMode(mode, btn) {
   focusCaptureMode = mode;
   document.querySelectorAll('[data-focus-mode]').forEach(el => el.classList.toggle('active', el === btn));
-  const actionLabels = { today:'Add for Today', followup:'Save Follow Up', waiting:'Save Waiting', inbox:'Save to Inbox' };
+  const actionLabels = { today:'Add for Today', followup:'Save Follow Up', waiting:'Save Waiting', inbox:'Save Brain Dump' };
   const quickBtn = document.getElementById('focus-quick-btn');
   if (quickBtn) quickBtn.innerHTML = `<i class="ti ti-plus"></i> ${actionLabels[mode] || 'Save'}`;
   document.getElementById('focus-quick-input')?.focus();
@@ -5444,7 +5465,7 @@ async function quickCaptureTodo() {
   btn.disabled = false;
   if (error) { status.textContent = 'Failed: ' + error.message; return; }
   input.value = '';
-  const savedLabel = focusCaptureMode === 'today' ? 'Added for today ✓' : focusCaptureMode === 'followup' ? 'Follow-up saved ✓' : focusCaptureMode === 'waiting' ? 'Waiting item saved ✓' : 'Saved to inbox ✓';
+  const savedLabel = focusCaptureMode === 'today' ? 'Added for today ✓' : focusCaptureMode === 'followup' ? 'Follow-up saved ✓' : focusCaptureMode === 'waiting' ? 'Waiting item saved ✓' : 'Brain dump saved ✓';
   status.textContent = savedLabel;
   setTimeout(() => { if (status.textContent === savedLabel) status.textContent = ''; }, 2500);
   await renderTodayFocus();
@@ -6420,7 +6441,7 @@ function openNavGroupForPanel(panelId) {
   const map = {
     schedule: 'ng-daily', logbook: 'ng-daily',
     tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects', recurring: 'ng-projects',
-    brain: 'ng-tasks', followup: 'ng-tasks', notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
+    notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
     absen: 'ng-hr',
     result: 'ng-reports',
@@ -7561,13 +7582,13 @@ quillNp.on('text-change', autosaveNotepadDraft);
 restoreTodoDraft();
 
 </script>
-<!-- Bottom Navigation for Mobile — ADHD compact navigation -->
+<!-- Bottom Navigation for Mobile — ADHD compact navigation; Capture focuses the unified Home input -->
 <nav class="bottom-nav" id="bottom-nav" aria-label="Mobile navigation">
   <div class="bottom-nav-inner">
     <button class="bn-item active" id="bn-core-home" onclick="switchPanelMobile('focus',this)" aria-label="Home"><i class="ti ti-home"></i><span>Home</span><span class="bn-badge hidden" id="bn-badge-focus"></span></button>
     <button class="bn-item" id="bn-core-daily" onclick="openMobileHub('daily',this)" aria-label="Daily"><i class="ti ti-calendar-event"></i><span>Daily</span><span class="bn-badge hidden" id="bn-badge-daily"></span></button>
     <button class="bn-item" id="bn-core-projects" onclick="openProjectsMobile(this)" aria-label="Projects"><i class="ti ti-folders"></i><span>Projects</span><span class="bn-badge hidden" id="bn-badge-projects"></span></button>
-    <button class="bn-item" id="bn-core-capture" onclick="switchPanelMobile('brain',this)" aria-label="Brain Dump"><i class="ti ti-bulb"></i><span>Capture</span><span class="bn-badge hidden" id="bn-badge-capture"></span></button>
+    <button class="bn-item" id="bn-core-capture" onclick="openHomeCapture(this)" aria-label="Quick Capture"><i class="ti ti-bulb"></i><span>Capture</span><span class="bn-badge hidden" id="bn-badge-capture"></span></button>
     <button class="bn-item" id="bn-core-more" onclick="openMobileHub('more',this)" aria-label="More"><i class="ti ti-grid-dots"></i><span>More</span><span class="bn-badge hidden" id="bn-badge-more"></span></button>
   </div>
 </nav>
@@ -7591,7 +7612,6 @@ restoreTodoDraft();
       <div class="mobile-hub-section">
         <div class="mobile-hub-label">Personal</div>
         <div class="mobile-hub-grid">
-          <button class="mobile-hub-item" onclick="mobileHubNavigate('followup')"><i class="ti ti-phone-call"></i><span>Follow Up<small>People and replies</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('notes')"><i class="ti ti-notes"></i><span>Notes<small>Private reference notes</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('todo')"><i class="ti ti-checkbox"></i><span>To Do<small>Full task list</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('notepad')"><i class="ti ti-notebook"></i><span>Notepad<small>Long-form writing</small></span></button>
@@ -7623,7 +7643,7 @@ restoreTodoDraft();
 const MOBILE_PANEL_BUCKET = {
   focus:'home', schedule:'daily', logbook:'daily',
   tracker:'projects', kanban:'projects', gantt:'projects', matrix:'projects', recurring:'projects',
-  brain:'capture'
+  brain:'home', followup:'home'
 };
 
 function setMobileCoreActive(bucket) {
@@ -7640,6 +7660,16 @@ async function switchPanelMobile(id, el) {
   });
   await switchPanel(id, matchingSidebarItem || el);
   setMobileCoreActive(MOBILE_PANEL_BUCKET[id] || 'more');
+}
+
+async function openHomeCapture(el) {
+  await switchPanelMobile('focus', el);
+  setMobileCoreActive('capture');
+  const input = document.getElementById('focus-quick-input');
+  if (input) {
+    input.scrollIntoView({ behavior:'smooth', block:'center' });
+    setTimeout(() => input.focus(), 120);
+  }
 }
 
 function openMobileHub(type, el) {
@@ -7695,12 +7725,12 @@ function syncBottomNavBadges() {
   setCoreBadge('bn-badge-focus', numericBadgeValue('badge-focus'));
   setCoreBadge('bn-badge-daily', numericBadgeValue('badge-sched') + numericBadgeValue('badge-log'));
   setCoreBadge('bn-badge-projects', numericBadgeValue('badge-track'));
-  setCoreBadge('bn-badge-capture', numericBadgeValue('badge-brain'));
-  setCoreBadge('bn-badge-more', numericBadgeValue('badge-followup') + numericBadgeValue('badge-chat'));
+  setCoreBadge('bn-badge-capture', numericBadgeValue('focus-inbox-count'));
+  setCoreBadge('bn-badge-more', numericBadgeValue('badge-chat'));
 }
 
 var badgeObserver = new MutationObserver(syncBottomNavBadges);
-['badge-focus','badge-sched','badge-track','badge-brain','badge-followup','badge-log','badge-chat'].forEach(function(id) {
+['badge-focus','badge-sched','badge-track','focus-inbox-count','focus-follow-count','focus-wait-count','badge-log','badge-chat'].forEach(function(id) {
   const el = document.getElementById(id);
   if (el) badgeObserver.observe(el, { childList:true, subtree:true, characterData:true });
 });
