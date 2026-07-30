@@ -16,8 +16,6 @@
   <!-- Quill Rich Text Editor -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
-  <!-- Puter.js — fallback AI provider only when the secure OpenAI Edge Function is unavailable -->
-  <script src="https://js.puter.com/v2/"></script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -926,23 +924,31 @@ textarea { resize: vertical; }
 .pass-type-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px; background:var(--bg2); color:var(--text3); border:1px solid var(--border); flex-shrink:0; }
 .pass-card .btn-sm { width:24px; height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; font-size:11px; }
 
-/* ── AI Assistant Modal (OpenAI + Puter fallback) ───────── */
+/* ── Writing Assistant Modal — Gemini + Local Smart Focus ───────── */
 .ai-modal-overlay { display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; padding:20px; }
 .ai-modal-overlay.open { display:flex; }
-.ai-modal-box { background:var(--surface); border-radius:var(--radius-lg); max-width:520px; width:100%; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
+.ai-modal-box { background:var(--surface); border-radius:var(--radius-lg); max-width:560px; width:100%; max-height:84vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
 .ai-modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); font-size:13px; font-weight:700; }
 .ai-modal-title-wrap { display:flex; align-items:center; gap:7px; min-width:0; }
 .ai-provider-badge { font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:999px; background:var(--bg2); color:var(--text2); border:1px solid var(--border); white-space:nowrap; }
-.ai-provider-badge.openai { background:#E8F1EF; color:#1F4443; border-color:rgba(47,99,100,.25); }
-.ai-provider-badge.fallback { background:#FFF8E8; color:#7C5A16; border-color:rgba(192,138,62,.28); }
-.ai-provider-badge.error { background:#FEE2E2; color:#991B1B; border-color:rgba(239,68,68,.24); }
+.ai-provider-badge.gemini { background:#EEF3F6; color:#375665; border-color:#C8D6DE; }
+.ai-provider-badge.local { background:#EEF4EA; color:#486544; border-color:#C8D8C1; }
+.ai-provider-badge.error { background:#F8E8E6; color:#8C3F38; border-color:#E7C2BD; }
 .ai-modal-body { padding:16px; overflow-y:auto; font-size:13px; line-height:1.6; color:var(--text1); }
 .ai-modal-body a { color: var(--accent); }
-.ai-modal-foot { display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--border); }
+.ai-modal-foot { display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--border); flex-wrap:wrap; }
 .ai-btn { font-size:10px; padding:2px 8px; border-radius:6px; border:1px solid var(--accent); color:var(--accent); background:transparent; cursor:pointer; display:inline-flex; align-items:center; gap:3px; }
 .ai-btn:hover { background:var(--accent); color:#fff; }
 .ai-loading-dots::after { content:'...'; animation: aiDots 1.2s steps(4,end) infinite; }
 @keyframes aiDots { 0%,20%{content:'.'} 40%{content:'..'} 60%,100%{content:'...'} }
+.ai-action-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
+.ai-action-btn { border:1px solid var(--border2); background:var(--surface); color:var(--text1); border-radius:10px; padding:10px 11px; text-align:left; cursor:pointer; font:inherit; }
+.ai-action-btn:hover { background:var(--bg2); border-color:var(--accent); }
+.ai-action-btn strong { display:block; font-size:12px; margin-bottom:2px; }
+.ai-action-btn span { display:block; font-size:10.5px; color:var(--text3); line-height:1.35; }
+.ai-privacy-note { background:#F7F2E8; border:1px solid #DED0B4; border-radius:9px; padding:9px 10px; font-size:10.5px; color:#6B5A3B; line-height:1.45; }
+.local-focus-result { background:#EEF4EA; border:1px solid #C8D8C1; border-radius:10px; padding:12px; }
+@media (max-width:560px) { .ai-action-grid { grid-template-columns:1fr; } .ai-modal-foot .btn-sm { flex:1; justify-content:center; } }
 
 /* ── Admin tab navigation ──────────────── */
 .admin-tab {
@@ -1752,7 +1758,7 @@ body.mobile-hub-open { overflow:hidden; }
               <div class="today-focus-title">Home</div>
               <div class="today-focus-sub">Write it once, then choose where it belongs: Today, Follow Up, Waiting, or Brain Dump.</div>
             </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="next-action-btn" onclick="showNextAction()"><i class="ti ti-sparkles"></i> Ask AI: What next?</button><button class="btn-sm" onclick="renderTodayFocus()"><i class="ti ti-refresh"></i> Refresh</button></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="next-action-btn" onclick="showNextAction()" title="Uses WorkBoard rules locally — no AI quota or payment"><i class="ti ti-player-play"></i> What should I do next?</button><button class="btn-sm" onclick="renderTodayFocus()"><i class="ti ti-refresh"></i> Refresh</button></div>
           </div>
           <div class="quick-capture">
             <input id="focus-quick-input" placeholder="Dump it here — anything you must not forget..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
@@ -5192,58 +5198,6 @@ async function openProjectsMobile(el) {
   document.querySelectorAll('.bn-item').forEach(btn => btn.classList.remove('active'));
   if (el) el.classList.add('active');
 }
-async function showNextAction() {
-  try {
-    let source = Array.isArray(todoCache) ? todoCache : [];
-    if (!source.length) {
-      const { data, error } = await withTimeout(sb.from('todos').select('*').order('due_date', { ascending: true }).limit(500));
-      if (error) throw error;
-      source = applyOwner(data || []);
-      todoCache = source;
-    }
-    const today = todayStr();
-    const open = source
-      .filter(t => !t.is_done && !isFocusSnoozed(t.id))
-      .sort((a,b) => focusScore(b,today) - focusScore(a,today))
-      .slice(0,12);
-    if (!open.length) {
-      document.getElementById('focus-quick-input')?.focus();
-      alert('No open tasks were found. Capture one small next step first.');
-      return;
-    }
-    const taskLines = open.map((t,i) => {
-      const clean = String(t.text || '').replace(/^\[(Follow Up|Waiting|Today|Inbox)\]\s*/i,'');
-      const kind = focusIsFollowUp(t) ? 'Follow Up' : focusIsWaiting(t) ? 'Waiting Reply' : focusIsInbox(t) ? 'Brain Dump' : 'Task';
-      return `${i+1}. ${clean} | Type: ${kind} | Due: ${t.due_date || 'No deadline'} | Priority: ${prioLabel[t.priority] || t.priority || 'Medium'}`;
-    }).join('\n');
-    await runAiOnText(
-      '✨ What should I do next?',
-      taskLines,
-      `Pilih tepat SATU pekerjaan yang paling tepat dikerjakan sekarang untuk pengguna dengan ADHD. Pertimbangkan keterlambatan, tenggat hari ini, follow-up, dampak, dan kemudahan memulai. Jawab ringkas dalam Bahasa Indonesia dengan format:
-
-## Kerjakan Sekarang
-**[nama tugas]**
-
-**Kenapa ini dulu:** [1 kalimat]
-
-**Langkah terkecil:** [aksi konkret yang bisa langsung dilakukan dalam 2–10 menit]
-
-**Setelah itu:** [satu langkah berikutnya].
-
-Jangan mengarang fakta, tanggal, orang, atau status di luar daftar yang diberikan.`,
-      { task: 'next_action', context: `Tanggal lokal: ${today}. Pengguna aktif: ${getUser()}.` }
-    );
-  } catch (err) {
-    console.error('Next-action AI error:', err);
-    const card = document.querySelector('#focus-top3 .focus-task');
-    if (card) {
-      card.scrollIntoView({ behavior:'smooth', block:'center' });
-      if (card.animate) card.animate([{transform:'scale(1)'},{transform:'scale(1.015)'},{transform:'scale(1)'}],{duration:520});
-    } else {
-      document.getElementById('focus-quick-input')?.focus();
-    }
-  }
-}
 function brainDraftKey() { return 'wb_brain_draft_' + getUser(); }
 function saveBrainDraft() {
   const input = document.getElementById('brain-input');
@@ -6144,21 +6098,27 @@ function htmlToPlainText(html) {
   return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
-// ── AI Assistant — OpenAI via Supabase Edge Function ─────────────────────
-// Security model:
-// - OPENAI_API_KEY is stored only in Supabase Edge Function secrets.
-// - The browser never receives or stores the OpenAI API key.
-// - A separate WorkBoard AI access code is requested once per browser tab.
-// - Puter.js remains an automatic fallback while OpenAI setup is incomplete/unavailable.
+// ── Smart Focus lokal + Gemini Writing Assistant ─────────────────────
+// Smart Focus memilih langkah berikutnya langsung di browser tanpa API, biaya, atau kuota.
+// Gemini hanya dipanggil saat user secara sadar memilih pengolahan tulisan.
+// GEMINI_API_KEY tetap berada di Supabase Edge Function secrets dan tidak pernah masuk ke HTML.
 const WORKBOARD_AI_FUNCTION = 'workboard-ai';
-const WORKBOARD_AI_SESSION_KEY = 'wb_openai_access_code';
+const WORKBOARD_AI_SESSION_KEY = 'wb_gemini_access_code';
 let _aiLastResult = '';
 let _aiLastProvider = '';
+let _aiCurrentSource = null;
+let _aiCurrentAction = '';
 
-function openAiModal(title) {
+function openAiModal(title, options={}) {
   document.getElementById('ai-modal-title').textContent = title;
-  document.getElementById('ai-modal-body').innerHTML = '<span class="ai-loading-dots">✨ Processing with AI</span>';
-  setAiProviderStatus('Connecting…', '');
+  document.getElementById('ai-modal-body').innerHTML = options.body || '<span class="ai-loading-dots">✨ Processing with Gemini</span>';
+  setAiProviderStatus(options.providerLabel || 'Gemini', options.providerKind || 'gemini');
+  const resetBtn = document.getElementById('ai-modal-reset-btn');
+  const copyBtn = document.getElementById('ai-modal-copy-btn');
+  const replaceBtn = document.getElementById('ai-modal-replace-btn');
+  if (resetBtn) resetBtn.style.display = options.requiresAccess === false ? 'none' : 'inline-flex';
+  if (copyBtn) copyBtn.style.display = options.showCopy ? 'inline-flex' : 'none';
+  if (replaceBtn) replaceBtn.style.display = 'none';
   document.getElementById('ai-modal-overlay').classList.add('open');
 }
 
@@ -6169,28 +6129,35 @@ function closeAiModal() {
 function setAiProviderStatus(label, kind='') {
   const badge = document.getElementById('ai-modal-provider');
   if (!badge) return;
-  badge.textContent = label || 'AI';
+  badge.textContent = label || 'Assistant';
   badge.className = 'ai-provider-badge' + (kind ? ' ' + kind : '');
+}
+
+function setAiResultControls(canReplace=false) {
+  const copyBtn = document.getElementById('ai-modal-copy-btn');
+  const replaceBtn = document.getElementById('ai-modal-replace-btn');
+  if (copyBtn) copyBtn.style.display = _aiLastResult ? 'inline-flex' : 'none';
+  if (replaceBtn) replaceBtn.style.display = canReplace && _aiLastResult ? 'inline-flex' : 'none';
 }
 
 function resetAiAccessCode(showMessage=true) {
   sessionStorage.removeItem(WORKBOARD_AI_SESSION_KEY);
-  if (showMessage) alert('The WorkBoard AI access code was cleared for this browser tab.');
+  if (showMessage) alert('The Gemini access code was cleared for this browser tab.');
 }
 
 function getAiAccessCode(forceNew=false) {
   if (forceNew) sessionStorage.removeItem(WORKBOARD_AI_SESSION_KEY);
   let code = sessionStorage.getItem(WORKBOARD_AI_SESSION_KEY) || '';
   if (!code) {
-    code = window.prompt('Enter the WorkBoard AI access code. It is kept only for this browser tab.') || '';
+    code = window.prompt('Enter the WorkBoard Gemini access code. It is kept only for this browser tab.') || '';
     code = code.trim();
-    if (!code) throw new Error('The WorkBoard AI access code was not entered.');
+    if (!code) throw new Error('The WorkBoard Gemini access code was not entered.');
     sessionStorage.setItem(WORKBOARD_AI_SESSION_KEY, code);
   }
   return code;
 }
 
-async function callOpenAiEdge(payload, retryAccess=true) {
+async function callGeminiEdge(payload, retryAccess=true) {
   const accessCode = getAiAccessCode(false);
   const response = await fetch(`${SUPABASE_URL}/functions/v1/${WORKBOARD_AI_FUNCTION}`, {
     method: 'POST',
@@ -6216,34 +6183,20 @@ async function callOpenAiEdge(payload, retryAccess=true) {
   if ((response.status === 401 || response.status === 403) && retryAccess) {
     resetAiAccessCode(false);
     getAiAccessCode(true);
-    return callOpenAiEdge(payload, false);
+    return callGeminiEdge(payload, false);
   }
   if (!response.ok) {
-    const err = new Error((data && data.error) || `OpenAI service returned HTTP ${response.status}.`);
-    err.code = data && data.code ? data.code : 'OPENAI_EDGE_ERROR';
+    let message = (data && data.error) || `Gemini service returned HTTP ${response.status}.`;
+    const code = data && data.code ? data.code : 'GEMINI_EDGE_ERROR';
+    if (code === 'GEMINI_QUOTA_LIMIT' || response.status === 429) {
+      message = 'Gemini free quota is temporarily exhausted. Try again later. WorkBoard and Smart Focus remain available.';
+    }
+    const err = new Error(message);
+    err.code = code;
     throw err;
   }
-  if (!data || !data.text) throw new Error('The OpenAI service returned an empty response.');
+  if (!data || !data.text) throw new Error('Gemini returned an empty response.');
   return data;
-}
-
-async function callPuterFallback(prompt) {
-  if (typeof puter === 'undefined') throw new Error('Puter.js fallback is not loaded. Check the internet connection and refresh.');
-  const response = await puter.ai.chat(prompt, { model: 'claude-sonnet-5' });
-  let resultText = '';
-  if (typeof response === 'string') {
-    resultText = response;
-  } else if (response && typeof response === 'object') {
-    if (typeof response.text === 'string') {
-      resultText = response.text;
-    } else if (response.message && Array.isArray(response.message.content)) {
-      resultText = response.message.content.map(c => (c && c.text) ? c.text : '').join('\n').trim();
-    } else if (Array.isArray(response.content)) {
-      resultText = response.content.map(c => (c && c.text) ? c.text : '').join('\n').trim();
-    }
-  }
-  if (!resultText) throw new Error('The fallback AI returned an empty response.');
-  return resultText;
 }
 
 function copyAiResult() {
@@ -6271,7 +6224,7 @@ function copyAiResult() {
   navigator.clipboard.writeText(_aiLastResult).then(showCopied).catch(() => alert('Failed to copy.'));
 }
 
-// Convert simple markdown from AI output (##, **, -, 1., ---, [link](url)) into clean HTML
+// Convert simple markdown from assistant output into clean HTML.
 function formatAiMarkdown(text) {
   let escaped = escHtml(text);
   const lines = escaped.split('\n');
@@ -6316,60 +6269,202 @@ function formatAiMarkdown(text) {
   return html;
 }
 
-// Primary AI route: secure OpenAI Edge Function. Puter is used only as fallback.
-async function runAiOnText(title, plainText, instruction, options={}) {
-  if (!plainText || !plainText.trim()) { alert('There is no text content to process.'); return; }
-  openAiModal(title);
-  const prompt = `${instruction}\n\nTeks:\n"""\n${plainText}\n"""`;
+function getWritingSource(kind, id) {
+  if (kind === 'logbook') {
+    const row = logbookCache.find(x => x.id === id);
+    return row ? { kind, id, title: row.title || 'Logbook', body: row.body || '', table: 'logbook_entries' } : null;
+  }
+  if (kind === 'note') {
+    const row = notesCache.find(x => x.id === id);
+    return row ? { kind, id, title: row.title || 'Note', body: row.body || '', table: 'notes' } : null;
+  }
+  if (kind === 'notepad') {
+    const row = notepadCache.find(x => x.id === id);
+    return row ? { kind, id, title: row.title || 'Notepad', body: row.body || '', table: 'notepad_items' } : null;
+  }
+  return null;
+}
+
+function openWritingAssistant(kind, id) {
+  const source = getWritingSource(kind, id);
+  if (!source) return alert('The selected writing could not be found.');
+  const plain = htmlToPlainText(source.body || '');
+  if (!plain) return alert('There is no text content to process.');
+  _aiCurrentSource = source;
+  _aiCurrentAction = '';
+  _aiLastResult = '';
+  _aiLastProvider = '';
+  const body = `
+    <div style="font-size:12px;color:var(--text2)">Choose what Gemini should do with <strong>${escHtml(source.title)}</strong>.</div>
+    <div class="ai-action-grid">
+      <button class="ai-action-btn" onclick="runWritingAction('summarize')"><strong>🧾 Summarize</strong><span>Turn it into short, scannable points.</span></button>
+      <button class="ai-action-btn" onclick="runWritingAction('polish')"><strong>✨ Polish Writing</strong><span>Fix grammar and flow without changing the meaning.</span></button>
+      <button class="ai-action-btn" onclick="runWritingAction('professional')"><strong>💼 Make Professional</strong><span>Use clear and natural business language.</span></button>
+      <button class="ai-action-btn" onclick="runWritingAction('shorter')"><strong>✂️ Make Shorter</strong><span>Keep the essentials, names, dates, and decisions.</span></button>
+      <button class="ai-action-btn" style="grid-column:1/-1" onclick="runWritingAction('followups')"><strong>📌 Extract Follow-Ups</strong><span>Find follow-ups, waiting replies, deadlines, and next actions.</span></button>
+    </div>
+    <div class="ai-privacy-note"><strong>Privacy:</strong> only this selected writing is sent to Gemini when you click an action. Password Manager and the rest of WorkBoard are not sent.</div>`;
+  openAiModal('✨ Gemini Writing Assistant', { body, providerLabel:'Gemini · Free Tier', providerKind:'gemini', requiresAccess:true, showCopy:false });
+}
+
+const WRITING_ACTIONS = {
+  summarize: {
+    label: 'Summarize',
+    task: 'summarize_note',
+    instruction: 'Ringkas tulisan menjadi poin-poin singkat berbahasa Indonesia yang mudah dipindai. Pertahankan nama, angka, tanggal, keputusan, hambatan, hasil, dan tindakan penting. Jangan menambah fakta baru.'
+  },
+  polish: {
+    label: 'Polish Writing',
+    task: 'polish_writing',
+    instruction: 'Rapikan tata bahasa, ejaan, struktur, dan alur tulisan. Pertahankan maksud, nada, nama, angka, tanggal, fakta, dan komitmen asli. Berikan hasil final saja.'
+  },
+  professional: {
+    label: 'Make Professional',
+    task: 'make_professional',
+    instruction: 'Ubah menjadi bahasa kerja profesional yang jelas, sopan, natural, dan tidak bertele-tele. Jangan menambah fakta atau janji baru. Berikan hasil final saja.'
+  },
+  shorter: {
+    label: 'Make Shorter',
+    task: 'make_shorter',
+    instruction: 'Padatkan tulisan tanpa menghilangkan inti, nama, angka, tanggal, keputusan, deadline, dan tindakan penting. Berikan hasil final saja.'
+  },
+  followups: {
+    label: 'Extract Follow-Ups',
+    task: 'extract_followups',
+    instruction: 'Ambil hanya tindakan yang perlu dilakukan. Kelompokkan sebagai Follow Up, Waiting Reply, Deadline, dan Next Action bila datanya memang ada. Jangan mengarang.'
+  }
+};
+
+async function runWritingAction(action) {
+  const source = _aiCurrentSource;
+  const config = WRITING_ACTIONS[action];
+  if (!source || !config) return;
+  const plain = htmlToPlainText(source.body || '');
+  _aiCurrentAction = action;
+  _aiLastResult = '';
+  document.getElementById('ai-modal-title').textContent = `✨ ${config.label}: ${source.title}`;
+  document.getElementById('ai-modal-body').innerHTML = '<span class="ai-loading-dots">✨ Processing with Gemini</span>';
+  setAiProviderStatus('Gemini · Connecting…', 'gemini');
+  setAiResultControls(false);
   try {
-    const result = await callOpenAiEdge({
-      task: options.task || 'general',
-      title,
-      text: plainText,
-      instruction,
-      context: options.context || ''
+    const task = action === 'summarize' && source.kind === 'logbook' ? 'summarize_logbook' : config.task;
+    const result = await callGeminiEdge({
+      task,
+      title: source.title,
+      text: plain,
+      instruction: config.instruction,
+      context: `Source: ${source.kind}. Process only the selected writing.`
     });
     _aiLastResult = result.text;
-    _aiLastProvider = 'openai';
-    setAiProviderStatus(result.model ? `OpenAI · ${result.model}` : 'OpenAI', 'openai');
+    _aiLastProvider = 'gemini';
+    setAiProviderStatus(result.model ? `Gemini · ${result.model}` : 'Gemini', 'gemini');
     document.getElementById('ai-modal-body').innerHTML = formatAiMarkdown(result.text);
-    return result.text;
-  } catch (openAiError) {
-    console.warn('OpenAI Edge Function unavailable; trying fallback:', openAiError);
-    try {
-      setAiProviderStatus('Puter fallback', 'fallback');
-      const fallbackText = await callPuterFallback(prompt);
-      _aiLastResult = fallbackText;
-      _aiLastProvider = 'puter';
-      document.getElementById('ai-modal-body').innerHTML = `<div style="font-size:10.5px;color:var(--text3);margin-bottom:10px">OpenAI is not ready, so WorkBoard used its temporary fallback.</div>${formatAiMarkdown(fallbackText)}`;
-      return fallbackText;
-    } catch (fallbackError) {
-      console.error('AI providers failed:', { openAiError, fallbackError });
-      setAiProviderStatus('Unavailable', 'error');
-      const primaryMsg = openAiError && openAiError.message ? openAiError.message : 'OpenAI is unavailable.';
-      const fallbackMsg = fallbackError && fallbackError.message ? fallbackError.message : 'Fallback is unavailable.';
-      document.getElementById('ai-modal-body').innerHTML = `<span style="color:var(--danger)">AI could not process this request.<br><br>${escHtml(primaryMsg)}<br>${escHtml(fallbackMsg)}</span>`;
-      throw openAiError;
-    }
+    setAiResultControls(action !== 'followups');
+  } catch (error) {
+    console.error('Gemini Writing Assistant error:', error);
+    setAiProviderStatus('Gemini unavailable', 'error');
+    document.getElementById('ai-modal-body').innerHTML = `<span style="color:var(--danger)">Gemini could not process this writing.<br><br>${escHtml(error.message || 'Unknown error')}</span>`;
+    setAiResultControls(false);
   }
 }
 
-function aiSummarizeLog(id) {
-  const l = logbookCache.find(x => x.id === id);
-  if (!l) return;
-  const plain = htmlToPlainText(l.body || '');
-  runAiOnText('✨ Logbook Summary: ' + (l.title || ''), plain,
-    'Ringkas isi logbook kerja berikut menjadi poin-poin singkat berbahasa Indonesia yang mudah dibaca. Fokus pada inti kegiatan, hasil, keputusan, pihak yang perlu dihubungi, dan hal yang perlu ditindaklanjuti. Jangan mengarang informasi yang tidak ada.',
-    { task: 'summarize_logbook', context: `Judul logbook: ${l.title || '-'}. Tanggal: ${l.entry_date || '-'}.` });
+async function replaceAiOriginal() {
+  const source = _aiCurrentSource;
+  if (!source || !_aiLastResult || _aiCurrentAction === 'followups') return;
+  if (!confirm('Replace the original writing with this Gemini result? The old text will be overwritten.')) return;
+  const body = formatAiMarkdown(_aiLastResult);
+  const { error } = await sb.from(source.table).update({ body }).eq('id', source.id);
+  if (error) return alert('Failed to replace the writing: ' + error.message);
+  if (source.kind === 'logbook') await renderLogbook();
+  else if (source.kind === 'note') await renderNotes();
+  else if (source.kind === 'notepad') await renderNotepad();
+  closeAiModal();
+  alert('The writing was replaced successfully.');
 }
 
-function aiSummarizeNote(id) {
-  const n = notesCache.find(x => x.id === id);
-  if (!n) return;
-  const plain = htmlToPlainText(n.body || '');
-  runAiOnText('✨ Notes Summary: ' + (n.title || ''), plain,
-    'Rapikan dan ringkas catatan berikut menjadi poin-poin singkat berbahasa Indonesia yang jelas, terstruktur, dan mudah dipindai oleh pengguna dengan ADHD. Pertahankan maksud asli dan jangan mengarang informasi baru.',
-    { task: 'summarize_note', context: `Judul catatan: ${n.title || '-'}.` });
+function localTaskCleanText(task) {
+  return String(task?.text || '').replace(/^\[(Follow Up|Waiting|Today|Inbox)\]\s*/i, '').trim();
+}
+
+function localTaskReason(task, today) {
+  const due = task.due_date || '';
+  if (due && due < today) return 'Tugas ini sudah melewati tenggat dan masih terbuka.';
+  if (due === today) return 'Tugas ini jatuh tempo hari ini.';
+  if (focusIsFollowUp(task)) return 'Ini adalah follow-up aktif yang berisiko terlupakan bila tidak segera disentuh.';
+  if (focusIsWaiting(task)) return 'Kamu sedang menunggu balasan; cek statusnya agar tidak menggantung.';
+  if ((task.priority || '').toLowerCase() === 'high') return 'Tugas ini ditandai sebagai prioritas tinggi.';
+  return 'Ini berada di urutan teratas berdasarkan aturan fokus WorkBoard.';
+}
+
+function localSmallestStep(task) {
+  const text = localTaskCleanText(task).toLowerCase();
+  if (focusIsFollowUp(task) || /follow\s*up|hubungi|chat|wa|whatsapp|email|balas|reply/.test(text)) {
+    return 'Buka kanal komunikasi terkait dan kirim satu pesan singkat untuk meminta update.';
+  }
+  if (focusIsWaiting(task) || /waiting|menunggu|belum dibalas|belum balas|approval|persetujuan/.test(text)) {
+    return 'Cek apakah ada balasan terbaru. Jika belum ada, tentukan waktu follow-up berikutnya.';
+  }
+  if (/laporan|report|rekap|proposal|sph|quotation|penawaran/.test(text)) {
+    return 'Buka dokumennya dan tulis tiga poin utama yang harus masuk.';
+  }
+  if (/cek|check|review|periksa|verifikasi/.test(text)) {
+    return 'Buka sumber yang perlu diperiksa dan catat satu hasil pengecekan pertama.';
+  }
+  if (/call|telepon|telp|meeting|rapat/.test(text)) {
+    return 'Tulis satu tujuan atau pertanyaan utama, lalu mulai kontak atau persiapannya.';
+  }
+  if (/buat|membuat|design|desain|artikel|video/.test(text)) {
+    return 'Buka alat atau dokumen kerjanya dan buat kerangka paling sederhana selama lima menit.';
+  }
+  return 'Buka tugas ini dan kerjakan langkah pertama yang terlihat selama lima menit saja.';
+}
+
+// Local Smart Focus: no external AI, no access code, no balance, and no network request.
+async function showNextAction() {
+  try {
+    let source = Array.isArray(todoCache) ? todoCache : [];
+    if (!source.length) {
+      const { data, error } = await withTimeout(sb.from('todos').select('*').order('due_date', { ascending: true }).limit(500));
+      if (error) throw error;
+      source = applyOwner(data || []);
+      todoCache = source;
+    }
+    const today = todayStr();
+    const open = source
+      .filter(t => !t.is_done && !isFocusSnoozed(t.id))
+      .sort((a,b) => focusScore(b,today) - focusScore(a,today));
+    if (!open.length) {
+      document.getElementById('focus-quick-input')?.focus();
+      alert('No open tasks were found. Capture one small next step first.');
+      return;
+    }
+    const task = open[0];
+    const clean = localTaskCleanText(task) || 'Untitled task';
+    const reason = localTaskReason(task, today);
+    const smallest = localSmallestStep(task);
+    const after = open.length > 1
+      ? `Setelah selesai, tekan Done. Berikutnya WorkBoard akan menampilkan: ${localTaskCleanText(open[1])}.`
+      : 'Setelah selesai, tekan Done. Tidak ada tugas terbuka lain yang perlu dipikirkan sekarang.';
+    _aiCurrentSource = null;
+    _aiCurrentAction = '';
+    _aiLastProvider = 'local';
+    _aiLastResult = `Kerjakan Sekarang: ${clean}\n\nKenapa ini dulu: ${reason}\n\nLangkah terkecil: ${smallest}\n\nSetelah itu: ${after}`;
+    const body = `<div class="local-focus-result">
+      <div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#5D7658;margin-bottom:6px">Kerjakan Sekarang</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:10px">${escHtml(clean)}</div>
+      <div style="margin-bottom:8px"><strong>Kenapa ini dulu:</strong> ${escHtml(reason)}</div>
+      <div style="margin-bottom:8px"><strong>Langkah terkecil:</strong> ${escHtml(smallest)}</div>
+      <div><strong>Setelah itu:</strong> ${escHtml(after)}</div>
+    </div>
+    <div style="font-size:10.5px;color:var(--text3);margin-top:9px">Selected locally from your private To Do data. No writing was sent to Gemini.</div>`;
+    openAiModal('🧭 What should I do next?', { body, providerLabel:'Smart Focus · Local', providerKind:'local', requiresAccess:false, showCopy:true });
+    setAiResultControls(false);
+    const card = document.querySelector('#focus-top3 .focus-task');
+    if (card && card.animate) card.animate([{transform:'scale(1)'},{transform:'scale(1.012)'},{transform:'scale(1)'}],{duration:520});
+  } catch (error) {
+    console.error('Local Smart Focus error:', error);
+    alert('Smart Focus could not select a task: ' + (error.message || 'Unknown error'));
+  }
 }
 
 // Turn raw column names into more human-friendly labels
@@ -6719,6 +6814,7 @@ function displayNotepad(items) {
           <div class="np-page-date">${d}</div>
         </div>
         <div class="np-page-actions">
+          <button class="ev-del" onclick="openWritingAssistant('notepad','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
           <button class="ev-del" onclick="editNpItem('${active.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
           <button class="ev-del" onclick="toggleNpPin('${active.id}',${active.is_pinned})" title="${active.is_pinned?'Unpin':'Pin'}"><i class="ti ti-pin"></i></button>
           <button class="ev-del" onclick="delNpItem('${active.id}')" title="Delete"><i class="ti ti-x"></i></button>
@@ -6885,7 +6981,7 @@ function displayLogbook(data) {
           <div class="np-page-date"><span class="log-type lt-${active.type}" style="margin-right:6px">${typeLabel[active.type]||active.type}</span>${d}${trackerBadge}</div>
         </div>
         <div class="np-page-actions">
-          <button class="ev-del" onclick="aiSummarizeLog('${active.id}')" title="Summarize with AI"><i class="ti ti-sparkles"></i></button>
+          <button class="ev-del" onclick="openWritingAssistant('logbook','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
           <button class="ev-del" onclick="editLog('${active.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
           <button class="ev-del" onclick="delLog('${active.id}')" title="Delete"><i class="ti ti-x"></i></button>
         </div>
@@ -6931,7 +7027,7 @@ function _renderNoteCards(data) {
           <div class="np-page-date">${d} · <span class="note-cat nc-${active.category||'ops'}">${catLabel[active.category]||active.category||''}</span></div>
         </div>
         <div class="np-page-actions">
-          <button class="ev-del" onclick="aiSummarizeNote('${active.id}')" title="Summarize with AI"><i class="ti ti-sparkles"></i></button>
+          <button class="ev-del" onclick="openWritingAssistant('note','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
           <button class="ev-del" onclick="editNote('${active.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
           <button class="ev-del" onclick="togglePin('${active.id}',${active.is_pinned})" title="${active.is_pinned?'Unpin':'Pin'}"><i class="ti ti-pin"></i></button>
           <button class="ev-del" onclick="delNote('${active.id}')" title="Delete"><i class="ti ti-x"></i></button>
@@ -10235,20 +10331,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </script>
 
-<!-- ── AI Assistant Modal — OpenAI via Supabase Edge Function ── -->
+<!-- ── Smart Focus / Gemini Writing Assistant Modal ── -->
 <div class="ai-modal-overlay" id="ai-modal-overlay" onclick="if(event.target===this) closeAiModal()">
   <div class="ai-modal-box">
     <div class="ai-modal-head">
       <div class="ai-modal-title-wrap">
-        <span id="ai-modal-title">✨ AI Assistant</span>
-        <span class="ai-provider-badge" id="ai-modal-provider">AI</span>
+        <span id="ai-modal-title">✨ Writing Assistant</span>
+        <span class="ai-provider-badge" id="ai-modal-provider">Assistant</span>
       </div>
-      <button class="btn-sm" onclick="closeAiModal()" aria-label="Close AI assistant"><i class="ti ti-x"></i></button>
+      <button class="btn-sm" onclick="closeAiModal()" aria-label="Close assistant"><i class="ti ti-x"></i></button>
     </div>
     <div class="ai-modal-body" id="ai-modal-body">Loading...</div>
     <div class="ai-modal-foot">
-      <button class="btn-sm" onclick="resetAiAccessCode()" title="Clear the AI access code for this browser tab"><i class="ti ti-key-off"></i> Reset Access</button>
-      <button class="btn-sm" id="ai-modal-copy-btn" onclick="copyAiResult()"><i class="ti ti-copy"></i> Copy</button>
+      <button class="btn-sm" id="ai-modal-reset-btn" onclick="resetAiAccessCode()" title="Clear the Gemini access code for this browser tab"><i class="ti ti-key-off"></i> Reset Access</button>
+      <button class="btn-sm" id="ai-modal-replace-btn" onclick="replaceAiOriginal()" style="display:none" title="Replace the selected writing after confirmation"><i class="ti ti-replace"></i> Replace Original</button>
+      <button class="btn-sm" id="ai-modal-copy-btn" onclick="copyAiResult()" style="display:none"><i class="ti ti-copy"></i> Copy</button>
       <button class="btn-sm btn-primary" onclick="closeAiModal()">Close</button>
     </div>
   </div>
