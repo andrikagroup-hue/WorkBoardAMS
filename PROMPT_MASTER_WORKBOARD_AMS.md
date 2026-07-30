@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 30 Juli 2026  
-**Pasangan kode terbaru:** `index(61).html`  
-**SHA-256 pasangan kode:** `d482f4c8f99c0f44bdd0f51ef0c7551c293f0a953852d55d43b6d9ced54957f8`
+**Pasangan kode terbaru:** `index(65).html`  
+**SHA-256 pasangan kode:** `2c72af2ccf2450f30bf381307c90c86d5d2e546801fe63f0672758b9b9141904`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(61).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(65).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -317,7 +317,7 @@ Aturan:
 | Home | Home / One Thing Now | `todos`; owner-only; satu input terpadu untuk Today, Follow Up, Waiting Reply, dan Brain Dump serta kartu ringkas untuk masing-masing hasil |
 | Daily | Daily Schedule | `schedule_events`, public + private |
 | Daily | Logbook | `logbook_entries`, lampiran Supabase Storage, tautan ke `time_plan_tracker`, dan Smart Next-Step Suggestion |
-| Projects | Tracker tab | Statistik dan Project/Milestone memakai `time_plan_tracker`; `tracker_items` masih dipakai Result dan fungsi lama |
+| Projects | Tracker tab | ADHD Project Focus, visual overview, quick actions, card lists, dan detailed table memakai `time_plan_tracker`; `tracker_items` masih dipakai Result dan fungsi lama |
 | Projects | Kanban tab | Visualisasi dan perubahan status dari `time_plan_tracker` |
 | Projects | Gantt tab | Timeline dari `time_plan_tracker` |
 | Projects | Matrix tab | Gabungan To Do belum selesai dari `todos` dan item aktif `time_plan_tracker` |
@@ -393,7 +393,7 @@ All Links saat ini memiliki:
 ### 15.7 Kondisi UI yang perlu dijaga
 
 - Seluruh teks UI baru wajib English.
-- Masih mungkin ada teks Indonesia lama di `index(61).html`; itu adalah technical debt, bukan alasan mengubah isi data user.
+- Masih mungkin ada teks Indonesia lama di `index(65).html`; itu adalah technical debt, bukan alasan mengubah isi data user.
 - Jangan melakukan penerjemahan massal ketika tugas hanya menyentuh satu fitur. Terjemahkan bagian terkait secara terarah atau lakukan audit bahasa sebagai tugas khusus.
 - Desain tetap light theme dan responsif.
 - Perubahan visual tidak boleh menghapus event handler, ID, tombol aksi, filter, atau fungsi penyimpanan.
@@ -417,7 +417,7 @@ All Links saat ini memiliki:
 - `Home` menjadi panel awal ketika WorkBoard dibuka pada desktop dan mobile.
 - Home memakai tabel `todos` yang sudah ada; tidak memerlukan tabel atau kolom database baru.
 - Data tetap private dan difilter dengan `applyOwner()` untuk user aktif.
-- Header menampilkan sapaan sesuai waktu, tombol `What should I do next?`, serta satu tugas utama sebagai `One Thing Now`.
+- Header menampilkan sapaan sesuai waktu, tombol lokal `What should I do next?`, serta satu tugas utama sebagai `One Thing Now`.
 - Quick Capture menerima satu kalimat dan tombol Enter dengan mode `Today`, `Follow Up`, `Waiting Reply`, dan `Brain Dump`.
 - Penanda internal `[Today]`, `[Follow Up]`, `[Waiting]`, dan `[Inbox]` disimpan di `todos.text` tetapi disembunyikan dari kartu Home.
 - Maksimal dua tugas lain tersedia sebagai `Up Next`, tetapi dibuat tertutup secara default agar Home hanya menonjolkan satu pekerjaan utama; urutan mempertimbangkan overdue, deadline hari ini, follow-up, dan priority.
@@ -433,7 +433,7 @@ All Links saat ini memiliki:
 ### 15.10 Projects Workspace
 
 - Sidebar hanya menampilkan satu item `Projects Workspace`.
-- Tracker, Kanban, Gantt, Matrix, dan Recurring tetap memakai panel dan fungsi render lama.
+- Kanban, Gantt, Matrix, dan Recurring tetap memakai panel dan fungsi render lama. Tracker memakai tampilan ADHD Project Focus di atas data `time_plan_tracker` yang sama tanpa menghapus detailed table lama.
 - Perpindahan antar-tampilan dilakukan melalui tab sticky di bagian atas area konten.
 - Tampilan proyek terakhir disimpan pada `localStorage` key `wb_last_project_view`.
 - Top title tetap `Projects` saat berpindah tab.
@@ -454,6 +454,50 @@ All Links saat ini memiliki:
 - Semua item baru dari Home Capture dan saran Logbook bersifat private serta owner-only.
 - Tidak diperlukan SQL atau migrasi database.
 
+### 15.12 Smart Focus lokal dan Gemini Writing Assistant
+
+- WorkBoard memakai dua lapisan bantuan yang berbeda dan tidak saling bergantung:
+  1. **Smart Focus lokal** untuk memilih pekerjaan berikutnya.
+  2. **Gemini Writing Assistant** untuk memproses tulisan yang dipilih user.
+- Tombol `What should I do next?` berjalan sepenuhnya di browser menggunakan urutan `focusScore`, deadline, overdue, Follow Up, Waiting Reply, dan priority.
+- Smart Focus lokal tidak memanggil AI eksternal, tidak memakai saldo, tidak memakai kuota, tidak meminta access code, dan tidak mengirim daftar To Do keluar dari WorkBoard.
+- Smart Focus menampilkan tepat satu pekerjaan, alasan pemilihannya, langkah terkecil 2–10 menit, dan tindakan setelahnya.
+- Gemini dipanggil hanya ketika user membuka Writing Assistant pada Logbook, Notes, atau Notepad dan memilih salah satu tindakan:
+  - `Summarize`
+  - `Polish Writing`
+  - `Make Professional`
+  - `Make Shorter`
+  - `Extract Follow-Ups`
+- Hanya isi tulisan yang sedang dipilih yang boleh dikirim ke Gemini. Seluruh database, panel lain, data user lain, dan Password Manager tidak boleh ikut dikirim.
+- Hasil Gemini dapat disalin. Untuk Summarize, Polish, Professional, dan Shorter, user dapat memilih `Replace Original`; penggantian wajib meminta konfirmasi dan hanya memperbarui field `body` pada item yang dipilih.
+- `Extract Follow-Ups` tidak boleh mengganti tulisan asli secara otomatis.
+- Penyedia eksternal adalah Gemini melalui Supabase Edge Function bernama `workboard-ai`.
+- `GEMINI_API_KEY` hanya boleh disimpan sebagai Supabase Edge Function secret dan tidak boleh berada di `index.html`, GitHub, screenshot, prompt, atau chat.
+- Browser memanggil `${SUPABASE_URL}/functions/v1/workboard-ai` menggunakan Supabase anon JWT yang sudah ada serta header terpisah `x-workboard-ai-key`.
+- WorkBoard meminta `WORKBOARD_AI_ACCESS_KEY` sekali per browser tab dan menyimpannya hanya pada `sessionStorage` key `wb_gemini_access_code`.
+- Edge Function membatasi origin, metode HTTP, panjang input, panjang output, dan memvalidasi access code sebelum memanggil Gemini API.
+- Model default Edge Function yang telah dideploy adalah `gemini-3.1-flash-lite`; model dapat diganti melalui secret `GEMINI_MODEL` tanpa mengubah HTML.
+- Tidak ada Puter.js fallback. Kegagalan atau habisnya kuota Gemini hanya boleh menonaktifkan pengolahan tulisan; Smart Focus lokal dan seluruh WorkBoard harus tetap berjalan.
+- Setup Gemini tidak memerlukan SQL, tetapi memerlukan deploy Edge Function dan secrets `GEMINI_API_KEY` serta `WORKBOARD_AI_ACCESS_KEY`.
+- Karena Supabase Auth masih ditunda, access code adalah pengaman tambahan dan bukan pengganti autentikasi per user.
+
+
+### 15.13 Tracker ADHD Project Focus
+
+- Tracker tetap mempertahankan visual dashboard: empat kartu statistik, progress bar, Status Summary, dan Category Breakdown berbentuk donut.
+- Bagian paling atas menampilkan tepat satu `One Project Now` yang dipilih lokal dari project aktif berdasarkan overdue, due today, due dalam tiga hari, priority, dan status In Progress.
+- Item `Waiting / On Hold` tidak dipilih sebagai fokus utama selama masih ada project lain yang dapat dikerjakan.
+- Statistik Tracker memakai label `Active Projects`, `Done`, `Needs Attention`, dan `Overall Progress`; warna latar memakai pastel kalem.
+- Pada desktop visual overview tetap terbuka. Pada mobile visual overview dapat dilipat agar halaman tidak terlalu panjang.
+- Quick Add hanya mewajibkan satu field `What needs to happen?`; Assignment, Priority, Category, Status, Schedule, Start Date, Due Date, Notes, dan Privacy berada di `Add more details`.
+- Status awal project baru adalah `Not Started`, priority awal `Medium`, dan pilihan privacy terakhir tidak direset setelah penyimpanan.
+- Project cards menyediakan quick actions `Start`, `Done`, `Waiting`, `Today`, `Add Update`, dan `Edit`.
+- `Start` mengisi Start Date hari ini bila kosong. `Today` menetapkan Due Date hari ini. `Waiting` memakai status `on_hold`.
+- `Add Update` membuka form Logbook, mengisi judul project, dan memilih link Tracker secara otomatis.
+- Maksimal tiga project ditampilkan pada `Needs Attention`; project aktif lain, project selesai, dan detailed table disimpan dalam bagian yang dapat dibuka ketika diperlukan.
+- Detailed table, filter, inline edit, delete, public/private visibility, Kanban, Gantt, Matrix, Recurring, Result, serta tautan Logbook tetap menggunakan data dan ID lama.
+- Tracker tidak lagi menampilkan input tanggal yang sebelumnya tidak memfilter statistik.
+- Fitur ini tidak membutuhkan SQL, tabel, atau kolom database baru.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
@@ -473,18 +517,46 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Satu input Home dapat menyimpan Today, Follow Up, Waiting Reply, atau Brain Dump tanpa membuat tabel baru.
 - [ ] Follow Up eksplisit tidak tampil ganda sebagai Waiting Reply.
 - [ ] Kanban, Gantt, Decision Matrix, Recurring Task, dan Logbook tetap sinkron dengan `time_plan_tracker`.
+- [ ] Tracker tetap menampilkan visual overview lengkap pada desktop dan dapat dilipat pada mobile.
+- [ ] `One Project Now` hanya menampilkan satu project aktif dan tidak memilih Waiting/On Hold jika ada pilihan kerja lain.
+- [ ] Quick Add Tracker dapat menyimpan hanya dari satu field subject; More Details tetap menyimpan semua field lama.
+- [ ] Tombol Start, Done, Waiting, Today, Add Update, dan Edit memperbarui data yang sama tanpa membuat duplikat.
+- [ ] Detailed table, filter, edit, delete, dan privacy Tracker tetap tersedia.
 - [ ] `tracker_items` tidak dihapus tanpa audit Result dan semua referensinya.
 - [ ] Menu admin desktop dan mobile tetap tersembunyi untuk non-admin.
 - [ ] UI baru menggunakan English.
 - [ ] Draft Logbook, Notes, To Do, Notepad, dan Work Talk tetap pulih setelah berpindah panel.
 - [ ] Password Manager dan field sensitif tidak masuk ke penyimpanan draft.
 - [ ] Prompt Master ikut diperbarui jika kondisi implementasi berubah.
+- [ ] `GEMINI_API_KEY` tidak pernah ditulis di HTML atau file publik.
+- [ ] Pemanggilan Gemini tetap melalui Edge Function `workboard-ai`.
+- [ ] Access code Gemini tidak disimpan lebih lama dari sesi browser.
+- [ ] Tombol `What should I do next?` tidak memanggil layanan eksternal.
+- [ ] Logbook, Notes, dan Notepad memiliki lima tindakan Gemini tanpa mengirim panel atau database lain.
+- [ ] Puter.js tidak dimuat dan tidak dapat memunculkan popup saldo.
 
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
 
 ### 30 Juli 2026
+
+- Mengubah Tracker menjadi ADHD Project Focus tanpa menghapus visual dashboard yang disukai user.
+- Menambahkan `One Project Now`, pemeringkatan lokal project, `Needs Attention`, Other Active, Completed, dan detailed table yang dapat dibuka.
+- Mempertahankan empat stat cards, progress bar, Status Summary, serta Category Breakdown donut dengan warna pastel kalem.
+- Menambahkan Quick Add satu baris dengan More Details, default `Not Started`, dan tombol cepat Start, Done, Waiting, Today, Add Update, serta Edit.
+- `Add Update` membuka Logbook dengan project Tracker sudah tertaut. Input tanggal Tracker lama yang tidak berfungsi sebagai filter dihapus.
+- Tidak ada SQL, tabel, atau kolom baru.
+
+- Memisahkan bantuan menjadi Smart Focus lokal dan Gemini Writing Assistant.
+- Tombol Home `What should I do next?` sekarang memilih satu tugas secara lokal tanpa API, saldo, kuota, atau pengiriman data keluar.
+- Smart Focus lokal memberi alasan, langkah terkecil, dan tindakan berikutnya berdasarkan deadline, overdue, Follow Up, Waiting Reply, serta priority.
+- Menghapus Puter.js dan fallback saldo agar popup `Low Balance` tidak muncul lagi.
+- Mengganti pemrosesan tulisan menjadi Gemini melalui Edge Function `workboard-ai`; API key tetap hanya berada di Supabase secret `GEMINI_API_KEY`.
+- Menambahkan Writing Assistant pada Logbook, Notes, dan Notepad dengan tindakan Summarize, Polish Writing, Make Professional, Make Shorter, dan Extract Follow-Ups.
+- Menambahkan pilihan Copy dan Replace Original dengan konfirmasi; Extract Follow-Ups tidak dapat menimpa tulisan asli.
+- Access code Gemini disimpan hanya pada sesi tab melalui `wb_gemini_access_code`.
+- Tidak perlu SQL atau migrasi database.
 
 - Memperbaiki struktur HTML mobile: blok Attendance hingga Work-Break Alarm dikembalikan ke dalam tag `<script>`.
 - Mencegah source code JavaScript tampil sebagai teks panjang di bawah Home pada layar HP.

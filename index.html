@@ -499,6 +499,80 @@ textarea { resize: vertical; }
 .task-prog-fill { height: 100%; background: var(--accent); border-radius: 2px; }
 .tracker-add { background: var(--bg2); border-radius: var(--radius); padding: 12px; margin-top: 12px; }
 
+/* ── Tracker ADHD Focus — keeps the visual dashboard, reduces decision load ── */
+.tracker-focus-card {
+  background:#EEF4EC; border:1px solid #C8D5C3; border-radius:var(--radius-lg);
+  padding:16px; margin-bottom:14px; box-shadow:0 3px 14px rgba(75,95,72,.07);
+}
+.tracker-focus-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.tracker-focus-eyebrow { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#59705A; }
+.tracker-focus-title { font-size:18px; font-weight:800; color:var(--text1); line-height:1.35; margin-top:4px; }
+.tracker-focus-meta { display:flex; gap:7px; flex-wrap:wrap; margin-top:7px; }
+.tracker-meta-chip { font-size:10.5px; padding:3px 8px; border-radius:999px; background:rgba(255,255,255,.68); border:1px solid rgba(47,99,100,.14); color:var(--text2); }
+.tracker-focus-note { font-size:11.5px; color:var(--text2); line-height:1.5; margin-top:8px; }
+.tracker-focus-actions, .pt-card-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:11px; }
+.pt-action-btn { border:1px solid var(--border2); background:rgba(255,255,255,.78); color:var(--text2); border-radius:7px; padding:5px 9px; font-size:10.5px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+.pt-action-btn:hover { background:var(--surface); }
+.pt-action-btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+.pt-action-btn.waiting { background:#F7F1E7; border-color:#DED1BC; color:#765C34; }
+.pt-action-btn.done { background:#EFF5EE; border-color:#C9D8C5; color:#416044; }
+.pt-action-btn.today { background:#EEF3F6; border-color:#C8D6DE; color:#375665; }
+.tracker-visual-details { margin-bottom:14px; }
+.tracker-visual-details > summary { display:none; }
+.tracker-visual-inner { display:block; }
+#tracker-stats .stat-card:nth-child(1) { background:#EEF3F6; }
+#tracker-stats .stat-card:nth-child(2) { background:#EFF5EE; }
+#tracker-stats .stat-card:nth-child(3) { background:#F8EEF1; }
+#tracker-stats .stat-card:nth-child(4) { background:#F7F1E7; }
+.tracker-quick-add {
+  background:#F3EFF6; border:1px solid #D4C7DC; border-radius:var(--radius-lg);
+  padding:14px; margin:14px 0; box-shadow:0 2px 10px rgba(80,60,70,.045);
+}
+.tracker-quick-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; }
+.tracker-quick-title { font-size:12px; font-weight:800; color:#584664; text-transform:uppercase; letter-spacing:.04em; }
+.tracker-quick-row { display:flex; align-items:center; gap:8px; }
+.tracker-quick-row input { flex:1; min-width:0; font-size:13px; padding:9px 11px; background:rgba(255,255,255,.78); }
+.tracker-more-details { margin-top:9px; }
+.tracker-more-details > summary { cursor:pointer; font-size:10.5px; font-weight:700; color:var(--text2); padding:4px 0; }
+.tracker-more-details[open] > summary { margin-bottom:7px; }
+.pt-section { margin-top:14px; }
+.pt-section-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.pt-section-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--text2); }
+.pt-section-count { font-size:10px; min-width:22px; text-align:center; padding:2px 7px; border-radius:999px; background:var(--bg2); color:var(--text2); }
+.pt-card-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.pt-project-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; box-shadow:0 2px 8px rgba(80,60,70,.045); }
+.pt-project-card.attention { background:#F8EEF1; border-color:#E1C8CF; }
+.pt-project-card.completed { background:#EFF5EE; border-color:#C9D8C5; opacity:.88; }
+.pt-project-title { font-size:12.5px; font-weight:750; color:var(--text1); line-height:1.4; }
+.pt-project-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+.pt-project-note { font-size:10.5px; color:var(--text2); line-height:1.45; margin-top:7px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.pt-stale-note { font-size:10px; color:#9A5B4C; margin-top:6px; }
+.pt-collapsible { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); margin-top:12px; overflow:hidden; }
+.pt-collapsible > summary { cursor:pointer; list-style:none; padding:11px 13px; font-size:11px; font-weight:800; color:var(--text2); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.pt-collapsible > summary::-webkit-details-marker { display:none; }
+.pt-collapsible > summary::before { content:'›'; margin-right:6px; transition:transform .15s; }
+.pt-collapsible[open] > summary::before { transform:rotate(90deg); }
+.pt-collapsible-body { padding:0 12px 12px; }
+.pt-all-table-wrap { overflow-x:auto; }
+.pt-empty-card { padding:16px; text-align:center; font-size:11.5px; color:var(--text3); border:1px dashed var(--border2); border-radius:9px; }
+.pt-filter-row { margin-bottom:10px; display:flex; flex-wrap:wrap; gap:6px; }
+.pt-filter-row input, .pt-filter-row select { min-width:145px; }
+@media (max-width:980px) { .pt-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:700px) {
+  .tracker-focus-head { flex-direction:column; }
+  .tracker-visual-details { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+  .tracker-visual-details > summary { display:block; cursor:pointer; padding:11px 13px; font-size:11px; font-weight:800; color:var(--text2); list-style:none; }
+  .tracker-visual-details > summary::-webkit-details-marker { display:none; }
+  .tracker-visual-inner { padding:0 10px 10px; }
+  .tracker-quick-row { flex-direction:column; align-items:stretch; }
+  .tracker-quick-row .btn-sm { justify-content:center; }
+  .pt-card-grid { grid-template-columns:1fr; }
+  .pt-filter-row { flex-direction:column; }
+  .pt-filter-row input, .pt-filter-row select { width:100% !important; }
+  .tracker-cards { grid-template-columns:1fr 1fr; }
+}
+
+
 .kanban-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: flex-start; }
 .kanban-col { background: var(--bg2); border-radius: 10px; padding: 10px; min-width: 240px; max-width: 260px; flex-shrink: 0; }
 .kanban-col-header { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; padding: 4px 6px 8px; }
@@ -1884,125 +1958,152 @@ body.mobile-hub-open { overflow:hidden; }
       <!-- ── Time Plan Tracker ──────────────── -->
       <div class="panel" id="panel-tracker">
         <div id="tracker-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup diperlukan:</strong> Kolom baru belum ada di database. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh halaman:<br>
-          <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE tracker_items
-  ADD COLUMN IF NOT EXISTS assignment TEXT,
-  ADD COLUMN IF NOT EXISTS start_date DATE,
-  ADD COLUMN IF NOT EXISTS due_date DATE;</code>
-          <button onclick="document.getElementById('tracker-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
-        </div>
-        <div class="sched-controls">
-          <label style="font-size:12px;color:var(--text2)">Date:</label>
-          <input type="date" id="tracker-date" class="input-today" onchange="renderTracker()" style="font-size:12px" />
+          ⚠️ <strong>Setup required:</strong> New tracker columns are not available yet. Run the provided SQL in Supabase SQL Editor, then refresh this page.
+          <button onclick="document.getElementById('tracker-migration-banner').style.display='none'" style="margin-left:8px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
 
-        <div class="tracker-cards" id="tracker-stats">
-          <div class="stat-card"><div class="stat-label">Total Activities</div><div class="stat-val">—</div></div>
-          <div class="stat-card"><div class="stat-label">Done</div><div class="stat-val">—</div></div>
-          <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-val">—</div></div>
-          <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-val">—</div></div>
+        <!-- ADHD Focus: one project is visible before the visual overview -->
+        <div class="tracker-focus-card" id="pt-focus-card">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Choosing one project...</div>
         </div>
 
-        <div class="tracker-progress-wrap">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">
-            <span>Overall Tasks Completed</span>
-            <span id="tracker-progress-label">0%</span>
-          </div>
-          <div class="tracker-progress-track"><div class="tracker-progress-fill" id="tracker-progress-fill" style="width:0%"></div></div>
-        </div>
+        <!-- Visual dashboard is preserved; on mobile it can be collapsed -->
+        <details class="tracker-visual-details" id="tracker-visual-overview" open>
+          <summary>▾ Visual Overview</summary>
+          <div class="tracker-visual-inner">
+            <div class="tracker-cards" id="tracker-stats">
+              <div class="stat-card"><div class="stat-label">Active Projects</div><div class="stat-val">—</div></div>
+              <div class="stat-card"><div class="stat-label">Done</div><div class="stat-val">—</div></div>
+              <div class="stat-card"><div class="stat-label">Needs Attention</div><div class="stat-val">—</div></div>
+              <div class="stat-card"><div class="stat-label">Overall Progress</div><div class="stat-val">—</div></div>
+            </div>
 
-        <div class="tracker-charts-grid">
-          <div class="tchart-card">
-            <div class="tchart-title">Status Summary</div>
-            <div id="tracker-status-chart"></div>
-          </div>
-          <div class="tchart-card">
-            <div class="tchart-title">Category Breakdown</div>
-            <div class="tcat-donut-wrap">
-              <div class="tcat-donut" id="tracker-category-donut"></div>
-              <div class="tcat-legend" id="tracker-category-legend"></div>
+            <div class="tracker-progress-wrap">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">
+                <span>Overall Tasks Completed</span>
+                <span id="tracker-progress-label">0%</span>
+              </div>
+              <div class="tracker-progress-track"><div class="tracker-progress-fill" id="tracker-progress-fill" style="width:0%"></div></div>
+            </div>
+
+            <div class="tracker-charts-grid">
+              <div class="tchart-card">
+                <div class="tchart-title">Status Summary</div>
+                <div id="tracker-status-chart"></div>
+              </div>
+              <div class="tchart-card">
+                <div class="tchart-title">Category Breakdown</div>
+                <div class="tcat-donut-wrap">
+                  <div class="tcat-donut" id="tracker-category-donut"></div>
+                  <div class="tcat-legend" id="tracker-category-legend"></div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </details>
 
-
-
-
-
-        <hr style="margin:28px 0 20px;border:none;border-top:1px solid var(--border)">
-
-        <div class="section-title">📋 Project / Milestone Tracker</div>
         <div id="pt-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup required:</strong> The <code>time_plan_tracker</code> table doesn't exist in the database yet. Run the provided seed SQL in the Supabase SQL Editor, then refresh the page.
+          ⚠️ <strong>Setup required:</strong> The <code>time_plan_tracker</code> table does not exist yet. Run the seed SQL in Supabase SQL Editor, then refresh this page.
         </div>
-        <div class="search-filter-wrap" style="margin-bottom:10px;display:flex;flex-wrap:wrap">
-          <input class="global-search" id="pt-search" placeholder="Search subject or notes..." oninput="onPtSearchInput()" autocomplete="off" style="width:220px">
-          <select class="global-filter" id="pt-status-filter" onchange="renderProjectTracker()">
-            <option value="">All Statuses</option>
-            <option value="done">Done</option>
-            <option value="in_progress">In Progress</option>
-            <option value="not_started">Not Started</option>
-            <option value="skipped">Skipped</option>
-            <option value="on_hold">On Hold</option>
-            <option value="overdue">Overdue</option>
-          </select>
-          <select class="global-filter" id="pt-assign-filter" onchange="renderProjectTracker()">
-            <option value="">All Assignments</option>
-            <option value="Notaris">Notaris</option>
-            <option value="Dirut">Dirut</option>
-            <option value="Admin">Admin</option>
-            <option value="Web Developer">Web Developer</option>
-          </select>
-          <select class="global-filter" id="pt-category-filter" onchange="renderProjectTracker()">
-            <option value="">All Categories</option>
-            <option value="Legalitas">Legalitas</option>
-            <option value="Website">Website</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Sales">Sales</option>
-            <option value="Administrasi">Administrasi</option>
-            <option value="General Affairs">General Affairs</option>
-            <option value="Finance">Finance</option>
-          </select>
-          <select class="global-filter" id="pt-priority-filter" onchange="renderProjectTracker()">
-            <option value="">All Priorities</option>
-            <option value="high">🔴 High</option>
-            <option value="medium">🟡 Medium</option>
-            <option value="low">🟢 Low</option>
-          </select>
-        </div>
-        <table class="task-table">
-          <thead>
-            <tr>
-              <th>Subject</th>
-              <th>Assignment</th>
-              <th>Priority</th>
-              <th>Category</th>
-              <th>Status</th>
-              <th>Schedule</th>
-              <th>Start Date</th>
-              <th>Due On</th>
-              <th>Notes</th>
-              <th>Akses</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="pt-tbody">
-            <tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading...</td></tr>
-          </tbody>
-        </table>
 
-        <div class="tracker-add">
-          <div class="section-title">Add Project Item</div>
-          <div class="form-row">
-            <input id="pt-new-subject" placeholder="Subject (mis: NPWP PT)..." style="flex:2" />
-            <input id="pt-new-assignment" placeholder="Assignment (mis: Notaris)" style="flex:1" />
-            <select id="pt-new-priority" title="Priority">
-              <option value="low">🟢 Low</option>
-              <option value="medium" selected>🟡 Medium</option>
-              <option value="high">🔴 High</option>
-            </select>
-            <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-              <select id="pt-new-category" title="Category" onchange="ptToggleCustomCategory('pt-new')">
+        <!-- Capture first; details are optional -->
+        <div class="tracker-quick-add" id="pt-quick-add">
+          <div class="tracker-quick-head">
+            <div class="tracker-quick-title">＋ Quick Add Project</div>
+            <span style="font-size:10.5px;color:var(--text3)">Capture first. Organize later.</span>
+          </div>
+          <div class="tracker-quick-row">
+            <input id="pt-new-subject" placeholder="What needs to happen?" onkeydown="if(event.key==='Enter'){event.preventDefault();addProjectRow()}" />
+            <button class="btn-sm btn-primary" id="pt-save-btn" onclick="addProjectRow()"><i class="ti ti-plus"></i> Add Project</button>
+          </div>
+          <details class="tracker-more-details" id="pt-new-more">
+            <summary>▸ Add more details</summary>
+            <div class="form-row">
+              <input id="pt-new-assignment" placeholder="Assignment / PIC" />
+              <select id="pt-new-priority" title="Priority">
+                <option value="low">🟢 Low</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="high">🔴 High</option>
+              </select>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                <select id="pt-new-category" title="Category" onchange="ptToggleCustomCategory('pt-new')">
+                  <option value="Legalitas">Legalitas</option>
+                  <option value="Website">Website</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Sales">Sales</option>
+                  <option value="Administrasi">Administrasi</option>
+                  <option value="General Affairs">General Affairs</option>
+                  <option value="Finance">Finance</option>
+                  <option value="__custom__">✏️ Other Category...</option>
+                </select>
+                <input id="pt-new-category-custom" placeholder="Type another category..." style="display:none" />
+              </div>
+              <select id="pt-new-status">
+                <option value="not_started" selected>Not Started</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Done</option>
+                <option value="skipped">Skipped</option>
+                <option value="on_hold">Waiting / On Hold</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <input id="pt-new-schedule" placeholder="Schedule duration" />
+              <label style="font-size:11px;color:var(--text2);align-self:center">Start:</label>
+              <input id="pt-new-start" type="date" title="Start Date" />
+              <label style="font-size:11px;color:var(--text2);align-self:center">Due:</label>
+              <input id="pt-new-due" type="date" title="Due Date" />
+              <input id="pt-new-notes" placeholder="Notes..." style="flex:2" />
+              <select id="pt-new-privacy" title="Who can view this data">
+                <option value="false">🌐 Public</option>
+                <option value="true">🔒 Private</option>
+              </select>
+            </div>
+          </details>
+        </div>
+
+        <section class="pt-section" id="pt-attention-wrap" style="display:none">
+          <div class="pt-section-head">
+            <div class="pt-section-title">⚠ Needs Attention</div>
+            <span class="pt-section-count" id="pt-attention-count">0</span>
+          </div>
+          <div class="pt-card-grid" id="pt-attention-list"></div>
+        </section>
+
+        <details class="pt-collapsible" id="pt-other-details">
+          <summary><span>Other active projects</span><span class="pt-section-count" id="pt-other-count">0</span></summary>
+          <div class="pt-collapsible-body"><div class="pt-card-grid" id="pt-other-list"></div></div>
+        </details>
+
+        <details class="pt-collapsible" id="pt-completed-details">
+          <summary><span>Completed projects</span><span class="pt-section-count" id="pt-completed-count">0</span></summary>
+          <div class="pt-collapsible-body"><div class="pt-card-grid" id="pt-completed-list"></div></div>
+        </details>
+
+        <!-- Full legacy table remains available for detailed editing -->
+        <details class="pt-collapsible" id="pt-all-details">
+          <summary><span>All Projects — detailed table</span><span class="pt-section-count" id="pt-all-count">0</span></summary>
+          <div class="pt-collapsible-body">
+            <div class="pt-filter-row">
+              <input class="global-search" id="pt-search" placeholder="Search subject or notes..." oninput="onPtSearchInput()" autocomplete="off" style="width:220px">
+              <select class="global-filter" id="pt-status-filter" onchange="renderProjectTracker()">
+                <option value="">All Statuses</option>
+                <option value="done">Done</option>
+                <option value="in_progress">In Progress</option>
+                <option value="not_started">Not Started</option>
+                <option value="skipped">Skipped</option>
+                <option value="on_hold">Waiting / On Hold</option>
+                <option value="overdue">Overdue</option>
+              </select>
+              <select class="global-filter" id="pt-assign-filter" onchange="renderProjectTracker()">
+                <option value="">All Assignments</option>
+                <option value="Notaris">Notaris</option>
+                <option value="Dirut">Dirut</option>
+                <option value="Admin">Admin</option>
+                <option value="Web Developer">Web Developer</option>
+              </select>
+              <select class="global-filter" id="pt-category-filter" onchange="renderProjectTracker()">
+                <option value="">All Categories</option>
                 <option value="Legalitas">Legalitas</option>
                 <option value="Website">Website</option>
                 <option value="Marketing">Marketing</option>
@@ -2010,33 +2111,29 @@ body.mobile-hub-open { overflow:hidden; }
                 <option value="Administrasi">Administrasi</option>
                 <option value="General Affairs">General Affairs</option>
                 <option value="Finance">Finance</option>
-                <option value="__custom__">✏️ Other Category...</option>
               </select>
-              <input id="pt-new-category-custom" placeholder="Tulis kategori lain..." style="display:none" />
+              <select class="global-filter" id="pt-priority-filter" onchange="renderProjectTracker()">
+                <option value="">All Priorities</option>
+                <option value="high">🔴 High</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+              </select>
             </div>
-            <select id="pt-new-status">
-              <option value="in_progress" selected>In Progress</option>
-              <option value="done">Done</option>
-              <option value="not_started">Not Started</option>
-              <option value="skipped">Skipped</option>
-              <option value="on_hold">On Hold</option>
-              <option value="overdue">Overdue</option>
-            </select>
-            <input id="pt-new-schedule" placeholder="Schedule (e.g: 3-5 days)" />
+            <div class="pt-all-table-wrap">
+              <table class="task-table">
+                <thead>
+                  <tr>
+                    <th>Subject</th><th>Assignment</th><th>Priority</th><th>Category</th><th>Status</th>
+                    <th>Schedule</th><th>Start Date</th><th>Due On</th><th>Notes</th><th>Access</th><th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="pt-tbody">
+                  <tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="form-row">
-            <label style="font-size:11px;color:var(--text2);align-self:center">Start:</label>
-            <input id="pt-new-start" type="date" title="Start Date" />
-            <label style="font-size:11px;color:var(--text2);align-self:center">Due:</label>
-            <input id="pt-new-due" type="date" title="Due Date" />
-            <input id="pt-new-notes" placeholder="Notes..." style="flex:2" />
-            <select id="pt-new-privacy" title="Who can view this data">
-              <option value="false">🌐 Public</option>
-              <option value="true">🔒 Privat</option>
-            </select>
-            <button class="btn-sm btn-primary" id="pt-save-btn" onclick="addProjectRow()">Add</button>
-          </div>
-        </div>
+        </details>
       </div>
 
       <!-- ── Kanban Board ────────────────────── -->
@@ -3364,19 +3461,19 @@ const PANEL_FILTER_CONFIG = {
     display: displaySchedule
   },
   tracker: {
-    placeholder: 'Search activity name / PIC...',
+    placeholder: 'Search project or PIC...',
     options: [
-      { value: 'prog', label: 'In Progress' },
+      { value: 'in_progress', label: 'In Progress' },
       { value: 'done', label: 'Done' },
       { value: 'not_started', label: 'Not Started' },
       { value: 'skipped', label: 'Skipped' },
-      { value: 'on_hold', label: 'On Hold' },
+      { value: 'on_hold', label: 'Waiting / On Hold' },
       { value: 'overdue', label: 'Overdue' }
     ],
-    searchKeys: ['name', 'assignment'],
-    match: (t, val) => t.status === val,
-    getCache: () => trackerCache,
-    display: displayTracker
+    searchKeys: ['subject', 'assignment', 'notes'],
+    match: (t, val) => ptEffectiveStatus(t) === val,
+    getCache: () => projectTrackerAllCache,
+    display: displayProjectTracker
   },
   logbook: {
     placeholder: 'Search title or note content...',
@@ -3815,25 +3912,26 @@ async function delSchedule(id) {
 // ── TIME PLAN TRACKER ──────────────────────
 async function renderTracker() {
   try {
-    const { data } = await withTimeout(sb.from('time_plan_tracker').select('status, priority, category, due_date, is_private, created_by'));
+    const { data } = await withTimeout(sb.from('time_plan_tracker').select('*'));
     const items = applyPrivacy(data) || [];
-    const total = items.length;
-    const done = items.filter(t => t.status === 'done').length;
-    const prog = total ? Math.round(done / total * 100) : 0;
-    const overdue = items.filter(t => ptEffectiveStatus(t) === 'overdue').length;
+    const active = items.filter(t => !['done', 'skipped'].includes(ptEffectiveStatus(t)));
+    const done = items.filter(t => ptEffectiveStatus(t) === 'done').length;
+    const measurableTotal = active.length + done;
+    const prog = measurableTotal ? Math.round(done / measurableTotal * 100) : 0;
+    const attention = active.filter(ptNeedsAttention).length;
 
     document.getElementById('tracker-stats').innerHTML = `
-      <div class="stat-card"><div class="stat-label">Total Activities</div><div class="stat-val">${total}</div><div class="stat-sub">all projects</div></div>
-      <div class="stat-card"><div class="stat-label">Done</div><div class="stat-val">${done}</div><div class="stat-sub">of ${total}</div></div>
-      <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-val" style="color:var(--danger)">${overdue}</div><div class="stat-sub">status Overdue</div></div>
-      <div class="stat-card"><div class="stat-label">Progress</div><div class="stat-val">${prog}%</div><div class="stat-sub">completion rate</div></div>
+      <div class="stat-card"><div class="stat-label">Active Projects</div><div class="stat-val">${active.length}</div><div class="stat-sub">still moving</div></div>
+      <div class="stat-card"><div class="stat-label">Done</div><div class="stat-val">${done}</div><div class="stat-sub">completed projects</div></div>
+      <div class="stat-card"><div class="stat-label">Needs Attention</div><div class="stat-val" style="color:#A4575C">${attention}</div><div class="stat-sub">due soon or high priority</div></div>
+      <div class="stat-card"><div class="stat-label">Overall Progress</div><div class="stat-val">${prog}%</div><div class="stat-sub">completion rate</div></div>
     `;
     document.getElementById('tracker-progress-fill').style.width = prog + '%';
     document.getElementById('tracker-progress-label').textContent = prog + '%';
     renderTrackerCharts(items);
-    document.getElementById('badge-track').textContent = items.filter(t => t.status === 'in_progress').length;
+    document.getElementById('badge-track').textContent = active.filter(t => t.status === 'in_progress').length;
   } catch(e) {
-    // gagal load — stat card tetap tampil kosong
+    // Keep the visual skeleton visible if the tracker cannot load.
   }
 }
 
@@ -3939,6 +4037,7 @@ async function delTracker(id) {
 // Tabel terpisah dari tracker_items supaya checklist harian & progress
 // "Hari Ini" yang sudah jalan tidak ikut berubah / rusak.
 let projectTrackerCache = [];
+let projectTrackerAllCache = [];
 let editingProjectId = null;
 let ptSearchDebounce = null;
 
@@ -3947,7 +4046,7 @@ const PT_STATUS_LABEL = {
   in_progress: '🔵 In Progress',
   not_started: '⬜ Not Started',
   skipped: '⏭️ Skipped',
-  on_hold: '⏸️ On Hold',
+  on_hold: '⏳ Waiting / On Hold',
   overdue: '🔴 Overdue'
 };
 const PT_STATUS_CLASS = {
@@ -4519,44 +4618,190 @@ async function generateDueRecurringTasks() {
 
 async function renderProjectTracker() {
   const tbody = document.getElementById('pt-tbody');
-  tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading...</td></tr>';
+  const focusEl = document.getElementById('pt-focus-card');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading...</td></tr>';
+  if (focusEl) focusEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Choosing one project...</div>';
 
-  const q = (document.getElementById('pt-search').value || '').trim().replace(/[%,]/g, '');
-  const statusF = document.getElementById('pt-status-filter').value;
-  const assignF = document.getElementById('pt-assign-filter').value;
-  const categoryF = document.getElementById('pt-category-filter').value;
-  const priorityF = document.getElementById('pt-priority-filter').value;
-
-  // Search & filter (kecuali Status) dijalankan langsung di query Supabase (.ilike / .eq).
-  // Filter Status sengaja disaring belakangan di JS (bukan .eq ke DB), karena "Overdue"
-  // sekarang dihitung otomatis dari due_date lewat hari ini + status belum Done/Skipped,
-  // bukan cuma dari nilai status yang tersimpan di database.
-  let query = sb.from('time_plan_tracker').select('*').order('created_at', { ascending: false });
-  if (q) query = query.or(`subject.ilike.%${q}%,notes.ilike.%${q}%`);
-  if (assignF) query = query.eq('assignment', assignF);
-  if (categoryF) query = query.eq('category', categoryF);
-  if (priorityF) query = query.eq('priority', priorityF);
+  const q = ((document.getElementById('pt-search') || {}).value || '').trim().toLowerCase();
+  const statusF = (document.getElementById('pt-status-filter') || {}).value || '';
+  const assignF = (document.getElementById('pt-assign-filter') || {}).value || '';
+  const categoryF = (document.getElementById('pt-category-filter') || {}).value || '';
+  const priorityF = (document.getElementById('pt-priority-filter') || {}).value || '';
 
   let data, error;
-  try { ({ data, error } = await withTimeout(query)); }
-  catch (e) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ ${e.message}</td></tr>`;
+  try {
+    ({ data, error } = await withTimeout(sb.from('time_plan_tracker').select('*').order('created_at', { ascending: false })));
+  } catch (e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ ${escHtml(e.message)}</td></tr>`;
+    if (focusEl) focusEl.innerHTML = `<div class="pt-empty-card" style="color:#A4575C">Tracker could not load.</div>`;
     return;
   }
   if (error) {
     if (error.message && error.message.includes('time_plan_tracker')) {
       document.getElementById('pt-migration-banner').style.display = 'block';
-      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">No data yet.</td></tr>';
-    } else {
-      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ Failed to load: ${error.message}</td></tr>`;
+      if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">No data yet.</td></tr>';
+    } else if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:16px;color:#e53e3e;font-size:12px">⚠️ Failed to load: ${escHtml(error.message)}</td></tr>`;
     }
+    if (focusEl) focusEl.innerHTML = '<div class="pt-empty-card">No project data is available yet.</div>';
     return;
   }
+
   document.getElementById('pt-migration-banner').style.display = 'none';
-  let filtered = applyPrivacy(data || []);
+  projectTrackerAllCache = ptSortItems(applyPrivacy(data || []));
+  renderProjectFocus(projectTrackerAllCache);
+
+  let filtered = [...projectTrackerAllCache];
+  if (q) filtered = filtered.filter(t => `${t.subject || ''} ${t.notes || ''}`.toLowerCase().includes(q));
   if (statusF) filtered = filtered.filter(t => ptEffectiveStatus(t) === statusF);
+  if (assignF) filtered = filtered.filter(t => (t.assignment || '') === assignF);
+  if (categoryF) filtered = filtered.filter(t => (t.category || '') === categoryF);
+  if (priorityF) filtered = filtered.filter(t => (t.priority || '') === priorityF);
+
   projectTrackerCache = filtered;
   displayProjectTracker(filtered);
+}
+
+function ptDateOnly(value) {
+  if (!value) return null;
+  const d = new Date(value.length === 10 ? value + 'T00:00:00' : value);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function ptDaysUntil(dateValue) {
+  const due = ptDateOnly(dateValue);
+  if (!due) return null;
+  const today = ptDateOnly(todayStr());
+  return Math.round((due - today) / 86400000);
+}
+
+function ptFocusScore(t) {
+  const eff = ptEffectiveStatus(t);
+  const diff = ptDaysUntil(t.due_date);
+  let score = 0;
+  if (eff === 'overdue') score += 1000;
+  else if (diff === 0) score += 900;
+  else if (diff !== null && diff > 0 && diff <= 3) score += 780 - (diff * 20);
+  if (t.priority === 'high') score += 320;
+  else if (t.priority === 'medium') score += 150;
+  if (t.status === 'in_progress') score += 230;
+  else if (t.status === 'not_started' || !t.status) score += 100;
+  else if (t.status === 'on_hold') score -= 180;
+  if (!t.due_date) score -= 25;
+  return score;
+}
+
+function ptSortItems(items) {
+  return [...(items || [])].sort((a, b) => {
+    const scoreDiff = ptFocusScore(b) - ptFocusScore(a);
+    if (scoreDiff) return scoreDiff;
+    const dueA = a.due_date || '9999-12-31';
+    const dueB = b.due_date || '9999-12-31';
+    if (dueA !== dueB) return dueA.localeCompare(dueB);
+    return String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''));
+  });
+}
+
+function ptNeedsAttention(t) {
+  const eff = ptEffectiveStatus(t);
+  const diff = ptDaysUntil(t.due_date);
+  return eff === 'overdue' || diff === 0 || (diff !== null && diff > 0 && diff <= 3) || t.priority === 'high';
+}
+
+function ptDueText(t) {
+  const diff = ptDaysUntil(t.due_date);
+  if (diff === null) return 'No due date';
+  if (diff < 0) return `${Math.abs(diff)} day${Math.abs(diff) === 1 ? '' : 's'} overdue`;
+  if (diff === 0) return 'Due today';
+  if (diff === 1) return 'Due tomorrow';
+  return `Due in ${diff} days`;
+}
+
+function ptStaleText(t) {
+  if (t.status !== 'in_progress') return '';
+  const last = ptDateOnly(t.updated_at || t.created_at);
+  if (!last) return '';
+  const today = ptDateOnly(todayStr());
+  const days = Math.max(0, Math.round((today - last) / 86400000));
+  return days >= 4 ? `No update for ${days} days — still active?` : '';
+}
+
+function ptActionButtons(t, compact = false) {
+  const eff = ptEffectiveStatus(t);
+  const startLabel = t.status === 'in_progress' ? '' : `<button class="pt-action-btn primary" onclick="ptQuickStatus('${t.id}','in_progress')"><i class="ti ti-player-play"></i> Start</button>`;
+  const todayBtn = eff === 'done' ? '' : `<button class="pt-action-btn today" onclick="ptSetToday('${t.id}')"><i class="ti ti-calendar"></i> Today</button>`;
+  const waitingBtn = eff === 'done' ? '' : `<button class="pt-action-btn waiting" onclick="ptQuickStatus('${t.id}','on_hold')"><i class="ti ti-hourglass"></i> Waiting</button>`;
+  const doneBtn = eff === 'done' ? '' : `<button class="pt-action-btn done" onclick="ptQuickStatus('${t.id}','done')"><i class="ti ti-check"></i> Done</button>`;
+  const updateBtn = eff === 'done' && compact ? '' : `<button class="pt-action-btn" onclick="ptAddUpdate('${t.id}')"><i class="ti ti-notes"></i> Add Update</button>`;
+  return `${startLabel}${doneBtn}${waitingBtn}${todayBtn}${updateBtn}<button class="pt-action-btn" onclick="ptOpenEdit('${t.id}')"><i class="ti ti-pencil"></i> Edit</button>`;
+}
+
+function ptProjectCardHtml(t, kind = '') {
+  const eff = ptEffectiveStatus(t);
+  const stale = ptStaleText(t);
+  return `<article class="pt-project-card ${kind}">
+    <div class="pt-project-title">${t.is_private ? '🔒 ' : ''}${escHtml(t.subject || 'Untitled project')}</div>
+    <div class="pt-project-meta">
+      <span class="status-pill ${PT_STATUS_CLASS[eff] || 's-prog'}">${PT_STATUS_LABEL[eff] || eff}</span>
+      <span class="status-pill ${PT_PRIORITY_CLASS[t.priority] || 's-prio-medium'}">${PT_PRIORITY_LABEL[t.priority] || '🟡 Medium'}</span>
+      ${t.category ? `<span class="tracker-meta-chip">${escHtml(t.category)}</span>` : ''}
+      <span class="tracker-meta-chip">${escHtml(ptDueText(t))}</span>
+    </div>
+    ${t.notes ? `<div class="pt-project-note">${escHtml(t.notes)}</div>` : ''}
+    ${stale ? `<div class="pt-stale-note">⚠ ${escHtml(stale)}</div>` : ''}
+    <div class="pt-card-actions">${ptActionButtons(t, kind === 'completed')}</div>
+  </article>`;
+}
+
+function renderProjectFocus(items) {
+  const active = (items || []).filter(t => !['done', 'skipped'].includes(ptEffectiveStatus(t)));
+  const workable = active.filter(t => t.status !== 'on_hold');
+  const focus = (workable.length ? workable : active)[0] || null;
+  const focusEl = document.getElementById('pt-focus-card');
+
+  if (!focus) {
+    focusEl.innerHTML = `<div class="tracker-focus-eyebrow">🎯 One Project Now</div><div class="tracker-focus-title">No active project needs attention.</div><div class="tracker-focus-note">Use Quick Add when a new project appears.</div>`;
+  } else {
+    const eff = ptEffectiveStatus(focus);
+    const stale = ptStaleText(focus);
+    focusEl.innerHTML = `
+      <div class="tracker-focus-head">
+        <div>
+          <div class="tracker-focus-eyebrow">🎯 One Project Now</div>
+          <div class="tracker-focus-title">${focus.is_private ? '🔒 ' : ''}${escHtml(focus.subject)}</div>
+          <div class="tracker-focus-meta">
+            <span class="status-pill ${PT_STATUS_CLASS[eff] || 's-prog'}">${PT_STATUS_LABEL[eff] || eff}</span>
+            <span class="status-pill ${PT_PRIORITY_CLASS[focus.priority] || 's-prio-medium'}">${PT_PRIORITY_LABEL[focus.priority] || '🟡 Medium'}</span>
+            <span class="tracker-meta-chip">${escHtml(ptDueText(focus))}</span>
+            ${focus.assignment ? `<span class="tracker-meta-chip">PIC: ${escHtml(focus.assignment)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      ${focus.notes ? `<div class="tracker-focus-note">${escHtml(focus.notes)}</div>` : '<div class="tracker-focus-note">Do the smallest visible action first. The rest can wait.</div>'}
+      ${stale ? `<div class="pt-stale-note">⚠ ${escHtml(stale)}</div>` : ''}
+      <div class="tracker-focus-actions">${ptActionButtons(focus)}</div>`;
+  }
+
+  const attention = active.filter(t => t.id !== (focus && focus.id) && ptNeedsAttention(t));
+  const attentionVisible = attention.slice(0, 3);
+  const attentionIds = new Set(attentionVisible.map(t => t.id));
+  const other = active.filter(t => t.id !== (focus && focus.id) && !attentionIds.has(t.id));
+  const completed = (items || []).filter(t => ptEffectiveStatus(t) === 'done')
+    .sort((a,b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
+
+  const attWrap = document.getElementById('pt-attention-wrap');
+  attWrap.style.display = attentionVisible.length ? '' : 'none';
+  document.getElementById('pt-attention-count').textContent = attention.length;
+  document.getElementById('pt-attention-list').innerHTML = attentionVisible.map(t => ptProjectCardHtml(t, 'attention')).join('');
+
+  document.getElementById('pt-other-count').textContent = other.length;
+  document.getElementById('pt-other-list').innerHTML = other.length ? other.map(t => ptProjectCardHtml(t)).join('') : '<div class="pt-empty-card">No other active projects.</div>';
+
+  document.getElementById('pt-completed-count').textContent = completed.length;
+  document.getElementById('pt-completed-list').innerHTML = completed.length ? completed.map(t => ptProjectCardHtml(t, 'completed')).join('') : '<div class="pt-empty-card">No completed projects yet.</div>';
+  document.getElementById('pt-all-count').textContent = items.length;
 }
 
 function displayProjectTracker(data) {
@@ -4580,7 +4825,7 @@ function ptViewRow(t) {
     <td style="font-size:12px">${t.start_date ? fmtDate(t.start_date) : '-'}</td>
     <td style="font-size:12px">${t.due_date ? fmtDate(t.due_date) : '-'}</td>
     <td style="font-size:11px;color:var(--text2);max-width:200px;white-space:normal">${escHtml(t.notes || '')}</td>
-    <td style="text-align:center;font-size:14px" title="${t.is_private ? 'Privat' : 'Publik'}">${t.is_private ? '🔒' : '🌐'}</td>
+    <td style="text-align:center;font-size:14px" title="${t.is_private ? 'Private' : 'Public'}">${t.is_private ? '🔒' : '🌐'}</td>
     <td style="white-space:nowrap">
       <button class="ev-del" onclick="editProjectRow('${t.id}')" aria-label="Edit" title="Edit"><i class="ti ti-pencil" aria-hidden="true"></i></button>
       <button class="ev-del" onclick="delProjectRow('${t.id}')" aria-label="Delete" title="Delete"><i class="ti ti-x" aria-hidden="true"></i></button>
@@ -4603,7 +4848,7 @@ function ptEditRow(t) {
       <option value="done" ${t.status === 'done' ? 'selected' : ''}>Done</option>
       <option value="not_started" ${t.status === 'not_started' ? 'selected' : ''}>Not Started</option>
       <option value="skipped" ${t.status === 'skipped' ? 'selected' : ''}>Skipped</option>
-      <option value="on_hold" ${t.status === 'on_hold' ? 'selected' : ''}>On Hold</option>
+      <option value="on_hold" ${t.status === 'on_hold' ? 'selected' : ''}>Waiting / On Hold</option>
       <option value="overdue" ${t.status === 'overdue' ? 'selected' : ''}>Overdue</option>
     </select></td>
     <td><input id="pt-edit-schedule" value="${escAttr(t.schedule_duration || '')}" style="width:100%" /></td>
@@ -4612,7 +4857,7 @@ function ptEditRow(t) {
     <td><input id="pt-edit-notes" value="${escAttr(t.notes || '')}" style="width:100%" /></td>
     <td><select id="pt-edit-privacy" style="width:100%">
       <option value="false" ${!t.is_private ? 'selected' : ''}>🌐 Public</option>
-      <option value="true" ${t.is_private ? 'selected' : ''}>🔒 Privat</option>
+      <option value="true" ${t.is_private ? 'selected' : ''}>🔒 Private</option>
     </select></td>
     <td style="white-space:nowrap">
       <button class="ev-del" onclick="saveProjectRow('${t.id}')" aria-label="Save" title="Save"><i class="ti ti-check" aria-hidden="true"></i></button>
@@ -4633,7 +4878,7 @@ function ptCategorySelectHtml(idPrefix, current) {
       ${opts}
       <option value="__custom__" ${isCustom ? 'selected' : ''}>✏️ Other Category...</option>
     </select>
-    <input id="${idPrefix}-category-custom" placeholder="Tulis kategori lain..." value="${isCustom ? escAttr(cur) : ''}" style="width:100%;${isCustom ? '' : 'display:none'}" />
+    <input id="${idPrefix}-category-custom" placeholder="Type another category..." value="${isCustom ? escAttr(cur) : ''}" style="width:100%;${isCustom ? '' : 'display:none'}" />
   </div>`;
 }
 // Show/hide the manual category text input when "Other Category..." is selected
@@ -4657,6 +4902,52 @@ function ptGetCategoryValue(idPrefix) {
 }
 
 function escAttr(s) { return escHtml(s == null ? '' : s).replace(/"/g, '&quot;'); }
+
+async function ptRefreshAllViews() {
+  await Promise.all([renderTracker(), renderProjectTracker()]);
+  if (currentPanel === 'kanban') await renderKanban();
+  if (currentPanel === 'gantt') await renderGantt();
+  if (currentPanel === 'matrix') await renderMatrix();
+}
+
+async function ptQuickStatus(id, status) {
+  const item = projectTrackerAllCache.find(t => t.id === id) || projectTrackerCache.find(t => t.id === id);
+  const payload = { status, updated_at: new Date().toISOString() };
+  if (status === 'in_progress' && item && !item.start_date) payload.start_date = todayStr();
+  const { error } = await sb.from('time_plan_tracker').update(payload).eq('id', id);
+  if (error) return alert('Failed to update project: ' + error.message);
+  await ptRefreshAllViews();
+}
+
+async function ptSetToday(id) {
+  const { error } = await sb.from('time_plan_tracker').update({ due_date: todayStr(), updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) return alert('Failed to move project to today: ' + error.message);
+  await ptRefreshAllViews();
+}
+
+async function ptAddUpdate(id) {
+  const item = projectTrackerAllCache.find(t => t.id === id) || projectTrackerCache.find(t => t.id === id);
+  await switchPanel('logbook', document.getElementById('nsub-logbook'));
+  resetLogForm();
+  document.getElementById('log-form').style.display = 'block';
+  document.getElementById('log-title').value = item ? `Update — ${item.subject}` : 'Project Update';
+  document.getElementById('log-type').value = 'note';
+  syncLogTypeTabs();
+  await populateTrackerLinkOptions(id);
+  if (quillLog) quillLog.focus();
+  autosaveLogDraft();
+  document.getElementById('log-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function ptOpenEdit(id) {
+  const details = document.getElementById('pt-all-details');
+  if (details) details.open = true;
+  editProjectRow(id);
+  setTimeout(() => {
+    const row = document.querySelector('.pt-edit-row');
+    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 50);
+}
 
 function editProjectRow(id) {
   editingProjectId = id;
@@ -4688,14 +4979,14 @@ async function saveProjectRow(id) {
   const { error } = await sb.from('time_plan_tracker').update(payload).eq('id', id);
   if (error) return alert('Failed to save: ' + error.message);
   editingProjectId = null;
-  await renderProjectTracker();
+  await Promise.all([renderTracker(), renderProjectTracker()]);
 }
 
 async function delProjectRow(id) {
   if (!confirm('Delete this project tracker item?')) return;
   const { error } = await sb.from('time_plan_tracker').delete().eq('id', id);
   if (error) return alert('Failed to delete: ' + error.message);
-  await renderProjectTracker();
+  await Promise.all([renderTracker(), renderProjectTracker()]);
 }
 
 async function addProjectRow() {
@@ -4719,12 +5010,13 @@ async function addProjectRow() {
   ['pt-new-subject', 'pt-new-assignment', 'pt-new-schedule', 'pt-new-notes', 'pt-new-category-custom'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('pt-new-start').value = '';
   document.getElementById('pt-new-due').value = '';
-  document.getElementById('pt-new-status').value = 'in_progress';
+  document.getElementById('pt-new-status').value = 'not_started';
   document.getElementById('pt-new-priority').value = 'medium';
-  document.getElementById('pt-new-privacy').value = 'false';
   document.getElementById('pt-new-category').value = 'Legalitas';
   document.getElementById('pt-new-category-custom').style.display = 'none';
-  await renderProjectTracker();
+  const more = document.getElementById('pt-new-more');
+  if (more) more.open = false;
+  await Promise.all([renderTracker(), renderProjectTracker()]);
 }
 
 // ── LOGBOOK ────────────────────────────────
