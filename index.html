@@ -16,7 +16,7 @@
   <!-- Quill Rich Text Editor -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
-  <!-- Puter.js — free access to AI (Claude etc.) directly from the browser, each user uses their own Puter account -->
+  <!-- Puter.js — fallback AI provider only when the secure OpenAI Edge Function is unavailable -->
   <script src="https://js.puter.com/v2/"></script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
@@ -926,11 +926,16 @@ textarea { resize: vertical; }
 .pass-type-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px; background:var(--bg2); color:var(--text3); border:1px solid var(--border); flex-shrink:0; }
 .pass-card .btn-sm { width:24px; height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; font-size:11px; }
 
-/* ── AI Modal (Puter.js) ─────────────────────────────────── */
+/* ── AI Assistant Modal (OpenAI + Puter fallback) ───────── */
 .ai-modal-overlay { display:none; position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; padding:20px; }
 .ai-modal-overlay.open { display:flex; }
 .ai-modal-box { background:var(--surface); border-radius:var(--radius-lg); max-width:520px; width:100%; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
 .ai-modal-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); font-size:13px; font-weight:700; }
+.ai-modal-title-wrap { display:flex; align-items:center; gap:7px; min-width:0; }
+.ai-provider-badge { font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:999px; background:var(--bg2); color:var(--text2); border:1px solid var(--border); white-space:nowrap; }
+.ai-provider-badge.openai { background:#E8F1EF; color:#1F4443; border-color:rgba(47,99,100,.25); }
+.ai-provider-badge.fallback { background:#FFF8E8; color:#7C5A16; border-color:rgba(192,138,62,.28); }
+.ai-provider-badge.error { background:#FEE2E2; color:#991B1B; border-color:rgba(239,68,68,.24); }
 .ai-modal-body { padding:16px; overflow-y:auto; font-size:13px; line-height:1.6; color:var(--text1); }
 .ai-modal-body a { color: var(--accent); }
 .ai-modal-foot { display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--border); }
@@ -1747,7 +1752,7 @@ body.mobile-hub-open { overflow:hidden; }
               <div class="today-focus-title">Home</div>
               <div class="today-focus-sub">Write it once, then choose where it belongs: Today, Follow Up, Waiting, or Brain Dump.</div>
             </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="next-action-btn" onclick="showNextAction()"><i class="ti ti-player-play"></i> What should I do next?</button><button class="btn-sm" onclick="renderTodayFocus()"><i class="ti ti-refresh"></i> Refresh</button></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="next-action-btn" onclick="showNextAction()"><i class="ti ti-sparkles"></i> Ask AI: What next?</button><button class="btn-sm" onclick="renderTodayFocus()"><i class="ti ti-refresh"></i> Refresh</button></div>
           </div>
           <div class="quick-capture">
             <input id="focus-quick-input" placeholder="Dump it here — anything you must not forget..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
@@ -5187,11 +5192,57 @@ async function openProjectsMobile(el) {
   document.querySelectorAll('.bn-item').forEach(btn => btn.classList.remove('active'));
   if (el) el.classList.add('active');
 }
-function showNextAction() {
-  const card = document.querySelector('#focus-top3 .focus-task');
-  if (!card) { document.getElementById('focus-quick-input')?.focus(); return; }
-  card.scrollIntoView({ behavior:'smooth', block:'center' });
-  if (card.animate) card.animate([{transform:'scale(1)'},{transform:'scale(1.015)'},{transform:'scale(1)'}],{duration:520});
+async function showNextAction() {
+  try {
+    let source = Array.isArray(todoCache) ? todoCache : [];
+    if (!source.length) {
+      const { data, error } = await withTimeout(sb.from('todos').select('*').order('due_date', { ascending: true }).limit(500));
+      if (error) throw error;
+      source = applyOwner(data || []);
+      todoCache = source;
+    }
+    const today = todayStr();
+    const open = source
+      .filter(t => !t.is_done && !isFocusSnoozed(t.id))
+      .sort((a,b) => focusScore(b,today) - focusScore(a,today))
+      .slice(0,12);
+    if (!open.length) {
+      document.getElementById('focus-quick-input')?.focus();
+      alert('No open tasks were found. Capture one small next step first.');
+      return;
+    }
+    const taskLines = open.map((t,i) => {
+      const clean = String(t.text || '').replace(/^\[(Follow Up|Waiting|Today|Inbox)\]\s*/i,'');
+      const kind = focusIsFollowUp(t) ? 'Follow Up' : focusIsWaiting(t) ? 'Waiting Reply' : focusIsInbox(t) ? 'Brain Dump' : 'Task';
+      return `${i+1}. ${clean} | Type: ${kind} | Due: ${t.due_date || 'No deadline'} | Priority: ${prioLabel[t.priority] || t.priority || 'Medium'}`;
+    }).join('\n');
+    await runAiOnText(
+      '✨ What should I do next?',
+      taskLines,
+      `Pilih tepat SATU pekerjaan yang paling tepat dikerjakan sekarang untuk pengguna dengan ADHD. Pertimbangkan keterlambatan, tenggat hari ini, follow-up, dampak, dan kemudahan memulai. Jawab ringkas dalam Bahasa Indonesia dengan format:
+
+## Kerjakan Sekarang
+**[nama tugas]**
+
+**Kenapa ini dulu:** [1 kalimat]
+
+**Langkah terkecil:** [aksi konkret yang bisa langsung dilakukan dalam 2–10 menit]
+
+**Setelah itu:** [satu langkah berikutnya].
+
+Jangan mengarang fakta, tanggal, orang, atau status di luar daftar yang diberikan.`,
+      { task: 'next_action', context: `Tanggal lokal: ${today}. Pengguna aktif: ${getUser()}.` }
+    );
+  } catch (err) {
+    console.error('Next-action AI error:', err);
+    const card = document.querySelector('#focus-top3 .focus-task');
+    if (card) {
+      card.scrollIntoView({ behavior:'smooth', block:'center' });
+      if (card.animate) card.animate([{transform:'scale(1)'},{transform:'scale(1.015)'},{transform:'scale(1)'}],{duration:520});
+    } else {
+      document.getElementById('focus-quick-input')?.focus();
+    }
+  }
 }
 function brainDraftKey() { return 'wb_brain_draft_' + getUser(); }
 function saveBrainDraft() {
@@ -6093,14 +6144,21 @@ function htmlToPlainText(html) {
   return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
-// ── AI (Puter.js) — Ringkas/Rapikan Logbook & Notes ──────────────────────
-// Puter.js: tiap user login pakai akun Puter gratis (sekali klik, seperti login Google).
-// Tidak ada API key yang perlu disembunyikan; biaya pemakaian ditanggung akun Puter user itu sendiri.
+// ── AI Assistant — OpenAI via Supabase Edge Function ─────────────────────
+// Security model:
+// - OPENAI_API_KEY is stored only in Supabase Edge Function secrets.
+// - The browser never receives or stores the OpenAI API key.
+// - A separate WorkBoard AI access code is requested once per browser tab.
+// - Puter.js remains an automatic fallback while OpenAI setup is incomplete/unavailable.
+const WORKBOARD_AI_FUNCTION = 'workboard-ai';
+const WORKBOARD_AI_SESSION_KEY = 'wb_openai_access_code';
 let _aiLastResult = '';
+let _aiLastProvider = '';
 
 function openAiModal(title) {
   document.getElementById('ai-modal-title').textContent = title;
   document.getElementById('ai-modal-body').innerHTML = '<span class="ai-loading-dots">✨ Processing with AI</span>';
+  setAiProviderStatus('Connecting…', '');
   document.getElementById('ai-modal-overlay').classList.add('open');
 }
 
@@ -6108,19 +6166,96 @@ function closeAiModal() {
   document.getElementById('ai-modal-overlay').classList.remove('open');
 }
 
+function setAiProviderStatus(label, kind='') {
+  const badge = document.getElementById('ai-modal-provider');
+  if (!badge) return;
+  badge.textContent = label || 'AI';
+  badge.className = 'ai-provider-badge' + (kind ? ' ' + kind : '');
+}
+
+function resetAiAccessCode(showMessage=true) {
+  sessionStorage.removeItem(WORKBOARD_AI_SESSION_KEY);
+  if (showMessage) alert('The WorkBoard AI access code was cleared for this browser tab.');
+}
+
+function getAiAccessCode(forceNew=false) {
+  if (forceNew) sessionStorage.removeItem(WORKBOARD_AI_SESSION_KEY);
+  let code = sessionStorage.getItem(WORKBOARD_AI_SESSION_KEY) || '';
+  if (!code) {
+    code = window.prompt('Enter the WorkBoard AI access code. It is kept only for this browser tab.') || '';
+    code = code.trim();
+    if (!code) throw new Error('The WorkBoard AI access code was not entered.');
+    sessionStorage.setItem(WORKBOARD_AI_SESSION_KEY, code);
+  }
+  return code;
+}
+
+async function callOpenAiEdge(payload, retryAccess=true) {
+  const accessCode = getAiAccessCode(false);
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/${WORKBOARD_AI_FUNCTION}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'x-workboard-ai-key': accessCode
+    },
+    body: JSON.stringify({
+      task: payload.task || 'general',
+      title: payload.title || '',
+      text: payload.text || '',
+      instruction: payload.instruction || '',
+      context: payload.context || '',
+      user: getUser()
+    })
+  });
+
+  let data = null;
+  try { data = await response.json(); } catch (e) { data = null; }
+
+  if ((response.status === 401 || response.status === 403) && retryAccess) {
+    resetAiAccessCode(false);
+    getAiAccessCode(true);
+    return callOpenAiEdge(payload, false);
+  }
+  if (!response.ok) {
+    const err = new Error((data && data.error) || `OpenAI service returned HTTP ${response.status}.`);
+    err.code = data && data.code ? data.code : 'OPENAI_EDGE_ERROR';
+    throw err;
+  }
+  if (!data || !data.text) throw new Error('The OpenAI service returned an empty response.');
+  return data;
+}
+
+async function callPuterFallback(prompt) {
+  if (typeof puter === 'undefined') throw new Error('Puter.js fallback is not loaded. Check the internet connection and refresh.');
+  const response = await puter.ai.chat(prompt, { model: 'claude-sonnet-5' });
+  let resultText = '';
+  if (typeof response === 'string') {
+    resultText = response;
+  } else if (response && typeof response === 'object') {
+    if (typeof response.text === 'string') {
+      resultText = response.text;
+    } else if (response.message && Array.isArray(response.message.content)) {
+      resultText = response.message.content.map(c => (c && c.text) ? c.text : '').join('\n').trim();
+    } else if (Array.isArray(response.content)) {
+      resultText = response.content.map(c => (c && c.text) ? c.text : '').join('\n').trim();
+    }
+  }
+  if (!resultText) throw new Error('The fallback AI returned an empty response.');
+  return resultText;
+}
+
 function copyAiResult() {
   if (!_aiLastResult) return;
   const btn = document.getElementById('ai-modal-copy-btn');
   const showCopied = () => {
     const original = btn.innerHTML;
-    btn.innerHTML = '<i class="ti ti-check"></i> Tersalin!';
+    btn.innerHTML = '<i class="ti ti-check"></i> Copied!';
     setTimeout(() => { btn.innerHTML = original; }, 1200);
   };
 
   const htmlContent = formatAiMarkdown(_aiLastResult);
-
-  // Coba salin sebagai rich text (HTML) supaya kalau ditempel ke Logbook/Notes
-  // (editor Quill), bold/heading-nya langsung jadi format asli, bukan tanda ** / ##.
   if (window.ClipboardItem) {
     try {
       const item = new ClipboardItem({
@@ -6131,7 +6266,7 @@ function copyAiResult() {
         navigator.clipboard.writeText(_aiLastResult).then(showCopied).catch(() => alert('Failed to copy.'));
       });
       return;
-    } catch (e) { /* lanjut ke fallback di bawah */ }
+    } catch (e) { /* continue to plain-text fallback */ }
   }
   navigator.clipboard.writeText(_aiLastResult).then(showCopied).catch(() => alert('Failed to copy.'));
 }
@@ -6181,39 +6316,41 @@ function formatAiMarkdown(text) {
   return html;
 }
 
-// Fungsi inti: kirim teks ke AI lewat Puter.js, tampilkan hasil di modal
-async function runAiOnText(title, plainText, instruction) {
+// Primary AI route: secure OpenAI Edge Function. Puter is used only as fallback.
+async function runAiOnText(title, plainText, instruction, options={}) {
   if (!plainText || !plainText.trim()) { alert('There is no text content to process.'); return; }
   openAiModal(title);
+  const prompt = `${instruction}\n\nTeks:\n"""\n${plainText}\n"""`;
   try {
-    if (typeof puter === 'undefined') throw new Error('Puter.js belum termuat. Cek koneksi internet lalu refresh halaman.');
-    const prompt = `${instruction}\n\nTeks:\n"""\n${plainText}\n"""`;
-    const response = await puter.ai.chat(prompt, { model: 'claude-sonnet-5' });
-    console.log('Puter AI response:', response);
-
-    let resultText = '';
-    if (typeof response === 'string') {
-      resultText = response;
-    } else if (response && typeof response === 'object') {
-      if (typeof response.text === 'string') {
-        resultText = response.text;
-      } else if (response.message && Array.isArray(response.message.content)) {
-        resultText = response.message.content.map(c => (c && c.text) ? c.text : '').join('\n').trim();
-      } else if (Array.isArray(response.content)) {
-        resultText = response.content.map(c => (c && c.text) ? c.text : '').join('\n').trim();
-      } else {
-        try { resultText = JSON.stringify(response, null, 2); } catch (e) { resultText = ''; }
-      }
+    const result = await callOpenAiEdge({
+      task: options.task || 'general',
+      title,
+      text: plainText,
+      instruction,
+      context: options.context || ''
+    });
+    _aiLastResult = result.text;
+    _aiLastProvider = 'openai';
+    setAiProviderStatus(result.model ? `OpenAI · ${result.model}` : 'OpenAI', 'openai');
+    document.getElementById('ai-modal-body').innerHTML = formatAiMarkdown(result.text);
+    return result.text;
+  } catch (openAiError) {
+    console.warn('OpenAI Edge Function unavailable; trying fallback:', openAiError);
+    try {
+      setAiProviderStatus('Puter fallback', 'fallback');
+      const fallbackText = await callPuterFallback(prompt);
+      _aiLastResult = fallbackText;
+      _aiLastProvider = 'puter';
+      document.getElementById('ai-modal-body').innerHTML = `<div style="font-size:10.5px;color:var(--text3);margin-bottom:10px">OpenAI is not ready, so WorkBoard used its temporary fallback.</div>${formatAiMarkdown(fallbackText)}`;
+      return fallbackText;
+    } catch (fallbackError) {
+      console.error('AI providers failed:', { openAiError, fallbackError });
+      setAiProviderStatus('Unavailable', 'error');
+      const primaryMsg = openAiError && openAiError.message ? openAiError.message : 'OpenAI is unavailable.';
+      const fallbackMsg = fallbackError && fallbackError.message ? fallbackError.message : 'Fallback is unavailable.';
+      document.getElementById('ai-modal-body').innerHTML = `<span style="color:var(--danger)">AI could not process this request.<br><br>${escHtml(primaryMsg)}<br>${escHtml(fallbackMsg)}</span>`;
+      throw openAiError;
     }
-    if (!resultText) resultText = '[Could not read the AI response. Open the browser Console (F12) to see the raw response.]';
-
-    _aiLastResult = resultText;
-    document.getElementById('ai-modal-body').innerHTML = formatAiMarkdown(resultText);
-  } catch (err) {
-    console.error('AI error:', err);
-    let msg = 'An unknown error occurred. Check the browser Console (F12) for details.';
-    try { if (err && typeof err.message === 'string') msg = err.message; } catch (e) {}
-    document.getElementById('ai-modal-body').innerHTML = `<span style="color:var(--danger)">Failed to process: ${escHtml(msg)}</span>`;
   }
 }
 
@@ -6221,16 +6358,18 @@ function aiSummarizeLog(id) {
   const l = logbookCache.find(x => x.id === id);
   if (!l) return;
   const plain = htmlToPlainText(l.body || '');
-  runAiOnText('✨ Ringkasan Logbook: ' + (l.title || ''), plain,
-    'Ringkas isi logbook kerja berikut jadi poin-poin singkat berbahasa Indonesia yang mudah dibaca. Fokus pada inti kegiatan, hasil, dan hal yang perlu ditindaklanjuti.');
+  runAiOnText('✨ Logbook Summary: ' + (l.title || ''), plain,
+    'Ringkas isi logbook kerja berikut menjadi poin-poin singkat berbahasa Indonesia yang mudah dibaca. Fokus pada inti kegiatan, hasil, keputusan, pihak yang perlu dihubungi, dan hal yang perlu ditindaklanjuti. Jangan mengarang informasi yang tidak ada.',
+    { task: 'summarize_logbook', context: `Judul logbook: ${l.title || '-'}. Tanggal: ${l.entry_date || '-'}.` });
 }
 
 function aiSummarizeNote(id) {
   const n = notesCache.find(x => x.id === id);
   if (!n) return;
   const plain = htmlToPlainText(n.body || '');
-  runAiOnText('✨ Ringkasan Notes: ' + (n.title || ''), plain,
-    'Rapikan dan ringkas catatan berikut jadi poin-poin singkat berbahasa Indonesia yang jelas dan terstruktur, tanpa mengubah maksud aslinya.');
+  runAiOnText('✨ Notes Summary: ' + (n.title || ''), plain,
+    'Rapikan dan ringkas catatan berikut menjadi poin-poin singkat berbahasa Indonesia yang jelas, terstruktur, dan mudah dipindai oleh pengguna dengan ADHD. Pertahankan maksud asli dan jangan mengarang informasi baru.',
+    { task: 'summarize_note', context: `Judul catatan: ${n.title || '-'}.` });
 }
 
 // Turn raw column names into more human-friendly labels
@@ -10096,16 +10235,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </script>
 
-<!-- ── AI Modal (Puter.js) — dipakai fitur Ringkas AI dll ── -->
+<!-- ── AI Assistant Modal — OpenAI via Supabase Edge Function ── -->
 <div class="ai-modal-overlay" id="ai-modal-overlay" onclick="if(event.target===this) closeAiModal()">
   <div class="ai-modal-box">
     <div class="ai-modal-head">
-      <span id="ai-modal-title">✨ Ringkasan AI</span>
-      <button class="btn-sm" onclick="closeAiModal()"><i class="ti ti-x"></i></button>
+      <div class="ai-modal-title-wrap">
+        <span id="ai-modal-title">✨ AI Assistant</span>
+        <span class="ai-provider-badge" id="ai-modal-provider">AI</span>
+      </div>
+      <button class="btn-sm" onclick="closeAiModal()" aria-label="Close AI assistant"><i class="ti ti-x"></i></button>
     </div>
     <div class="ai-modal-body" id="ai-modal-body">Loading...</div>
     <div class="ai-modal-foot">
-      <button class="btn-sm" id="ai-modal-copy-btn" onclick="copyAiResult()"><i class="ti ti-copy"></i> Salin</button>
+      <button class="btn-sm" onclick="resetAiAccessCode()" title="Clear the AI access code for this browser tab"><i class="ti ti-key-off"></i> Reset Access</button>
+      <button class="btn-sm" id="ai-modal-copy-btn" onclick="copyAiResult()"><i class="ti ti-copy"></i> Copy</button>
       <button class="btn-sm btn-primary" onclick="closeAiModal()">Close</button>
     </div>
   </div>
