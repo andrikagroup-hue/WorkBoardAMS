@@ -18,7 +18,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Export: Excel, PDF, Screenshot -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -786,28 +786,159 @@ textarea { resize: vertical; }
 .np-edit-area.open { display: flex; }
 .np-edit-area input { font-size: 13px; }
 .np-edit-area textarea { font-size: 12px; min-height: 100px; resize: vertical; line-height: 1.7; }
-/* ── Quill Rich Text Editor ───────────────────────────────────── */
-.quill-editor-wrap { border: 1px solid var(--border2); border-radius: var(--radius); background: var(--bg); overflow: hidden; }
-.quill-editor-wrap .ql-toolbar { border: none; border-bottom: 1px solid var(--border2); background: var(--bg2); padding: 6px 8px; flex-wrap: wrap; }
-.quill-editor-wrap .ql-toolbar .ql-formats { margin-right: 8px; }
-.quill-editor-wrap .ql-container { border: none; font-size: 13px; font-family: inherit; }
-.quill-editor-wrap .ql-editor { min-height: 160px; max-height: 420px; overflow-y: auto; padding: 12px 14px; color: var(--text); line-height: 1.75; }
-.quill-editor-wrap .ql-editor.ql-blank::before { color: var(--text3); font-style: normal; }
-.quill-editor-wrap .ql-editor ol, .quill-editor-wrap .ql-editor ul { padding-left: 18px; }
-.quill-editor-wrap .ql-editor li { margin: 2px 0; }
-.quill-editor-wrap .ql-editor p { margin: 0 0 4px 0; }
-/* Dark mode compat */
+/* ── Unified Writing Forms + Rich Text Editor ───────────── */
+.writing-form {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 16px; margin-bottom: 14px;
+  box-shadow: 0 3px 14px rgba(80,60,70,0.07);
+}
+.logbook-page.writing-form {
+  background-color: var(--surface);
+  background-image: repeating-linear-gradient(var(--surface) 0px, var(--surface) 31px, rgba(47,99,100,0.06) 32px);
+}
+.np-edit-area.writing-form { gap: 12px; margin-bottom: 12px; }
+.writer-meta-grid { display: grid; grid-template-columns: minmax(0,2fr) minmax(180px,1fr); gap: 10px; }
+.writer-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.writer-field input, .writer-field select { width: 100%; min-height: 38px; font-size: 13px; }
+.editor-form-block { display: flex; flex-direction: column; align-items: stretch; gap: 6px; width: 100%; margin-top: 6px; }
+.editor-label-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.editor-help-inline { font-size: 10.5px; color: var(--text3); font-weight: 500; }
+
+.quill-editor-wrap {
+  width: 100%; border: 1px solid var(--border2); border-radius: 11px;
+  background: var(--bg); overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28);
+}
+.quill-editor-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,99,100,0.10); }
+.quill-editor-wrap .ql-toolbar {
+  border: none; border-bottom: 1px solid var(--border2); background: var(--bg2);
+  padding: 7px 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 3px;
+}
+.quill-editor-wrap .ql-toolbar .ql-formats { margin-right: 5px; display: inline-flex; align-items: center; }
+.quill-editor-wrap .ql-toolbar button {
+  width: 28px; height: 28px; padding: 4px; border-radius: 6px;
+}
+.quill-editor-wrap .ql-toolbar button:hover,
+.quill-editor-wrap .ql-toolbar button.ql-active { background: rgba(47,99,100,0.12); }
+.quill-editor-wrap .ql-container { border: none; font-size: 14px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
+.quill-editor-wrap .ql-editor {
+  min-height: 280px; max-height: 480px; overflow-y: auto;
+  padding: 16px 18px; color: var(--text1); line-height: 1.75; background: rgba(255,255,255,0.42);
+}
+.quill-editor-wrap .ql-editor.ql-blank::before { color: var(--text3); font-style: normal; left: 18px; right: 18px; }
+.quill-editor-wrap .ql-editor ol, .quill-editor-wrap .ql-editor ul { padding-left: 22px; }
+.quill-editor-wrap .ql-editor li { margin: 3px 0; }
+.quill-editor-wrap .ql-editor p { margin: 0 0 6px 0; }
+.quill-editor-wrap .ql-editor h1 { font-size: 1.75em; line-height: 1.3; margin: 12px 0 7px; }
+.quill-editor-wrap .ql-editor h2 { font-size: 1.4em; line-height: 1.35; margin: 11px 0 6px; }
+.quill-editor-wrap .ql-editor h3 { font-size: 1.18em; line-height: 1.4; margin: 10px 0 5px; }
+.quill-editor-wrap .ql-editor blockquote { border-left-color: var(--accent); background: rgba(47,99,100,0.06); padding: 8px 12px; border-radius: 0 7px 7px 0; }
+.quill-editor-wrap .ql-editor pre.ql-syntax { border-radius: 8px; padding: 10px 12px; }
+
+.wb-editor-footer {
+  min-height: 31px; padding: 6px 10px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: rgba(255,255,255,0.55); font-size: 10.5px; color: var(--text3);
+}
+.wb-editor-help { flex: 1; min-width: 180px; }
+.wb-editor-message { color: var(--accent); font-weight: 600; }
+.wb-editor-message.error { color: var(--danger); }
+.wb-editor-count { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Quill controls in light/dark-compatible theme */
 .ql-snow .ql-stroke { stroke: var(--text2); }
 .ql-snow .ql-fill { fill: var(--text2); }
 .ql-snow .ql-picker { color: var(--text2); }
-.ql-snow .ql-picker-options { background: var(--bg); border: 1px solid var(--border2); }
-/* Body content area — render HTML */
-.log-body ul, .log-body ol, .note-body ul, .note-body ol, .np-page-body ul, .np-page-body ol { padding-left: 18px; margin: 4px 0; }
-.log-body p, .note-body p, .np-page-body p { margin: 0 0 6px 0; }
-.log-body strong, .note-body strong, .np-page-body strong { font-weight: 600; }
-.log-body em, .note-body em, .np-page-body em { font-style: italic; }
+.ql-snow .ql-picker-options { background: var(--surface); border: 1px solid var(--border2); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+.ql-snow .ql-picker.ql-font { width: 118px; }
+.ql-snow .ql-picker.ql-size { width: 72px; }
+.ql-snow .ql-picker.ql-header { width: 92px; }
 
-.np-edit-btns { display: flex; gap: 6px; justify-content: flex-end; }
+/* Custom font labels and actual editor font classes */
+.ql-font-inter, .ql-font-inter .ql-picker-label, .ql-font-inter .ql-picker-item { font-family: 'Inter', sans-serif; }
+.ql-font-poppins { font-family: 'Poppins', sans-serif; }
+.ql-font-nunito { font-family: 'Nunito', sans-serif; }
+.ql-font-quicksand { font-family: 'Quicksand', sans-serif; }
+.ql-font-playfair { font-family: 'Playfair Display', serif; }
+.ql-font-caveat { font-family: 'Caveat', cursive; }
+.ql-font-serif { font-family: Georgia, 'Times New Roman', serif; }
+.ql-font-monospace { font-family: 'Courier New', monospace; }
+.ql-snow .ql-picker.ql-font .ql-picker-label::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item::before { content: 'Inter'; font-family: 'Inter', sans-serif; }
+.ql-snow .ql-picker.ql-font [data-value='poppins']::before { content: 'Poppins'; font-family: 'Poppins', sans-serif; }
+.ql-snow .ql-picker.ql-font [data-value='nunito']::before { content: 'Nunito'; font-family: 'Nunito', sans-serif; }
+.ql-snow .ql-picker.ql-font [data-value='quicksand']::before { content: 'Quicksand'; font-family: 'Quicksand', sans-serif; }
+.ql-snow .ql-picker.ql-font [data-value='playfair']::before { content: 'Playfair'; font-family: 'Playfair Display', serif; }
+.ql-snow .ql-picker.ql-font [data-value='caveat']::before { content: 'Caveat'; font-family: 'Caveat', cursive; font-size: 17px; }
+.ql-snow .ql-picker.ql-font [data-value='serif']::before { content: 'Serif'; font-family: Georgia, serif; }
+.ql-snow .ql-picker.ql-font [data-value='monospace']::before { content: 'Mono'; font-family: monospace; }
+.ql-snow .ql-picker.ql-size .ql-picker-label::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item::before { content: attr(data-value); }
+.ql-snow .ql-picker.ql-size .ql-picker-label:not([data-value])::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item:not([data-value])::before { content: '14 px'; }
+.ql-snow .ql-picker.ql-header .ql-picker-label:not([data-value])::before,
+.ql-snow .ql-picker.ql-header .ql-picker-item:not([data-value])::before { content: 'Paragraph'; }
+
+/* Custom toolbar icons */
+.ql-toolbar button.ql-undo::before { content: '↶'; font-size: 18px; line-height: 18px; color: var(--text2); }
+.ql-toolbar button.ql-redo::before { content: '↷'; font-size: 18px; line-height: 18px; color: var(--text2); }
+.ql-toolbar button.ql-divider::before { content: '―'; font-size: 18px; line-height: 18px; color: var(--text2); }
+.ql-toolbar button.ql-table::before { content: '▦'; font-size: 17px; line-height: 18px; color: var(--text2); }
+.ql-toolbar button.ql-expand::before { content: '⛶'; font-size: 16px; line-height: 18px; color: var(--text2); }
+.ql-toolbar button.ql-undo svg, .ql-toolbar button.ql-redo svg,
+.ql-toolbar button.ql-divider svg, .ql-toolbar button.ql-table svg,
+.ql-toolbar button.ql-expand svg { display: none; }
+
+/* Rich content: images, dividers, and editable table embeds */
+.ql-editor img, .log-body img, .note-body img, .np-page-body img {
+  display: block; max-width: 100%; height: auto; margin: 10px auto;
+  border-radius: 9px; box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+}
+.wb-divider, .ql-editor hr, .log-body hr, .note-body hr, .np-page-body hr {
+  border: 0; border-top: 2px solid rgba(47,99,100,0.22); margin: 16px 0;
+}
+.wb-table-embed { display: block; width: 100%; overflow-x: auto; margin: 12px 0; padding: 2px; }
+.wb-table-embed table, .log-body table, .note-body table, .np-page-body table {
+  width: 100%; min-width: 420px; border-collapse: collapse; background: rgba(255,255,255,0.72);
+}
+.wb-table-embed th, .wb-table-embed td,
+.log-body th, .log-body td, .note-body th, .note-body td, .np-page-body th, .np-page-body td {
+  border: 1px solid var(--border2); padding: 8px 10px; text-align: left; vertical-align: top; min-width: 92px;
+}
+.wb-table-embed th, .log-body th, .note-body th, .np-page-body th { background: var(--bg2); font-weight: 700; }
+.wb-table-embed td[contenteditable='true']:focus,
+.wb-table-embed th[contenteditable='true']:focus { outline: 2px solid var(--accent); outline-offset: -2px; background: #fff; }
+
+/* Full-screen writing mode */
+.quill-editor-wrap.is-fullscreen {
+  position: fixed; inset: 12px; z-index: 10000; border-radius: 14px;
+  box-shadow: 0 20px 70px rgba(0,0,0,0.28); background: var(--surface);
+}
+.quill-editor-wrap.is-fullscreen .ql-container { flex: 1; min-height: 0; }
+.quill-editor-wrap.is-fullscreen .ql-editor { flex: 1; min-height: 0; max-height: none; }
+body.editor-fullscreen-open { overflow: hidden; }
+
+/* Body content area — render HTML consistently */
+.log-body ul, .log-body ol, .note-body ul, .note-body ol, .np-page-body ul, .np-page-body ol { padding-left: 22px; margin: 6px 0; }
+.log-body p, .note-body p, .np-page-body p { margin: 0 0 7px 0; }
+.log-body strong, .note-body strong, .np-page-body strong { font-weight: 700; }
+.log-body em, .note-body em, .np-page-body em { font-style: italic; }
+.log-body h1, .note-body h1, .np-page-body h1 { font-size: 1.65em; margin: 12px 0 7px; }
+.log-body h2, .note-body h2, .np-page-body h2 { font-size: 1.35em; margin: 11px 0 6px; }
+.log-body h3, .note-body h3, .np-page-body h3 { font-size: 1.15em; margin: 10px 0 5px; }
+.log-body blockquote, .note-body blockquote, .np-page-body blockquote { border-left: 3px solid var(--accent); margin: 8px 0; padding: 7px 11px; background: rgba(47,99,100,0.05); }
+
+.np-edit-btns { display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+
+@media (max-width: 720px) {
+  .writer-meta-grid { grid-template-columns: 1fr; }
+  .writing-form { padding: 12px; }
+  .quill-editor-wrap .ql-toolbar { flex-wrap: nowrap; overflow-x: auto; align-items: center; scrollbar-width: thin; }
+  .quill-editor-wrap .ql-toolbar .ql-formats { flex-shrink: 0; }
+  .quill-editor-wrap .ql-editor { min-height: 240px; max-height: 390px; padding: 14px; }
+  .wb-editor-count { width: 100%; margin-left: 0; text-align: right; }
+  .quill-editor-wrap.is-fullscreen { inset: 0; border-radius: 0; }
+}
 
 /* ── To Do (Weekly Report) ───────────────── */
 .todo-toolbar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
@@ -2299,7 +2430,7 @@ ALTER TABLE logbook_entries
 
         <div class="logbook-binder">
 
-          <div class="form-box logbook-page" id="log-form" style="display:none">
+          <div class="form-box logbook-page writing-form" id="log-form" style="display:none">
             <div class="log-form-grid">
               <div class="log-form-col" style="flex:2">
                 <label class="log-form-label">Activity</label>
@@ -2335,9 +2466,12 @@ ALTER TABLE logbook_entries
                 </select>
               </div>
             </div>
-            <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:4px;margin-top:4px">
-              <label class="log-form-label">Notes</label>
-              <div class="quill-editor-wrap" style="width:100%"><div id="log-body-editor"></div></div>
+            <div class="form-row editor-form-block">
+              <div class="editor-label-row">
+                <label class="log-form-label">Content</label>
+                <span class="editor-help-inline">Paste from ChatGPT, Word, or email — formatting is cleaned automatically.</span>
+              </div>
+              <div class="quill-editor-wrap" data-editor-name="Logbook"><div id="log-body-editor"></div></div>
             </div>
             <div class="form-row">
               <input id="log-tags-in" placeholder="Tags (comma separated — e.g. finance, ops, hr)" oninput="autosaveLogDraft()" />
@@ -2413,22 +2547,32 @@ ALTER TABLE logbook_entries
             <i class="ti ti-plus" aria-hidden="true"></i> Add Note
           </button>
         </div>
-        <div class="form-box" id="note-form" style="display:none">
-          <div class="form-row">
-            <input id="note-title-in" placeholder="Note title..." style="flex:2" oninput="autosaveNoteDraft()" />
-            <select id="note-cat-in" onchange="autosaveNoteDraft()">
-              <option value="finance">Keuangan</option>
-              <option value="ops">Operasional</option>
-              <option value="hr">SDM / HR</option>
-              <option value="strat">Strategi</option>
-            </select>
+        <div class="form-box writing-form" id="note-form" style="display:none">
+          <div class="writer-meta-grid">
+            <div class="writer-field">
+              <label class="log-form-label">Title</label>
+              <input id="note-title-in" placeholder="Note title..." oninput="autosaveNoteDraft()" />
+            </div>
+            <div class="writer-field">
+              <label class="log-form-label">Category</label>
+              <select id="note-cat-in" onchange="autosaveNoteDraft()">
+                <option value="finance">Finance</option>
+                <option value="ops">Operations</option>
+                <option value="hr">HR</option>
+                <option value="strat">Strategy</option>
+              </select>
+            </div>
             <select id="note-privacy" title="Who can view this data" style="display:none">
               <option value="false">🌐 Public</option>
-              <option value="true" selected>🔒 Privat</option>
+              <option value="true" selected>🔒 Private</option>
             </select>
           </div>
-          <div class="form-row">
-            <div class="quill-editor-wrap"><div id="note-body-editor"></div></div>
+          <div class="form-row editor-form-block">
+            <div class="editor-label-row">
+              <label class="log-form-label">Content</label>
+              <span class="editor-help-inline">Paste from ChatGPT, Word, or email — formatting is cleaned automatically.</span>
+            </div>
+            <div class="quill-editor-wrap" data-editor-name="Notes"><div id="note-body-editor"></div></div>
           </div>
           <div class="form-actions">
             <span class="draft-status" id="draft-status-notes"></span>
@@ -2494,9 +2638,18 @@ ALTER TABLE logbook_entries
             <input id="np-search" placeholder="Search notes..." oninput="filterNotepad()" />
             <button class="btn-sm btn-primary" onclick="openNpForm()"><i class="ti ti-plus" aria-hidden="true"></i> New Note</button>
           </div>
-          <div class="np-edit-area" id="np-form">
-            <input id="np-title" placeholder="Note title..." oninput="autosaveNotepadDraft()" />
-            <div class="quill-editor-wrap"><div id="np-body-editor"></div></div>
+          <div class="np-edit-area writing-form" id="np-form">
+            <div class="writer-field">
+              <label class="log-form-label">Title</label>
+              <input id="np-title" placeholder="Note title..." oninput="autosaveNotepadDraft()" />
+            </div>
+            <div class="form-row editor-form-block">
+              <div class="editor-label-row">
+                <label class="log-form-label">Content</label>
+                <span class="editor-help-inline">Paste from ChatGPT, Word, or email — formatting is cleaned automatically.</span>
+              </div>
+              <div class="quill-editor-wrap" data-editor-name="Notepad"><div id="np-body-editor"></div></div>
+            </div>
             <div class="np-edit-btns">
               <span class="draft-status" id="draft-status-notepad"></span>
               <button class="btn-sm" onclick="closeNpForm()">Cancel</button>
@@ -5024,8 +5177,8 @@ async function addProjectRow() {
 // lalu render dengan benar
 function renderBody(text) {
   if (!text) return '';
-  // Jika mengandung tag HTML (hasil Quill), langsung render sebagai HTML
-  if (/<[a-z][\s\S]*>/i.test(text)) return text;
+  // Rich text from Quill is sanitized before it is displayed.
+  if (/<[a-z][\s\S]*>/i.test(text)) return sanitizeRichHtml(text, true);
   // Plain text lama → konversi ke HTML rapi
   const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   // Convert plain URLs (http://, https://, www.) into clickable links
@@ -5147,7 +5300,7 @@ function renderAttachPreview() {
   `).join('');
   const pendingHtml = logPendingFiles.map((f, idx) => `
     <span style="display:inline-flex;align-items:center;gap:4px;background:#E8F1EF;border:1px solid #A8CAC6;border-radius:6px;padding:3px 8px;font-size:11px;color:#1F4443">
-      <i class="ti ti-cloud-upload"></i> ${escHtml(f.name)} <span style="opacity:0.6">(${formatBytes(f.size)}, belum diupload)</span>
+      <i class="ti ti-cloud-upload"></i> ${escHtml(f.name)} <span style="opacity:0.6">(${formatBytes(f.size)}, pending upload)</span>
       <i class="ti ti-x" style="cursor:pointer;opacity:0.7" onclick="removePendingLogFile(${idx})" title="Cancel this file"></i>
     </span>
   `).join('');
@@ -5185,7 +5338,7 @@ async function saveLog() {
 
   let newFiles = [];
   if (logPendingFiles.length) {
-    saveBtn.textContent = 'Mengunggah lampiran...';
+    saveBtn.textContent = 'Uploading attachments...';
     saveBtn.disabled = true;
     newFiles = await uploadFilesToStorage(logPendingFiles, 'logbook');
     saveBtn.disabled = false;
@@ -5195,7 +5348,7 @@ async function saveLog() {
   const payload = {
     type: document.getElementById('log-type').value,
     title,
-    body: quillLog.root.innerHTML,
+    body: getCleanEditorHtml(quillLog),
     tags,
     is_private: document.getElementById('log-privacy').value === 'true',
     created_by: getUser(),
@@ -5234,7 +5387,7 @@ async function editLog(id) {
   syncLogTypeTabs();
   document.getElementById('log-privacy').value = l.is_private ? 'true' : 'false';
   document.getElementById('log-entry-date').value = l.entry_date || todayStr();
-  quillLog.root.innerHTML = l.body || '';
+  setEditorHtml(quillLog, l.body || '');
   document.getElementById('log-tags-in').value = (l.tags || []).join(', ');
   logAttachments = Array.isArray(l.attachments) ? [...l.attachments] : [];
   logPendingFiles = [];
@@ -5319,7 +5472,7 @@ function autosaveLogDraft() {
     entryDate: document.getElementById('log-entry-date').value,
     tags: document.getElementById('log-tags-in').value,
     trackerLink: document.getElementById('log-tracker-link').value,
-    body: quillLog ? quillLog.root.innerHTML : ''
+    body: quillLog ? getCleanEditorHtml(quillLog) : ''
   };
   saveDraftSnapshot(currentLogDraftScope(), snapshot, 'logbook');
 }
@@ -5333,7 +5486,7 @@ function maybeRestoreLogDraft() {
   document.getElementById('log-privacy').value = draft.privacy || 'false';
   document.getElementById('log-entry-date').value = draft.entryDate || todayStr();
   document.getElementById('log-tags-in').value = draft.tags || '';
-  if (quillLog) quillLog.root.innerHTML = draft.body || '';
+  if (quillLog) setEditorHtml(quillLog, draft.body || '');
   const trackerSel = document.getElementById('log-tracker-link');
   if (trackerSel && draft.trackerLink) trackerSel.value = draft.trackerLink;
   updateLogStatusColor();
@@ -5387,7 +5540,7 @@ function autosaveNoteDraft() {
   saveDraftSnapshot(currentNoteDraftScope(), {
     title: document.getElementById('note-title-in').value,
     category: document.getElementById('note-cat-in').value,
-    body: quillNote ? quillNote.root.innerHTML : ''
+    body: quillNote ? getCleanEditorHtml(quillNote) : ''
   }, 'notes');
 }
 function restoreNoteDraft() {
@@ -5395,7 +5548,7 @@ function restoreNoteDraft() {
   if (!d) { setDraftStatus('notes', ''); return; }
   document.getElementById('note-title-in').value = d.title || '';
   document.getElementById('note-cat-in').value = d.category || 'finance';
-  if (quillNote) quillNote.root.innerHTML = d.body || '';
+  if (quillNote) setEditorHtml(quillNote, d.body || '');
   setDraftStatus('notes', 'Draft restored ✓');
 }
 
@@ -5405,7 +5558,7 @@ async function saveNote() {
   const payload = {
     title,
     category: document.getElementById('note-cat-in').value,
-    body: quillNote.root.innerHTML,
+    body: getCleanEditorHtml(quillNote),
     is_private: true,
     created_by: getUser()
   };
@@ -5430,7 +5583,7 @@ function editNote(id) {
   document.getElementById('note-title-in').value = n.title || '';
   document.getElementById('note-cat-in').value = n.category || 'finance';
   document.getElementById('note-privacy').value = n.is_private ? 'true' : 'false';
-  quillNote.root.innerHTML = n.body || '';
+  setEditorHtml(quillNote, n.body || '');
   document.getElementById('note-save-btn').textContent = 'Update';
   document.getElementById('note-form').style.display = 'block';
   restoreNoteDraft();
@@ -7137,21 +7290,21 @@ function currentNotepadDraftScope() { return draftScope('notepad', editingNpId |
 function autosaveNotepadDraft() {
   saveDraftSnapshot(currentNotepadDraftScope(), {
     title: document.getElementById('np-title').value,
-    body: quillNp ? quillNp.root.innerHTML : ''
+    body: quillNp ? getCleanEditorHtml(quillNp) : ''
   }, 'notepad');
 }
 function restoreNotepadDraft() {
   const d = loadDraft(currentNotepadDraftScope());
   if (!d) { setDraftStatus('notepad', ''); return; }
   document.getElementById('np-title').value = d.title || '';
-  if (quillNp) quillNp.root.innerHTML = d.body || '';
+  if (quillNp) setEditorHtml(quillNp, d.body || '');
   setDraftStatus('notepad', 'Draft restored ✓');
 }
 
 function openNpForm(title='', body='') {
   editingNpId = null;
   document.getElementById('np-title').value = title;
-  if (typeof quillNp !== 'undefined') quillNp.root.innerHTML = body || '';
+  if (typeof quillNp !== 'undefined') setEditorHtml(quillNp, body || '');
   document.getElementById('np-save-btn').textContent = 'Save';
   document.getElementById('np-form').classList.add('open');
   restoreNotepadDraft();
@@ -7170,7 +7323,7 @@ function closeNpForm() {
 
 async function saveNpItem() {
   const title = document.getElementById('np-title').value.trim();
-  const body = quillNp.root.innerHTML.trim();
+  const body = getCleanEditorHtml(quillNp);
   if (!title) return alert('Title is required!');
   const payload = { title, body, created_by: getUser(), is_pinned: false, is_private: true };
   let error;
@@ -7212,7 +7365,7 @@ function editNpItem(id) {
   if (!n) return;
   editingNpId = id;
   document.getElementById('np-title').value = n.title || '';
-  quillNp.root.innerHTML = n.body || '';
+  setEditorHtml(quillNp, n.body || '');
   document.getElementById('np-save-btn').textContent = 'Update';
   document.getElementById('np-form').classList.add('open');
   document.getElementById('np-title').focus();
@@ -8001,111 +8154,503 @@ async function startChatDM(targetRaw) {
 }
 
 
+// ── Unified Rich Text Editor for Logbook, Notes, and Notepad ──
+const QuillFont = Quill.import('formats/font');
+QuillFont.whitelist = ['inter', 'poppins', 'nunito', 'quicksand', 'playfair', 'caveat', 'serif', 'monospace'];
+Quill.register(QuillFont, true);
+
+const QuillSize = Quill.import('attributors/style/size');
+QuillSize.whitelist = ['10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
+Quill.register(QuillSize, true);
+
+const QuillBlockEmbed = Quill.import('blots/block/embed');
+const QuillDelta = Quill.import('delta');
+
+class WorkBoardDividerBlot extends QuillBlockEmbed {
+  static create() {
+    const node = super.create();
+    node.setAttribute('aria-hidden', 'true');
+    return node;
+  }
+}
+WorkBoardDividerBlot.blotName = 'divider';
+WorkBoardDividerBlot.tagName = 'hr';
+WorkBoardDividerBlot.className = 'wb-divider';
+Quill.register(WorkBoardDividerBlot);
+
+function sanitizeTableHtml(value) {
+  const source = typeof value === 'string' ? value : '';
+  const doc = new DOMParser().parseFromString(source, 'text/html');
+  const table = doc.querySelector('table');
+  if (!table) return '';
+  doc.querySelectorAll('script,style,iframe,object,embed,form,input,button,meta,link,svg,canvas').forEach(el => el.remove());
+  const allowed = new Set(['TABLE','THEAD','TBODY','TFOOT','TR','TH','TD','P','BR','STRONG','B','EM','I','U','S','SPAN','A']);
+  [table, ...Array.from(table.querySelectorAll('*'))].forEach(el => {
+    if (!allowed.has(el.tagName)) {
+      el.replaceWith(...Array.from(el.childNodes));
+      return;
+    }
+    Array.from(el.attributes).forEach(attr => {
+      const name = attr.name.toLowerCase();
+      const keep = (['TD','TH'].includes(el.tagName) && ['colspan','rowspan'].includes(name))
+        || (el.tagName === 'A' && ['href','title'].includes(name));
+      if (!keep) el.removeAttribute(attr.name);
+    });
+    if (el.tagName === 'A') {
+      const href = (el.getAttribute('href') || '').trim();
+      if (!/^(https?:|mailto:|tel:)/i.test(href)) el.removeAttribute('href');
+      else { el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
+    }
+  });
+  table.querySelectorAll('td,th').forEach(cell => {
+    cell.setAttribute('contenteditable', 'true');
+    if (!cell.innerHTML.trim()) cell.innerHTML = '<br>';
+  });
+  return table.outerHTML;
+}
+
+class WorkBoardTableBlot extends QuillBlockEmbed {
+  static create(value) {
+    const node = super.create();
+    node.setAttribute('contenteditable', 'false');
+    node.setAttribute('data-table-help', 'Edit cells directly. Use Tab to move between cells.');
+    node.innerHTML = sanitizeTableHtml(value) || '<table><tbody><tr><td contenteditable="true"><br></td><td contenteditable="true"><br></td></tr><tr><td contenteditable="true"><br></td><td contenteditable="true"><br></td></tr></tbody></table>';
+    return node;
+  }
+  static value(node) { return node.innerHTML; }
+}
+WorkBoardTableBlot.blotName = 'wbtable';
+WorkBoardTableBlot.tagName = 'div';
+WorkBoardTableBlot.className = 'wb-table-embed';
+Quill.register(WorkBoardTableBlot);
+
 const quillToolbar = [
-  [{ font: [] }, { size: ['small', false, 'large', 'huge'] }],
-  ['bold', 'italic', 'underline', 'strike', 'link'],
-  [{ script: 'sub' }, { script: 'super' }],
+  [{ font: ['inter', 'poppins', 'nunito', 'quicksand', 'playfair', 'caveat', 'serif', 'monospace'] }],
+  [{ size: ['10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'] }],
+  [{ header: [1, 2, 3, false] }],
+  ['bold', 'italic', 'underline', 'strike'],
   [{ color: [] }, { background: [] }],
+  [{ script: 'sub' }, { script: 'super' }],
+  [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
   [{ align: [] }],
-  [{ list: 'ordered' }, { list: 'bullet' }],
+  ['blockquote', 'code-block'],
+  ['link', 'image', 'table', 'divider'],
+  ['undo', 'redo', 'expand'],
   ['clean']
 ];
 
+function safeInlineStyle(styleText) {
+  const allowed = new Set(['color','background-color','font-weight','font-style','text-decoration','text-align','font-size']);
+  return String(styleText || '').split(';').map(part => part.trim()).filter(Boolean).map(part => {
+    const idx = part.indexOf(':');
+    if (idx < 1) return '';
+    const prop = part.slice(0, idx).trim().toLowerCase();
+    const value = part.slice(idx + 1).trim();
+    if (!allowed.has(prop) || /url\s*\(|expression\s*\(|javascript:/i.test(value)) return '';
+    return `${prop}: ${value}`;
+  }).filter(Boolean).join('; ');
+}
+
+function sanitizeRichHtml(html, forDisplay = false, allowDataImages = false) {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(String(html), 'text/html');
+  const allowedTags = new Set([
+    'P','BR','STRONG','B','EM','I','U','S','STRIKE','A','OL','UL','LI',
+    'H1','H2','H3','BLOCKQUOTE','PRE','CODE','SUB','SUP','SPAN','IMG','HR','DIV',
+    'TABLE','THEAD','TBODY','TFOOT','TR','TH','TD'
+  ]);
+  const allowedClass = token => token === 'wb-table-embed' || token === 'wb-divider' || token === 'ql-syntax'
+    || /^ql-(align|indent|font|size|direction)-[a-z0-9-]+$/i.test(token);
+
+  doc.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,select,button,meta,link,base,svg,canvas').forEach(el => el.remove());
+  Array.from(doc.body.querySelectorAll('*')).forEach(el => {
+    if (!allowedTags.has(el.tagName)) {
+      el.replaceWith(...Array.from(el.childNodes));
+      return;
+    }
+
+    Array.from(el.attributes).forEach(attr => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on')) { el.removeAttribute(attr.name); return; }
+      if (name === 'class') {
+        const clean = attr.value.split(/\s+/).filter(allowedClass).join(' ');
+        if (clean) el.setAttribute('class', clean); else el.removeAttribute('class');
+        return;
+      }
+      if (name === 'style') {
+        const clean = safeInlineStyle(attr.value);
+        if (clean) el.setAttribute('style', clean); else el.removeAttribute('style');
+        return;
+      }
+      const tag = el.tagName;
+      const keep = (tag === 'A' && ['href','title','target','rel'].includes(name))
+        || (tag === 'IMG' && ['src','alt','title','width','height'].includes(name))
+        || (['TD','TH'].includes(tag) && ['colspan','rowspan','contenteditable'].includes(name))
+        || (tag === 'OL' && name === 'start')
+        || (tag === 'LI' && name === 'value')
+        || (tag === 'DIV' && name === 'contenteditable')
+        || (tag === 'HR' && name === 'aria-hidden');
+      if (!keep) el.removeAttribute(attr.name);
+    });
+
+    if (el.tagName === 'A') {
+      const href = (el.getAttribute('href') || '').trim();
+      if (!/^(https?:|mailto:|tel:)/i.test(href)) el.removeAttribute('href');
+      else { el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); }
+    }
+    if (el.tagName === 'IMG') {
+      const src = (el.getAttribute('src') || '').trim();
+      if (!/^https?:/i.test(src) && !(allowDataImages && /^data:image\//i.test(src))) el.remove();
+      else { el.setAttribute('loading', 'lazy'); el.setAttribute('alt', el.getAttribute('alt') || 'Inserted image'); }
+    }
+    if (forDisplay) el.removeAttribute('contenteditable');
+  });
+  return doc.body.innerHTML;
+}
+
+function normalizePastedHtml(html) {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(String(html), 'text/html');
+  doc.querySelectorAll('script,style,iframe,object,embed,form,input,button,meta,link,svg,canvas').forEach(el => el.remove());
+  doc.querySelectorAll('h4,h5,h6').forEach(el => {
+    const h = doc.createElement('h3');
+    h.innerHTML = el.innerHTML;
+    el.replaceWith(h);
+  });
+  doc.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes).forEach(attr => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on') || name === 'id') el.removeAttribute(attr.name);
+      else if (name === 'class') el.removeAttribute('class');
+      else if (name === 'style') {
+        const clean = safeInlineStyle(attr.value);
+        if (clean) el.setAttribute('style', clean); else el.removeAttribute('style');
+      }
+    });
+  });
+  return preservePastedListNumbers(sanitizeRichHtml(doc.body.innerHTML, false, true));
+}
+
 // Keep the original number when pasted HTML contains an ordered list that
-// starts above 1 (for example ChatGPT sections 3, 4, 5, 6). Quill 1.3.7
-// otherwise removes the HTML start/value attributes and restarts every block at 1.
+// starts above 1. This prevents copied ChatGPT sections from restarting at 1.
 function preservePastedListNumbers(html) {
   if (!html || !/<ol[\s>]/i.test(html)) return html;
   const doc = new DOMParser().parseFromString(html, 'text/html');
   let changed = false;
-
-  doc.querySelectorAll('script,style,iframe,object,embed').forEach(el => el.remove());
   Array.from(doc.querySelectorAll('ol')).forEach(ol => {
     const items = Array.from(ol.children).filter(el => el.tagName === 'LI');
     let nextNumber = parseInt(ol.getAttribute('start') || '1', 10);
     if (!Number.isFinite(nextNumber)) nextNumber = 1;
-
-    const hasCustomStart = (ol.hasAttribute('start') && nextNumber !== 1)
-      || items.some(li => li.hasAttribute('value'));
+    const hasCustomStart = (ol.hasAttribute('start') && nextNumber !== 1) || items.some(li => li.hasAttribute('value'));
     if (!hasCustomStart) return;
 
     const replacement = doc.createDocumentFragment();
     items.forEach(li => {
       const explicitValue = parseInt(li.getAttribute('value') || '', 10);
       if (Number.isFinite(explicitValue)) nextNumber = explicitValue;
-
       const line = doc.createElement('p');
       const number = doc.createElement('strong');
       number.textContent = nextNumber + '. ';
       line.appendChild(number);
-
       const nestedLists = [];
       Array.from(li.childNodes).forEach(node => {
-        if (node.nodeType === 1 && node.matches('ol,ul')) {
-          nestedLists.push(node);
-        } else if (node.nodeType === 1 && node.matches('p,div,h1,h2,h3,h4,h5,h6')) {
-          Array.from(node.childNodes).forEach(child => line.appendChild(child));
-        } else {
-          line.appendChild(node);
-        }
+        if (node.nodeType === 1 && node.matches('ol,ul')) nestedLists.push(node);
+        else if (node.nodeType === 1 && node.matches('p,div,h1,h2,h3,h4,h5,h6')) Array.from(node.childNodes).forEach(child => line.appendChild(child));
+        else line.appendChild(node);
       });
-
       replacement.appendChild(line);
       nestedLists.forEach(list => replacement.appendChild(list));
       nextNumber++;
     });
-
     ol.replaceWith(replacement);
     changed = true;
   });
-
   return changed ? doc.body.innerHTML : html;
 }
 
-function installSmartPaste(quill) {
-  quill.root.addEventListener('paste', event => {
-    const clipboard = event.clipboardData;
-    const originalHtml = clipboard ? clipboard.getData('text/html') : '';
-    if (!originalHtml) return;
+async function replacePastedDataImages(html, quill) {
+  if (!html || !/src=["']data:image\//i.test(html)) return html;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const images = Array.from(doc.querySelectorAll('img[src^="data:image/"]')).slice(0, 6);
+  if (!images.length) return html;
+  setEditorFooterMessage(quill, `Uploading ${images.length} pasted image${images.length === 1 ? '' : 's'}…`);
+  const userFolder = String(getUser() || 'user').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60) || 'user';
+  for (let index = 0; index < images.length; index++) {
+    const img = images[index];
+    try {
+      const response = await fetch(img.getAttribute('src'));
+      const blob = await response.blob();
+      if (!blob.type.startsWith('image/') || blob.size > 8 * 1024 * 1024) { img.remove(); continue; }
+      const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg').replace(/[^a-z0-9]/gi, '') || 'png';
+      const file = new File([blob], `pasted-image-${Date.now()}-${index + 1}.${ext}`, { type: blob.type });
+      const uploaded = await uploadFilesToStorage([file], `editor-images/${userFolder}`);
+      if (uploaded[0]?.url) img.setAttribute('src', uploaded[0].url);
+      else img.remove();
+    } catch (error) {
+      img.remove();
+    }
+  }
+  setEditorFooterMessage(quill, 'Pasted image uploaded ✓');
+  setTimeout(() => setEditorFooterMessage(quill, ''), 2200);
+  return doc.body.innerHTML;
+}
 
-    const fixedHtml = preservePastedListNumbers(originalHtml);
-    if (fixedHtml === originalHtml) return;
+function makeTableHtml(rows, cols) {
+  let body = '';
+  for (let r = 0; r < rows; r++) {
+    let cells = '';
+    for (let c = 0; c < cols; c++) {
+      const tag = r === 0 ? 'th' : 'td';
+      cells += `<${tag} contenteditable="true">${r === 0 ? `Column ${c + 1}` : '<br>'}</${tag}>`;
+    }
+    body += `<tr>${cells}</tr>`;
+  }
+  return `<table><tbody>${body}</tbody></table>`;
+}
+
+function setEditorFooterMessage(quill, message = '', isError = false) {
+  const wrap = quill && quill.container ? quill.container.closest('.quill-editor-wrap') : null;
+  const el = wrap ? wrap.querySelector('.wb-editor-message') : null;
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle('error', !!isError);
+}
+
+function updateEditorCount(quill) {
+  const wrap = quill && quill.container ? quill.container.closest('.quill-editor-wrap') : null;
+  const el = wrap ? wrap.querySelector('.wb-editor-count') : null;
+  if (!el) return;
+  const text = (quill.root.innerText || '').replace(/\u00a0/g, ' ').trim();
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  el.textContent = `${words} word${words === 1 ? '' : 's'} • ${text.length} character${text.length === 1 ? '' : 's'}`;
+}
+
+function ensureEditorFooter(quill) {
+  const wrap = quill.container.closest('.quill-editor-wrap');
+  if (!wrap || wrap.querySelector('.wb-editor-footer')) return;
+  const footer = document.createElement('div');
+  footer.className = 'wb-editor-footer';
+  footer.innerHTML = '<span class="wb-editor-help">Tip: paste normally. Lists, headings, links, colors, and tables are cleaned into a stable format.</span><span class="wb-editor-message"></span><span class="wb-editor-count">0 words • 0 characters</span>';
+  wrap.appendChild(footer);
+}
+
+function getCleanEditorHtml(quill) {
+  if (!quill) return '';
+  const clean = sanitizeRichHtml(quill.root.innerHTML, false).trim();
+  const doc = new DOMParser().parseFromString(clean, 'text/html');
+  const meaningfulText = (doc.body.textContent || '').replace(/\u00a0/g, ' ').trim();
+  const meaningfulEmbed = !!doc.querySelector('img,table,hr,.wb-table-embed');
+  return meaningfulText || meaningfulEmbed ? clean : '';
+}
+
+function setEditorHtml(quill, html) {
+  if (!quill) return;
+  const clean = sanitizeRichHtml(html || '', false) || '<p><br></p>';
+  quill.setText('', 'silent');
+  quill.clipboard.dangerouslyPasteHTML(0, clean, 'silent');
+  quill.setSelection(0, 0, 'silent');
+  updateEditorCount(quill);
+}
+
+async function insertEditorImageFile(quill, file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  if (file.size > 8 * 1024 * 1024) {
+    alert('The image is larger than 8 MB. Please choose a smaller image.');
+    return;
+  }
+  setEditorFooterMessage(quill, 'Uploading image…');
+  const userFolder = String(getUser() || 'user').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60) || 'user';
+  const uploaded = await uploadFilesToStorage([file], `editor-images/${userFolder}`);
+  const image = uploaded[0];
+  if (!image || !image.url) {
+    setEditorFooterMessage(quill, 'Image upload failed', true);
+    return;
+  }
+  const range = quill.getSelection(true) || { index: Math.max(0, quill.getLength() - 1), length: 0 };
+  quill.deleteText(range.index, range.length, 'user');
+  quill.insertEmbed(range.index, 'image', image.url, 'user');
+  quill.insertText(range.index + 1, '\n', 'user');
+  quill.setSelection(range.index + 2, 0, 'silent');
+  setEditorFooterMessage(quill, 'Image inserted ✓');
+  updateEditorCount(quill);
+  setTimeout(() => setEditorFooterMessage(quill, ''), 2200);
+}
+
+function chooseEditorImage(quill) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png,image/jpeg,image/webp,image/gif';
+  input.style.display = 'none';
+  document.body.appendChild(input);
+  input.addEventListener('change', async () => {
+    const file = input.files && input.files[0];
+    if (file) await insertEditorImageFile(quill, file);
+    input.remove();
+  }, { once: true });
+  input.click();
+}
+
+function insertEditorTable(quill) {
+  const rowInput = prompt('How many rows? (1–10)', '3');
+  if (rowInput === null) return;
+  const colInput = prompt('How many columns? (1–8)', '3');
+  if (colInput === null) return;
+  const rows = Math.max(1, Math.min(10, parseInt(rowInput, 10) || 3));
+  const cols = Math.max(1, Math.min(8, parseInt(colInput, 10) || 3));
+  const range = quill.getSelection(true) || { index: Math.max(0, quill.getLength() - 1), length: 0 };
+  quill.deleteText(range.index, range.length, 'user');
+  quill.insertEmbed(range.index, 'wbtable', makeTableHtml(rows, cols), 'user');
+  quill.insertText(range.index + 1, '\n', 'user');
+  quill.setSelection(range.index + 2, 0, 'silent');
+}
+
+function insertEditorDivider(quill) {
+  const range = quill.getSelection(true) || { index: Math.max(0, quill.getLength() - 1), length: 0 };
+  quill.deleteText(range.index, range.length, 'user');
+  quill.insertEmbed(range.index, 'divider', true, 'user');
+  quill.insertText(range.index + 1, '\n', 'user');
+  quill.setSelection(range.index + 2, 0, 'silent');
+}
+
+function toggleEditorFullscreen(quill) {
+  const wrap = quill.container.closest('.quill-editor-wrap');
+  if (!wrap) return;
+  const opening = !wrap.classList.contains('is-fullscreen');
+  document.querySelectorAll('.quill-editor-wrap.is-fullscreen').forEach(el => el.classList.remove('is-fullscreen'));
+  wrap.classList.toggle('is-fullscreen', opening);
+  document.body.classList.toggle('editor-fullscreen-open', opening);
+  setTimeout(() => quill.focus(), 30);
+}
+
+function quillModules() {
+  return {
+    toolbar: {
+      container: quillToolbar,
+      handlers: {
+        image: function() { chooseEditorImage(this.quill); },
+        table: function() { insertEditorTable(this.quill); },
+        divider: function() { insertEditorDivider(this.quill); },
+        undo: function() { this.quill.history.undo(); },
+        redo: function() { this.quill.history.redo(); },
+        expand: function() { toggleEditorFullscreen(this.quill); }
+      }
+    },
+    history: { delay: 600, maxStack: 120, userOnly: true }
+  };
+}
+
+function installEditorMatchers(quill) {
+  quill.clipboard.addMatcher('HR', () => new QuillDelta().insert({ divider: true }).insert('\n'));
+  quill.clipboard.addMatcher('TABLE', node => {
+    const html = sanitizeTableHtml(node.outerHTML);
+    return html ? new QuillDelta().insert({ wbtable: html }).insert('\n') : new QuillDelta();
+  });
+}
+
+function installEditorUsability(quill, autosaveCallback) {
+  ensureEditorFooter(quill);
+  installEditorMatchers(quill);
+  updateEditorCount(quill);
+
+  const toolbar = quill.getModule('toolbar').container;
+  const titles = {
+    font:'Font', size:'Text size', header:'Paragraph or heading', bold:'Bold', italic:'Italic', underline:'Underline', strike:'Strikethrough',
+    color:'Text color', background:'Highlight color', script:'Subscript or superscript', list:'List', indent:'Indent', align:'Alignment',
+    blockquote:'Quote', 'code-block':'Code block', link:'Link', image:'Upload image', table:'Insert table', divider:'Insert divider line',
+    undo:'Undo', redo:'Redo', expand:'Full-screen writing', clean:'Clear formatting'
+  };
+  toolbar.querySelectorAll('button').forEach(el => {
+    const cls = Array.from(el.classList).find(c => c.startsWith('ql-')) || '';
+    const key = cls.replace(/^ql-/, '');
+    if (titles[key]) { el.title = titles[key]; el.setAttribute('aria-label', titles[key]); }
+  });
+  toolbar.querySelectorAll('.ql-picker').forEach(picker => {
+    const cls = Array.from(picker.classList).find(c => c !== 'ql-picker' && c.startsWith('ql-')) || '';
+    const key = cls.replace(/^ql-/, '');
+    const label = picker.querySelector('.ql-picker-label');
+    if (label && titles[key]) { label.title = titles[key]; label.setAttribute('aria-label', titles[key]); }
+  });
+
+  quill.root.addEventListener('paste', async event => {
+    const clipboard = event.clipboardData;
+    if (!clipboard) return;
+    const imageFile = Array.from(clipboard.files || []).find(file => file.type && file.type.startsWith('image/'));
+    const originalHtml = clipboard.getData('text/html') || '';
+    const plainText = clipboard.getData('text/plain') || '';
+    if (imageFile && !plainText.trim()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      insertEditorImageFile(quill, imageFile);
+      return;
+    }
+    if (!originalHtml) return;
 
     event.preventDefault();
     event.stopImmediatePropagation();
-
-    const range = quill.getSelection(true) || { index: quill.getLength() - 1, length: 0 };
-    const pasted = quill.clipboard.convert(fixedHtml);
-    const Delta = Quill.import('delta');
-    const change = new Delta().retain(range.index).delete(range.length).concat(pasted);
+    const cleanHtml = await replacePastedDataImages(normalizePastedHtml(originalHtml), quill);
+    const range = quill.getSelection(true) || { index: Math.max(0, quill.getLength() - 1), length: 0 };
+    const pasted = quill.clipboard.convert(cleanHtml);
+    const change = new QuillDelta().retain(range.index).delete(range.length).concat(pasted);
     quill.updateContents(change, 'user');
     quill.setSelection(range.index + Math.max(0, pasted.length() - 1), 0, 'silent');
   }, true);
+
+  quill.root.addEventListener('dragover', event => {
+    if (Array.from(event.dataTransfer?.items || []).some(item => item.type && item.type.startsWith('image/'))) event.preventDefault();
+  });
+  quill.root.addEventListener('drop', event => {
+    const file = Array.from(event.dataTransfer?.files || []).find(item => item.type && item.type.startsWith('image/'));
+    if (!file) return;
+    event.preventDefault();
+    insertEditorImageFile(quill, file);
+  });
+
+  quill.root.addEventListener('keydown', event => {
+    const cell = event.target.closest && event.target.closest('td,th');
+    if (!cell || event.key !== 'Tab') return;
+    const cells = Array.from(cell.closest('table').querySelectorAll('th,td'));
+    const index = cells.indexOf(cell);
+    const next = cells[index + (event.shiftKey ? -1 : 1)];
+    if (next) { event.preventDefault(); next.focus(); }
+  });
+
+  quill.root.addEventListener('input', () => {
+    updateEditorCount(quill);
+    if (typeof autosaveCallback === 'function') autosaveCallback();
+  });
+  quill.on('text-change', () => updateEditorCount(quill));
 }
 
 const quillLog = new Quill('#log-body-editor', {
   theme: 'snow',
-  modules: { toolbar: quillToolbar },
-  placeholder: 'Isi catatan, hasil keputusan, tindak lanjut, notulensi...'
+  modules: quillModules(),
+  placeholder: 'Write the activity, decision, result, follow-up, or meeting notes…'
 });
-installSmartPaste(quillLog);
+installEditorUsability(quillLog, autosaveLogDraft);
 quillLog.on('text-change', autosaveLogDraft);
 
 const quillNote = new Quill('#note-body-editor', {
   theme: 'snow',
-  modules: { toolbar: quillToolbar },
-  placeholder: 'Isi catatan penting perusahaan...'
+  modules: quillModules(),
+  placeholder: 'Write an important reference note…'
 });
-installSmartPaste(quillNote);
+installEditorUsability(quillNote, autosaveNoteDraft);
 quillNote.on('text-change', autosaveNoteDraft);
 
 const quillNp = new Quill('#np-body-editor', {
   theme: 'snow',
-  modules: { toolbar: quillToolbar },
-  placeholder: 'Tulis catatan di sini...'
+  modules: quillModules(),
+  placeholder: 'Write freely here…'
 });
-installSmartPaste(quillNp);
+installEditorUsability(quillNp, autosaveNotepadDraft);
 quillNp.on('text-change', autosaveNotepadDraft);
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && document.body.classList.contains('editor-fullscreen-open')) {
+    document.querySelectorAll('.quill-editor-wrap.is-fullscreen').forEach(el => el.classList.remove('is-fullscreen'));
+    document.body.classList.remove('editor-fullscreen-open');
+  }
+});
 restoreTodoDraft();
 
 </script>

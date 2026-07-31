@@ -2,9 +2,9 @@
 
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
-**Status sinkronisasi:** 30 Juli 2026  
-**Pasangan kode terbaru:** `index(65).html`  
-**SHA-256 pasangan kode:** `2c72af2ccf2450f30bf381307c90c86d5d2e546801fe63f0672758b9b9141904`
+**Status sinkronisasi:** 31 Juli 2026  
+**Pasangan kode terbaru:** `index(69).html`  
+**SHA-256 pasangan kode:** `e90a68b1629dff175aadbecab6a401037f48df81ade1e7d3272d17cee3059450`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(65).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(69).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -317,7 +317,7 @@ Aturan:
 | Home | Home / One Thing Now | `todos`; owner-only; satu input terpadu untuk Today, Follow Up, Waiting Reply, dan Brain Dump serta kartu ringkas untuk masing-masing hasil |
 | Daily | Daily Schedule | `schedule_events`, public + private |
 | Daily | Logbook | `logbook_entries`, lampiran Supabase Storage, tautan ke `time_plan_tracker`, dan Smart Next-Step Suggestion |
-| Projects | Tracker tab | ADHD Project Focus, visual overview, quick actions, card lists, dan detailed table memakai `time_plan_tracker`; `tracker_items` masih dipakai Result dan fungsi lama |
+| Projects | Tracker tab | Statistik dan Project/Milestone memakai `time_plan_tracker`; `tracker_items` masih dipakai Result dan fungsi lama |
 | Projects | Kanban tab | Visualisasi dan perubahan status dari `time_plan_tracker` |
 | Projects | Gantt tab | Timeline dari `time_plan_tracker` |
 | Projects | Matrix tab | Gabungan To Do belum selesai dari `todos` dan item aktif `time_plan_tracker` |
@@ -393,7 +393,7 @@ All Links saat ini memiliki:
 ### 15.7 Kondisi UI yang perlu dijaga
 
 - Seluruh teks UI baru wajib English.
-- Masih mungkin ada teks Indonesia lama di `index(65).html`; itu adalah technical debt, bukan alasan mengubah isi data user.
+- Masih mungkin ada teks Indonesia lama di `index(69).html`; itu adalah technical debt, bukan alasan mengubah isi data user.
 - Jangan melakukan penerjemahan massal ketika tugas hanya menyentuh satu fitur. Terjemahkan bagian terkait secara terarah atau lakukan audit bahasa sebagai tugas khusus.
 - Desain tetap light theme dan responsif.
 - Perubahan visual tidak boleh menghapus event handler, ID, tombol aksi, filter, atau fungsi penyimpanan.
@@ -433,7 +433,7 @@ All Links saat ini memiliki:
 ### 15.10 Projects Workspace
 
 - Sidebar hanya menampilkan satu item `Projects Workspace`.
-- Kanban, Gantt, Matrix, dan Recurring tetap memakai panel dan fungsi render lama. Tracker memakai tampilan ADHD Project Focus di atas data `time_plan_tracker` yang sama tanpa menghapus detailed table lama.
+- Tracker, Kanban, Gantt, Matrix, dan Recurring tetap memakai panel dan fungsi render lama.
 - Perpindahan antar-tampilan dilakukan melalui tab sticky di bagian atas area konten.
 - Tampilan proyek terakhir disimpan pada `localStorage` key `wb_last_project_view`.
 - Top title tetap `Projects` saat berpindah tab.
@@ -482,22 +482,23 @@ All Links saat ini memiliki:
 - Karena Supabase Auth masih ditunda, access code adalah pengaman tambahan dan bukan pengganti autentikasi per user.
 
 
-### 15.13 Tracker ADHD Project Focus
 
-- Tracker tetap mempertahankan visual dashboard: empat kartu statistik, progress bar, Status Summary, dan Category Breakdown berbentuk donut.
-- Bagian paling atas menampilkan tepat satu `One Project Now` yang dipilih lokal dari project aktif berdasarkan overdue, due today, due dalam tiga hari, priority, dan status In Progress.
-- Item `Waiting / On Hold` tidak dipilih sebagai fokus utama selama masih ada project lain yang dapat dikerjakan.
-- Statistik Tracker memakai label `Active Projects`, `Done`, `Needs Attention`, dan `Overall Progress`; warna latar memakai pastel kalem.
-- Pada desktop visual overview tetap terbuka. Pada mobile visual overview dapat dilipat agar halaman tidak terlalu panjang.
-- Quick Add hanya mewajibkan satu field `What needs to happen?`; Assignment, Priority, Category, Status, Schedule, Start Date, Due Date, Notes, dan Privacy berada di `Add more details`.
-- Status awal project baru adalah `Not Started`, priority awal `Medium`, dan pilihan privacy terakhir tidak direset setelah penyimpanan.
-- Project cards menyediakan quick actions `Start`, `Done`, `Waiting`, `Today`, `Add Update`, dan `Edit`.
-- `Start` mengisi Start Date hari ini bila kosong. `Today` menetapkan Due Date hari ini. `Waiting` memakai status `on_hold`.
-- `Add Update` membuka form Logbook, mengisi judul project, dan memilih link Tracker secara otomatis.
-- Maksimal tiga project ditampilkan pada `Needs Attention`; project aktif lain, project selesai, dan detailed table disimpan dalam bagian yang dapat dibuka ketika diperlukan.
-- Detailed table, filter, inline edit, delete, public/private visibility, Kanban, Gantt, Matrix, Recurring, Result, serta tautan Logbook tetap menggunakan data dan ID lama.
-- Tracker tidak lagi menampilkan input tanggal yang sebelumnya tidak memfilter statistik.
-- Fitur ini tidak membutuhkan SQL, tabel, atau kolom database baru.
+### 15.13 Unified Rich Text Editor — Logbook, Notes, dan Notepad
+
+- Form penulisan Logbook, Notes, dan Notepad memakai satu standar editor Quill yang sama.
+- Tinggi area penulisan disamakan pada desktop dan mobile; toolbar mobile dapat digeser horizontal agar tidak menumpuk atau memotong tombol.
+- Toolbar menyediakan paragraph/heading, pilihan ukuran teks, bold, italic, underline, strikethrough, warna teks, highlight, subscript, superscript, ordered list, bullet list, indent, alignment, blockquote, code block, link, image, table, divider line, undo, redo, full-screen writing, dan clear formatting.
+- Pilihan font yang tersedia adalah Inter, Poppins, Nunito, Quicksand, Playfair Display, Caveat, Serif, dan Monospace.
+- Paste dari ChatGPT, Word, email, atau halaman web dibersihkan menjadi HTML yang stabil tanpa script, event berbahaya, atau style layout asing.
+- Penomoran list yang dimulai di atas angka 1 tetap dipertahankan saat paste.
+- Tabel dari clipboard dipertahankan sebagai table embed; user juga dapat membuat tabel baru dan mengedit isi sel secara langsung.
+- Gambar dapat ditambahkan melalui toolbar, paste screenshot, atau drag-and-drop. File gambar diunggah ke bucket Storage `attachments` pada folder `editor-images/<user>`.
+- Gambar dibatasi maksimal 8 MB dan disimpan sebagai URL Storage, bukan data base64 di field database.
+- Rich HTML disanitasi sebelum disimpan dan sebelum ditampilkan untuk mengurangi risiko script atau atribut berbahaya.
+- Footer editor menampilkan word count dan character count.
+- Mode full-screen dapat ditutup menggunakan tombol toolbar atau tombol Escape.
+- Draft Protection, ownership/private filter, Gemini Writing Assistant, tabel database, dan struktur penyimpanan lama tetap dipertahankan.
+- Fitur ini tidak memerlukan SQL baru. Bucket Storage `attachments` tetap harus tersedia seperti kebutuhan lampiran Logbook yang sudah ada.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
@@ -517,11 +518,6 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Satu input Home dapat menyimpan Today, Follow Up, Waiting Reply, atau Brain Dump tanpa membuat tabel baru.
 - [ ] Follow Up eksplisit tidak tampil ganda sebagai Waiting Reply.
 - [ ] Kanban, Gantt, Decision Matrix, Recurring Task, dan Logbook tetap sinkron dengan `time_plan_tracker`.
-- [ ] Tracker tetap menampilkan visual overview lengkap pada desktop dan dapat dilipat pada mobile.
-- [ ] `One Project Now` hanya menampilkan satu project aktif dan tidak memilih Waiting/On Hold jika ada pilihan kerja lain.
-- [ ] Quick Add Tracker dapat menyimpan hanya dari satu field subject; More Details tetap menyimpan semua field lama.
-- [ ] Tombol Start, Done, Waiting, Today, Add Update, dan Edit memperbarui data yang sama tanpa membuat duplikat.
-- [ ] Detailed table, filter, edit, delete, dan privacy Tracker tetap tersedia.
 - [ ] `tracker_items` tidak dihapus tanpa audit Result dan semua referensinya.
 - [ ] Menu admin desktop dan mobile tetap tersembunyi untuk non-admin.
 - [ ] UI baru menggunakan English.
@@ -533,20 +529,31 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Access code Gemini tidak disimpan lebih lama dari sesi browser.
 - [ ] Tombol `What should I do next?` tidak memanggil layanan eksternal.
 - [ ] Logbook, Notes, dan Notepad memiliki lima tindakan Gemini tanpa mengirim panel atau database lain.
+- [ ] Logbook, Notes, dan Notepad memakai toolbar, tinggi editor, paste cleaner, dan footer penghitung yang sama.
+- [ ] Font, ukuran, heading, list, indent, alignment, warna, highlight, link, undo, redo, divider, table, image, dan full-screen editor tetap berfungsi.
+- [ ] Paste gambar dan upload gambar tetap menuju Supabase Storage, bukan disimpan sebagai base64 di database.
+- [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
 - [ ] Puter.js tidak dimuat dan tidak dapat memunculkan popup saldo.
 
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
 
-### 30 Juli 2026
+### 31 Juli 2026
 
-- Mengubah Tracker menjadi ADHD Project Focus tanpa menghapus visual dashboard yang disukai user.
-- Menambahkan `One Project Now`, pemeringkatan lokal project, `Needs Attention`, Other Active, Completed, dan detailed table yang dapat dibuka.
-- Mempertahankan empat stat cards, progress bar, Status Summary, serta Category Breakdown donut dengan warna pastel kalem.
-- Menambahkan Quick Add satu baris dengan More Details, default `Not Started`, dan tombol cepat Start, Done, Waiting, Today, Add Update, serta Edit.
-- `Add Update` membuka Logbook dengan project Tracker sudah tertaut. Input tanggal Tracker lama yang tidak berfungsi sebagai filter dihapus.
-- Tidak ada SQL, tabel, atau kolom baru.
+- Membandingkan `index(67).html` dan `index(68).html`; keduanya tidak identik secara keseluruhan, tetapi blok editor Logbook, Notes, dan Notepad identik.
+- Menjadikan `index(68).html` sebagai dasar agar perubahan proyek terbaru tidak kembali ke versi sebelumnya.
+- Menyamakan struktur visual, lebar, dan tinggi area penulisan Logbook, Notes, dan Notepad.
+- Memperluas toolbar editor dengan heading, ukuran teks, delapan pilihan font, warna, highlight, indent, blockquote, code block, table, divider, image upload/paste/drop, undo, redo, full-screen, dan clear formatting.
+- Menambahkan paste cleaner agar salinan dari ChatGPT, Word, email, atau web lebih stabil dan tidak membawa layout asing.
+- Mempertahankan nomor ordered list yang dimulai di atas angka 1.
+- Menambahkan tabel yang dapat dibuat atau dipaste dan selnya dapat diedit langsung.
+- Menambahkan upload/paste/drag-and-drop gambar ke bucket Storage `attachments`, batas 8 MB.
+- Menambahkan sanitasi rich HTML saat save dan render serta word/character count.
+- Mengubah teks UI yang disentuh menjadi English.
+- Tidak ada SQL atau migrasi database baru.
+
+### 30 Juli 2026
 
 - Memisahkan bantuan menjadi Smart Focus lokal dan Gemini Writing Assistant.
 - Tombol Home `What should I do next?` sekarang memilih satu tugas secara lokal tanpa API, saldo, kuota, atau pengiriman data keluar.
