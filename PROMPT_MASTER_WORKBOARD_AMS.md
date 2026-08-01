@@ -2,9 +2,9 @@
 
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
-**Status sinkronisasi:** 31 Juli 2026  
-**Pasangan kode terbaru:** `index(69).html`  
-**SHA-256 pasangan kode:** `e90a68b1629dff175aadbecab6a401037f48df81ade1e7d3272d17cee3059450`
+**Status sinkronisasi:** 1 Agustus 2026  
+**Pasangan kode terbaru:** `index(70).html`  
+**SHA-256 pasangan kode:** `cabee547c950b1cc6a8767a790270cb84065c82838583bdeb934e42d196754fc`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(69).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(70).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -285,11 +285,11 @@ Snapshot ini dibuat dari `index(69).html` yang dipasangkan dengan prompt ini.
 - Data utama disimpan di Supabase.
 - Aplikasi mendaftarkan `sw.js` untuk PWA dan Work-Break Alarm.
 - Identitas user aktif tetap menggunakan `localStorage` key `wb_user`.
-- Navigasi desktop menggunakan sidebar bertingkat dengan `Home` sebagai tombol mandiri.
+- Navigasi desktop menggunakan sidebar bertingkat dengan `Capture` sebagai tombol mandiri dan panel awal.
 - Grup `Daily` hanya berisi `Daily Schedule` dan `Logbook`.
 - Grup `Projects` membuka satu `Projects Workspace`; Tracker, Kanban, Gantt, Matrix, dan Recurring berpindah melalui tab internal.
-- Grup `Personal` hanya berisi Notes, To Do, dan Notepad. Brain Dump, Follow Up, dan Waiting disatukan di Home.
-- Navigasi mobile menggunakan lima tombol inti tetap: `Home`, `Daily`, `Projects`, `Capture`, dan `More`; tombol `Capture` membuka Home lalu memfokuskan satu input terpadu.
+- Grup `Personal` hanya berisi Notes, To Do, dan Notepad. Brain Dump, Follow Up, dan Waiting disatukan di Capture.
+- Navigasi mobile menggunakan empat tombol inti tetap: `Capture`, `Daily`, `Projects`, dan `More`; tidak ada lagi tombol Home dan Capture yang terpisah.
 - Global Search, Global Filter, Export, dan Work Alarm berada di top bar.
 - **Tidak ada tombol `+ Add` global di top bar.**
 
@@ -314,7 +314,7 @@ Aturan:
 
 | Grup | Panel/tampilan | Sumber/ketergantungan utama |
 |---|---|---|
-| Home | Home / One Thing Now | `todos`; owner-only; satu input terpadu untuk Today, Follow Up, Waiting Reply, dan Brain Dump serta kartu ringkas untuk masing-masing hasil |
+| Capture | Capture / One Thing Now | `todos`; owner-only; satu input terpadu untuk Today, Follow Up, Waiting Reply, dan Brain Dump serta kartu ringkas untuk masing-masing hasil |
 | Daily | Daily Schedule | `schedule_events`, public + private |
 | Daily | Logbook | `logbook_entries`, lampiran Supabase Storage, tautan ke `time_plan_tracker`, dan Smart Next-Step Suggestion |
 | Projects | Tracker tab | Statistik dan Project/Milestone memakai `time_plan_tracker`; `tracker_items` masih dipakai Result dan fungsi lama |
@@ -393,7 +393,7 @@ All Links saat ini memiliki:
 ### 15.7 Kondisi UI yang perlu dijaga
 
 - Seluruh teks UI baru wajib English.
-- Masih mungkin ada teks Indonesia lama di `index(69).html`; itu adalah technical debt, bukan alasan mengubah isi data user.
+- Masih mungkin ada teks Indonesia lama di `index(70).html`; itu adalah technical debt, bukan alasan mengubah isi data user.
 - Jangan melakukan penerjemahan massal ketika tugas hanya menyentuh satu fitur. Terjemahkan bagian terkait secara terarah atau lakukan audit bahasa sebagai tugas khusus.
 - Desain tetap light theme dan responsif.
 - Perubahan visual tidak boleh menghapus event handler, ID, tombol aksi, filter, atau fungsi penyimpanan.
@@ -412,21 +412,21 @@ All Links saat ini memiliki:
 
 ---
 
-### 15.9 Home dan Quick Capture
+### 15.9 Capture dan Quick Capture
 
-- `Home` menjadi panel awal ketika WorkBoard dibuka pada desktop dan mobile.
-- Home memakai tabel `todos` yang sudah ada; tidak memerlukan tabel atau kolom database baru.
+- `Capture` menjadi panel awal ketika WorkBoard dibuka pada desktop dan mobile.
+- Capture memakai tabel `todos` yang sudah ada; tidak memerlukan tabel atau kolom database baru.
 - Data tetap private dan difilter dengan `applyOwner()` untuk user aktif.
 - Header menampilkan sapaan sesuai waktu, tombol lokal `What should I do next?`, serta satu tugas utama sebagai `One Thing Now`.
 - Quick Capture menerima satu kalimat dan tombol Enter dengan mode `Today`, `Follow Up`, `Waiting Reply`, dan `Brain Dump`.
-- Penanda internal `[Today]`, `[Follow Up]`, `[Waiting]`, dan `[Inbox]` disimpan di `todos.text` tetapi disembunyikan dari kartu Home.
-- Maksimal dua tugas lain tersedia sebagai `Up Next`, tetapi dibuat tertutup secara default agar Home hanya menonjolkan satu pekerjaan utama; urutan mempertimbangkan overdue, deadline hari ini, follow-up, dan priority.
+- Penanda internal `[Today]`, `[Follow Up]`, `[Waiting]`, dan `[Inbox]` disimpan di `todos.text` tetapi disembunyikan dari kartu Capture.
+- Maksimal dua tugas lain tersedia sebagai `Up Next`, tetapi dibuat tertutup secara default agar Capture hanya menonjolkan satu pekerjaan utama; urutan mempertimbangkan overdue, deadline hari ini, follow-up, dan priority.
 - Setiap kartu menyediakan `Done`, `Later 30m`, `Tomorrow`, dan `Open`.
-- `Later 30m` memakai `localStorage` per user dan berlaku pada seluruh kartu tugas di Home.
-- Home adalah satu-satunya tempat capture cepat untuk Follow Up, Waiting Reply, dan Brain Dump; tidak ada form atau menu sidebar terpisah untuk ketiganya.
+- `Later 30m` memakai `localStorage` per user dan berlaku pada seluruh kartu tugas di Capture.
+- Capture adalah satu-satunya tempat capture cepat untuk Follow Up, Waiting Reply, dan Brain Dump; tidak ada form atau menu sidebar terpisah untuk ketiganya.
 - Kartu sekunder Follow Up, Waiting, Added for Today, dan Brain Dump disembunyikan otomatis ketika tidak memiliki isi agar halaman tidak memanjang tanpa manfaat.
-- Home memakai kelompok warna pastel kalem yang mengikuti nuansa Logbook: sage, cream, dusty rose, soft blue, dan lilac; warna tidak boleh terlalu terang.
-- Badge Home menunjukkan tugas overdue + jatuh tempo hari ini; badge Capture mobile memakai jumlah Brain Dump, sedangkan Follow Up dan Waiting terlihat melalui kartu Home.
+- Capture memakai kelompok warna pastel kalem yang mengikuti nuansa Logbook: sage, cream, dusty rose, soft blue, dan lilac; warna tidak boleh terlalu terang.
+- Badge Capture pada desktop dan mobile menunjukkan tugas overdue + jatuh tempo hari ini; Follow Up, Waiting, dan Brain Dump tetap terlihat melalui kartu Capture.
 - Panel To Do lama, dashboard bulanan, autosave draft, serta struktur tabel `todos` tetap dipertahankan.
 - Fitur ini tidak membutuhkan SQL baru.
 
@@ -438,20 +438,20 @@ All Links saat ini memiliki:
 - Tampilan proyek terakhir disimpan pada `localStorage` key `wb_last_project_view`.
 - Top title tetap `Projects` saat berpindah tab.
 - Desktop dan mobile memakai satu pintu Projects; mobile tidak lagi memuat lima tombol proyek terpisah.
-- Bottom navigation mobile hanya memiliki lima tombol inti. `Daily` membuka action sheet berisi Daily Schedule dan Logbook; `More` membuka action sheet untuk Personal, Work, Resources, Help, dan Settings admin.
-- Tombol `Capture` membuka Home dan langsung memfokuskan input terpadu. Panel selain Home, Daily, dan Projects menandai tombol `More` sebagai aktif.
+- Bottom navigation mobile hanya memiliki empat tombol inti. `Daily` membuka action sheet berisi Daily Schedule dan Logbook; `More` membuka action sheet untuk Personal, Work, Resources, Help, dan Settings admin.
+- Tombol `Capture` adalah tombol pertama dan membuka panel Capture sambil langsung memfokuskan input terpadu. Panel selain Capture, Daily, dan Projects menandai tombol `More` sebagai aktif.
 - Tidak ada tabel, fungsi data, atau panel lama yang dihapus.
 
-### 15.11 Unified Home Capture dan Smart Next-Step
+### 15.11 Unified Capture dan Smart Next-Step
 
-- Home memakai satu input untuk empat mode: `Today`, `Follow Up`, `Waiting Reply`, dan `Brain Dump`.
-- Brain Dump tetap disimpan sebagai item `[Inbox]`, Follow Up sebagai `[Follow Up]`, dan Waiting Reply sebagai `[Waiting]` pada tabel `todos`; penanda disembunyikan dari kartu Home.
+- Capture memakai satu input untuk empat mode: `Today`, `Follow Up`, `Waiting Reply`, dan `Brain Dump`.
+- Brain Dump tetap disimpan sebagai item `[Inbox]`, Follow Up sebagai `[Follow Up]`, dan Waiting Reply sebagai `[Waiting]` pada tabel `todos`; penanda disembunyikan dari kartu Capture.
 - Brain Dump dan Follow Up Center tidak ditampilkan lagi sebagai menu desktop, menu mobile, atau form terpisah.
-- Panel dan fungsi lama Brain Dump/Follow Up tetap dipertahankan secara internal untuk kompatibilitas data, tetapi navigasi lama diarahkan kembali ke Home.
+- Panel dan fungsi lama Brain Dump/Follow Up tetap dipertahankan secara internal untuk kompatibilitas data, tetapi navigasi lama diarahkan kembali ke Capture.
 - Item eksplisit `[Follow Up]` tidak boleh muncul ganda sebagai Waiting hanya karena kalimatnya mengandung kata “waiting”.
 - Setelah Logbook berhasil disimpan, pemeriksaan kata kunci lokal dapat menawarkan `Add Follow Up` atau `Add Waiting Reply` melalui toast non-blocking.
 - Smart Next-Step tidak mengirim isi Logbook ke layanan AI eksternal; pemeriksaan dilakukan lokal di browser.
-- Semua item baru dari Home Capture dan saran Logbook bersifat private serta owner-only.
+- Semua item baru dari Capture dan saran Logbook bersifat private serta owner-only.
 - Tidak diperlukan SQL atau migrasi database.
 
 ### 15.12 Smart Focus lokal dan Gemini Writing Assistant
@@ -511,11 +511,11 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Kategori All Links tetap tegas, berwarna, memiliki jumlah link, dan memakai grid responsif.
 - [ ] Data publik tetap terlihat oleh tim.
 - [ ] Data private milik user lain tetap tersembunyi.
-- [ ] Notes, To Do, Notepad, seluruh mode Home Capture, dan Password Manager tetap owner-only.
+- [ ] Notes, To Do, Notepad, seluruh mode Capture, dan Password Manager tetap owner-only.
 - [ ] Daily hanya menampilkan Daily Schedule dan Logbook.
 - [ ] Projects Workspace tetap memiliki tab Tracker, Kanban, Gantt, Matrix, dan Recurring pada desktop serta mobile.
 - [ ] Seluruh panel proyek lama masih tersedia dan fungsi render lamanya tidak dihapus.
-- [ ] Satu input Home dapat menyimpan Today, Follow Up, Waiting Reply, atau Brain Dump tanpa membuat tabel baru.
+- [ ] Satu input Capture dapat menyimpan Today, Follow Up, Waiting Reply, atau Brain Dump tanpa membuat tabel baru.
 - [ ] Follow Up eksplisit tidak tampil ganda sebagai Waiting Reply.
 - [ ] Kanban, Gantt, Decision Matrix, Recurring Task, dan Logbook tetap sinkron dengan `time_plan_tracker`.
 - [ ] `tracker_items` tidak dihapus tanpa audit Result dan semua referensinya.
@@ -552,6 +552,15 @@ Selain checklist pada Bagian 11, periksa:
 - Menambahkan sanitasi rich HTML saat save dan render serta word/character count.
 - Mengubah teks UI yang disentuh menjadi English.
 - Tidak ada SQL atau migrasi database baru.
+
+### 1 Agustus 2026
+
+- Mengganti nama panel awal `Home` menjadi `Capture` pada sidebar desktop, judul panel, judul halaman, dan bottom navigation mobile.
+- Menggabungkan tombol Home dan Capture pada mobile menjadi satu tombol `Capture`; bottom navigation kini berisi empat tombol: Capture, Daily, Projects, dan More.
+- Mencegah browser atau password manager mengisi alamat email tersimpan ke kolom Quick Capture melalui atribut autofill khusus serta pembersihan nilai pada load, pageshow, dan fokus pertama.
+- Placeholder `Dump it here — anything you must not forget...` langsung terlihat setiap WorkBoard dibuka.
+- Data `todos`, privasi owner-only, badge, fungsi Quick Capture, dan panel lain tidak diubah.
+- Tidak memerlukan SQL atau migrasi database.
 
 ### 30 Juli 2026
 
