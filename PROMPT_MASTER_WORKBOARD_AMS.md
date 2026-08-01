@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 1 Agustus 2026  
-**Pasangan kode terbaru:** `index(71).html`  
-**SHA-256 pasangan kode:** `e82155b6aeba85ee1ea8f3d7022a8f2d63d3189fb0ddb4af7516aa0ed01efebc`
+**Pasangan kode terbaru:** `index(72).html`  
+**SHA-256 pasangan kode:** `c5665e1384dab7e244b5f733865686a68de3120ac3c5543b72ce8144c694da39`
 
 ---
 
@@ -500,6 +500,16 @@ All Links saat ini memiliki:
 - Draft Protection, ownership/private filter, Gemini Writing Assistant, tabel database, dan struktur penyimpanan lama tetap dipertahankan.
 - Fitur ini tidak memerlukan SQL baru. Bucket Storage `attachments` tetap harus tersedia seperti kebutuhan lampiran Logbook yang sudah ada.
 
+### 15.14 Lampiran PowerPoint
+
+- File `.ppt` dan `.pptx` didukung pada lampiran Logbook dan Work Talk.
+- File picker harus menampilkan PowerPoint melalui ekstensi file dan MIME type resmi Microsoft PowerPoint.
+- Batas ukuran lampiran adalah 20 MB per file.
+- Validasi jenis dan ukuran file dilakukan kembali di JavaScript, bukan hanya melalui filter file picker.
+- File PowerPoint memakai ikon presentasi dan disimpan di bucket Storage `attachments` seperti lampiran lain.
+- PowerPoint dibuka atau diunduh dari tautan lampiran; WorkBoard tidak menjalankan preview slide di dalam aplikasi.
+- Perubahan ini tidak memerlukan SQL atau tabel baru.
+
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
 Selain checklist pada Bagian 11, periksa:
@@ -532,6 +542,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Logbook, Notes, dan Notepad memakai toolbar, tinggi editor, paste cleaner, dan footer penghitung yang sama.
 - [ ] Font, ukuran, heading, list, indent, alignment, warna, highlight, link, undo, redo, divider, table, image, dan full-screen editor tetap berfungsi.
 - [ ] Paste gambar dan upload gambar tetap menuju Supabase Storage, bukan disimpan sebagai base64 di database.
+- [ ] Lampiran `.ppt` dan `.pptx` tetap terlihat di file picker Logbook dan Work Talk, maksimal 20 MB per file.
 - [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
 - [ ] Numbering hasil paste tidak kembali ke angka 1 setelah bullet, paragraf kosong, atau blok daftar terpisah.
 - [ ] Puter.js tidak dimuat dan tidak dapat memunculkan popup saldo.
@@ -556,6 +567,11 @@ Selain checklist pada Bagian 11, periksa:
 
 ### 1 Agustus 2026
 
+- Menambahkan dukungan resmi lampiran PowerPoint `.ppt` dan `.pptx` pada Logbook dan Work Talk.
+- File picker sekarang mengenali ekstensi serta MIME type Microsoft PowerPoint sehingga file presentasi muncul di folder pemilihan.
+- Menambahkan validasi jenis file dan batas ukuran 20 MB per file sebelum lampiran dimasukkan ke antrean upload.
+- Menambahkan ikon presentasi serta ukuran file pada preview lampiran Work Talk.
+- Penyimpanan tetap memakai bucket Supabase Storage `attachments`; tidak memerlukan SQL atau preview slide di dalam WorkBoard.
 - Memperbaiki bug penomoran hasil copy-paste yang sebelumnya membuat setiap bagian terpisah kembali menjadi angka `1`.
 - Parser baru menjaga urutan nomor walaupun di antara bagian terdapat bullet list, paragraf kosong, atau blok HTML terpisah dari ChatGPT, Word, email, dan website.
 - Perbaikan diterapkan bersama pada Logbook, Notes, dan Notepad karena ketiganya memakai unified rich-text editor.

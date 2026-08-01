@@ -2478,9 +2478,10 @@ ALTER TABLE logbook_entries
             </div>
             <div class="form-row" style="flex-direction:column;align-items:flex-start;gap:6px">
               <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px">
-                <i class="ti ti-paperclip"></i> Attachments (PDF, image, Word, Excel — multiple allowed)
+                <i class="ti ti-paperclip"></i> Attachments (PDF, image, Word, Excel, PowerPoint — multiple allowed)
               </label>
-              <input type="file" id="log-files" multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv" style="font-size:12px" onchange="handleLogFileSelect()" />
+              <input type="file" id="log-files" multiple accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" style="font-size:12px" onchange="handleLogFileSelect()" />
+              <div style="font-size:10.5px;color:var(--text3)">PowerPoint files are supported. Maximum 20 MB per file.</div>
               <div id="log-attach-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
             </div>
             <div class="form-actions">
@@ -5264,7 +5265,40 @@ function fileIconFor(name) {
   if (ext === 'pdf') return 'ti-file-type-pdf';
   if (['doc', 'docx'].includes(ext)) return 'ti-file-type-doc';
   if (['xls', 'xlsx', 'csv'].includes(ext)) return 'ti-file-type-xls';
+  if (['ppt', 'pptx'].includes(ext)) return 'ti-presentation';
   return 'ti-file';
+}
+
+const WB_ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024;
+const WB_ATTACHMENT_ALLOWED_EXTENSIONS = new Set([
+  'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx'
+]);
+
+function attachmentExtension(name) {
+  return ((name || '').split('.').pop() || '').toLowerCase();
+}
+
+function filterSupportedAttachments(files) {
+  const valid = [];
+  const unsupported = [];
+  const tooLarge = [];
+  (files || []).forEach(file => {
+    const ext = attachmentExtension(file.name);
+    if (!WB_ATTACHMENT_ALLOWED_EXTENSIONS.has(ext)) {
+      unsupported.push(file.name);
+      return;
+    }
+    if (file.size > WB_ATTACHMENT_MAX_BYTES) {
+      tooLarge.push(`${file.name} (${formatBytes(file.size)})`);
+      return;
+    }
+    valid.push(file);
+  });
+  const messages = [];
+  if (unsupported.length) messages.push(`Unsupported file type:\n- ${unsupported.join('\n- ')}`);
+  if (tooLarge.length) messages.push(`File exceeds the 20 MB limit:\n- ${tooLarge.join('\n- ')}`);
+  if (messages.length) alert(messages.join('\n\n'));
+  return valid;
 }
 
 // Upload satu atau beberapa file ke Supabase Storage, kembalikan array {name,url,size,type}
@@ -5309,9 +5343,8 @@ function removeLogAttachment(idx) {
 // preview and can be canceled (X) BEFORE actually being uploaded on Save.
 function handleLogFileSelect() {
   const input = document.getElementById('log-files');
-  if (input.files && input.files.length) {
-    logPendingFiles = [...logPendingFiles, ...Array.from(input.files)];
-  }
+  const picked = filterSupportedAttachments(Array.from(input.files || []));
+  if (picked.length) logPendingFiles = [...logPendingFiles, ...picked];
   input.value = ''; // reset supaya bisa pilih file lain lagi tanpa numpuk duplikat
   renderAttachPreview();
 }
@@ -7690,8 +7723,8 @@ async function openChatChannel(channelId, isUserClick) {
       </div>
       <div class="chat-compose" style="position:relative;flex-wrap:wrap">
         <span class="draft-status" id="draft-status-chat" style="width:100%;order:-1"></span>
-        <input type="file" id="chat-file-input" multiple style="display:none" onchange="onChatFilesPicked(event)" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv">
-        <button class="chat-icon-btn" title="Lampirkan file" onclick="document.getElementById('chat-file-input').click()"><i class="ti ti-paperclip"></i></button>
+        <input type="file" id="chat-file-input" multiple style="display:none" onchange="onChatFilesPicked(event)" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+        <button class="chat-icon-btn" title="Attach file, including PowerPoint (maximum 20 MB)" onclick="document.getElementById('chat-file-input').click()"><i class="ti ti-paperclip"></i></button>
         <button class="chat-icon-btn" title="Emoji" id="chat-emoji-btn" onclick="toggleChatEmojiPicker(event)"><i class="ti ti-mood-smile"></i></button>
         <textarea id="chat-input" rows="2" placeholder="${window.matchMedia('(pointer: coarse)').matches ? 'Tulis pesan... (ketuk tombol kirim →)' : 'Tulis pesan... (Enter kirim, Shift+Enter baris baru)'}" onkeydown="onChatInputKeydown(event)" oninput="autoGrowChatInput(this);autosaveChatDraft()"></textarea>
         <button class="chat-icon-btn chat-send" title="Send" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
@@ -7796,7 +7829,8 @@ function onChatInputKeydown(e) {
 }
 
 function onChatFilesPicked(e) {
-  chatAttachments = chatAttachments.concat(Array.from(e.target.files));
+  const picked = filterSupportedAttachments(Array.from(e.target.files || []));
+  if (picked.length) chatAttachments = chatAttachments.concat(picked);
   e.target.value = '';
   renderChatAttachPreview();
 }
@@ -7809,7 +7843,7 @@ function renderChatAttachPreview() {
   if (!wrap) return;
   wrap.innerHTML = chatAttachments.map((f, idx) => `
     <span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;font-size:11px">
-      <i class="ti ${fileIconFor(f.name)}"></i> ${escHtml(f.name)}
+      <i class="ti ${fileIconFor(f.name)}"></i> ${escHtml(f.name)} <span style="opacity:0.5">(${formatBytes(f.size)})</span>
       <i class="ti ti-x" style="cursor:pointer;opacity:0.6" onclick="removeChatAttachment(${idx})" title="Delete"></i>
     </span>
   `).join('');
