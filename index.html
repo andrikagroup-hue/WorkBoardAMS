@@ -5196,38 +5196,12 @@ async function addProjectRow() {
 // lalu render dengan benar
 function renderBody(text) {
   if (!text) return '';
-  // Rich text from Quill is sanitized before it is displayed.
-  if (/<[a-z][\s\S]*>/i.test(text)) return sanitizeRichHtml(text, true);
-  // Plain text lama → konversi ke HTML rapi
-  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  // Convert plain URLs (http://, https://, www.) into clickable links
-  const linkify = s => s.replace(
-    /((https?:\/\/|www\.)[^\s<]+[^\s<.,:;!?'"()\]])/gi,
-    m => `<a href="${m.startsWith('http') ? m : 'https://' + m}" target="_blank" rel="noopener">${m}</a>`
-  );
-  const fmt = s => linkify(esc(s));
-  const paragraphs = text.split(/\n{2,}/);
-  return paragraphs.map(para => {
-    const lines = para.split('\n');
-    // Numbered list: 1. 2. 3.
-    if (lines.some(l => /^\s*\d+\.\s/.test(l.trim()))) {
-      const items = lines.filter(l => l.trim()).map(line => {
-        const itemText = fmt(line.replace(/^\s*\d+\.\s*/, ''));
-        return `<li>${itemText}</li>`;
-      }).join('');
-      return `<ol style="margin:4px 0 4px 18px;padding:0;line-height:1.8">${items}</ol>`;
-    }
-    // Bullet list: - atau *
-    if (lines.some(l => /^\s*[-*•]\s/.test(l.trim()))) {
-      const items = lines.filter(l => l.trim()).map(line => {
-        const itemText = fmt(line.replace(/^\s*[-*•]\s*/, ''));
-        return `<li>${itemText}</li>`;
-      }).join('');
-      return `<ul style="margin:4px 0 4px 18px;padding:0;line-height:1.8">${items}</ul>`;
-    }
-    // Teks biasa
-    return `<p style="margin:0 0 4px 0;line-height:1.8">${lines.map(fmt).join('<br>')}</p>`;
-  }).join('');
+  // Rich text from the unified editor is sanitized and its numbering is
+  // stabilized before display. This also repairs older saved entries.
+  if (/<[a-z][\s\S]*>/i.test(text)) return preservePastedListNumbers(sanitizeRichHtml(text, true));
+  // Older plain-text entries use the same global parser, so numbering does not
+  // restart at 1 whenever a bullet block or blank line appears in between.
+  return plainTextToStableHtml(text);
 }
 
 async function renderLogbook() {
@@ -8350,40 +8324,198 @@ function normalizePastedHtml(html) {
   return preservePastedListNumbers(sanitizeRichHtml(doc.body.innerHTML, false, true));
 }
 
-// Keep the original number when pasted HTML contains an ordered list that
-// starts above 1. This prevents copied ChatGPT sections from restarting at 1.
+// Convert pasted or legacy plain text into stable HTML. Numbered section
+// headings remain sequential even when bullet lists or blank lines sit between
+// them. This is shared by Logbook, Notes, Notepad, and rich-text display.
+function plainTextToStableHtml(value) {
+  const text = String(value || '').replace(/\r\n?/g, '\n');
+  if (!text.trim()) return '';
+
+  const escapeText = input => String(input || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const formatText = input => escapeText(input).replace(
+    /((https?:\/\/|www\.)[^\s<]+[^\s<.,:;!?\'"()\]])/gi,
+    match => `<a href="${match.startsWith('http') ? match : 'https://' + match}" target="_blank" rel="noopener noreferrer">${match}</a>`
+  );
+
+  const lines = text.split('\n');
+  const numbered = lines.map(line => line.match(/^\s*(\d+)[.)]\s+(.+)$/)).filter(Boolean);
+  const repeatedOneSequence = numbered.length >= 2 && numbered.filter(match => parseInt(match[1], 10) === 1).length >= 2;
+
+  const output = [];
+  let paragraphLines = [];
+  let bulletItems = [];
+  let nextNumber = 1;
+  let numberedSeen = 0;
+
+  const flushParagraph = () => {
+    if (!paragraphLines.length) return;
+    output.push(`<p style="margin:0 0 6px 0;line-height:1.8">${paragraphLines.map(formatText).join('<br>')}</p>`);
+    paragraphLines = [];
+  };
+  const flushBullets = () => {
+    if (!bulletItems.length) return;
+    output.push(`<ul style="margin:4px 0 8px 22px;padding:0;line-height:1.8">${bulletItems.map(item => `<li>${formatText(item)}</li>`).join('')}</ul>`);
+    bulletItems = [];
+  };
+
+  lines.forEach(line => {
+    const numberedMatch = line.match(/^\s*(\d+)[.)]\s+(.+)$/);
+    const bulletMatch = line.match(/^\s*[-*•]\s+(.+)$/);
+
+    if (numberedMatch) {
+      flushParagraph();
+      flushBullets();
+      const declared = parseInt(numberedMatch[1], 10) || 1;
+      let shown = declared;
+      if (repeatedOneSequence && numberedSeen > 0 && declared === 1) shown = nextNumber;
+      nextNumber = shown + 1;
+      numberedSeen += 1;
+      output.push(`<p style="margin:8px 0 4px 0;line-height:1.8"><strong>${shown}. </strong>${formatText(numberedMatch[2])}</p>`);
+      return;
+    }
+
+    if (bulletMatch) {
+      flushParagraph();
+      bulletItems.push(bulletMatch[1]);
+      return;
+    }
+
+    if (!line.trim()) {
+      flushParagraph();
+      flushBullets();
+      return;
+    }
+
+    flushBullets();
+    paragraphLines.push(line.trim());
+  });
+
+  flushParagraph();
+  flushBullets();
+  return output.join('');
+}
+
+// Stabilize ordered-list numbering from ChatGPT, Word, email, and websites.
+// Some sources copy every section heading as a separate one-item <ol>, so the
+// browser restarts each section at 1. We convert only repeated isolated lists
+// into explicit sequential numbers. Normal multi-item lists stay as real lists.
 function preservePastedListNumbers(html) {
   if (!html || !/<ol[\s>]/i.test(html)) return html;
   const doc = new DOMParser().parseFromString(html, 'text/html');
   let changed = false;
-  Array.from(doc.querySelectorAll('ol')).forEach(ol => {
-    const items = Array.from(ol.children).filter(el => el.tagName === 'LI');
-    let nextNumber = parseInt(ol.getAttribute('start') || '1', 10);
-    if (!Number.isFinite(nextNumber)) nextNumber = 1;
-    const hasCustomStart = (ol.hasAttribute('start') && nextNumber !== 1) || items.some(li => li.hasAttribute('value'));
-    if (!hasCustomStart) return;
 
+  const directItems = ol => Array.from(ol.children).filter(el => el.tagName === 'LI');
+  const explicitStart = ol => {
+    const items = directItems(ol);
+    const liValue = items.length ? parseInt(items[0].getAttribute('value') || '', 10) : NaN;
+    if (Number.isFinite(liValue)) return liValue;
+    const olStart = parseInt(ol.getAttribute('start') || '', 10);
+    return Number.isFinite(olStart) ? olStart : null;
+  };
+
+  function replaceOrderedList(ol, startNumber) {
+    if (!ol || !ol.isConnected) return startNumber;
+    const items = directItems(ol);
+    if (!items.length) return startNumber;
+    let nextNumber = Number.isFinite(startNumber) ? startNumber : 1;
     const replacement = doc.createDocumentFragment();
+
     items.forEach(li => {
-      const explicitValue = parseInt(li.getAttribute('value') || '', 10);
-      if (Number.isFinite(explicitValue)) nextNumber = explicitValue;
+      const value = parseInt(li.getAttribute('value') || '', 10);
+      if (Number.isFinite(value)) nextNumber = value;
+
       const line = doc.createElement('p');
       const number = doc.createElement('strong');
       number.textContent = nextNumber + '. ';
       line.appendChild(number);
+
       const nestedLists = [];
       Array.from(li.childNodes).forEach(node => {
-        if (node.nodeType === 1 && node.matches('ol,ul')) nestedLists.push(node);
-        else if (node.nodeType === 1 && node.matches('p,div,h1,h2,h3,h4,h5,h6')) Array.from(node.childNodes).forEach(child => line.appendChild(child));
-        else line.appendChild(node);
+        if (node.nodeType === 1 && node.matches('ol,ul')) {
+          nestedLists.push(node);
+        } else if (node.nodeType === 1 && node.matches('p,div,h1,h2,h3,h4,h5,h6')) {
+          Array.from(node.childNodes).forEach(child => line.appendChild(child));
+        } else {
+          line.appendChild(node);
+        }
       });
+
       replacement.appendChild(line);
       nestedLists.forEach(list => replacement.appendChild(list));
-      nextNumber++;
+      nextNumber += 1;
     });
+
     ol.replaceWith(replacement);
     changed = true;
+    return nextNumber;
+  }
+
+  // ChatGPT/Markdown often produces several separate one-item ordered lists,
+  // each defaulting to 1 and separated by bullet lists. Treat those headings as
+  // one continuing sequence, while leaving a single isolated list untouched.
+  const isolatedSingletons = Array.from(doc.querySelectorAll('ol')).filter(ol => {
+    if (ol.closest('li')) return false;
+    return directItems(ol).length === 1;
   });
+
+  if (isolatedSingletons.length >= 2) {
+    let nextNumber = explicitStart(isolatedSingletons[0]) || 1;
+    isolatedSingletons.forEach((ol, index) => {
+      const declared = explicitStart(ol);
+      // A later explicit value above 1 is respected. Repeated default 1 values
+      // are treated as a broken continuation and automatically incremented.
+      if (index === 0 && declared !== null) nextNumber = declared;
+      else if (declared !== null && declared > 1) nextNumber = declared;
+      nextNumber = replaceOrderedList(ol, nextNumber);
+    });
+  }
+
+  // Quill 1.x does not reliably retain <ol start> or <li value>. Convert any
+  // remaining custom-start list into visible numbers so saving/reopening cannot
+  // silently reset it to 1.
+  Array.from(doc.querySelectorAll('ol')).reverse().forEach(ol => {
+    if (!ol.isConnected) return;
+    const items = directItems(ol);
+    if (!items.length) return;
+    let start = parseInt(ol.getAttribute('start') || '1', 10);
+    if (!Number.isFinite(start)) start = 1;
+    const hasCustomStart = (ol.hasAttribute('start') && start !== 1) || items.some(li => li.hasAttribute('value'));
+    if (hasCustomStart) replaceOrderedList(ol, start);
+  });
+
+  // Some clipboard sources provide the visible number as ordinary paragraph
+  // text instead of an <ol>. Repair repeated "1." section headings as well.
+  const numberedBlocks = Array.from(doc.body.querySelectorAll('p,h1,h2,h3')).filter(block => {
+    if (block.closest('li,ol,ul,table')) return false;
+    return /^\s*\d+[.)]\s+/.test(block.textContent || '');
+  });
+  const repeatedOneBlocks = numberedBlocks.filter(block => /^\s*1[.)]\s+/.test(block.textContent || ''));
+  if (numberedBlocks.length >= 2 && repeatedOneBlocks.length >= 2) {
+    let nextNumber = 1;
+    let seen = 0;
+    const replaceFirstNumberText = (root, number) => {
+      const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        if (!/^\s*\d+[.)]\s+/.test(node.nodeValue || '')) continue;
+        node.nodeValue = (node.nodeValue || '').replace(/^(\s*)\d+[.)](\s+)/, `$1${number}.$2`);
+        return true;
+      }
+      return false;
+    };
+    numberedBlocks.forEach(block => {
+      const match = (block.textContent || '').match(/^\s*(\d+)[.)]\s+/);
+      if (!match) return;
+      const declared = parseInt(match[1], 10) || 1;
+      let shown = declared;
+      if (seen > 0 && declared === 1) shown = nextNumber;
+      if (shown !== declared && replaceFirstNumberText(block, shown)) changed = true;
+      nextNumber = shown + 1;
+      seen += 1;
+    });
+  }
+
   return changed ? doc.body.innerHTML : html;
 }
 
@@ -8449,13 +8581,13 @@ function ensureEditorFooter(quill) {
   if (!wrap || wrap.querySelector('.wb-editor-footer')) return;
   const footer = document.createElement('div');
   footer.className = 'wb-editor-footer';
-  footer.innerHTML = '<span class="wb-editor-help">Tip: paste normally. Lists, headings, links, colors, and tables are cleaned into a stable format.</span><span class="wb-editor-message"></span><span class="wb-editor-count">0 words • 0 characters</span>';
+  footer.innerHTML = '<span class="wb-editor-help">Tip: paste normally. Numbering, bullets, headings, links, colors, and tables are cleaned into a stable format.</span><span class="wb-editor-message"></span><span class="wb-editor-count">0 words • 0 characters</span>';
   wrap.appendChild(footer);
 }
 
 function getCleanEditorHtml(quill) {
   if (!quill) return '';
-  const clean = sanitizeRichHtml(quill.root.innerHTML, false).trim();
+  const clean = preservePastedListNumbers(sanitizeRichHtml(quill.root.innerHTML, false)).trim();
   const doc = new DOMParser().parseFromString(clean, 'text/html');
   const meaningfulText = (doc.body.textContent || '').replace(/\u00a0/g, ' ').trim();
   const meaningfulEmbed = !!doc.querySelector('img,table,hr,.wb-table-embed');
@@ -8464,7 +8596,7 @@ function getCleanEditorHtml(quill) {
 
 function setEditorHtml(quill, html) {
   if (!quill) return;
-  const clean = sanitizeRichHtml(html || '', false) || '<p><br></p>';
+  const clean = preservePastedListNumbers(sanitizeRichHtml(html || '', false)) || '<p><br></p>';
   quill.setText('', 'silent');
   quill.clipboard.dangerouslyPasteHTML(0, clean, 'silent');
   quill.setSelection(0, 0, 'silent');
@@ -8602,11 +8734,13 @@ function installEditorUsability(quill, autosaveCallback) {
       insertEditorImageFile(quill, imageFile);
       return;
     }
-    if (!originalHtml) return;
+    const listLikePlainText = !originalHtml && /(^|\n)\s*(?:\d+[.)]|[-*•])\s+\S/m.test(plainText);
+    if (!originalHtml && !listLikePlainText) return;
 
     event.preventDefault();
     event.stopImmediatePropagation();
-    const cleanHtml = await replacePastedDataImages(normalizePastedHtml(originalHtml), quill);
+    const preparedHtml = originalHtml ? normalizePastedHtml(originalHtml) : plainTextToStableHtml(plainText);
+    const cleanHtml = await replacePastedDataImages(preparedHtml, quill);
     const range = quill.getSelection(true) || { index: Math.max(0, quill.getLength() - 1), length: 0 };
     const pasted = quill.clipboard.convert(cleanHtml);
     const change = new QuillDelta().retain(range.index).delete(range.length).concat(pasted);

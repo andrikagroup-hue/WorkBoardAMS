@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 1 Agustus 2026  
-**Pasangan kode terbaru:** `index(70).html`  
-**SHA-256 pasangan kode:** `cabee547c950b1cc6a8767a790270cb84065c82838583bdeb934e42d196754fc`
+**Pasangan kode terbaru:** `index(71).html`  
+**SHA-256 pasangan kode:** `e82155b6aeba85ee1ea8f3d7022a8f2d63d3189fb0ddb4af7516aa0ed01efebc`
 
 ---
 
@@ -533,6 +533,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Font, ukuran, heading, list, indent, alignment, warna, highlight, link, undo, redo, divider, table, image, dan full-screen editor tetap berfungsi.
 - [ ] Paste gambar dan upload gambar tetap menuju Supabase Storage, bukan disimpan sebagai base64 di database.
 - [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
+- [ ] Numbering hasil paste tidak kembali ke angka 1 setelah bullet, paragraf kosong, atau blok daftar terpisah.
 - [ ] Puter.js tidak dimuat dan tidak dapat memunculkan popup saldo.
 
 ---
@@ -555,6 +556,11 @@ Selain checklist pada Bagian 11, periksa:
 
 ### 1 Agustus 2026
 
+- Memperbaiki bug penomoran hasil copy-paste yang sebelumnya membuat setiap bagian terpisah kembali menjadi angka `1`.
+- Parser baru menjaga urutan nomor walaupun di antara bagian terdapat bullet list, paragraf kosong, atau blok HTML terpisah dari ChatGPT, Word, email, dan website.
+- Perbaikan diterapkan bersama pada Logbook, Notes, dan Notepad karena ketiganya memakai unified rich-text editor.
+- Tampilan data lama juga dinormalisasi saat dibuka; data tidak dihapus dan tidak memerlukan SQL.
+- Paste plain text dan rich HTML sekarang memakai aturan numbering yang sama.
 - Mengganti nama panel awal `Home` menjadi `Capture` pada sidebar desktop, judul panel, judul halaman, dan bottom navigation mobile.
 - Menggabungkan tombol Home dan Capture pada mobile menjadi satu tombol `Capture`; bottom navigation kini berisi empat tombol: Capture, Daily, Projects, dan More.
 - Mencegah browser atau password manager mengisi alamat email tersimpan ke kolom Quick Capture melalui atribut autofill khusus serta pembersihan nilai pada load, pageshow, dan fokus pertama.
