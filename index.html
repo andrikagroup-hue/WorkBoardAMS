@@ -3192,7 +3192,7 @@ ON CONFLICT DO NOTHING;</code>
           <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px">
             <div style="font-size:12.5px;font-weight:600;margin-bottom:8px">🔍 Password Finder</div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-              <input type="text" id="vault-search-account" class="form-input" placeholder="Account Name" style="font-size:12px;width:100%" oninput="renderVaultList()">
+              <input type="text" id="vault-search-account" class="form-input" placeholder="Search account, company, category, username, website, or note" style="font-size:12px;width:100%" oninput="renderVaultList()">
               <select id="vault-search-category" class="form-input" style="font-size:12px;width:100%" onchange="renderVaultList()">
                 <option value="all">All Categories</option>
               </select>
@@ -3425,8 +3425,10 @@ let currentPanel = 'focus';
 let scheduleEvents = [];
 let trackerCache = [];
 let logbookCache = [];
+let logbookViewCache = [];
 let logActiveId = null;
 let notesCache = [];
+let notesViewCache = [];
 let todoCache = [];
 
 // ID item yang sedang diedit (null = sedang mode tambah baru)
@@ -3669,7 +3671,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'red', label: '🔴 Urgent' }
     ],
     searchKeys: ['title', 'location'],
-    searchText: e => [e.title,e.location,e.category,e.created_by,e.event_date,e.time_start],
+    searchText: e => [e, e.title, e.location, e.category, e.created_by, e.event_date, e.time_start],
     match: (e, val) => e.category === val,
     getCache: () => scheduleEvents,
     display: displaySchedule
@@ -3685,7 +3687,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'overdue', label: 'Overdue' }
     ],
     searchKeys: ['subject', 'assignment', 'notes'],
-    searchText: t => [t.subject,t.assignment,t.notes,t.status,t.category,t.priority,t.start_date,t.due_date,t.created_by],
+    searchText: t => [t, t.subject, t.assignment, t.notes, t.status, t.category, t.priority, t.start_date, t.due_date, t.created_by],
     match: (t, val) => ptEffectiveStatus(t) === val,
     getCache: () => projectTrackerAllCache,
     display: displayProjectTracker
@@ -3699,7 +3701,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'issue', label: 'Issues' }
     ],
     searchKeys: ['title', 'body'],
-    searchText: l => [l.title,l.body,l.type,l.tags,l.entry_date,l.created_at,l.created_by],
+    searchText: l => [l, l.title, l.body, l.type, l.tags, l.entry_date, l.created_at, l.created_by, l.attachments],
     match: (l, val) => l.type === val,
     getCache: () => logbookCache,
     display: displayLogbook
@@ -3713,7 +3715,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'strat', label: 'Strategy' }
     ],
     searchKeys: ['title', 'body'],
-    searchText: n => [n.title,n.body,n.category,n.created_at,n.created_by,n.is_pinned ? 'pinned' : ''],
+    searchText: n => [n, n.title, n.body, n.category, n.created_at, n.created_by, n.is_pinned ? 'pinned' : ''],
     match: (n, val) => n.category === val,
     getCache: () => notesCache,
     display: _renderNoteCards
@@ -3728,7 +3730,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'low', label: '🔵 Low' }
     ],
     searchKeys: ['text', 'assigned_to'],
-    searchText: t => [t.text,t.assigned_to,t.priority,t.due_date,t.created_by,t.is_done ? 'done completed selesai' : 'open pending belum selesai'],
+    searchText: t => [t, t.text, t.assigned_to, t.priority, t.due_date, t.created_by, t.is_done ? 'done completed selesai' : 'open pending belum selesai'],
     match: (t, val) => {
       if (val === 'open') return !t.is_done;
       if (val === 'done') return !!t.is_done;
@@ -3741,7 +3743,7 @@ const PANEL_FILTER_CONFIG = {
     placeholder: 'Search title or note content...',
     options: [],
     searchKeys: ['title', 'body'],
-    searchText: n => [n.title,n.body,n.created_at,n.created_by,n.is_pinned ? 'pinned' : ''],
+    searchText: n => [n, n.title, n.body, n.created_at, n.created_by, n.is_pinned ? 'pinned' : ''],
     match: null,
     getCache: () => notepadCache,
     display: displayNotepad
@@ -3831,13 +3833,8 @@ function _applyGlobalSearchFilter() {
   const source = cfg.getCache() || [];
 
   const filtered = source.filter(item => {
-    const matchesSearch = !q || (cfg.searchText
-      ? panelSearchNormalize(cfg.searchText(item)).includes(panelSearchNormalize(q))
-      : cfg.searchKeys.some(key => {
-          const v = item[key];
-          if (Array.isArray(v)) return v.join(' ').toLowerCase().includes(q);
-          return (v || '').toString().toLowerCase().includes(q);
-        }));
+    const searchValue = cfg.searchText ? cfg.searchText(item) : item;
+    const matchesSearch = !q || panelSearchMatches(searchValue, q);
     const matchesFilter = !filterVal || (cfg.match ? cfg.match(item, filterVal) : true);
     return matchesSearch && matchesFilter;
   });
@@ -3893,16 +3890,16 @@ const PANEL_LOCAL_SEARCH_CONFIG = {
     }
   },
   logbook: {
-    mode: 'global', placeholder: 'Search Logbook title, content, tag, or date...',
-    hint: 'Search all loaded entries'
+    mode: 'global', placeholder: 'Type any word from the title, full content, tags, date, or attachment...',
+    hint: 'Type any word or phrase — searches full content'
   },
   notes: {
-    mode: 'global', placeholder: 'Search note title, content, category, or date...',
-    hint: 'Search your Notes'
+    mode: 'global', placeholder: 'Type any word from the title, full content, category, or date...',
+    hint: 'Type any word or phrase — searches full content'
   },
   todo: {
     mode: 'global', placeholder: 'Search task, assignee, priority, status, or deadline...',
-    hint: 'Search your To Do'
+    hint: 'Type any word or phrase — searches all fields'
   },
   chat: {
     mode: 'dom', placeholder: 'Search channel names or messages in the open conversation...',
@@ -3943,22 +3940,74 @@ const panelSearchDebounce = {};
 const panelSearchObservers = {};
 let panelSearchDomApplying = false;
 
-function panelSearchNormalize(value) {
+const PANEL_SEARCH_SENSITIVE_KEYS = new Set([
+  'password','encrypted_password','encrypted_data','ciphertext','iv','salt',
+  'wrapped_key','recovery_key','secret','token','api_key','access_key'
+]);
+
+function panelSearchStripHtml(value) {
   const holder = document.createElement('div');
-  holder.innerHTML = String(value == null ? '' : value);
-  return (holder.textContent || holder.innerText || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .toLowerCase().replace(/\s+/g,' ').trim();
+  holder.innerHTML = String(value == null ? '' : value)
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/p>|<\/div>|<\/li>|<\/tr>|<\/h[1-6]>/gi, ' ');
+  return holder.textContent || holder.innerText || '';
+}
+
+function panelSearchDeepText(value, seen = new WeakSet(), keyName = '') {
+  if (value == null) return '';
+  const key = String(keyName || '').toLowerCase();
+  if (PANEL_SEARCH_SENSITIVE_KEYS.has(key)) return '';
+  if (typeof value === 'string') return panelSearchStripHtml(value);
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(v => panelSearchDeepText(v, seen, keyName)).join(' ');
+  if (typeof value === 'object') {
+    if (seen.has(value)) return '';
+    seen.add(value);
+    return Object.entries(value).map(([k, v]) => {
+      if (PANEL_SEARCH_SENSITIVE_KEYS.has(String(k).toLowerCase())) return '';
+      return `${k} ${panelSearchDeepText(v, seen, k)}`;
+    }).join(' ');
+  }
+  return String(value);
+}
+
+function panelSearchNormalize(value) {
+  const plain = (typeof value === 'object' && value !== null)
+    ? panelSearchDeepText(value)
+    : panelSearchStripHtml(value);
+  return plain
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[\u200B-\u200D\uFEFF]/g, ' ')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}@._:/+\-]+/gu, ' ')
+    .replace(/\s+/g,' ').trim();
+}
+
+function panelSearchMatches(value, query) {
+  const q = panelSearchNormalize(query);
+  if (!q) return true;
+  const haystack = panelSearchNormalize(value);
+  if (!haystack) return false;
+  if (haystack.includes(q)) return true;
+  const terms = [...new Set(q.split(' ').filter(Boolean))];
+  return terms.every(term => haystack.includes(term));
 }
 
 function panelSearchItemText(item, cfg) {
-  const raw = cfg.text ? cfg.text(item) : Object.values(item || {});
-  const values = Array.isArray(raw) ? raw : [raw];
-  return panelSearchNormalize(values.map(v => {
-    if (Array.isArray(v)) return v.join(' ');
-    if (v && typeof v === 'object') return JSON.stringify(v);
-    return v == null ? '' : String(v);
-  }).join(' '));
+  return panelSearchDeepText([item, cfg.text ? cfg.text(item) : '']);
+}
+
+function panelSearchDomText(item) {
+  const parts = [item.textContent || ''];
+  const nodes = [item, ...item.querySelectorAll('*')];
+  nodes.forEach(node => {
+    ['title','aria-label','alt','href','src','data-title','data-name','data-category','data-status'].forEach(attr => {
+      const value = node.getAttribute?.(attr);
+      if (value) parts.push(value);
+    });
+  });
+  return parts.join(' ');
 }
 
 function panelSearchInput(panelId) {
@@ -3984,7 +4033,8 @@ function getGlobalFilteredItems(panelId, query) {
   const filterVal = document.getElementById('global-filter-select')?.value || '';
   const source = cfg.getCache() || [];
   return source.filter(item => {
-    const matchesSearch = !q || (cfg.searchText ? panelSearchNormalize(cfg.searchText(item)).includes(q) : cfg.searchKeys.some(key => panelSearchNormalize(item[key]).includes(q)));
+    const searchValue = cfg.searchText ? cfg.searchText(item) : item;
+    const matchesSearch = !q || panelSearchMatches(searchValue, q);
     const matchesFilter = !filterVal || (cfg.match ? cfg.match(item, filterVal) : true);
     return matchesSearch && matchesFilter;
   });
@@ -4003,7 +4053,7 @@ function applyPanelDomSearch(panelId, query) {
   const items = [...itemSet];
   let shown = 0;
   items.forEach(item => {
-    const matches = !q || panelSearchNormalize(item.textContent).includes(q);
+    const matches = !q || panelSearchMatches(panelSearchDomText(item), q);
     item.classList.toggle('panel-search-hidden', !matches);
     item.classList.toggle('panel-search-match', !!q && matches);
     if (matches) shown++;
@@ -4040,7 +4090,7 @@ function applyPanelLocalSearch(panelId, immediate = false) {
     } else if (cfg.mode === 'data') {
       const source = cfg.source ? (cfg.source() || []) : [];
       const q = panelSearchNormalize(query);
-      const filtered = !q ? source : source.filter(item => panelSearchItemText(item, cfg).includes(q));
+      const filtered = !q ? source : source.filter(item => panelSearchMatches(panelSearchItemText(item, cfg), q));
       cfg.display(filtered);
       setPanelSearchMeta(panelId, filtered.length, source.length);
     } else if (cfg.mode === 'dom') {
@@ -4125,7 +4175,7 @@ function createPanelSearchBar(panelId, cfg) {
       <button id="panel-local-search-clear-${panelId}" class="panel-local-search-clear" type="button"
         onclick="clearPanelLocalSearch('${panelId}')" aria-label="Clear search" title="Clear search"><i class="ti ti-x"></i></button>
     </div>
-    <span class="panel-local-search-hint">${escHtml(cfg.hint || 'Search this section')}</span>
+    <span class="panel-local-search-hint">${escHtml(cfg.hint || 'Type any word or phrase')}</span>
     <span class="panel-local-search-meta" id="panel-local-search-meta-${panelId}"></span>`;
   const addToolbar = panel.querySelector(':scope > .panel-add-toolbar');
   if (addToolbar) addToolbar.insertAdjacentElement('afterend', bar);
@@ -5186,7 +5236,7 @@ async function renderProjectTracker() {
   renderProjectFocus(projectTrackerAllCache);
 
   let filtered = [...projectTrackerAllCache];
-  if (q) filtered = filtered.filter(t => panelSearchNormalize([t.subject,t.assignment,t.notes,t.status,t.category,t.priority,t.start_date,t.due_date,t.created_by]).includes(panelSearchNormalize(q)));
+  if (q) filtered = filtered.filter(t => panelSearchMatches(t, q));
   if (statusF) filtered = filtered.filter(t => ptEffectiveStatus(t) === statusF);
   if (assignF) filtered = filtered.filter(t => (t.assignment || '') === assignF);
   if (categoryF) filtered = filtered.filter(t => (t.category || '') === categoryF);
@@ -5573,7 +5623,7 @@ async function renderLogbook() {
     ({ data, error } = await withTimeout(
       sb.from('logbook_entries').select('*')
         .order('entry_date', { ascending: false })
-        .order('created_at', { ascending: false }).limit(50)
+        .order('created_at', { ascending: false }).limit(1000)
     ));
     data = applyPrivacy(data);
   } catch(e) {
@@ -7601,6 +7651,7 @@ async function renameUser() {
   }
 }
 let notepadCache = [];
+let notepadViewCache = [];
 let editingNpId = null;
 let npActiveId = null;
 const NP_COLORS = ['np-pink', 'np-lilac', 'np-blue', 'np-sage', 'np-cream'];
@@ -7618,6 +7669,7 @@ async function renderNotepad() {
 // Tampilan "binder": daftar judul jadi tab di kiri, isi catatan yang dipilih
 // ditampilkan penuh selebar panel di kanan — supaya catatan panjang enak dibaca.
 function displayNotepad(items) {
+  notepadViewCache = Array.isArray(items) ? items : [];
   const wrap = document.getElementById('notepad-list');
   if (!items.length) {
     wrap.innerHTML = '<div class="empty-msg">No notes yet. Click "+ New Note" to get started.</div>';
@@ -7661,7 +7713,7 @@ function displayNotepad(items) {
 
 function selectNpItem(id) {
   npActiveId = id;
-  displayNotepad(notepadCache);
+  displayNotepad(notepadViewCache.length ? notepadViewCache : notepadCache);
 }
 
 function escHtml(s) {
@@ -7672,7 +7724,7 @@ function filterNotepad() {
   const q = panelSearchNormalize(document.getElementById('np-search').value);
   if (!q) { displayNotepad(notepadCache); return; }
   displayNotepad(notepadCache.filter(n =>
-    panelSearchNormalize([n.title,n.body,n.created_at,n.is_pinned ? 'pinned' : '']).includes(q)
+    panelSearchMatches(n, q)
   ));
 }
 
@@ -7782,6 +7834,7 @@ async function delNpItem(id) {
 // ditampilkan penuh selebar panel di kanan — sama persis konsepnya dengan Notepad,
 // bedanya tetap ada tab kategori (All/Reports/Notes/Meetings/Issues) di atas.
 function displayLogbook(data) {
+  logbookViewCache = Array.isArray(data) ? data : [];
   const typeLabel = {meeting:'Meeting',report:'Report',note:'Note',issue:'Issue'};
   const list = document.getElementById('logbook-list');
   if (!data || !data.length) { list.innerHTML = '<div class="empty-msg">No matching entries.</div>'; logActiveId = null; return; }
@@ -7829,11 +7882,12 @@ function displayLogbook(data) {
 
 function selectLogItem(id) {
   logActiveId = id;
-  displayLogbook(logbookCache);
+  displayLogbook(logbookViewCache.length ? logbookViewCache : logbookCache);
 }
 
 let notesActiveId = null;
 function _renderNoteCards(data) {
+  notesViewCache = Array.isArray(data) ? data : [];
   const catLabel = {finance:'Keuangan',ops:'Operasional',hr:'SDM/HR',strat:'Strategi'};
   const grid = document.getElementById('notes-grid');
   if (!data || !data.length) { grid.innerHTML = '<div class="empty-msg">No matching notes.</div>'; notesActiveId = null; return; }
@@ -7875,7 +7929,7 @@ function _renderNoteCards(data) {
 
 function selectNoteItem(id) {
   notesActiveId = id;
-  _renderNoteCards(notesCache);
+  _renderNoteCards(notesViewCache.length ? notesViewCache : notesCache);
 }
 
 // ── QUILL RICH TEXT EDITORS ──────────────────────────────────────
@@ -10985,13 +11039,23 @@ function renderVaultList() {
   const listEl = document.getElementById('passvault-list');
   if (!listEl) return;
 
-  const qAccount = (document.getElementById('vault-search-account')?.value || '').toLowerCase().trim();
-  const qCompany = (document.getElementById('vault-search-company')?.value || '').toLowerCase().trim();
+  const qAccount = (document.getElementById('vault-search-account')?.value || '').trim();
+  const qCompany = (document.getElementById('vault-search-company')?.value || '').trim();
   const qCategory = document.getElementById('vault-search-category')?.value || 'all';
 
   const filtered = passVaultCache.filter(p => {
-    if (qAccount && !(p.accountName || '').toLowerCase().includes(qAccount)) return false;
-    if (qCompany && !(p.company || '').toLowerCase().includes(qCompany)) return false;
+    const safeSearchRecord = {
+      accountName: p.accountName,
+      company: p.company,
+      category: p.category,
+      username: p.username,
+      website: p.website,
+      url: p.url,
+      notes: p.notes,
+      label: p.label
+    };
+    if (qAccount && !panelSearchMatches(safeSearchRecord, qAccount)) return false;
+    if (qCompany && !panelSearchMatches({ company:p.company, category:p.category }, qCompany)) return false;
     if (qCategory !== 'all' && (p.category || 'Lainnya') !== qCategory) return false;
     return true;
   });

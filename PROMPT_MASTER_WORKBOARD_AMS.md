@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 3 Agustus 2026
-**Pasangan kode terbaru:** `index(82).html`
-**SHA-256 pasangan kode:** `1c93c7f7fba34964de8612bf362ba740cb121739e4761f70902a063eff5fa9fc`
+**Pasangan kode terbaru:** `index(83).html`
+**SHA-256 pasangan kode:** `34c462b65c19eacc849d00251c6e64497c8d51b7e889cb17d04eee8eaf884862`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(82).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(83).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -545,6 +545,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Lampiran `.ppt` dan `.pptx` tetap terlihat di file picker Logbook dan Work Talk, maksimal 20 MB per file.
 - [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
 - [ ] Numbering hasil paste tidak kembali ke angka 1 setelah bullet, paragraf kosong, atau blok daftar terpisah.
+- [ ] Search bebas pada setiap panel menemukan kata dari isi penuh, rich text, tag, tanggal, status, dan nama lampiran tanpa membuka data privat user lain.
 - [ ] Puter.js tidak dimuat dan tidak dapat memunculkan popup saldo.
 
 ---
@@ -560,6 +561,11 @@ Selain checklist pada Bagian 11, periksa:
 - Search hanya memproses data yang sudah dimuat setelah filter `applyPrivacy()` atau `applyOwner()` sehingga tidak membuka data privat milik pengguna lain.
 - Search tidak mengubah, menghapus, atau menulis data ke Supabase dan tidak memerlukan SQL.
 - Search global pada top bar tetap dipertahankan dan disinkronkan dengan search lokal pada panel yang sudah memakai konfigurasi global lama.
+- Mesin pencarian memakai full-text bebas: kata atau frasa dapat ditemukan dari seluruh field aman pada record, termasuk isi rich text yang disimpan sebagai HTML, tag, kategori, tanggal, status, PIC, URL, serta nama lampiran.
+- Pencarian tidak hanya mencocokkan kalimat utuh; beberapa kata yang diketik akan dicari sebagai kumpulan kata sehingga tetap ditemukan walaupun berada di field atau bagian paragraf yang berbeda.
+- Logbook memuat hingga 1.000 entri terbaru untuk pencarian agar catatan lama tidak terlewat karena batas 50 entri sebelumnya.
+- Pemilihan hasil pada binder Logbook, Notes, dan Notepad mempertahankan daftar hasil pencarian dan tidak kembali ke seluruh data.
+- Password Manager hanya mencari metadata aman seperti account, company, category, username, website, dan notes; password serta data enkripsi tidak pernah dimasukkan ke indeks pencarian.
 
 
 ### 31 Juli 2026
