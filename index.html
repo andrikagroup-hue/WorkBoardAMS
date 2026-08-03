@@ -1664,6 +1664,11 @@ body.mobile-hub-open { overflow:hidden; }
 .panel-local-search-hint { font-size:10.5px; color:var(--text3); }
 .panel-search-hidden { display:none !important; }
 .panel-search-match { animation:panelSearchPulse .18s ease; }
+.panel-search-highlight {
+  background:#FFE49A; color:inherit; font-weight:800; padding:0 .08em;
+  border-radius:3px; box-shadow:inset 0 -1px 0 rgba(146,100,14,.22);
+  -webkit-box-decoration-break:clone; box-decoration-break:clone;
+}
 @keyframes panelSearchPulse { from { opacity:.55; } to { opacity:1; } }
 @media (max-width:700px) {
   .panel-local-search { padding:9px; gap:6px; }
@@ -3840,6 +3845,7 @@ function _applyGlobalSearchFilter() {
   });
 
   cfg.display(filtered);
+  applyPanelSearchHighlights(currentPanel, q);
 }
 
 function applyGlobalSearch() { syncLocalSearchFromGlobal(currentPanel); _applyGlobalSearchFilter(); }
@@ -4010,6 +4016,88 @@ function panelSearchDomText(item) {
   return parts.join(' ');
 }
 
+function panelSearchEscapeRegex(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function panelSearchHighlightTerms(query) {
+  const raw = String(query || '').trim();
+  if (!raw) return [];
+  const terms = raw.split(/\s+/).map(part => part.trim()).filter(Boolean);
+  return [...new Set(terms)].sort((a, b) => b.length - a.length);
+}
+
+function clearPanelSearchHighlights(panelId) {
+  const panel = document.getElementById('panel-' + panelId);
+  if (!panel) return;
+  panel.querySelectorAll('mark.panel-search-highlight').forEach(mark => {
+    mark.replaceWith(document.createTextNode(mark.textContent || ''));
+  });
+  panel.normalize();
+}
+
+function panelSearchHighlightSkip(node) {
+  const parent = node && node.parentElement;
+  if (!parent) return true;
+  return !!parent.closest([
+    '.panel-local-search', '.panel-add-toolbar', '.form-box', '.ql-toolbar',
+    '[contenteditable="true"]', 'button', 'input', 'textarea', 'select', 'option',
+    'script', 'style', 'noscript', 'svg', 'canvas', '.panel-search-hidden',
+    '.pass-value-box', 'mark.panel-search-highlight'
+  ].join(','));
+}
+
+function applyPanelSearchHighlights(panelId, query) {
+  const panel = document.getElementById('panel-' + panelId);
+  if (!panel) return;
+  clearPanelSearchHighlights(panelId);
+  const terms = panelSearchHighlightTerms(query);
+  if (!terms.length) return;
+
+  const pattern = terms.map(panelSearchEscapeRegex).filter(Boolean).join('|');
+  if (!pattern) return;
+  const matcher = new RegExp(`(${pattern})`, 'giu');
+  const walker = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue || !node.nodeValue.trim() || panelSearchHighlightSkip(node)) return NodeFilter.FILTER_REJECT;
+      matcher.lastIndex = 0;
+      return matcher.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const value = node.nodeValue || '';
+    matcher.lastIndex = 0;
+    const parts = value.split(matcher);
+    if (parts.length < 2) return;
+    const frag = document.createDocumentFragment();
+    parts.forEach((part, index) => {
+      if (!part) return;
+      if (index % 2 === 1) {
+        const mark = document.createElement('mark');
+        mark.className = 'panel-search-highlight';
+        mark.textContent = part;
+        frag.appendChild(mark);
+      } else {
+        frag.appendChild(document.createTextNode(part));
+      }
+    });
+    node.replaceWith(frag);
+  });
+}
+
+function reconnectPanelSearchObserver(panelId, cfg, observer) {
+  if (!observer) return;
+  const panel = document.getElementById('panel-' + panelId);
+  if (!panel) return;
+  (cfg.roots || []).forEach(sel => {
+    const root = panel.querySelector(sel) || document.querySelector(sel);
+    if (root) observer.observe(root, { childList:true, subtree:true, characterData:true });
+  });
+}
+
 function panelSearchInput(panelId) {
   return document.getElementById('panel-local-search-' + panelId);
 }
@@ -4046,7 +4134,10 @@ function applyPanelDomSearch(panelId, query) {
   const q = panelSearchNormalize(query);
   const panel = document.getElementById('panel-' + panelId);
   if (!panel) return;
+  const observer = panelSearchObservers[panelId];
+  if (observer) observer.disconnect();
   panelSearchDomApplying = true;
+  clearPanelSearchHighlights(panelId);
   const roots = (cfg.roots || []).map(sel => panel.querySelector(sel) || document.querySelector(sel)).filter(Boolean);
   const itemSet = new Set();
   roots.forEach(root => root.querySelectorAll(cfg.items).forEach(item => itemSet.add(item)));
@@ -4069,7 +4160,9 @@ function applyPanelDomSearch(panelId, query) {
     });
   }
   setPanelSearchMeta(panelId, shown, items.length);
+  applyPanelSearchHighlights(panelId, query);
   panelSearchDomApplying = false;
+  reconnectPanelSearchObserver(panelId, cfg, observer);
 }
 
 function applyPanelLocalSearch(panelId, immediate = false) {
@@ -4092,6 +4185,7 @@ function applyPanelLocalSearch(panelId, immediate = false) {
       const q = panelSearchNormalize(query);
       const filtered = !q ? source : source.filter(item => panelSearchMatches(panelSearchItemText(item, cfg), q));
       cfg.display(filtered);
+      applyPanelSearchHighlights(panelId, query);
       setPanelSearchMeta(panelId, filtered.length, source.length);
     } else if (cfg.mode === 'dom') {
       applyPanelDomSearch(panelId, query);
@@ -4120,6 +4214,7 @@ function resetPanelLocalSearch(panelId) {
   if (!input) return;
   input.value = '';
   setPanelSearchClear(panelId, false);
+  clearPanelSearchHighlights(panelId);
   const cfg = PANEL_LOCAL_SEARCH_CONFIG[panelId];
   if (cfg?.mode === 'dom') applyPanelDomSearch(panelId, '');
   else if (cfg?.mode === 'data') {
@@ -4137,6 +4232,7 @@ function reapplyPanelSearch(panelId) {
   const q = input.value.trim();
   if (q) applyPanelLocalSearch(panelId, true);
   else {
+    clearPanelSearchHighlights(panelId);
     const cfg = PANEL_LOCAL_SEARCH_CONFIG[panelId];
     if (cfg?.mode === 'data') {
       const source = cfg.source ? (cfg.source() || []) : [];
@@ -4192,10 +4288,7 @@ function createPanelSearchBar(panelId, cfg) {
       clearTimeout(panelSearchDebounce['observer-' + panelId]);
       panelSearchDebounce['observer-' + panelId] = setTimeout(() => applyPanelLocalSearch(panelId, true), 30);
     });
-    (cfg.roots || []).forEach(sel => {
-      const root = panel.querySelector(sel) || document.querySelector(sel);
-      if (root) observer.observe(root, { childList:true, subtree:true, characterData:true });
-    });
+    reconnectPanelSearchObserver(panelId, cfg, observer);
     panelSearchObservers[panelId] = observer;
   }
 }
@@ -5390,11 +5483,14 @@ function renderProjectFocus(items) {
 
 function displayProjectTracker(data) {
   const tbody = document.getElementById('pt-tbody');
+  const query = (document.getElementById('pt-search')?.value || '').trim();
   if (!data || !data.length) {
     tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">No matching items.</td></tr>';
+    applyPanelSearchHighlights('tracker', query);
     return;
   }
   tbody.innerHTML = data.map(t => editingProjectId === t.id ? ptEditRow(t) : ptViewRow(t)).join('');
+  applyPanelSearchHighlights('tracker', query);
 }
 
 function ptViewRow(t) {
@@ -7709,6 +7805,7 @@ function displayNotepad(items) {
       </div>
       <div class="np-page-body ql-editor" style="padding:0">${renderBody(active.body)}</div>
     </div>`;
+  applyPanelSearchHighlights('notepad', document.getElementById('np-search')?.value || '');
 }
 
 function selectNpItem(id) {
@@ -11060,8 +11157,10 @@ function renderVaultList() {
     return true;
   });
 
+  const vaultHighlightQuery = [qAccount, qCompany].filter(Boolean).join(' ');
   if (!filtered.length) {
     listEl.innerHTML = '<div class="empty-msg">No matching passwords yet. Click "+ Add New Password" to get started.</div>';
+    applyPanelSearchHighlights('passvault', vaultHighlightQuery);
     return;
   }
 
@@ -11114,6 +11213,7 @@ function renderVaultList() {
     </div>
   `;
   }).join('');
+  applyPanelSearchHighlights('passvault', vaultHighlightQuery);
 }
 
 function toggleCardMask(id) {

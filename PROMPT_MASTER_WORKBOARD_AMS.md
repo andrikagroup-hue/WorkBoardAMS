@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 3 Agustus 2026
-**Pasangan kode terbaru:** `index(83).html`
-**SHA-256 pasangan kode:** `34c462b65c19eacc849d00251c6e64497c8d51b7e889cb17d04eee8eaf884862`
+**Pasangan kode terbaru:** `index(84).html`
+**SHA-256 pasangan kode:** `482d91834601a1c42b652bb0ea78cf5ef119ae77f52dad2a2f5fb73bf5f859c5`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(83).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(84).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -546,6 +546,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
 - [ ] Numbering hasil paste tidak kembali ke angka 1 setelah bullet, paragraf kosong, atau blok daftar terpisah.
 - [ ] Search bebas pada setiap panel menemukan kata dari isi penuh, rich text, tag, tanggal, status, dan nama lampiran tanpa membuka data privat user lain.
+- [ ] Kata yang cocok pada hasil search ditampilkan bold dengan highlight lembut, lalu kembali normal saat search dibersihkan.
 - [ ] Puter.js tidak dimuat dan tidak dapat memunculkan popup saldo.
 
 ---
@@ -554,6 +555,10 @@ Selain checklist pada Bagian 11, periksa:
 
 ### 3 Agustus 2026
 
+- Menambahkan penanda visual hasil pencarian: setiap kata yang cocok ditampilkan bold dengan highlight kuning lembut langsung pada judul, isi catatan, tabel, kartu, rich text, URL, dan metadata yang terlihat.
+- Highlight mengikuti kata yang diketik, mendukung beberapa kata sekaligus, dan otomatis hilang saat kolom search dibersihkan.
+- Highlight diterapkan pada search lokal/global serta finder bawaan Project Tracker, Notepad, dan Password Manager; nilai password tetap dikecualikan dari highlight dan pencarian.
+- Mesin highlight hanya membungkus text node pada hasil yang terlihat dan tidak mengubah isi database, HTML tersimpan, input form, editor aktif, atau data user.
 - Menambahkan Local Search Engine di dalam setiap panel data utama, bukan hanya search pada top bar.
 - Search lokal baru tersedia pada Daily Schedule, Kanban, Gantt, Decision Matrix, Recurring Task, Logbook, Notes, To Do, Work Talk, Result, Attendance, Manage Users, Leave Management, Resources, serta Guide & FAQ.
 - Project Tracker, Notepad, dan Password Manager mempertahankan finder lokal yang sudah tersedia agar tidak muncul kolom pencarian ganda.
