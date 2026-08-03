@@ -1634,6 +1634,44 @@ body.mobile-hub-open { overflow:hidden; }
   .wba-custom-inputs.visible { display: grid; grid-template-columns: 1fr; gap: 8px; }
   .wba-custom-field { font-size: 12px; }
 }
+  
+
+/* ── Local Search Engine — one search inside each data panel ───────────── */
+.panel-local-search {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin:0 0 12px; padding:10px 12px;
+  background:rgba(250,248,244,.92); border:1px solid var(--border2);
+  border-radius:var(--radius-lg); box-shadow:0 2px 8px rgba(47,99,100,.045);
+}
+.panel-local-search-main { position:relative; flex:1; min-width:220px; max-width:720px; }
+.panel-local-search-main > i {
+  position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  font-size:15px; color:var(--text3); pointer-events:none;
+}
+.panel-local-search-input {
+  width:100%; min-height:36px; padding:7px 38px 7px 34px; font-size:12.5px;
+  background:var(--surface); border:1px solid var(--border2);
+}
+.panel-local-search-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(47,99,100,.08); }
+.panel-local-search-clear {
+  display:none; position:absolute; right:7px; top:50%; transform:translateY(-50%);
+  width:26px; height:26px; border:0; border-radius:50%; background:transparent;
+  color:var(--text3); cursor:pointer; align-items:center; justify-content:center;
+}
+.panel-local-search-clear.show { display:inline-flex; }
+.panel-local-search-clear:hover { background:var(--bg2); color:var(--danger); }
+.panel-local-search-meta { margin-left:auto; font-size:10.5px; color:var(--text3); white-space:nowrap; }
+.panel-local-search-hint { font-size:10.5px; color:var(--text3); }
+.panel-search-hidden { display:none !important; }
+.panel-search-match { animation:panelSearchPulse .18s ease; }
+@keyframes panelSearchPulse { from { opacity:.55; } to { opacity:1; } }
+@media (max-width:700px) {
+  .panel-local-search { padding:9px; gap:6px; }
+  .panel-local-search-main { min-width:100%; max-width:none; }
+  .panel-local-search-meta { margin-left:0; }
+  .panel-local-search-hint { display:none; }
+}
+
   </style>
 </head>
 <body>
@@ -3458,6 +3496,7 @@ window.addEventListener('pageshow', scheduleFocusQuickCaptureReset);
 // ── Init ───────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   scheduleFocusQuickCaptureReset();
+  initPanelSearchEngines();
   updateLogViewIcon();
   // Cek nama pengguna — kalau belum pernah diisi di device ini, WAJIB tanya
   // (don't silently default to "User" just because the box was empty or OK was clicked).
@@ -3589,6 +3628,7 @@ async function switchPanel(id, el) {
   document.getElementById('panel-title').textContent = titles[id] || id;
   syncProjectWorkspaceTabs(id);
   updateGlobalSearchFilter(id);
+  resetPanelLocalSearch(id);
   hideAllForms();
   openNavGroupForPanel(id);
 
@@ -3629,6 +3669,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'red', label: '🔴 Urgent' }
     ],
     searchKeys: ['title', 'location'],
+    searchText: e => [e.title,e.location,e.category,e.created_by,e.event_date,e.time_start],
     match: (e, val) => e.category === val,
     getCache: () => scheduleEvents,
     display: displaySchedule
@@ -3644,6 +3685,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'overdue', label: 'Overdue' }
     ],
     searchKeys: ['subject', 'assignment', 'notes'],
+    searchText: t => [t.subject,t.assignment,t.notes,t.status,t.category,t.priority,t.start_date,t.due_date,t.created_by],
     match: (t, val) => ptEffectiveStatus(t) === val,
     getCache: () => projectTrackerAllCache,
     display: displayProjectTracker
@@ -3657,6 +3699,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'issue', label: 'Issues' }
     ],
     searchKeys: ['title', 'body'],
+    searchText: l => [l.title,l.body,l.type,l.tags,l.entry_date,l.created_at,l.created_by],
     match: (l, val) => l.type === val,
     getCache: () => logbookCache,
     display: displayLogbook
@@ -3670,6 +3713,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'strat', label: 'Strategy' }
     ],
     searchKeys: ['title', 'body'],
+    searchText: n => [n.title,n.body,n.category,n.created_at,n.created_by,n.is_pinned ? 'pinned' : ''],
     match: (n, val) => n.category === val,
     getCache: () => notesCache,
     display: _renderNoteCards
@@ -3684,6 +3728,7 @@ const PANEL_FILTER_CONFIG = {
       { value: 'low', label: '🔵 Low' }
     ],
     searchKeys: ['text', 'assigned_to'],
+    searchText: t => [t.text,t.assigned_to,t.priority,t.due_date,t.created_by,t.is_done ? 'done completed selesai' : 'open pending belum selesai'],
     match: (t, val) => {
       if (val === 'open') return !t.is_done;
       if (val === 'done') return !!t.is_done;
@@ -3696,6 +3741,7 @@ const PANEL_FILTER_CONFIG = {
     placeholder: 'Search title or note content...',
     options: [],
     searchKeys: ['title', 'body'],
+    searchText: n => [n.title,n.body,n.created_at,n.created_by,n.is_pinned ? 'pinned' : ''],
     match: null,
     getCache: () => notepadCache,
     display: displayNotepad
@@ -3785,11 +3831,13 @@ function _applyGlobalSearchFilter() {
   const source = cfg.getCache() || [];
 
   const filtered = source.filter(item => {
-    const matchesSearch = !q || cfg.searchKeys.some(key => {
-      const v = item[key];
-      if (Array.isArray(v)) return v.join(' ').toLowerCase().includes(q);
-      return (v || '').toString().toLowerCase().includes(q);
-    });
+    const matchesSearch = !q || (cfg.searchText
+      ? panelSearchNormalize(cfg.searchText(item)).includes(panelSearchNormalize(q))
+      : cfg.searchKeys.some(key => {
+          const v = item[key];
+          if (Array.isArray(v)) return v.join(' ').toLowerCase().includes(q);
+          return (v || '').toString().toLowerCase().includes(q);
+        }));
     const matchesFilter = !filterVal || (cfg.match ? cfg.match(item, filterVal) : true);
     return matchesSearch && matchesFilter;
   });
@@ -3797,8 +3845,8 @@ function _applyGlobalSearchFilter() {
   cfg.display(filtered);
 }
 
-function applyGlobalSearch() { _applyGlobalSearchFilter(); }
-function applyGlobalFilter() { _applyGlobalSearchFilter(); }
+function applyGlobalSearch() { syncLocalSearchFromGlobal(currentPanel); _applyGlobalSearchFilter(); }
+function applyGlobalFilter() { _applyGlobalSearchFilter(); syncLocalSearchFromGlobal(currentPanel); }
 
 // Klik tab pembatas binder (All/Reports/Notes/Meetings/Issues) di Logbook —
 // nyalain nilai yang sama ke dropdown filter tersembunyi lalu pakai logic filter yang sudah ada.
@@ -3809,6 +3857,314 @@ function logBinderFilter(val, btn) {
   btn.classList.add('active');
   applyGlobalFilter();
 }
+
+
+
+// ── LOCAL SEARCH ENGINE — visible inside each data panel ────────────────
+// Search runs only on data already allowed for the active user. It never bypasses
+// applyPrivacy()/applyOwner(), never queries hidden records, and needs no SQL.
+const PANEL_LOCAL_SEARCH_CONFIG = {
+  schedule: {
+    mode: 'global', placeholder: 'Search schedule title, location, category, or owner...',
+    hint: 'Search this date'
+  },
+  kanban: {
+    mode: 'data', placeholder: 'Search project, PIC, notes, status, or due date...',
+    hint: 'Search Kanban cards', source: () => kanbanCache, display: displayKanban,
+    text: t => [t.subject,t.assignment,t.notes,t.status,t.category,t.due_date,t.created_by]
+  },
+  gantt: {
+    mode: 'data', placeholder: 'Search task, PIC, notes, status, or date...',
+    hint: 'Search this timeline', source: () => ganttCache, display: displayGantt,
+    text: t => [t.subject,t.assignment,t.notes,t.status,t.category,t.start_date,t.due_date,t.created_by]
+  },
+  matrix: {
+    mode: 'data', placeholder: 'Search task, source, PIC, notes, or due date...',
+    hint: 'Search all quadrants', source: () => matrixCache, display: displayMatrix,
+    text: t => [t._title,t._src,t.assignment,t.notes,t.status,t.due_date,t.created_by]
+  },
+  recurring: {
+    mode: 'data', placeholder: 'Search recurring task, destination, frequency, or next run...',
+    hint: 'Search recurring templates', source: () => recurringCache, display: displayRecurringTemplates,
+    text: t => {
+      const d = t.template_data || {};
+      return [t.target_table,t.frequency,t.next_run,t.is_active ? 'active enabled' : 'inactive disabled',
+        d.title,d.subject,d.assignment,d.location,d.notes,d.schedule_duration,d.category];
+    }
+  },
+  logbook: {
+    mode: 'global', placeholder: 'Search Logbook title, content, tag, or date...',
+    hint: 'Search all loaded entries'
+  },
+  notes: {
+    mode: 'global', placeholder: 'Search note title, content, category, or date...',
+    hint: 'Search your Notes'
+  },
+  todo: {
+    mode: 'global', placeholder: 'Search task, assignee, priority, status, or deadline...',
+    hint: 'Search your To Do'
+  },
+  chat: {
+    mode: 'dom', placeholder: 'Search channel names or messages in the open conversation...',
+    hint: 'Search loaded Work Talk content',
+    roots: ['#chat-list-umum','#chat-list-bagian','#chat-list-dm','#chat-main'],
+    items: '.chat-channel-item,.chat-msg-row'
+  },
+  result: {
+    mode: 'dom', placeholder: 'Search employee name or attendance result...',
+    hint: 'Search the visible report table', roots: ['#result-absen-tbody'], items: 'tr'
+  },
+  absen: {
+    mode: 'dom', placeholder: 'Search employee, status, time, or notes...',
+    hint: 'Search the selected attendance date', roots: ['#absen-rekap-table'], items: 'tbody tr'
+  },
+  adminusers: {
+    mode: 'dom', placeholder: 'Search user name, online status, leave type, or request...',
+    hint: 'Search Manage Users', roots: ['#admin-users-list','#admin-leave-list'],
+    items: '.admin-user-row,.admin-leave-row'
+  },
+  adminleave: {
+    mode: 'dom', placeholder: 'Search employee, leave type, status, date, or reason...',
+    hint: 'Search leave requests', roots: ['#admin-leave-list2'], items: '.admin-leave-row'
+  },
+  links: {
+    mode: 'dom', placeholder: 'Search link name, URL, category, or description...',
+    hint: 'Search all visible resources', roots: ['#links-list'], items: '.link-card',
+    groups: '.link-group'
+  },
+  faq: {
+    mode: 'dom', placeholder: 'Search a WorkBoard question or answer...',
+    hint: 'Search Guide & FAQ', roots: ['#faq-list'], items: '.faq-item',
+    groups: '#faq-list > div'
+  }
+};
+
+const panelSearchDebounce = {};
+const panelSearchObservers = {};
+let panelSearchDomApplying = false;
+
+function panelSearchNormalize(value) {
+  const holder = document.createElement('div');
+  holder.innerHTML = String(value == null ? '' : value);
+  return (holder.textContent || holder.innerText || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+}
+
+function panelSearchItemText(item, cfg) {
+  const raw = cfg.text ? cfg.text(item) : Object.values(item || {});
+  const values = Array.isArray(raw) ? raw : [raw];
+  return panelSearchNormalize(values.map(v => {
+    if (Array.isArray(v)) return v.join(' ');
+    if (v && typeof v === 'object') return JSON.stringify(v);
+    return v == null ? '' : String(v);
+  }).join(' '));
+}
+
+function panelSearchInput(panelId) {
+  return document.getElementById('panel-local-search-' + panelId);
+}
+
+function setPanelSearchMeta(panelId, shown, total) {
+  const meta = document.getElementById('panel-local-search-meta-' + panelId);
+  if (!meta) return;
+  if (typeof total !== 'number') { meta.textContent = ''; return; }
+  meta.textContent = shown === total ? `${total} item${total === 1 ? '' : 's'}` : `${shown} of ${total}`;
+}
+
+function setPanelSearchClear(panelId, hasValue) {
+  const btn = document.getElementById('panel-local-search-clear-' + panelId);
+  if (btn) btn.classList.toggle('show', !!hasValue);
+}
+
+function getGlobalFilteredItems(panelId, query) {
+  const cfg = PANEL_FILTER_CONFIG[panelId];
+  if (!cfg) return [];
+  const q = panelSearchNormalize(query);
+  const filterVal = document.getElementById('global-filter-select')?.value || '';
+  const source = cfg.getCache() || [];
+  return source.filter(item => {
+    const matchesSearch = !q || (cfg.searchText ? panelSearchNormalize(cfg.searchText(item)).includes(q) : cfg.searchKeys.some(key => panelSearchNormalize(item[key]).includes(q)));
+    const matchesFilter = !filterVal || (cfg.match ? cfg.match(item, filterVal) : true);
+    return matchesSearch && matchesFilter;
+  });
+}
+
+function applyPanelDomSearch(panelId, query) {
+  const cfg = PANEL_LOCAL_SEARCH_CONFIG[panelId];
+  if (!cfg) return;
+  const q = panelSearchNormalize(query);
+  const panel = document.getElementById('panel-' + panelId);
+  if (!panel) return;
+  panelSearchDomApplying = true;
+  const roots = (cfg.roots || []).map(sel => panel.querySelector(sel) || document.querySelector(sel)).filter(Boolean);
+  const itemSet = new Set();
+  roots.forEach(root => root.querySelectorAll(cfg.items).forEach(item => itemSet.add(item)));
+  const items = [...itemSet];
+  let shown = 0;
+  items.forEach(item => {
+    const matches = !q || panelSearchNormalize(item.textContent).includes(q);
+    item.classList.toggle('panel-search-hidden', !matches);
+    item.classList.toggle('panel-search-match', !!q && matches);
+    if (matches) shown++;
+  });
+  if (cfg.groups) {
+    panel.querySelectorAll(cfg.groups).forEach(group => {
+      const members = [...group.querySelectorAll(cfg.items)];
+      if (!members.length) {
+        group.classList.toggle('panel-search-hidden', !!q);
+      } else {
+        group.classList.toggle('panel-search-hidden', !!q && !members.some(item => !item.classList.contains('panel-search-hidden')));
+      }
+    });
+  }
+  setPanelSearchMeta(panelId, shown, items.length);
+  panelSearchDomApplying = false;
+}
+
+function applyPanelLocalSearch(panelId, immediate = false) {
+  const cfg = PANEL_LOCAL_SEARCH_CONFIG[panelId];
+  const input = panelSearchInput(panelId);
+  if (!cfg || !input) return;
+  const query = input.value || '';
+  setPanelSearchClear(panelId, !!query.trim());
+
+  const run = () => {
+    if (cfg.mode === 'global') {
+      const globalInput = document.getElementById('global-search-input');
+      if (globalInput) globalInput.value = query;
+      const filtered = getGlobalFilteredItems(panelId, query);
+      const source = PANEL_FILTER_CONFIG[panelId]?.getCache?.() || [];
+      if (currentPanel === panelId) _applyGlobalSearchFilter();
+      setPanelSearchMeta(panelId, filtered.length, source.length);
+    } else if (cfg.mode === 'data') {
+      const source = cfg.source ? (cfg.source() || []) : [];
+      const q = panelSearchNormalize(query);
+      const filtered = !q ? source : source.filter(item => panelSearchItemText(item, cfg).includes(q));
+      cfg.display(filtered);
+      setPanelSearchMeta(panelId, filtered.length, source.length);
+    } else if (cfg.mode === 'dom') {
+      applyPanelDomSearch(panelId, query);
+    }
+  };
+
+  clearTimeout(panelSearchDebounce[panelId]);
+  if (immediate) run();
+  else panelSearchDebounce[panelId] = setTimeout(run, 140);
+}
+
+function clearPanelLocalSearch(panelId) {
+  const input = panelSearchInput(panelId);
+  if (!input) return;
+  input.value = '';
+  if (PANEL_LOCAL_SEARCH_CONFIG[panelId]?.mode === 'global') {
+    const globalInput = document.getElementById('global-search-input');
+    if (globalInput) globalInput.value = '';
+  }
+  applyPanelLocalSearch(panelId, true);
+  input.focus();
+}
+
+function resetPanelLocalSearch(panelId) {
+  const input = panelSearchInput(panelId);
+  if (!input) return;
+  input.value = '';
+  setPanelSearchClear(panelId, false);
+  const cfg = PANEL_LOCAL_SEARCH_CONFIG[panelId];
+  if (cfg?.mode === 'dom') applyPanelDomSearch(panelId, '');
+  else if (cfg?.mode === 'data') {
+    const source = cfg.source ? (cfg.source() || []) : [];
+    setPanelSearchMeta(panelId, source.length, source.length);
+  } else if (cfg?.mode === 'global') {
+    const source = PANEL_FILTER_CONFIG[panelId]?.getCache?.() || [];
+    setPanelSearchMeta(panelId, source.length, source.length);
+  }
+}
+
+function reapplyPanelSearch(panelId) {
+  const input = panelSearchInput(panelId);
+  if (!input) return;
+  const q = input.value.trim();
+  if (q) applyPanelLocalSearch(panelId, true);
+  else {
+    const cfg = PANEL_LOCAL_SEARCH_CONFIG[panelId];
+    if (cfg?.mode === 'data') {
+      const source = cfg.source ? (cfg.source() || []) : [];
+      setPanelSearchMeta(panelId, source.length, source.length);
+    } else if (cfg?.mode === 'global') {
+      const source = PANEL_FILTER_CONFIG[panelId]?.getCache?.() || [];
+      setPanelSearchMeta(panelId, source.length, source.length);
+    } else if (cfg?.mode === 'dom') applyPanelDomSearch(panelId, '');
+  }
+}
+
+function syncLocalSearchFromGlobal(panelId) {
+  const cfg = PANEL_LOCAL_SEARCH_CONFIG[panelId];
+  const input = panelSearchInput(panelId);
+  if (!cfg || cfg.mode !== 'global' || !input) return;
+  input.value = document.getElementById('global-search-input')?.value || '';
+  setPanelSearchClear(panelId, !!input.value.trim());
+  const filtered = getGlobalFilteredItems(panelId, input.value);
+  const source = PANEL_FILTER_CONFIG[panelId]?.getCache?.() || [];
+  setPanelSearchMeta(panelId, filtered.length, source.length);
+}
+
+function createPanelSearchBar(panelId, cfg) {
+  const panel = document.getElementById('panel-' + panelId);
+  if (!panel || panelSearchInput(panelId)) return;
+  const bar = document.createElement('div');
+  bar.className = 'panel-local-search';
+  bar.setAttribute('role','search');
+  bar.setAttribute('aria-label', `Search ${panelId}`);
+  bar.innerHTML = `
+    <div class="panel-local-search-main">
+      <i class="ti ti-search" aria-hidden="true"></i>
+      <input id="panel-local-search-${panelId}" class="panel-local-search-input" type="search"
+        placeholder="${escAttr(cfg.placeholder || 'Search this section...')}" autocomplete="off"
+        aria-label="${escAttr(cfg.placeholder || 'Search this section')}" />
+      <button id="panel-local-search-clear-${panelId}" class="panel-local-search-clear" type="button"
+        onclick="clearPanelLocalSearch('${panelId}')" aria-label="Clear search" title="Clear search"><i class="ti ti-x"></i></button>
+    </div>
+    <span class="panel-local-search-hint">${escHtml(cfg.hint || 'Search this section')}</span>
+    <span class="panel-local-search-meta" id="panel-local-search-meta-${panelId}"></span>`;
+  const addToolbar = panel.querySelector(':scope > .panel-add-toolbar');
+  if (addToolbar) addToolbar.insertAdjacentElement('afterend', bar);
+  else panel.insertBefore(bar, panel.firstChild);
+  const input = panelSearchInput(panelId);
+  input.addEventListener('input', () => applyPanelLocalSearch(panelId));
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); clearPanelLocalSearch(panelId); }
+  });
+
+  if (cfg.mode === 'dom') {
+    const observer = new MutationObserver(() => {
+      if (panelSearchDomApplying) return;
+      clearTimeout(panelSearchDebounce['observer-' + panelId]);
+      panelSearchDebounce['observer-' + panelId] = setTimeout(() => applyPanelLocalSearch(panelId, true), 30);
+    });
+    (cfg.roots || []).forEach(sel => {
+      const root = panel.querySelector(sel) || document.querySelector(sel);
+      if (root) observer.observe(root, { childList:true, subtree:true, characterData:true });
+    });
+    panelSearchObservers[panelId] = observer;
+  }
+}
+
+function initPanelSearchEngines() {
+  Object.entries(PANEL_LOCAL_SEARCH_CONFIG).forEach(([panelId, cfg]) => createPanelSearchBar(panelId, cfg));
+  // Existing dedicated finders remain in place: Project Tracker, Notepad, and Password Manager.
+  // They already search locally and are intentionally not duplicated.
+  document.addEventListener('keydown', event => {
+    const target = event.target;
+    const typing = target && (target.matches('input,textarea,select') || target.isContentEditable || target.closest?.('.ql-editor'));
+    if (typing) return;
+    if (event.key === '/' && PANEL_LOCAL_SEARCH_CONFIG[currentPanel]) {
+      event.preventDefault();
+      panelSearchInput(currentPanel)?.focus();
+    }
+  });
+}
+
 
 // Click one of the category tabs (Report/Note/Meeting/Issue) in the Add/Edit Logbook form —
 // set nilai ke <select id="log-type"> tersembunyi biar saveLog()/editLog() tetap jalan seperti biasa.
@@ -3924,6 +4280,7 @@ async function renderSchedule() {
   scheduleEvents = data || [];
   document.getElementById('badge-sched').textContent = (data || []).length;
   displaySchedule(data || []);
+  reapplyPanelSearch('schedule');
   renderScheduleWeekGlance(scheduleDate);
 }
 
@@ -4275,6 +4632,7 @@ async function renderKanban() {
   }
   kanbanCache = applyPrivacy(data || []);
   displayKanban(kanbanCache);
+  reapplyPanelSearch('kanban');
 }
 
 function displayKanban(data) {
@@ -4340,6 +4698,7 @@ async function renderMatrix() {
   ];
   matrixCache = combined;
   displayMatrix(combined);
+  reapplyPanelSearch('matrix');
 }
 
 function displayMatrix(data) {
@@ -4404,6 +4763,7 @@ async function renderGantt() {
   }
   ganttCache = applyPrivacy(data || []);
   displayGanttFromCache();
+  reapplyPanelSearch('gantt');
 }
 
 function displayGanttFromCache() {
@@ -4578,6 +4938,7 @@ async function renderRecurring() {
   document.getElementById('rt-migration-banner').style.display = 'none';
   recurringCache = applyPrivacy(data || []);
   displayRecurringTemplates(recurringCache);
+  reapplyPanelSearch('recurring');
 }
 
 function displayRecurringTemplates(data) {
@@ -4825,7 +5186,7 @@ async function renderProjectTracker() {
   renderProjectFocus(projectTrackerAllCache);
 
   let filtered = [...projectTrackerAllCache];
-  if (q) filtered = filtered.filter(t => `${t.subject || ''} ${t.notes || ''}`.toLowerCase().includes(q));
+  if (q) filtered = filtered.filter(t => panelSearchNormalize([t.subject,t.assignment,t.notes,t.status,t.category,t.priority,t.start_date,t.due_date,t.created_by]).includes(panelSearchNormalize(q)));
   if (statusF) filtered = filtered.filter(t => ptEffectiveStatus(t) === statusF);
   if (assignF) filtered = filtered.filter(t => (t.assignment || '') === assignF);
   if (categoryF) filtered = filtered.filter(t => (t.category || '') === categoryF);
@@ -5231,6 +5592,7 @@ async function renderLogbook() {
   }
   await refreshTrackerStatusMap(logbookCache);
   displayLogbook(data || []);
+  reapplyPanelSearch('logbook');
 }
 
 // Logbook entries linked to a Tracker follow its CURRENT status from there (not stored manually),
@@ -5559,6 +5921,7 @@ async function renderNotes() {
     return;
   }
   _renderNoteCards(data || []);
+  reapplyPanelSearch('notes');
 }
 
 function currentNoteDraftScope() { return draftScope('notes', editingNoteId || ''); }
@@ -5985,6 +6348,7 @@ async function renderTodo() {
   if (monthInput && !monthInput.value) monthInput.value = todayStr().substring(0,7);
 
   displayTodo(all);
+  reapplyPanelSearch('todo');
 }
 
 const prioClass = {high:'prio-high',med:'prio-med',low:'prio-low'};
@@ -7305,10 +7669,10 @@ function escHtml(s) {
 }
 
 function filterNotepad() {
-  const q = document.getElementById('np-search').value.toLowerCase();
+  const q = panelSearchNormalize(document.getElementById('np-search').value);
   if (!q) { displayNotepad(notepadCache); return; }
   displayNotepad(notepadCache.filter(n =>
-    (n.title||'').toLowerCase().includes(q) || (n.body||'').toLowerCase().includes(q)
+    panelSearchNormalize([n.title,n.body,n.created_at,n.is_pinned ? 'pinned' : '']).includes(q)
   ));
 }
 

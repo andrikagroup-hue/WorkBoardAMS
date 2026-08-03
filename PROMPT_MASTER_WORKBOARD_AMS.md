@@ -2,9 +2,9 @@
 
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
-**Status sinkronisasi:** 1 Agustus 2026  
-**Pasangan kode terbaru:** `index(72).html`  
-**SHA-256 pasangan kode:** `c5665e1384dab7e244b5f733865686a68de3120ac3c5543b72ce8144c694da39`
+**Status sinkronisasi:** 3 Agustus 2026
+**Pasangan kode terbaru:** `index(82).html`
+**SHA-256 pasangan kode:** `1c93c7f7fba34964de8612bf362ba740cb121739e4761f70902a063eff5fa9fc`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(70).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(82).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -550,6 +550,17 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 3 Agustus 2026
+
+- Menambahkan Local Search Engine di dalam setiap panel data utama, bukan hanya search pada top bar.
+- Search lokal baru tersedia pada Daily Schedule, Kanban, Gantt, Decision Matrix, Recurring Task, Logbook, Notes, To Do, Work Talk, Result, Attendance, Manage Users, Leave Management, Resources, serta Guide & FAQ.
+- Project Tracker, Notepad, dan Password Manager mempertahankan finder lokal yang sudah tersedia agar tidak muncul kolom pencarian ganda.
+- Search berjalan langsung saat mengetik, memiliki tombol Clear, penghitung hasil, shortcut `/`, dukungan desktop/mobile, serta pencarian yang tidak sensitif terhadap huruf besar dan aksen.
+- Search hanya memproses data yang sudah dimuat setelah filter `applyPrivacy()` atau `applyOwner()` sehingga tidak membuka data privat milik pengguna lain.
+- Search tidak mengubah, menghapus, atau menulis data ke Supabase dan tidak memerlukan SQL.
+- Search global pada top bar tetap dipertahankan dan disinkronkan dengan search lokal pada panel yang sudah memakai konfigurasi global lama.
+
 
 ### 31 Juli 2026
 
