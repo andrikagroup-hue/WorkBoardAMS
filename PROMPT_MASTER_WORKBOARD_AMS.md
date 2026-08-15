@@ -2,9 +2,9 @@
 
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
-**Status sinkronisasi:** 3 Agustus 2026
-**Pasangan kode terbaru:** `index(84).html`
-**SHA-256 pasangan kode:** `482d91834601a1c42b652bb0ea78cf5ef119ae77f52dad2a2f5fb73bf5f859c5`
+**Status sinkronisasi:** 15 Agustus 2026
+**Pasangan kode terbaru:** `index(85).html`
+**SHA-256 pasangan kode:** `c0c5bcfb8cd6729eb95c1a08f7d4b71b3d93aa345c0163fbf94f0358a33fff0e`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(84).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(85).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -287,7 +287,7 @@ Snapshot ini dibuat dari `index(84).html` yang dipasangkan dengan prompt ini.
 - Identitas user aktif tetap menggunakan `localStorage` key `wb_user`.
 - Navigasi desktop menggunakan sidebar bertingkat dengan `Capture` sebagai tombol mandiri dan panel awal.
 - Grup `Daily` hanya berisi `Daily Schedule` dan `Logbook`.
-- Grup `Projects` membuka satu `Projects Workspace`; Tracker, Kanban, Gantt, Matrix, dan Recurring berpindah melalui tab internal.
+- Grup `Projects` membuka satu `Projects Workspace`; Portfolio, Tracker, Kanban, Gantt, Matrix, dan Recurring berpindah melalui tab internal.
 - Grup `Personal` hanya berisi Notes, To Do, dan Notepad. Brain Dump, Follow Up, dan Waiting disatukan di Capture.
 - Navigasi mobile menggunakan empat tombol inti tetap: `Capture`, `Daily`, `Projects`, dan `More`; tidak ada lagi tombol Home dan Capture yang terpisah.
 - Global Search, Global Filter, Export, dan Work Alarm berada di top bar.
@@ -309,6 +309,7 @@ Aturan:
 - Jangan mengembalikan tombol `+ Add` global ke top bar.
 - Panel lain menggunakan tombol atau form tambah miliknya sendiri.
 - Jika panel baru perlu fungsi Add, buat kontrol lokal di panel tersebut dan jangan mengaktifkan tombol global untuk semua panel.
+- `Portfolio` memakai tombol lokal `Add Portfolio Entry` melalui `openPortfolioForm()` dan tidak ditambahkan ke `handleAdd()`.
 
 ### 15.3 Peta panel dan ketergantungan utama
 
@@ -317,6 +318,7 @@ Aturan:
 | Capture | Capture / One Thing Now | `todos`; owner-only; satu input terpadu untuk Today, Follow Up, Waiting Reply, dan Brain Dump serta kartu ringkas untuk masing-masing hasil |
 | Daily | Daily Schedule | `schedule_events`, public + private |
 | Daily | Logbook | `logbook_entries`, lampiran Supabase Storage, tautan ke `time_plan_tracker`, dan Smart Next-Step Suggestion |
+| Projects | Portfolio tab | `project_portfolio`; riwayat Project/BOQ/Order yang masuk AMS, sumber order, customer/requester, partner/vendor, keputusan, stage, notes, nilai opsional, lampiran, dan public/private |
 | Projects | Tracker tab | Statistik dan Project/Milestone memakai `time_plan_tracker`; `tracker_items` masih dipakai Result dan fungsi lama |
 | Projects | Kanban tab | Visualisasi dan perubahan status dari `time_plan_tracker` |
 | Projects | Gantt tab | Timeline dari `time_plan_tracker` |
@@ -337,7 +339,7 @@ Aturan:
 
 Catatan ketergantungan:
 
-- Tracker, Kanban, Gantt, Matrix, dan Recurring tetap merupakan panel lama yang dipertahankan; Projects Workspace hanya menyatukan akses dan navigasinya melalui tab.
+- Portfolio adalah panel baru di Projects Workspace dengan tabel `project_portfolio`; Tracker, Kanban, Gantt, Matrix, dan Recurring tetap merupakan panel lama yang dipertahankan dan tidak diubah sumber datanya.
 - `time_plan_tracker` dipakai bersama oleh Tracker, Kanban, Gantt, Decision Matrix, Recurring Task, dan tautan status Logbook.
 - `tracker_items` belum boleh dihapus hanya karena form lamanya tidak aktif; Result dan fungsi lain masih mereferensikannya.
 - Mode Today, Brain Dump, Follow Up, Waiting Reply, serta To Do memakai tabel `todos` yang sama dan harus tetap owner-only.
@@ -350,6 +352,7 @@ Catatan ketergantungan:
 - Data private hanya boleh terlihat oleh pembuatnya.
 - Notes, To Do, Notepad, dan Password Manager bersifat milik user aktif.
 - All Links adalah data bersama tim.
+- Portfolio bersifat Team / Company secara default; entri yang ditandai Private hanya boleh terlihat oleh pembuatnya melalui `applyPrivacy()`.
 - Visualisasi turunan seperti Kanban, Gantt, Decision Matrix, Result, dan badge harus mengikuti aturan privasi sumber data.
 - Jangan mengubah data bersama menjadi owner-only hanya karena aplikasi digunakan banyak orang.
 
@@ -433,11 +436,12 @@ All Links saat ini memiliki:
 ### 15.10 Projects Workspace
 
 - Sidebar hanya menampilkan satu item `Projects Workspace`.
+- Portfolio ditambahkan sebagai tab pertama untuk mencatat Project, BOQ, dan Order yang masuk AMS.
 - Tracker, Kanban, Gantt, Matrix, dan Recurring tetap memakai panel dan fungsi render lama.
 - Perpindahan antar-tampilan dilakukan melalui tab sticky di bagian atas area konten.
 - Tampilan proyek terakhir disimpan pada `localStorage` key `wb_last_project_view`.
 - Top title tetap `Projects` saat berpindah tab.
-- Desktop dan mobile memakai satu pintu Projects; mobile tidak lagi memuat lima tombol proyek terpisah.
+- Desktop dan mobile memakai satu pintu Projects; keenam tampilan proyek (Portfolio, Tracker, Kanban, Gantt, Matrix, Recurring) memakai tab workspace yang sama.
 - Bottom navigation mobile hanya memiliki empat tombol inti. `Daily` membuka action sheet berisi Daily Schedule dan Logbook; `More` membuka action sheet untuk Personal, Work, Resources, Help, dan Settings admin.
 - Tombol `Capture` adalah tombol pertama dan membuka panel Capture sambil langsung memfokuskan input terpadu. Panel selain Capture, Daily, dan Projects menandai tombol `More` sebagai aktif.
 - Tidak ada tabel, fungsi data, atau panel lama yang dihapus.
@@ -510,6 +514,25 @@ All Links saat ini memiliki:
 - PowerPoint dibuka atau diunduh dari tautan lampiran; WorkBoard tidak menjalankan preview slide di dalam aplikasi.
 - Perubahan ini tidak memerlukan SQL atau tabel baru.
 
+### 15.15 Project / BOQ / Order Portfolio
+
+- Portfolio berada di `Projects Workspace` sebagai tab `Portfolio`; sidebar dan bottom navigation tidak mendapat menu proyek tambahan.
+- Data memakai tabel baru `project_portfolio`, terpisah dari `time_plan_tracker` karena fungsi Portfolio adalah riwayat pekerjaan/order masuk, bukan task execution tracker.
+- Field utama: `entry_date`, `entry_type`, `title`, `customer_name`, `source_type`, `source_detail`, `partner_vendor`, `decision`, `stage`, dan `notes`.
+- Field opsional: `reference_no`, `estimated_value`, `attachments`, dan `is_private`.
+- `entry_type` mendukung Project, BOQ, dan Order.
+- Sumber order mencakup PaDi UMKM, Direct Company, Individual/Referral, Tender/Procurement Portal, Website, Marketplace, Exhibition/Event, dan Other.
+- `decision` memisahkan Under Review, Continue, Hold, dan Not Proceed; `stage` menunjukkan posisi proses seperti Incoming, BOQ Review, Quotation/SPH, Negotiation, PO/Order Received, Execution, Completed, atau Lost/Cancelled.
+- Tampilan memakai kartu responsif dengan ringkasan Total, Continue, Review/Hold, dan Not Proceed.
+- Portfolio memiliki filter Type, Decision, dan Stage serta full-text search bebas yang mencakup customer, source, partner/vendor, reference, notes, status, tanggal, nilai, pembuat, dan nama lampiran.
+- Hasil search memakai mekanisme highlight WorkBoard yang sama; data private user lain tidak boleh masuk hasil.
+- Team / Company adalah visibility default. Private mengikuti `applyPrivacy()`.
+- Lampiran Portfolio memakai bucket Storage `attachments`, folder `portfolio`, format file dan batas 20 MB yang sama dengan lampiran WorkBoard.
+- Add/Edit/Delete tersedia pada kartu; tombol Add bersifat lokal dan tidak memakai `handleAdd()`.
+- Portfolio dapat diekspor ke Excel/PDF/PNG dari panel aktif dan disertakan pada JSON Backup.
+- Rename user memperbarui `project_portfolio.created_by`; penghapusan user admin tidak otomatis menghapus Portfolio karena Portfolio adalah riwayat perusahaan.
+- Fitur ini membutuhkan SQL setup satu kali untuk membuat tabel `project_portfolio`; setup banner dan tombol Copy Setup SQL tersedia di panel.
+
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
 Selain checklist pada Bagian 11, periksa:
@@ -523,8 +546,13 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Data private milik user lain tetap tersembunyi.
 - [ ] Notes, To Do, Notepad, seluruh mode Capture, dan Password Manager tetap owner-only.
 - [ ] Daily hanya menampilkan Daily Schedule dan Logbook.
-- [ ] Projects Workspace tetap memiliki tab Tracker, Kanban, Gantt, Matrix, dan Recurring pada desktop serta mobile.
+- [ ] Projects Workspace tetap memiliki tab Portfolio, Tracker, Kanban, Gantt, Matrix, dan Recurring pada desktop serta mobile.
 - [ ] Seluruh panel proyek lama masih tersedia dan fungsi render lamanya tidak dihapus.
+- [ ] Portfolio dapat Add/Edit/Delete Project, BOQ, dan Order serta menyimpan tanggal, source, partner/vendor, decision, stage, notes, dan attachment.
+- [ ] Portfolio Team/Public dan Private tetap mengikuti `applyPrivacy()`; private user lain tidak tampil.
+- [ ] Search Portfolio mencari seluruh field aman dan nama lampiran serta tetap memakai highlight.
+- [ ] Export Excel panel aktif dan JSON Backup menyertakan Portfolio.
+- [ ] Tabel `project_portfolio` tidak dipaksa menggantikan atau mengubah `time_plan_tracker`.
 - [ ] Satu input Capture dapat menyimpan Today, Follow Up, Waiting Reply, atau Brain Dump tanpa membuat tabel baru.
 - [ ] Follow Up eksplisit tidak tampil ganda sebagai Waiting Reply.
 - [ ] Kanban, Gantt, Decision Matrix, Recurring Task, dan Logbook tetap sinkron dengan `time_plan_tracker`.
@@ -552,6 +580,19 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 15 Agustus 2026
+
+- Menambahkan tab `Portfolio` di Projects Workspace untuk mencatat seluruh Project, BOQ, dan Order yang masuk ke AMS.
+- Menambahkan field tanggal masuk, jenis entry, nama project/order, customer/requester, sumber order, detail sumber, partner/vendor, nomor referensi, keputusan lanjut/tidak, current stage, notes, nilai opsional, visibility, dan attachments.
+- Menambahkan sumber order terstruktur untuk PaDi UMKM, perusahaan langsung, individual/referral, tender/procurement, website, marketplace, exhibition/event, dan other.
+- Menambahkan keputusan `Under Review`, `Continue`, `Hold`, dan `Not Proceed` serta stage proses dari Incoming sampai Completed/Lost.
+- Menambahkan dashboard ringkas, filter Type/Decision/Stage, full-text search bebas, highlight hasil search, serta kartu responsif desktop/mobile.
+- Menambahkan upload lampiran Portfolio memakai bucket `attachments` dan validasi file WorkBoard yang sudah ada, maksimal 20 MB per file.
+- Menambahkan Add/Edit/Delete, export Excel panel Portfolio, PDF/PNG capture melalui sistem export lama, dan penyertaan `projectPortfolio` pada JSON Backup.
+- Menambahkan kompatibilitas rename user dan user discovery tanpa menghapus Portfolio saat admin menghapus akun karena Portfolio dianggap riwayat perusahaan.
+- Menambahkan FAQ Portfolio dan setup banner dengan tombol Copy Setup SQL.
+- Menambahkan tabel baru `project_portfolio`; fitur memerlukan SQL setup satu kali dan tidak mengubah `time_plan_tracker`, Tracker, Kanban, Gantt, Matrix, Recurring, Capture, atau panel lama.
 
 ### 3 Agustus 2026
 

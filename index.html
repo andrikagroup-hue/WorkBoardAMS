@@ -573,6 +573,112 @@ textarea { resize: vertical; }
 }
 
 
+/* ── Project / BOQ / Order Portfolio ─────────────────────── */
+.portfolio-setup-banner {
+  display:none; background:#FFF7E6; border:1px solid #E7C98E; border-radius:var(--radius-lg);
+  padding:12px 14px; margin-bottom:12px; font-size:11.5px; color:#6E5328;
+}
+.portfolio-setup-banner details { margin-top:7px; }
+.portfolio-setup-banner summary { cursor:pointer; font-weight:700; }
+.portfolio-setup-sql {
+  display:block; margin-top:7px; padding:9px 10px; border-radius:7px; background:#FFFCF5;
+  border:1px solid #E7D7B4; white-space:pre-wrap; max-height:220px; overflow:auto;
+  font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; user-select:all;
+}
+.portfolio-summary {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:12px;
+}
+.portfolio-stat {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  padding:12px 14px; box-shadow:0 2px 8px rgba(80,60,70,.04);
+}
+.portfolio-stat:nth-child(1) { background:#EEF3F6; border-color:#C8D6DE; }
+.portfolio-stat:nth-child(2) { background:#EFF5EE; border-color:#C9D8C5; }
+.portfolio-stat:nth-child(3) { background:#F7F1E7; border-color:#DED1BC; }
+.portfolio-stat:nth-child(4) { background:#F8EEF1; border-color:#E1C8CF; }
+.portfolio-stat-label { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
+.portfolio-stat-value { font-size:23px; font-weight:800; color:var(--text1); margin-top:2px; }
+.portfolio-form {
+  background:#FAF8F4; border:1px solid var(--border2); border-radius:var(--radius-lg);
+  padding:14px; margin-bottom:12px; box-shadow:0 3px 12px rgba(80,60,70,.05);
+}
+.portfolio-form-title { font-size:13px; font-weight:800; margin-bottom:11px; color:var(--text1); }
+.portfolio-form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.portfolio-field { min-width:0; }
+.portfolio-field.span-2 { grid-column:span 2; }
+.portfolio-field.span-3 { grid-column:1/-1; }
+.portfolio-label {
+  display:block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em;
+  color:var(--text2); margin-bottom:4px;
+}
+.portfolio-field input, .portfolio-field select, .portfolio-field textarea { width:100%; }
+.portfolio-field textarea { min-height:90px; line-height:1.5; }
+.portfolio-optional {
+  margin-top:10px; border:1px dashed var(--border2); border-radius:9px; padding:9px 10px;
+  background:rgba(255,255,255,.46);
+}
+.portfolio-optional > summary { cursor:pointer; font-size:10.5px; font-weight:800; color:var(--text2); }
+.portfolio-filter-row {
+  display:flex; gap:7px; flex-wrap:wrap; margin:10px 0 12px; align-items:center;
+}
+.portfolio-filter-row select { min-width:145px; }
+.portfolio-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.portfolio-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:13px;
+  box-shadow:0 2px 9px rgba(80,60,70,.045); min-width:0;
+}
+.portfolio-card.decision-continue { border-left:4px solid #8FAE87; }
+.portfolio-card.decision-hold { border-left:4px solid #D1B376; }
+.portfolio-card.decision-not_proceed { border-left:4px solid #D49B9B; opacity:.88; }
+.portfolio-card.decision-review { border-left:4px solid #9CB9C8; }
+.portfolio-card-head { display:flex; gap:10px; align-items:flex-start; justify-content:space-between; }
+.portfolio-card-title { font-size:13.5px; font-weight:800; line-height:1.4; color:var(--text1); }
+.portfolio-card-sub { font-size:10.5px; color:var(--text3); margin-top:3px; line-height:1.4; }
+.portfolio-badges { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+.portfolio-badge { font-size:9.5px; font-weight:700; padding:3px 7px; border-radius:999px; background:var(--bg2); color:var(--text2); }
+.portfolio-badge.type { background:#F3EFF6; color:#584664; }
+.portfolio-badge.stage { background:#EEF3F6; color:#375665; }
+.portfolio-badge.continue { background:#E6F0E3; color:#3E6042; }
+.portfolio-badge.review { background:#E8F1F5; color:#3E6170; }
+.portfolio-badge.hold { background:#F7EFD9; color:#7A5E21; }
+.portfolio-badge.not_proceed { background:#F6E3E3; color:#814C4C; }
+.portfolio-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; margin-top:10px; }
+.portfolio-meta { font-size:10.5px; color:var(--text2); line-height:1.4; min-width:0; overflow-wrap:anywhere; }
+.portfolio-meta strong { color:var(--text1); font-weight:700; }
+.portfolio-notes {
+  margin-top:9px; padding-top:8px; border-top:1px dashed var(--border); font-size:11px; color:var(--text2);
+  line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere;
+}
+.portfolio-attachments { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+.portfolio-attachment {
+  display:inline-flex; align-items:center; gap:4px; padding:3px 7px; border-radius:6px;
+  background:var(--bg2); color:var(--text2); font-size:10px; text-decoration:none; max-width:100%;
+}
+.portfolio-attachment span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:190px; }
+.portfolio-actions { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; justify-content:flex-end; }
+.portfolio-empty { padding:24px; text-align:center; color:var(--text3); font-size:12px; border:1px dashed var(--border2); border-radius:10px; }
+.portfolio-file-preview { display:flex; gap:5px; flex-wrap:wrap; margin-top:7px; }
+.portfolio-file-chip {
+  display:inline-flex; align-items:center; gap:4px; background:var(--bg2); border:1px solid var(--border2);
+  border-radius:6px; padding:3px 7px; font-size:10.5px; color:var(--text2); max-width:100%;
+}
+.portfolio-file-chip.pending { background:#E8F1EF; border-color:#A8CAC6; color:#1F4443; }
+.portfolio-file-chip .file-name { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@media (max-width:900px) {
+  .portfolio-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .portfolio-form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .portfolio-field.span-3 { grid-column:1/-1; }
+  .portfolio-grid { grid-template-columns:1fr; }
+}
+@media (max-width:620px) {
+  .portfolio-form-grid { grid-template-columns:1fr; }
+  .portfolio-field.span-2, .portfolio-field.span-3 { grid-column:1; }
+  .portfolio-filter-row { flex-direction:column; align-items:stretch; }
+  .portfolio-filter-row select { width:100%; }
+  .portfolio-meta-grid { grid-template-columns:1fr; }
+  .portfolio-card-head { flex-direction:column; }
+}
+
 .kanban-board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: flex-start; }
 .kanban-col { background: var(--bg2); border-radius: 10px; padding: 10px; min-width: 240px; max-width: 260px; flex-shrink: 0; }
 .kanban-col-header { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; padding: 4px 6px 8px; }
@@ -2051,6 +2157,7 @@ body.mobile-hub-open { overflow:hidden; }
 
       <div class="project-workspace-tabs" id="project-workspace-tabs" aria-label="Projects workspace views">
         <span class="project-workspace-label">Projects</span>
+        <button class="project-tab" data-project-view="portfolio" onclick="switchProjectView('portfolio')"><i class="ti ti-briefcase"></i> Portfolio</button>
         <button class="project-tab" data-project-view="tracker" onclick="switchProjectView('tracker')"><i class="ti ti-clock"></i> Tracker</button>
         <button class="project-tab" data-project-view="kanban" onclick="switchProjectView('kanban')"><i class="ti ti-layout-kanban"></i> Kanban</button>
         <button class="project-tab" data-project-view="gantt" onclick="switchProjectView('gantt')"><i class="ti ti-timeline"></i> Gantt</button>
@@ -2126,6 +2233,199 @@ body.mobile-hub-open { overflow:hidden; }
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+
+      <!-- ── Project / BOQ / Order Portfolio ──────────────── -->
+      <div class="panel" id="panel-portfolio">
+        <div class="portfolio-setup-banner" id="portfolio-setup-banner">
+          <strong>Setup required:</strong> The <code>project_portfolio</code> table is not available yet.
+          Run the SQL below once in Supabase SQL Editor, then refresh WorkBoard.
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">
+            <button class="btn-sm" type="button" onclick="copyPortfolioSetupSql()"><i class="ti ti-copy"></i> Copy Setup SQL</button>
+            <button class="btn-sm" type="button" onclick="document.getElementById('portfolio-setup-banner').style.display='none'">Close</button>
+          </div>
+          <details>
+            <summary>Show setup SQL</summary>
+            <code class="portfolio-setup-sql" id="portfolio-setup-sql">create table if not exists project_portfolio (
+  id uuid primary key default gen_random_uuid(),
+  entry_date date not null default current_date,
+  entry_type text not null default 'project',
+  title text not null,
+  customer_name text,
+  source_type text,
+  source_detail text,
+  partner_vendor text,
+  reference_no text,
+  decision text not null default 'review',
+  stage text not null default 'incoming',
+  notes text,
+  estimated_value numeric(18,2),
+  attachments jsonb default '[]'::jsonb,
+  is_private boolean default false,
+  created_by text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index if not exists idx_project_portfolio_entry_date on project_portfolio(entry_date desc);
+create index if not exists idx_project_portfolio_created_by on project_portfolio(created_by);
+create index if not exists idx_project_portfolio_decision on project_portfolio(decision);</code>
+          </details>
+        </div>
+
+        <div class="panel-add-toolbar">
+          <button class="btn-sm btn-primary" type="button" onclick="openPortfolioForm()">
+            <i class="ti ti-plus"></i> Add Portfolio Entry
+          </button>
+        </div>
+
+        <div class="portfolio-form" id="portfolio-form" style="display:none">
+          <div class="portfolio-form-title" id="portfolio-form-title">Add Project / BOQ / Order</div>
+          <div class="portfolio-form-grid">
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-date">Entry Date</label>
+              <input type="date" id="portfolio-date" />
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-type">Type</label>
+              <select id="portfolio-type">
+                <option value="project">Project</option>
+                <option value="boq">BOQ</option>
+                <option value="order">Order</option>
+              </select>
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-title">Project / Order Name *</label>
+              <input id="portfolio-title" placeholder="e.g. Foam Chamber — PT Multitek" />
+            </div>
+
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-customer">Customer / Requester</label>
+              <input id="portfolio-customer" placeholder="Company or person requesting it" />
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-source-type">Order Source</label>
+              <select id="portfolio-source-type">
+                <option value="padi_umkm">PaDi UMKM</option>
+                <option value="direct_company">Direct Company</option>
+                <option value="individual_referral">Individual / Referral</option>
+                <option value="tender_procurement">Tender / Procurement Portal</option>
+                <option value="website">Website</option>
+                <option value="marketplace">Marketplace</option>
+                <option value="exhibition_event">Exhibition / Event</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-source-detail">Source Detail</label>
+              <input id="portfolio-source-detail" placeholder="Person, company, platform, referral, etc." />
+            </div>
+
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-partner">Partner / Vendor</label>
+              <input id="portfolio-partner" placeholder="Vendor, supplier, or collaboration partner" />
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-decision">Decision</label>
+              <select id="portfolio-decision">
+                <option value="review">Under Review</option>
+                <option value="continue">Continue</option>
+                <option value="hold">Hold</option>
+                <option value="not_proceed">Not Proceed</option>
+              </select>
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-stage">Current Stage</label>
+              <select id="portfolio-stage">
+                <option value="incoming">Incoming / New</option>
+                <option value="boq_review">BOQ Review</option>
+                <option value="quotation">Quotation / SPH</option>
+                <option value="negotiation">Negotiation</option>
+                <option value="po_received">PO / Order Received</option>
+                <option value="execution">In Progress / Execution</option>
+                <option value="completed">Completed</option>
+                <option value="closed">Lost / Cancelled</option>
+              </select>
+            </div>
+
+            <div class="portfolio-field span-3">
+              <label class="portfolio-label" for="portfolio-notes">Notes</label>
+              <textarea id="portfolio-notes" placeholder="Important context, follow-up, reasons to continue/not proceed, vendor details, etc."></textarea>
+            </div>
+          </div>
+
+          <details class="portfolio-optional">
+            <summary>Optional details — reference, value, visibility & attachments</summary>
+            <div class="portfolio-form-grid" style="margin-top:9px">
+              <div class="portfolio-field">
+                <label class="portfolio-label" for="portfolio-reference">Reference No.</label>
+                <input id="portfolio-reference" placeholder="BOQ / RFQ / PO / Quotation no." />
+              </div>
+              <div class="portfolio-field">
+                <label class="portfolio-label" for="portfolio-value">Estimated / Order Value (IDR)</label>
+                <input id="portfolio-value" inputmode="numeric" placeholder="e.g. 15000000" />
+              </div>
+              <div class="portfolio-field">
+                <label class="portfolio-label" for="portfolio-privacy">Visibility</label>
+                <select id="portfolio-privacy">
+                  <option value="false">Team / Company</option>
+                  <option value="true">Private (only me)</option>
+                </select>
+              </div>
+              <div class="portfolio-field span-3">
+                <label class="portfolio-label" for="portfolio-files">Attachments</label>
+                <input type="file" id="portfolio-files" multiple
+                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                  onchange="handlePortfolioFileSelect()" />
+                <div style="font-size:9.5px;color:var(--text3);margin-top:3px">PDF, image, Word, Excel/CSV, or PowerPoint · max 20 MB per file.</div>
+                <div class="portfolio-file-preview" id="portfolio-file-preview"></div>
+              </div>
+            </div>
+          </details>
+
+          <div class="form-actions">
+            <button class="btn-sm" type="button" onclick="closePortfolioForm()">Cancel</button>
+            <button class="btn-sm btn-primary" type="button" id="portfolio-save-btn" onclick="savePortfolio()">Save Portfolio Entry</button>
+          </div>
+        </div>
+
+        <div class="portfolio-summary" id="portfolio-summary">
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Total Entries</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Continue</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Review / Hold</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Not Proceed</div><div class="portfolio-stat-value">—</div></div>
+        </div>
+
+        <div class="portfolio-filter-row">
+          <select id="portfolio-type-filter" onchange="applyPortfolioFilters()">
+            <option value="">All Types</option>
+            <option value="project">Project</option>
+            <option value="boq">BOQ</option>
+            <option value="order">Order</option>
+          </select>
+          <select id="portfolio-decision-filter" onchange="applyPortfolioFilters()">
+            <option value="">All Decisions</option>
+            <option value="review">Under Review</option>
+            <option value="continue">Continue</option>
+            <option value="hold">Hold</option>
+            <option value="not_proceed">Not Proceed</option>
+          </select>
+          <select id="portfolio-stage-filter" onchange="applyPortfolioFilters()">
+            <option value="">All Stages</option>
+            <option value="incoming">Incoming / New</option>
+            <option value="boq_review">BOQ Review</option>
+            <option value="quotation">Quotation / SPH</option>
+            <option value="negotiation">Negotiation</option>
+            <option value="po_received">PO / Order Received</option>
+            <option value="execution">In Progress / Execution</option>
+            <option value="completed">Completed</option>
+            <option value="closed">Lost / Cancelled</option>
+          </select>
+        </div>
+
+        <div class="portfolio-grid" id="portfolio-list">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading portfolio...</div>
         </div>
       </div>
 
@@ -3371,6 +3671,7 @@ async function renameUserEverywhere(oldName, newName) {
     sb.from('schedule_events').update({ created_by: newName }).eq('created_by', oldName),
     sb.from('tracker_items').update({ created_by: newName }).eq('created_by', oldName),
     sb.from('time_plan_tracker').update({ created_by: newName }).eq('created_by', oldName),
+    sb.from('project_portfolio').update({ created_by: newName }).eq('created_by', oldName),
     sb.from('logbook_entries').update({ created_by: newName }).eq('created_by', oldName),
     sb.from('notes').update({ created_by: newName }).eq('created_by', oldName),
     sb.from('todos').update({ created_by: newName }).eq('created_by', oldName),
@@ -3435,6 +3736,7 @@ let logActiveId = null;
 let notesCache = [];
 let notesViewCache = [];
 let todoCache = [];
+let portfolioCache = [];
 
 // ID item yang sedang diedit (null = sedang mode tambah baru)
 let editingScheduleId = null;
@@ -3444,6 +3746,9 @@ let logAttachments = [];
 let logPendingFiles = []; // File objects the user has selected but not yet uploaded (can still be canceled)
 let editingNoteId = null;
 let editingTodoId = null;
+let editingPortfolioId = null;
+let portfolioAttachments = [];
+let portfolioPendingFiles = [];
 let chatChannels = [];
 let activeChatChannelId = null;
 let chatMessagesCache = [];
@@ -3460,6 +3765,7 @@ async function refreshCurrentPanel() {
   else if (currentPanel === 'brain') await renderBrainDump();
   else if (currentPanel === 'followup') await renderFollowUpCenter();
   else if (currentPanel === 'schedule') await renderSchedule();
+  else if (currentPanel === 'portfolio') await renderPortfolio();
   else if (currentPanel === 'tracker') { await renderTracker(); await renderProjectTracker(); }
   else if (currentPanel === 'kanban') await renderKanban();
   else if (currentPanel === 'gantt') await renderGantt();
@@ -3614,6 +3920,7 @@ async function switchPanel(id, el) {
     brain: 'Brain Dump',
     followup: 'Follow Up Center',
     schedule: 'Daily Schedule',
+    portfolio: 'Projects',
     tracker: 'Projects',
     kanban: 'Projects',
     gantt: 'Projects',
@@ -3643,6 +3950,7 @@ async function switchPanel(id, el) {
   else if (id === 'brain') await renderBrainDump();
   else if (id === 'followup') await renderFollowUpCenter();
   else if (id === 'schedule') await renderSchedule();
+  else if (id === 'portfolio') await renderPortfolio();
   else if (id === 'tracker') { await renderTracker(); await renderProjectTracker(); }
   else if (id === 'kanban') await renderKanban();
   else if (id === 'gantt') await renderGantt();
@@ -3696,6 +4004,16 @@ const PANEL_FILTER_CONFIG = {
     match: (t, val) => ptEffectiveStatus(t) === val,
     getCache: () => projectTrackerAllCache,
     display: displayProjectTracker
+  },
+  portfolio: {
+    placeholder: 'Search project, customer, source, vendor, notes, reference, status, or attachment...',
+    options: [],
+    searchKeys: ['title', 'customer_name', 'source_detail', 'partner_vendor', 'notes', 'reference_no'],
+    searchText: p => [p, p.entry_date, p.entry_type, p.title, p.customer_name, p.source_type, p.source_detail,
+      p.partner_vendor, p.reference_no, p.decision, p.stage, p.notes, p.estimated_value, p.created_by, p.attachments],
+    match: null,
+    getCache: () => portfolioCache,
+    display: displayPortfolio
   },
   logbook: {
     placeholder: 'Search title or note content...',
@@ -3870,6 +4188,10 @@ const PANEL_LOCAL_SEARCH_CONFIG = {
   schedule: {
     mode: 'global', placeholder: 'Search schedule title, location, category, or owner...',
     hint: 'Search this date'
+  },
+  portfolio: {
+    mode: 'global', placeholder: 'Type any word from project, customer, source, vendor, notes, status, reference, or attachment...',
+    hint: 'Search every loaded portfolio field'
   },
   kanban: {
     mode: 'data', placeholder: 'Search project, PIC, notes, status, or due date...',
@@ -4326,7 +4648,7 @@ function syncLogTypeTabs() {
 }
 
 function hideAllForms() {
-  ['sched-form','log-form','note-form','rt-form'].forEach(id => {
+  ['sched-form','log-form','note-form','rt-form','portfolio-form'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -4334,6 +4656,7 @@ function hideAllForms() {
   // Draft-enabled forms keep their current values while switching panels.
   resetTrackerForm();
   resetRecurringForm();
+  resetPortfolioForm();
 }
 
 async function handleAdd() {
@@ -4362,6 +4685,360 @@ async function handleAdd() {
     if (willOpen && currentPanel === 'notes') restoreNoteDraft();
     if (willOpen && currentPanel === 'recurring') resetRecurringForm();
   }
+
+}
+
+// ── PROJECT / BOQ / ORDER PORTFOLIO ─────────────────────────
+const PORTFOLIO_TYPE_LABEL = {
+  project: 'Project', boq: 'BOQ', order: 'Order'
+};
+const PORTFOLIO_SOURCE_LABEL = {
+  padi_umkm: 'PaDi UMKM',
+  direct_company: 'Direct Company',
+  individual_referral: 'Individual / Referral',
+  tender_procurement: 'Tender / Procurement Portal',
+  website: 'Website',
+  marketplace: 'Marketplace',
+  exhibition_event: 'Exhibition / Event',
+  other: 'Other'
+};
+const PORTFOLIO_DECISION_LABEL = {
+  review: 'Under Review',
+  continue: 'Continue',
+  hold: 'Hold',
+  not_proceed: 'Not Proceed'
+};
+const PORTFOLIO_STAGE_LABEL = {
+  incoming: 'Incoming / New',
+  boq_review: 'BOQ Review',
+  quotation: 'Quotation / SPH',
+  negotiation: 'Negotiation',
+  po_received: 'PO / Order Received',
+  execution: 'In Progress / Execution',
+  completed: 'Completed',
+  closed: 'Lost / Cancelled'
+};
+
+function copyPortfolioSetupSql() {
+  const sql = document.getElementById('portfolio-setup-sql')?.textContent || '';
+  if (!sql) return;
+  navigator.clipboard?.writeText(sql).then(() => alert('Setup SQL copied.')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = sql;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    alert('Setup SQL copied.');
+  });
+}
+
+function portfolioValueNumber(value) {
+  const cleaned = String(value == null ? '' : value).replace(/[^\d-]/g, '');
+  if (!cleaned) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatPortfolioValue(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return 'Rp' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
+}
+
+function resetPortfolioForm() {
+  editingPortfolioId = null;
+  portfolioAttachments = [];
+  portfolioPendingFiles = [];
+  const ids = {
+    'portfolio-date': todayStr(),
+    'portfolio-type': 'project',
+    'portfolio-title': '',
+    'portfolio-customer': '',
+    'portfolio-source-type': 'direct_company',
+    'portfolio-source-detail': '',
+    'portfolio-partner': '',
+    'portfolio-decision': 'review',
+    'portfolio-stage': 'incoming',
+    'portfolio-notes': '',
+    'portfolio-reference': '',
+    'portfolio-value': '',
+    'portfolio-privacy': 'false'
+  };
+  Object.entries(ids).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  });
+  const fileInput = document.getElementById('portfolio-files');
+  if (fileInput) fileInput.value = '';
+  const title = document.getElementById('portfolio-form-title');
+  if (title) title.textContent = 'Add Project / BOQ / Order';
+  const saveBtn = document.getElementById('portfolio-save-btn');
+  if (saveBtn) { saveBtn.textContent = 'Save Portfolio Entry'; saveBtn.disabled = false; }
+  renderPortfolioFilePreview();
+}
+
+function openPortfolioForm(id = '') {
+  const form = document.getElementById('portfolio-form');
+  if (!form) return;
+  resetPortfolioForm();
+  if (id) {
+    const row = portfolioCache.find(x => x.id === id);
+    if (!row) return;
+    editingPortfolioId = id;
+    portfolioAttachments = Array.isArray(row.attachments) ? [...row.attachments] : [];
+    const values = {
+      'portfolio-date': row.entry_date || todayStr(),
+      'portfolio-type': row.entry_type || 'project',
+      'portfolio-title': row.title || '',
+      'portfolio-customer': row.customer_name || '',
+      'portfolio-source-type': row.source_type || 'other',
+      'portfolio-source-detail': row.source_detail || '',
+      'portfolio-partner': row.partner_vendor || '',
+      'portfolio-decision': row.decision || 'review',
+      'portfolio-stage': row.stage || 'incoming',
+      'portfolio-notes': row.notes || '',
+      'portfolio-reference': row.reference_no || '',
+      'portfolio-value': row.estimated_value == null ? '' : String(row.estimated_value),
+      'portfolio-privacy': row.is_private ? 'true' : 'false'
+    };
+    Object.entries(values).forEach(([fieldId, value]) => {
+      const el = document.getElementById(fieldId);
+      if (el) el.value = value;
+    });
+    const title = document.getElementById('portfolio-form-title');
+    if (title) title.textContent = 'Edit Project / BOQ / Order';
+  }
+  renderPortfolioFilePreview();
+  form.style.display = 'block';
+  form.scrollIntoView({ behavior:'smooth', block:'start' });
+  setTimeout(() => document.getElementById('portfolio-title')?.focus(), 120);
+}
+
+function closePortfolioForm() {
+  const form = document.getElementById('portfolio-form');
+  if (form) form.style.display = 'none';
+  resetPortfolioForm();
+}
+
+function handlePortfolioFileSelect() {
+  const input = document.getElementById('portfolio-files');
+  if (!input) return;
+  const picked = filterSupportedAttachments(Array.from(input.files || []));
+  if (picked.length) portfolioPendingFiles = [...portfolioPendingFiles, ...picked];
+  input.value = '';
+  renderPortfolioFilePreview();
+}
+
+function removePortfolioAttachment(index) {
+  portfolioAttachments.splice(index, 1);
+  renderPortfolioFilePreview();
+}
+
+function removePendingPortfolioFile(index) {
+  portfolioPendingFiles.splice(index, 1);
+  renderPortfolioFilePreview();
+}
+
+function renderPortfolioFilePreview() {
+  const wrap = document.getElementById('portfolio-file-preview');
+  if (!wrap) return;
+  const saved = portfolioAttachments.map((a, index) => `
+    <span class="portfolio-file-chip">
+      <i class="ti ${fileIconFor(a.name || '')}"></i>
+      <span class="file-name">${escHtml(a.name || 'Attachment')}</span>
+      ${a.size ? `<span style="opacity:.55">(${formatBytes(a.size)})</span>` : ''}
+      <button type="button" class="ev-del" onclick="removePortfolioAttachment(${index})" title="Remove attachment"><i class="ti ti-x"></i></button>
+    </span>`).join('');
+  const pending = portfolioPendingFiles.map((f, index) => `
+    <span class="portfolio-file-chip pending">
+      <i class="ti ti-cloud-upload"></i>
+      <span class="file-name">${escHtml(f.name)}</span>
+      <span style="opacity:.6">(${formatBytes(f.size)}, pending)</span>
+      <button type="button" class="ev-del" onclick="removePendingPortfolioFile(${index})" title="Cancel file"><i class="ti ti-x"></i></button>
+    </span>`).join('');
+  wrap.innerHTML = saved + pending;
+}
+
+function renderPortfolioStats(rows = portfolioCache) {
+  const wrap = document.getElementById('portfolio-summary');
+  if (!wrap) return;
+  const data = rows || [];
+  const total = data.length;
+  const cont = data.filter(x => x.decision === 'continue').length;
+  const review = data.filter(x => x.decision === 'review' || x.decision === 'hold').length;
+  const no = data.filter(x => x.decision === 'not_proceed').length;
+  wrap.innerHTML = `
+    <div class="portfolio-stat"><div class="portfolio-stat-label">Total Entries</div><div class="portfolio-stat-value">${total}</div></div>
+    <div class="portfolio-stat"><div class="portfolio-stat-label">Continue</div><div class="portfolio-stat-value">${cont}</div></div>
+    <div class="portfolio-stat"><div class="portfolio-stat-label">Review / Hold</div><div class="portfolio-stat-value">${review}</div></div>
+    <div class="portfolio-stat"><div class="portfolio-stat-label">Not Proceed</div><div class="portfolio-stat-value">${no}</div></div>`;
+}
+
+function portfolioFilteredRows(rows) {
+  const type = document.getElementById('portfolio-type-filter')?.value || '';
+  const decision = document.getElementById('portfolio-decision-filter')?.value || '';
+  const stage = document.getElementById('portfolio-stage-filter')?.value || '';
+  return (rows || []).filter(row =>
+    (!type || row.entry_type === type) &&
+    (!decision || row.decision === decision) &&
+    (!stage || row.stage === stage)
+  );
+}
+
+function portfolioAttachmentHtml(row) {
+  const attachments = Array.isArray(row.attachments) ? row.attachments : [];
+  if (!attachments.length) return '';
+  return `<div class="portfolio-attachments">${attachments.map(a => `
+    <a class="portfolio-attachment" href="${escAttr(a.url || '#')}" target="_blank" rel="noopener" title="${escAttr(a.name || 'Attachment')}">
+      <i class="ti ${fileIconFor(a.name || '')}"></i><span>${escHtml(a.name || 'Attachment')}</span>
+    </a>`).join('')}</div>`;
+}
+
+function displayPortfolio(rows = portfolioCache) {
+  const list = document.getElementById('portfolio-list');
+  if (!list) return;
+  const filtered = portfolioFilteredRows(rows);
+  if (!filtered.length) {
+    list.innerHTML = '<div class="portfolio-empty" style="grid-column:1/-1">No matching portfolio entries. Add a Project, BOQ, or Order to start the AMS portfolio.</div>';
+    applyPanelSearchHighlights('portfolio', panelSearchInput('portfolio')?.value || '');
+    return;
+  }
+  list.innerHTML = filtered.map(row => {
+    const typeLabel = PORTFOLIO_TYPE_LABEL[row.entry_type] || row.entry_type || 'Project';
+    const sourceLabel = PORTFOLIO_SOURCE_LABEL[row.source_type] || row.source_type || '—';
+    const decision = row.decision || 'review';
+    const decisionLabel = PORTFOLIO_DECISION_LABEL[decision] || decision;
+    const stageLabel = PORTFOLIO_STAGE_LABEL[row.stage] || row.stage || '—';
+    const dateText = row.entry_date ? new Date(row.entry_date + 'T00:00:00').toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'numeric'}) : 'No date';
+    const valueText = formatPortfolioValue(row.estimated_value);
+    return `
+      <article class="portfolio-card decision-${escAttr(decision)}">
+        <div class="portfolio-card-head">
+          <div style="min-width:0">
+            <div class="portfolio-card-title">${escHtml(row.title || 'Untitled')}</div>
+            <div class="portfolio-card-sub">${escHtml(dateText)}${row.customer_name ? ' · ' + escHtml(row.customer_name) : ''}${row.is_private ? ' · 🔒 Private' : ''}</div>
+          </div>
+          <span class="portfolio-badge type">${escHtml(typeLabel)}</span>
+        </div>
+        <div class="portfolio-badges">
+          <span class="portfolio-badge ${escAttr(decision)}">${escHtml(decisionLabel)}</span>
+          <span class="portfolio-badge stage">${escHtml(stageLabel)}</span>
+        </div>
+        <div class="portfolio-meta-grid">
+          <div class="portfolio-meta"><strong>Source:</strong> ${escHtml(sourceLabel)}${row.source_detail ? ' — ' + escHtml(row.source_detail) : ''}</div>
+          <div class="portfolio-meta"><strong>Partner / Vendor:</strong> ${escHtml(row.partner_vendor || '—')}</div>
+          <div class="portfolio-meta"><strong>Reference:</strong> ${escHtml(row.reference_no || '—')}</div>
+          <div class="portfolio-meta"><strong>Value:</strong> ${escHtml(valueText || '—')}</div>
+        </div>
+        ${row.notes ? `<div class="portfolio-notes">${escHtml(row.notes)}</div>` : ''}
+        ${portfolioAttachmentHtml(row)}
+        <div class="portfolio-card-sub" style="margin-top:9px">Added by ${escHtml(row.created_by || '—')}</div>
+        <div class="portfolio-actions">
+          <button class="btn-sm" type="button" onclick="openPortfolioForm('${row.id}')"><i class="ti ti-pencil"></i> Edit</button>
+          <button class="btn-sm" type="button" style="color:var(--danger);border-color:var(--danger)" onclick="deletePortfolio('${row.id}')"><i class="ti ti-trash"></i> Delete</button>
+        </div>
+      </article>`;
+  }).join('');
+  applyPanelSearchHighlights('portfolio', panelSearchInput('portfolio')?.value || '');
+}
+
+function applyPortfolioFilters() {
+  const input = panelSearchInput('portfolio');
+  if (input?.value.trim()) applyPanelLocalSearch('portfolio', true);
+  else displayPortfolio(portfolioCache);
+}
+
+async function renderPortfolio() {
+  const list = document.getElementById('portfolio-list');
+  if (!list) return;
+  list.innerHTML = '<div class="loading-msg" style="grid-column:1/-1"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading portfolio...</div>';
+  const { data, error } = await withTimeout(
+    sb.from('project_portfolio').select('*').order('entry_date', { ascending:false }).order('created_at', { ascending:false }),
+    15000
+  ).catch(err => ({ data:null, error:err }));
+  if (error) {
+    const msg = String(error.message || error);
+    if (error.code === '42P01' || /project_portfolio|does not exist|schema cache/i.test(msg)) {
+      const banner = document.getElementById('portfolio-setup-banner');
+      if (banner) banner.style.display = 'block';
+      list.innerHTML = '<div class="portfolio-empty" style="grid-column:1/-1">Portfolio setup is required once. Use the setup box above, then refresh WorkBoard.</div>';
+    } else {
+      list.innerHTML = `<div class="portfolio-empty" style="grid-column:1/-1">Failed to load portfolio: ${escHtml(msg)}</div>`;
+    }
+    portfolioCache = [];
+    renderPortfolioStats([]);
+    return;
+  }
+  portfolioCache = applyPrivacy(data || []);
+  renderPortfolioStats(portfolioCache);
+  displayPortfolio(portfolioCache);
+  reapplyPanelSearch('portfolio');
+}
+
+async function savePortfolio() {
+  const title = document.getElementById('portfolio-title')?.value.trim() || '';
+  if (!title) return alert('Project / Order Name is required.');
+
+  const saveBtn = document.getElementById('portfolio-save-btn');
+  const originalText = saveBtn?.textContent || 'Save Portfolio Entry';
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = portfolioPendingFiles.length ? 'Uploading attachments...' : 'Saving...'; }
+
+  try {
+    let newFiles = [];
+    if (portfolioPendingFiles.length) {
+      newFiles = await uploadFilesToStorage(portfolioPendingFiles, 'portfolio');
+    }
+    const attachments = [...portfolioAttachments, ...newFiles];
+    const estimatedValue = portfolioValueNumber(document.getElementById('portfolio-value')?.value);
+
+    const payload = {
+      entry_date: document.getElementById('portfolio-date')?.value || todayStr(),
+      entry_type: document.getElementById('portfolio-type')?.value || 'project',
+      title,
+      customer_name: document.getElementById('portfolio-customer')?.value.trim() || null,
+      source_type: document.getElementById('portfolio-source-type')?.value || 'other',
+      source_detail: document.getElementById('portfolio-source-detail')?.value.trim() || null,
+      partner_vendor: document.getElementById('portfolio-partner')?.value.trim() || null,
+      reference_no: document.getElementById('portfolio-reference')?.value.trim() || null,
+      decision: document.getElementById('portfolio-decision')?.value || 'review',
+      stage: document.getElementById('portfolio-stage')?.value || 'incoming',
+      notes: document.getElementById('portfolio-notes')?.value.trim() || null,
+      estimated_value: estimatedValue,
+      attachments,
+      is_private: document.getElementById('portfolio-privacy')?.value === 'true',
+      updated_at: new Date().toISOString()
+    };
+
+    let error;
+    if (editingPortfolioId) {
+      ({ error } = await withTimeout(sb.from('project_portfolio').update(payload).eq('id', editingPortfolioId), 15000));
+    } else {
+      payload.created_by = getUser();
+      ({ error } = await withTimeout(sb.from('project_portfolio').insert(payload), 15000));
+    }
+    if (error) throw error;
+
+    closePortfolioForm();
+    await renderPortfolio();
+  } catch (error) {
+    const msg = String(error?.message || error);
+    if (/project_portfolio|does not exist|schema cache/i.test(msg)) {
+      const banner = document.getElementById('portfolio-setup-banner');
+      if (banner) banner.style.display = 'block';
+    }
+    alert('Failed to save portfolio entry: ' + msg);
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = originalText; }
+  }
+}
+
+async function deletePortfolio(id) {
+  const row = portfolioCache.find(x => x.id === id);
+  if (!confirm(`Delete this portfolio entry${row?.title ? `: "${row.title}"` : ''}?\n\nThis permanently removes the record from the portfolio.`)) return;
+  const { error } = await withTimeout(sb.from('project_portfolio').delete().eq('id', id), 15000);
+  if (error) return alert('Failed to delete portfolio entry: ' + error.message);
+  await renderPortfolio();
 }
 
 // Isi dropdown "Link ke Tracker" di form Logbook dengan daftar item Time Plan Tracker terbaru.
@@ -6155,7 +6832,7 @@ async function delNote(id) {
 
 // ── TODAY FOCUS ─────────────────────────────
 
-const PROJECT_VIEWS = ['tracker','kanban','gantt','matrix','recurring'];
+const PROJECT_VIEWS = ['portfolio','tracker','kanban','gantt','matrix','recurring'];
 let lastProjectView = localStorage.getItem('wb_last_project_view') || 'tracker';
 function syncProjectWorkspaceTabs(id) {
   const bar = document.getElementById('project-workspace-tabs');
@@ -7036,20 +7713,21 @@ async function updateDailyProgress() {
 
 // ── Export ─────────────────────────────────
 async function exportData() {
-  const [s, t, l, n, td, pt, cc, cm] = await Promise.all([
+  const [s, t, l, n, td, pt, pf, cc, cm] = await Promise.all([
     sb.from('schedule_events').select('*').eq('event_date',todayStr()),
     sb.from('tracker_items').select('*').eq('item_date',todayStr()),
     sb.from('logbook_entries').select('*').gte('entry_date',getWeekStart()),
     sb.from('notes').select('*'),
     sb.from('todos').select('*').eq('is_done',false),
     sb.from('time_plan_tracker').select('*'),
+    sb.from('project_portfolio').select('*'),
     sb.from('chat_channels').select('*'),
     sb.from('chat_messages').select('*').gte('created_at', getWeekStart())
   ]);
   const exportData = {
     exportDate: new Date().toISOString(),
     schedule: s.data, tracker: t.data, logbook: l.data, notes: n.data, todos: td.data,
-    projectTracker: pt.data, chatChannels: cc.data, chatMessages: cm.data
+    projectTracker: pt.data, projectPortfolio: pf.data, chatChannels: cc.data, chatMessages: cm.data
   };
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -7458,7 +8136,10 @@ function prettifyExcelKey(k) {
     category: 'Category', subject: 'Subject', assignment: 'PIC',
     start_date: 'Start', due_date: 'Due', notes: 'Notes',
     attachments: 'Attachments', priority: 'Priority', start_time: 'Start Time',
-    end_time: 'End Time', name: 'Name', channel: 'Channel', sender: 'Sender', is_edited: 'Edited'
+    end_time: 'End Time', name: 'Name', channel: 'Channel', sender: 'Sender', is_edited: 'Edited',
+    entry_type: 'Type', customer_name: 'Customer / Requester', source_type: 'Order Source',
+    source_detail: 'Source Detail', partner_vendor: 'Partner / Vendor', reference_no: 'Reference No.',
+    decision: 'Decision', stage: 'Current Stage', estimated_value: 'Estimated / Order Value'
   };
   return map[k] || (k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '));
 }
@@ -7493,6 +8174,7 @@ function getPanelExportMeta() {
       title: 'Time_Plan_Tracker', getRows: () => [...trackerCache],
       extra: { title: 'Project_Tracker', getRows: () => [...projectTrackerCache] }
     },
+    portfolio: { title: 'AMS_Project_BOQ_Order_Portfolio', getRows: () => [...portfolioCache] },
     logbook: { title: 'Logbook', getRows: () => [...logbookCache] },
     notes: { title: 'Notes', getRows: () => [...notesCache] },
     todo: { title: 'To_Do', getRows: () => [...todoCache] },
@@ -7655,7 +8337,7 @@ function toggleNavGroup(groupId) {
 function openNavGroupForPanel(panelId) {
   const map = {
     schedule: 'ng-daily', logbook: 'ng-daily',
-    tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects', recurring: 'ng-projects',
+    portfolio: 'ng-projects', tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects', recurring: 'ng-projects',
     notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
     absen: 'ng-hr',
@@ -9415,7 +10097,7 @@ restoreTodoDraft();
 <script>
 const MOBILE_PANEL_BUCKET = {
   focus:'capture', schedule:'daily', logbook:'daily',
-  tracker:'projects', kanban:'projects', gantt:'projects', matrix:'projects', recurring:'projects',
+  portfolio:'projects', tracker:'projects', kanban:'projects', gantt:'projects', matrix:'projects', recurring:'projects',
   brain:'capture', followup:'capture'
 };
 
@@ -10024,7 +10706,7 @@ async function getAllKnownUsers() {
   const safe = q => withTimeout(q, 8000).then(r => (r.data||[]).map(x => x.user_name || x.created_by || x.sender || '')).catch(() => []);
   const [
     onlineNames, attendNames, leaveNames,
-    schedNames, trackerNames, logNames,
+    schedNames, trackerNames, portfolioNames, logNames,
     noteNames, todoNames, chatNames
   ] = await Promise.all([
     safe(sb.from('online_presence').select('user_name')),
@@ -10032,12 +10714,13 @@ async function getAllKnownUsers() {
     safe(sb.from('leave_requests').select('user_name')),
     safe(sb.from('schedule_events').select('created_by')),
     safe(sb.from('tracker_items').select('created_by')),
+    safe(sb.from('project_portfolio').select('created_by')),
     safe(sb.from('logbook_entries').select('created_by')),
     safe(sb.from('notes').select('created_by')),
     safe(sb.from('todos').select('created_by')),
     safe(sb.from('chat_messages').select('sender')),
   ]);
-  const results = [onlineNames, attendNames, leaveNames, schedNames, trackerNames, logNames, noteNames, todoNames, chatNames];
+  const results = [onlineNames, attendNames, leaveNames, schedNames, trackerNames, portfolioNames, logNames, noteNames, todoNames, chatNames];
   const onlineRes = await withTimeout(sb.from('online_presence').select('user_name,last_seen'), 8000).catch(() => ({data:[]}));
   const onlineMap = {};
   ((onlineRes.data)||[]).forEach(u => { onlineMap[u.user_name] = u.last_seen; });
@@ -10667,6 +11350,14 @@ function renderFaq() {
         { q: 'What are channels in Work Talk?', a: 'There are 3 types of channels: <strong>General</strong> (everyone can read), <strong>Department</strong> (per division), and <strong>DM</strong> (direct message to one person).' },
         { q: 'How do I send a message to someone?', a: 'Click the + icon in Work Talk, choose "DM", then pick your colleague\'s name. A chat will open just between the two of you.' },
         { q: 'Can I edit or delete a message?', a: 'Yes. Hover/tap the message, then click the pencil icon to edit or the eye icon to hide the message from your view.' },
+      ]
+    },
+    {
+      section: '💼 Project / BOQ / Order Portfolio',
+      items: [
+        { q: 'What should I record in Portfolio?', a: 'Use Portfolio for every Project, BOQ, or Order that enters AMS. Record the entry date, customer/requester, order source, source detail, partner/vendor, decision, current stage, notes, and any supporting file.' },
+        { q: 'What is the difference between Decision and Current Stage?', a: '<strong>Decision</strong> answers whether AMS will continue, hold, review, or not proceed. <strong>Current Stage</strong> shows where the opportunity is now, such as BOQ Review, Quotation, Negotiation, PO Received, Execution, or Completed.' },
+        { q: 'Can Portfolio entries be private?', a: 'Yes. Team / Company is the default. Use Private only when the entry should be visible only to the user who created it.' },
       ]
     },
     {
