@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 15 Agustus 2026
-**Pasangan kode terbaru:** `index(85).html`
-**SHA-256 pasangan kode:** `c0c5bcfb8cd6729eb95c1a08f7d4b71b3d93aa345c0163fbf94f0358a33fff0e`
+**Pasangan kode terbaru:** `index(86).html`
+**SHA-256 pasangan kode:** `2d37392eeab662c1a7ee9307c4511200c32890234cc0d453c8353bfbb4ddcb85`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(85).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(86).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -318,7 +318,7 @@ Aturan:
 | Capture | Capture / One Thing Now | `todos`; owner-only; satu input terpadu untuk Today, Follow Up, Waiting Reply, dan Brain Dump serta kartu ringkas untuk masing-masing hasil |
 | Daily | Daily Schedule | `schedule_events`, public + private |
 | Daily | Logbook | `logbook_entries`, lampiran Supabase Storage, tautan ke `time_plan_tracker`, dan Smart Next-Step Suggestion |
-| Projects | Portfolio tab | `project_portfolio`; riwayat Project/BOQ/Order yang masuk AMS, sumber order, customer/requester, partner/vendor, keputusan, stage, notes, nilai opsional, lampiran, dan public/private |
+| Projects | Portfolio tab | `project_portfolio`; riwayat Project/BOQ/Order yang masuk AMS, customer/PIC, sumber lead/order, partner/vendor, stage, outcome, loss/stop reason, next action, follow-up date, beberapa jenis nilai komersial, notes, lampiran, dan public/private |
 | Projects | Tracker tab | Statistik dan Project/Milestone memakai `time_plan_tracker`; `tracker_items` masih dipakai Result dan fungsi lama |
 | Projects | Kanban tab | Visualisasi dan perubahan status dari `time_plan_tracker` |
 | Projects | Gantt tab | Timeline dari `time_plan_tracker` |
@@ -517,21 +517,40 @@ All Links saat ini memiliki:
 ### 15.15 Project / BOQ / Order Portfolio
 
 - Portfolio berada di `Projects Workspace` sebagai tab `Portfolio`; sidebar dan bottom navigation tidak mendapat menu proyek tambahan.
-- Data memakai tabel baru `project_portfolio`, terpisah dari `time_plan_tracker` karena fungsi Portfolio adalah riwayat pekerjaan/order masuk, bukan task execution tracker.
-- Field utama: `entry_date`, `entry_type`, `title`, `customer_name`, `source_type`, `source_detail`, `partner_vendor`, `decision`, `stage`, dan `notes`.
-- Field opsional: `reference_no`, `estimated_value`, `attachments`, dan `is_private`.
+- Data memakai tabel `project_portfolio`, terpisah dari `time_plan_tracker` karena fungsi Portfolio adalah riwayat peluang/project/order masuk, bukan task execution tracker.
 - `entry_type` mendukung Project, BOQ, dan Order.
-- Sumber order mencakup PaDi UMKM, Direct Company, Individual/Referral, Tender/Procurement Portal, Website, Marketplace, Exhibition/Event, dan Other.
-- `decision` memisahkan Under Review, Continue, Hold, dan Not Proceed; `stage` menunjukkan posisi proses seperti Incoming, BOQ Review, Quotation/SPH, Negotiation, PO/Order Received, Execution, Completed, atau Lost/Cancelled.
-- Tampilan memakai kartu responsif dengan ringkasan Total, Continue, Review/Hold, dan Not Proceed.
-- Portfolio memiliki filter Type, Decision, dan Stage serta full-text search bebas yang mencakup customer, source, partner/vendor, reference, notes, status, tanggal, nilai, pembuat, dan nama lampiran.
+- Field identitas utama: `entry_date`, `entry_type`, `title`, `customer_name`, `customer_pic`, dan `customer_contact`.
+- Field sumber dan kolaborasi: `source_type`, `source_detail`, dan `partner_vendor`.
+- Sumber lead/order mencakup PaDi UMKM, Direct Company/Inquiry, Existing Customer/Repeat, Individual/Referral, Tender/Procurement Portal, Website, Marketplace, Exhibition/Event, dan Other/Unknown.
+- `stage` menunjukkan posisi proses dan **bukan hasil akhir**. Stage mencakup New Inquiry/Incoming, Under Review, Vendor/Costing, BOQ Review, Quotation/SPH Submitted, Awaiting Customer, Negotiation, On Hold, PO/Order Received, Execution, Completed, dan Closed.
+- `outcome` menggantikan makna UI lama `decision`. Outcome mencakup:
+  - `pending` = belum ada keputusan customer/AMS;
+  - `won` = sudah approved/menang;
+  - `lost` = kalah;
+  - `cancelled` = kebutuhan dibatalkan customer;
+  - `not_pursued` = AMS memutuskan tidak melanjutkan.
+- Istilah `Continue` tidak lagi dipakai pada UI karena ambigu. Legacy column `decision` tetap dipertahankan untuk kompatibilitas data/versi lama dan diisi otomatis dari `outcome`/`stage`.
+- `outcome_reason` dipakai hanya untuk Lost, Cancelled, atau Not Pursued. Pilihan terstruktur mencakup harga terlalu tinggi/tidak kompetitif, kalah kompetitor, customer cancelled, no response, vendor/supply issue, specification mismatch, budget issue, schedule/lead-time issue, internal AMS decision, dan Other.
+- `next_action` dan `next_action_date` ditambahkan agar Portfolio bukan hanya arsip tetapi juga menunjukkan tindakan berikutnya. Kartu menandai follow-up yang sudah jatuh tempo.
+- Nilai komersial dipisahkan agar tidak salah menganggap harga vendor sebagai harga AMS:
+  - `estimated_value` = Estimated Opportunity Value;
+  - `ams_quote_value` = AMS Quotation / SPH Value;
+  - `vendor_value` = Vendor / Cost Reference;
+  - `final_order_value` = Final PO / Order Value.
+- Field lain: `reference_no`, `notes`, `attachments`, dan `is_private`.
+- Dashboard ringkas menampilkan Total Entries, Active Pipeline, Won/Approved, Lost/Closed, dan Follow-ups Due.
+- Filter tersedia untuk Type, Outcome, Stage, dan Source.
+- Full-text search bebas mencakup customer, PIC/contact, source, partner/vendor, reference, outcome, loss reason, stage, next action/date, notes, semua nilai komersial, pembuat, dan nama lampiran.
 - Hasil search memakai mekanisme highlight WorkBoard yang sama; data private user lain tidak boleh masuk hasil.
 - Team / Company adalah visibility default. Private mengikuti `applyPrivacy()`.
 - Lampiran Portfolio memakai bucket Storage `attachments`, folder `portfolio`, format file dan batas 20 MB yang sama dengan lampiran WorkBoard.
 - Add/Edit/Delete tersedia pada kartu; tombol Add bersifat lokal dan tidak memakai `handleAdd()`.
 - Portfolio dapat diekspor ke Excel/PDF/PNG dari panel aktif dan disertakan pada JSON Backup.
 - Rename user memperbarui `project_portfolio.created_by`; penghapusan user admin tidak otomatis menghapus Portfolio karena Portfolio adalah riwayat perusahaan.
-- Fitur ini membutuhkan SQL setup satu kali untuk membuat tabel `project_portfolio`; setup banner dan tombol Copy Setup SQL tersedia di panel.
+- Bug duplikasi render attachment pada kartu Portfolio telah dihapus; attachment hanya dirender satu kali.
+- SQL Portfolio disiapkan dengan jalur upgrade `ADD COLUMN IF NOT EXISTS` agar kompatibel dengan skema awal.
+- **Security hold:** WorkBoard masih belum memakai Supabase Auth/RLS. Setup banner tidak lagi menyuruh user langsung menjalankan SQL; schema SQL disimpan untuk dipakai setelah keamanan akses database diputuskan. Jangan menyarankan `Run without RLS` untuk tabel Portfolio tanpa keputusan keamanan eksplisit dari user.
+- Tracker, Kanban, Gantt, Matrix, Recurring, Capture, Logbook, dan tabel lama tidak diubah sumber datanya oleh penyempurnaan Portfolio ini.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
@@ -548,9 +567,15 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Daily hanya menampilkan Daily Schedule dan Logbook.
 - [ ] Projects Workspace tetap memiliki tab Portfolio, Tracker, Kanban, Gantt, Matrix, dan Recurring pada desktop serta mobile.
 - [ ] Seluruh panel proyek lama masih tersedia dan fungsi render lamanya tidak dihapus.
-- [ ] Portfolio dapat Add/Edit/Delete Project, BOQ, dan Order serta menyimpan tanggal, source, partner/vendor, decision, stage, notes, dan attachment.
+- [ ] Portfolio dapat Add/Edit/Delete Project, BOQ, dan Order serta menyimpan tanggal, customer/PIC, source, partner/vendor, stage, outcome, reason, next action/follow-up date, notes, nilai komersial terpisah, dan attachment.
 - [ ] Portfolio Team/Public dan Private tetap mengikuti `applyPrivacy()`; private user lain tidak tampil.
-- [ ] Search Portfolio mencari seluruh field aman dan nama lampiran serta tetap memakai highlight.
+- [ ] UI Portfolio tidak lagi memakai istilah `Continue`; peluang yang belum diputuskan harus tampil `Pending`.
+- [ ] Stage dan Outcome tidak dicampur: Quotation/Awaiting Customer tetap stage, sedangkan Won/Lost/Cancelled/Not Pursued adalah outcome.
+- [ ] Loss / Stop Reason hanya disimpan untuk Lost, Cancelled, atau Not Pursued.
+- [ ] Follow-up yang jatuh tempo muncul pada penghitung `Follow-ups Due` dan Next Action terlihat pada kartu.
+- [ ] Vendor / Cost Reference tidak ditampilkan sebagai AMS Quotation Value.
+- [ ] Attachment Portfolio hanya dirender satu kali pada kartu.
+- [ ] Search Portfolio mencari seluruh field aman termasuk PIC/contact, outcome, reason, next action/date, seluruh nilai komersial, dan nama lampiran serta tetap memakai highlight.
 - [ ] Export Excel panel aktif dan JSON Backup menyertakan Portfolio.
 - [ ] Tabel `project_portfolio` tidak dipaksa menggantikan atau mengubah `time_plan_tracker`.
 - [ ] Satu input Capture dapat menyimpan Today, Follow Up, Waiting Reply, atau Brain Dump tanpa membuat tabel baru.
@@ -583,16 +608,25 @@ Selain checklist pada Bagian 11, periksa:
 
 ### 15 Agustus 2026
 
+- Menyempurnakan Portfolio agar memisahkan **Current Stage** dari **Outcome**. Istilah `Continue` dihapus dari UI karena ambigu; status default peluang yang belum diputuskan sekarang `Pending / Not Decided Yet`.
+- Outcome baru: Pending, Won/Approved, Lost, Cancelled by Customer, dan Not Pursued by AMS. Legacy `decision` tetap disimpan secara otomatis untuk kompatibilitas versi lama.
+- Menambahkan Loss / Stop Reason terstruktur, termasuk `Price too high / not competitive` untuk kasus kalah karena harga.
+- Menambahkan Customer PIC, PIC Contact, Next Action, dan Follow-up Date.
+- Menambahkan pemisahan nilai: Estimated Opportunity, AMS Quotation, Vendor / Cost Reference, dan Final PO / Order Value agar harga vendor tidak salah dibaca sebagai harga penawaran AMS.
+- Mengubah ringkasan menjadi Total Entries, Active Pipeline, Won/Approved, Lost/Closed, dan Follow-ups Due.
+- Menambahkan filter Source dan memperluas pencarian Portfolio ke field baru.
+- Memperbaiki bug attachment Portfolio yang sebelumnya dirender dua kali pada kartu.
+- Setup SQL Portfolio sekarang diberi **security hold**; banner tidak lagi menyuruh user langsung menjalankan tabel tanpa keputusan keamanan, karena WorkBoard masih belum memakai Supabase Auth/RLS.
 - Menambahkan tab `Portfolio` di Projects Workspace untuk mencatat seluruh Project, BOQ, dan Order yang masuk ke AMS.
 - Menambahkan field tanggal masuk, jenis entry, nama project/order, customer/requester, sumber order, detail sumber, partner/vendor, nomor referensi, keputusan lanjut/tidak, current stage, notes, nilai opsional, visibility, dan attachments.
 - Menambahkan sumber order terstruktur untuk PaDi UMKM, perusahaan langsung, individual/referral, tender/procurement, website, marketplace, exhibition/event, dan other.
-- Menambahkan keputusan `Under Review`, `Continue`, `Hold`, dan `Not Proceed` serta stage proses dari Incoming sampai Completed/Lost.
+- Implementasi awal memakai `Under Review`, `Continue`, `Hold`, dan `Not Proceed`; pada index(86) model ini disempurnakan menjadi Stage + Outcome agar peluang yang belum diputuskan tidak salah dianggap approved.
 - Menambahkan dashboard ringkas, filter Type/Decision/Stage, full-text search bebas, highlight hasil search, serta kartu responsif desktop/mobile.
 - Menambahkan upload lampiran Portfolio memakai bucket `attachments` dan validasi file WorkBoard yang sudah ada, maksimal 20 MB per file.
 - Menambahkan Add/Edit/Delete, export Excel panel Portfolio, PDF/PNG capture melalui sistem export lama, dan penyertaan `projectPortfolio` pada JSON Backup.
 - Menambahkan kompatibilitas rename user dan user discovery tanpa menghapus Portfolio saat admin menghapus akun karena Portfolio dianggap riwayat perusahaan.
 - Menambahkan FAQ Portfolio dan setup banner dengan tombol Copy Setup SQL.
-- Menambahkan tabel baru `project_portfolio`; fitur memerlukan SQL setup satu kali dan tidak mengubah `time_plan_tracker`, Tracker, Kanban, Gantt, Matrix, Recurring, Capture, atau panel lama.
+- Menambahkan tabel baru `project_portfolio`; schema tersedia tetapi eksekusi SQL sekarang ditahan sampai keamanan akses database diputuskan. Perubahan tidak mengubah `time_plan_tracker`, Tracker, Kanban, Gantt, Matrix, Recurring, Capture, atau panel lama.
 
 ### 3 Agustus 2026
 

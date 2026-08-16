@@ -586,7 +586,7 @@ textarea { resize: vertical; }
   font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; user-select:all;
 }
 .portfolio-summary {
-  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:12px;
+  display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-bottom:12px;
 }
 .portfolio-stat {
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
@@ -596,6 +596,7 @@ textarea { resize: vertical; }
 .portfolio-stat:nth-child(2) { background:#EFF5EE; border-color:#C9D8C5; }
 .portfolio-stat:nth-child(3) { background:#F7F1E7; border-color:#DED1BC; }
 .portfolio-stat:nth-child(4) { background:#F8EEF1; border-color:#E1C8CF; }
+.portfolio-stat:nth-child(5) { background:#F3EFF6; border-color:#D4C7DC; }
 .portfolio-stat-label { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
 .portfolio-stat-value { font-size:23px; font-weight:800; color:var(--text1); margin-top:2px; }
 .portfolio-form {
@@ -627,10 +628,11 @@ textarea { resize: vertical; }
   background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:13px;
   box-shadow:0 2px 9px rgba(80,60,70,.045); min-width:0;
 }
-.portfolio-card.decision-continue { border-left:4px solid #8FAE87; }
-.portfolio-card.decision-hold { border-left:4px solid #D1B376; }
-.portfolio-card.decision-not_proceed { border-left:4px solid #D49B9B; opacity:.88; }
-.portfolio-card.decision-review { border-left:4px solid #9CB9C8; }
+.portfolio-card.outcome-won { border-left:4px solid #8FAE87; }
+.portfolio-card.outcome-pending { border-left:4px solid #9CB9C8; }
+.portfolio-card.outcome-lost { border-left:4px solid #D49B9B; }
+.portfolio-card.outcome-cancelled { border-left:4px solid #C8A6AF; opacity:.92; }
+.portfolio-card.outcome-not_pursued { border-left:4px solid #D1B376; opacity:.92; }
 .portfolio-card-head { display:flex; gap:10px; align-items:flex-start; justify-content:space-between; }
 .portfolio-card-title { font-size:13.5px; font-weight:800; line-height:1.4; color:var(--text1); }
 .portfolio-card-sub { font-size:10.5px; color:var(--text3); margin-top:3px; line-height:1.4; }
@@ -638,10 +640,26 @@ textarea { resize: vertical; }
 .portfolio-badge { font-size:9.5px; font-weight:700; padding:3px 7px; border-radius:999px; background:var(--bg2); color:var(--text2); }
 .portfolio-badge.type { background:#F3EFF6; color:#584664; }
 .portfolio-badge.stage { background:#EEF3F6; color:#375665; }
-.portfolio-badge.continue { background:#E6F0E3; color:#3E6042; }
-.portfolio-badge.review { background:#E8F1F5; color:#3E6170; }
-.portfolio-badge.hold { background:#F7EFD9; color:#7A5E21; }
-.portfolio-badge.not_proceed { background:#F6E3E3; color:#814C4C; }
+.portfolio-badge.won { background:#E6F0E3; color:#3E6042; }
+.portfolio-badge.pending { background:#E8F1F5; color:#3E6170; }
+.portfolio-badge.lost { background:#F6E3E3; color:#814C4C; }
+.portfolio-badge.cancelled { background:#F2E5EA; color:#744A59; }
+.portfolio-badge.not_pursued { background:#F7EFD9; color:#7A5E21; }
+.portfolio-next-action {
+  margin-top:9px; padding:9px 10px; border-radius:8px; background:#EEF3F6;
+  border:1px solid #C8D6DE; font-size:10.8px; color:var(--text2); line-height:1.45;
+}
+.portfolio-next-action.due { background:#FFF4E8; border-color:#E3BE89; color:#7A4B18; }
+.portfolio-next-action strong { color:var(--text1); }
+.portfolio-value-grid {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 10px; margin-top:8px;
+}
+.portfolio-value-item {
+  font-size:10.3px; line-height:1.4; padding:6px 8px; border-radius:7px;
+  background:rgba(255,255,255,.62); border:1px solid var(--border);
+}
+.portfolio-value-item span { display:block; color:var(--text3); font-size:9.2px; text-transform:uppercase; letter-spacing:.03em; }
+.portfolio-value-item strong { display:block; color:var(--text1); margin-top:2px; }
 .portfolio-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; margin-top:10px; }
 .portfolio-meta { font-size:10.5px; color:var(--text2); line-height:1.4; min-width:0; overflow-wrap:anywhere; }
 .portfolio-meta strong { color:var(--text1); font-weight:700; }
@@ -676,6 +694,7 @@ textarea { resize: vertical; }
   .portfolio-filter-row { flex-direction:column; align-items:stretch; }
   .portfolio-filter-row select { width:100%; }
   .portfolio-meta-grid { grid-template-columns:1fr; }
+  .portfolio-value-grid { grid-template-columns:1fr; }
   .portfolio-card-head { flex-direction:column; }
 }
 
@@ -2240,37 +2259,78 @@ body.mobile-hub-open { overflow:hidden; }
       <!-- ── Project / BOQ / Order Portfolio ──────────────── -->
       <div class="panel" id="panel-portfolio">
         <div class="portfolio-setup-banner" id="portfolio-setup-banner">
-          <strong>Setup required:</strong> The <code>project_portfolio</code> table is not available yet.
-          Run the SQL below once in Supabase SQL Editor, then refresh WorkBoard.
+          <strong>Portfolio database setup is pending.</strong>
+          WorkBoard currently does not use Supabase Auth/RLS, so do not enable a new shared Portfolio table until database access security is finalized.
+          The schema SQL is kept here for later use.
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">
-            <button class="btn-sm" type="button" onclick="copyPortfolioSetupSql()"><i class="ti ti-copy"></i> Copy Setup SQL</button>
+            <button class="btn-sm" type="button" onclick="copyPortfolioSetupSql()"><i class="ti ti-copy"></i> Copy Schema SQL (for later)</button>
             <button class="btn-sm" type="button" onclick="document.getElementById('portfolio-setup-banner').style.display='none'">Close</button>
           </div>
           <details>
-            <summary>Show setup SQL</summary>
-            <code class="portfolio-setup-sql" id="portfolio-setup-sql">create table if not exists project_portfolio (
+            <summary>Show schema SQL</summary>
+            <code class="portfolio-setup-sql" id="portfolio-setup-sql">-- SECURITY HOLD:
+-- Do not run this on the public WorkBoard database until database access security is finalized.
+
+create table if not exists project_portfolio (
   id uuid primary key default gen_random_uuid(),
   entry_date date not null default current_date,
   entry_type text not null default 'project',
   title text not null,
   customer_name text,
+  customer_pic text,
+  customer_contact text,
   source_type text,
   source_detail text,
   partner_vendor text,
   reference_no text,
   decision text not null default 'review',
+  outcome text,
+  outcome_reason text,
   stage text not null default 'incoming',
+  next_action text,
+  next_action_date date,
   notes text,
   estimated_value numeric(18,2),
+  ams_quote_value numeric(18,2),
+  vendor_value numeric(18,2),
+  final_order_value numeric(18,2),
   attachments jsonb default '[]'::jsonb,
   is_private boolean default false,
   created_by text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+alter table project_portfolio add column if not exists customer_pic text;
+alter table project_portfolio add column if not exists customer_contact text;
+alter table project_portfolio add column if not exists outcome text;
+alter table project_portfolio add column if not exists outcome_reason text;
+alter table project_portfolio add column if not exists next_action text;
+alter table project_portfolio add column if not exists next_action_date date;
+alter table project_portfolio add column if not exists ams_quote_value numeric(18,2);
+alter table project_portfolio add column if not exists vendor_value numeric(18,2);
+alter table project_portfolio add column if not exists final_order_value numeric(18,2);
+
+update project_portfolio
+set outcome = case
+  when decision = 'continue' then 'won'
+  when decision = 'not_proceed' then 'not_pursued'
+  else 'pending'
+end
+where outcome is null;
+
+update project_portfolio
+set stage = 'on_hold'
+where decision = 'hold' and stage not in ('completed','closed');
+
+alter table project_portfolio alter column outcome set default 'pending';
+update project_portfolio set outcome = 'pending' where outcome is null;
+alter table project_portfolio alter column outcome set not null;
+
 create index if not exists idx_project_portfolio_entry_date on project_portfolio(entry_date desc);
 create index if not exists idx_project_portfolio_created_by on project_portfolio(created_by);
-create index if not exists idx_project_portfolio_decision on project_portfolio(decision);</code>
+create index if not exists idx_project_portfolio_outcome on project_portfolio(outcome);
+create index if not exists idx_project_portfolio_next_action_date on project_portfolio(next_action_date);</code>
           </details>
         </div>
 
@@ -2297,7 +2357,7 @@ create index if not exists idx_project_portfolio_decision on project_portfolio(d
             </div>
             <div class="portfolio-field">
               <label class="portfolio-label" for="portfolio-title">Project / Order Name *</label>
-              <input id="portfolio-title" placeholder="e.g. Foam Chamber — PT Multitek" />
+              <input id="portfolio-title" placeholder="e.g. Supply Foam Chamber — Multitek Jaya Sukses" />
             </div>
 
             <div class="portfolio-field">
@@ -2305,66 +2365,118 @@ create index if not exists idx_project_portfolio_decision on project_portfolio(d
               <input id="portfolio-customer" placeholder="Company or person requesting it" />
             </div>
             <div class="portfolio-field">
-              <label class="portfolio-label" for="portfolio-source-type">Order Source</label>
+              <label class="portfolio-label" for="portfolio-customer-pic">Customer PIC</label>
+              <input id="portfolio-customer-pic" placeholder="e.g. Ibu Ratih Pudiyasmono" />
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-customer-contact">PIC Contact</label>
+              <input id="portfolio-customer-contact" placeholder="Phone, WhatsApp, or email" />
+            </div>
+
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-source-type">Lead / Order Source</label>
               <select id="portfolio-source-type">
                 <option value="padi_umkm">PaDi UMKM</option>
-                <option value="direct_company">Direct Company</option>
+                <option value="direct_company">Direct Company / Inquiry</option>
+                <option value="existing_customer">Existing Customer / Repeat</option>
                 <option value="individual_referral">Individual / Referral</option>
                 <option value="tender_procurement">Tender / Procurement Portal</option>
                 <option value="website">Website</option>
                 <option value="marketplace">Marketplace</option>
                 <option value="exhibition_event">Exhibition / Event</option>
-                <option value="other">Other</option>
+                <option value="other">Other / Unknown</option>
               </select>
             </div>
             <div class="portfolio-field">
               <label class="portfolio-label" for="portfolio-source-detail">Source Detail</label>
               <input id="portfolio-source-detail" placeholder="Person, company, platform, referral, etc." />
             </div>
-
             <div class="portfolio-field">
               <label class="portfolio-label" for="portfolio-partner">Partner / Vendor</label>
               <input id="portfolio-partner" placeholder="Vendor, supplier, or collaboration partner" />
             </div>
-            <div class="portfolio-field">
-              <label class="portfolio-label" for="portfolio-decision">Decision</label>
-              <select id="portfolio-decision">
-                <option value="review">Under Review</option>
-                <option value="continue">Continue</option>
-                <option value="hold">Hold</option>
-                <option value="not_proceed">Not Proceed</option>
-              </select>
-            </div>
+
             <div class="portfolio-field">
               <label class="portfolio-label" for="portfolio-stage">Current Stage</label>
               <select id="portfolio-stage">
-                <option value="incoming">Incoming / New</option>
+                <option value="incoming">New Inquiry / Incoming</option>
+                <option value="review">Under Review</option>
+                <option value="vendor_sourcing">Vendor / Costing</option>
                 <option value="boq_review">BOQ Review</option>
-                <option value="quotation">Quotation / SPH</option>
+                <option value="quotation">Quotation / SPH Submitted</option>
+                <option value="awaiting_customer">Awaiting Customer</option>
                 <option value="negotiation">Negotiation</option>
+                <option value="on_hold">On Hold</option>
                 <option value="po_received">PO / Order Received</option>
                 <option value="execution">In Progress / Execution</option>
                 <option value="completed">Completed</option>
-                <option value="closed">Lost / Cancelled</option>
+                <option value="closed">Closed</option>
               </select>
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-outcome">Outcome</label>
+              <select id="portfolio-outcome" onchange="syncPortfolioOutcomeFields()">
+                <option value="pending">Pending / Not Decided Yet</option>
+                <option value="won">Won / Approved</option>
+                <option value="lost">Lost</option>
+                <option value="cancelled">Cancelled by Customer</option>
+                <option value="not_pursued">Not Pursued by AMS</option>
+              </select>
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-outcome-reason">Loss / Stop Reason</label>
+              <select id="portfolio-outcome-reason">
+                <option value="">— Not applicable / unknown —</option>
+                <option value="price_high">Price too high / not competitive</option>
+                <option value="lost_competitor">Lost to competitor</option>
+                <option value="customer_cancelled">Customer cancelled requirement</option>
+                <option value="no_response">No response / inactive</option>
+                <option value="vendor_issue">Vendor / supply issue</option>
+                <option value="spec_mismatch">Specification mismatch</option>
+                <option value="budget_issue">Customer budget issue</option>
+                <option value="schedule_issue">Schedule / lead-time issue</option>
+                <option value="internal_decision">Internal AMS decision</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="portfolio-field span-2">
+              <label class="portfolio-label" for="portfolio-next-action">Next Action</label>
+              <input id="portfolio-next-action" placeholder="e.g. Follow up quotation with customer" />
+            </div>
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-next-action-date">Follow-up Date</label>
+              <input type="date" id="portfolio-next-action-date" />
             </div>
 
             <div class="portfolio-field span-3">
               <label class="portfolio-label" for="portfolio-notes">Notes</label>
-              <textarea id="portfolio-notes" placeholder="Important context, follow-up, reasons to continue/not proceed, vendor details, etc."></textarea>
+              <textarea id="portfolio-notes" placeholder="Important context, project history, customer feedback, vendor details, and other notes."></textarea>
             </div>
           </div>
 
           <details class="portfolio-optional">
-            <summary>Optional details — reference, value, visibility & attachments</summary>
+            <summary>Optional details — references, values, visibility & attachments</summary>
             <div class="portfolio-form-grid" style="margin-top:9px">
               <div class="portfolio-field">
                 <label class="portfolio-label" for="portfolio-reference">Reference No.</label>
                 <input id="portfolio-reference" placeholder="BOQ / RFQ / PO / Quotation no." />
               </div>
               <div class="portfolio-field">
-                <label class="portfolio-label" for="portfolio-value">Estimated / Order Value (IDR)</label>
+                <label class="portfolio-label" for="portfolio-value">Estimated Opportunity Value (IDR)</label>
                 <input id="portfolio-value" inputmode="numeric" placeholder="e.g. 15000000" />
+              </div>
+              <div class="portfolio-field">
+                <label class="portfolio-label" for="portfolio-ams-quote-value">AMS Quotation Value (IDR)</label>
+                <input id="portfolio-ams-quote-value" inputmode="numeric" placeholder="AMS selling price / SPH value" />
+              </div>
+              <div class="portfolio-field">
+                <label class="portfolio-label" for="portfolio-vendor-value">Vendor / Cost Reference (IDR)</label>
+                <input id="portfolio-vendor-value" inputmode="numeric" placeholder="Vendor quote or cost reference" />
+              </div>
+              <div class="portfolio-field">
+                <label class="portfolio-label" for="portfolio-final-order-value">Final PO / Order Value (IDR)</label>
+                <input id="portfolio-final-order-value" inputmode="numeric" placeholder="Final won / PO value" />
               </div>
               <div class="portfolio-field">
                 <label class="portfolio-label" for="portfolio-privacy">Visibility</label>
@@ -2392,9 +2504,10 @@ create index if not exists idx_project_portfolio_decision on project_portfolio(d
 
         <div class="portfolio-summary" id="portfolio-summary">
           <div class="portfolio-stat"><div class="portfolio-stat-label">Total Entries</div><div class="portfolio-stat-value">—</div></div>
-          <div class="portfolio-stat"><div class="portfolio-stat-label">Continue</div><div class="portfolio-stat-value">—</div></div>
-          <div class="portfolio-stat"><div class="portfolio-stat-label">Review / Hold</div><div class="portfolio-stat-value">—</div></div>
-          <div class="portfolio-stat"><div class="portfolio-stat-label">Not Proceed</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Active Pipeline</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Won / Approved</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Lost / Closed</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Follow-ups Due</div><div class="portfolio-stat-value">—</div></div>
         </div>
 
         <div class="portfolio-filter-row">
@@ -2404,23 +2517,40 @@ create index if not exists idx_project_portfolio_decision on project_portfolio(d
             <option value="boq">BOQ</option>
             <option value="order">Order</option>
           </select>
-          <select id="portfolio-decision-filter" onchange="applyPortfolioFilters()">
-            <option value="">All Decisions</option>
-            <option value="review">Under Review</option>
-            <option value="continue">Continue</option>
-            <option value="hold">Hold</option>
-            <option value="not_proceed">Not Proceed</option>
+          <select id="portfolio-outcome-filter" onchange="applyPortfolioFilters()">
+            <option value="">All Outcomes</option>
+            <option value="pending">Pending</option>
+            <option value="won">Won / Approved</option>
+            <option value="lost">Lost</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="not_pursued">Not Pursued</option>
           </select>
           <select id="portfolio-stage-filter" onchange="applyPortfolioFilters()">
             <option value="">All Stages</option>
-            <option value="incoming">Incoming / New</option>
+            <option value="incoming">New Inquiry / Incoming</option>
+            <option value="review">Under Review</option>
+            <option value="vendor_sourcing">Vendor / Costing</option>
             <option value="boq_review">BOQ Review</option>
-            <option value="quotation">Quotation / SPH</option>
+            <option value="quotation">Quotation / SPH Submitted</option>
+            <option value="awaiting_customer">Awaiting Customer</option>
             <option value="negotiation">Negotiation</option>
+            <option value="on_hold">On Hold</option>
             <option value="po_received">PO / Order Received</option>
             <option value="execution">In Progress / Execution</option>
             <option value="completed">Completed</option>
-            <option value="closed">Lost / Cancelled</option>
+            <option value="closed">Closed</option>
+          </select>
+          <select id="portfolio-source-filter" onchange="applyPortfolioFilters()">
+            <option value="">All Sources</option>
+            <option value="padi_umkm">PaDi UMKM</option>
+            <option value="direct_company">Direct Company / Inquiry</option>
+            <option value="existing_customer">Existing Customer / Repeat</option>
+            <option value="individual_referral">Individual / Referral</option>
+            <option value="tender_procurement">Tender / Procurement Portal</option>
+            <option value="website">Website</option>
+            <option value="marketplace">Marketplace</option>
+            <option value="exhibition_event">Exhibition / Event</option>
+            <option value="other">Other / Unknown</option>
           </select>
         </div>
 
@@ -4006,11 +4136,13 @@ const PANEL_FILTER_CONFIG = {
     display: displayProjectTracker
   },
   portfolio: {
-    placeholder: 'Search project, customer, source, vendor, notes, reference, status, or attachment...',
+    placeholder: 'Search project, customer, PIC, source, vendor, next action, notes, status, reference, value, or attachment...',
     options: [],
-    searchKeys: ['title', 'customer_name', 'source_detail', 'partner_vendor', 'notes', 'reference_no'],
-    searchText: p => [p, p.entry_date, p.entry_type, p.title, p.customer_name, p.source_type, p.source_detail,
-      p.partner_vendor, p.reference_no, p.decision, p.stage, p.notes, p.estimated_value, p.created_by, p.attachments],
+    searchKeys: ['title', 'customer_name', 'customer_pic', 'customer_contact', 'source_detail', 'partner_vendor', 'next_action', 'notes', 'reference_no'],
+    searchText: p => [p, p.entry_date, p.entry_type, p.title, p.customer_name, p.customer_pic, p.customer_contact,
+      p.source_type, p.source_detail, p.partner_vendor, p.reference_no, portfolioOutcome(p), portfolioStage(p),
+      p.outcome_reason, p.next_action, p.next_action_date, p.notes, p.estimated_value, p.ams_quote_value,
+      p.vendor_value, p.final_order_value, p.created_by, p.attachments],
     match: null,
     getCache: () => portfolioCache,
     display: displayPortfolio
@@ -4190,7 +4322,7 @@ const PANEL_LOCAL_SEARCH_CONFIG = {
     hint: 'Search this date'
   },
   portfolio: {
-    mode: 'global', placeholder: 'Type any word from project, customer, source, vendor, notes, status, reference, or attachment...',
+    mode: 'global', placeholder: 'Type any word from project, customer, PIC, source, vendor, next action, notes, status, value, reference, or attachment...',
     hint: 'Search every loaded portfolio field'
   },
   kanban: {
@@ -4694,42 +4826,88 @@ const PORTFOLIO_TYPE_LABEL = {
 };
 const PORTFOLIO_SOURCE_LABEL = {
   padi_umkm: 'PaDi UMKM',
-  direct_company: 'Direct Company',
+  direct_company: 'Direct Company / Inquiry',
+  existing_customer: 'Existing Customer / Repeat',
   individual_referral: 'Individual / Referral',
   tender_procurement: 'Tender / Procurement Portal',
   website: 'Website',
   marketplace: 'Marketplace',
   exhibition_event: 'Exhibition / Event',
+  other: 'Other / Unknown'
+};
+const PORTFOLIO_OUTCOME_LABEL = {
+  pending: 'Pending',
+  won: 'Won / Approved',
+  lost: 'Lost',
+  cancelled: 'Cancelled',
+  not_pursued: 'Not Pursued'
+};
+const PORTFOLIO_OUTCOME_REASON_LABEL = {
+  price_high: 'Price too high / not competitive',
+  lost_competitor: 'Lost to competitor',
+  customer_cancelled: 'Customer cancelled requirement',
+  no_response: 'No response / inactive',
+  vendor_issue: 'Vendor / supply issue',
+  spec_mismatch: 'Specification mismatch',
+  budget_issue: 'Customer budget issue',
+  schedule_issue: 'Schedule / lead-time issue',
+  internal_decision: 'Internal AMS decision',
   other: 'Other'
 };
-const PORTFOLIO_DECISION_LABEL = {
-  review: 'Under Review',
-  continue: 'Continue',
-  hold: 'Hold',
-  not_proceed: 'Not Proceed'
-};
 const PORTFOLIO_STAGE_LABEL = {
-  incoming: 'Incoming / New',
+  incoming: 'New Inquiry / Incoming',
+  review: 'Under Review',
+  vendor_sourcing: 'Vendor / Costing',
   boq_review: 'BOQ Review',
-  quotation: 'Quotation / SPH',
+  quotation: 'Quotation / SPH Submitted',
+  awaiting_customer: 'Awaiting Customer',
   negotiation: 'Negotiation',
+  on_hold: 'On Hold',
   po_received: 'PO / Order Received',
   execution: 'In Progress / Execution',
   completed: 'Completed',
-  closed: 'Lost / Cancelled'
+  closed: 'Closed'
 };
+
+function portfolioOutcome(row) {
+  if (row?.outcome) return row.outcome;
+  if (row?.decision === 'continue') return 'won';
+  if (row?.decision === 'not_proceed') return 'not_pursued';
+  return 'pending';
+}
+
+function portfolioStage(row) {
+  if (row?.decision === 'hold' && (!row.stage || ['incoming','review','boq_review'].includes(row.stage))) return 'on_hold';
+  return row?.stage || 'incoming';
+}
+
+function portfolioLegacyDecision(outcome, stage) {
+  if (outcome === 'won') return 'continue';
+  if (['lost','cancelled','not_pursued'].includes(outcome)) return 'not_proceed';
+  if (stage === 'on_hold') return 'hold';
+  return 'review';
+}
+
+function syncPortfolioOutcomeFields() {
+  const outcome = document.getElementById('portfolio-outcome')?.value || 'pending';
+  const reason = document.getElementById('portfolio-outcome-reason');
+  if (!reason) return;
+  const needsReason = ['lost','cancelled','not_pursued'].includes(outcome);
+  reason.disabled = !needsReason;
+  reason.title = needsReason ? 'Select the main reason this opportunity stopped.' : 'Available when Outcome is Lost, Cancelled, or Not Pursued.';
+}
 
 function copyPortfolioSetupSql() {
   const sql = document.getElementById('portfolio-setup-sql')?.textContent || '';
   if (!sql) return;
-  navigator.clipboard?.writeText(sql).then(() => alert('Setup SQL copied.')).catch(() => {
+  navigator.clipboard?.writeText(sql).then(() => alert('Portfolio schema SQL copied for later use.')).catch(() => {
     const ta = document.createElement('textarea');
     ta.value = sql;
     document.body.appendChild(ta);
     ta.select();
     document.execCommand('copy');
     ta.remove();
-    alert('Setup SQL copied.');
+    alert('Portfolio schema SQL copied for later use.');
   });
 }
 
@@ -4746,6 +4924,11 @@ function formatPortfolioValue(value) {
   return 'Rp' + new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
 }
 
+function portfolioIsFollowUpDue(row) {
+  if (portfolioOutcome(row) !== 'pending' || !row?.next_action_date) return false;
+  return row.next_action_date <= todayStr();
+}
+
 function resetPortfolioForm() {
   editingPortfolioId = null;
   portfolioAttachments = [];
@@ -4755,14 +4938,22 @@ function resetPortfolioForm() {
     'portfolio-type': 'project',
     'portfolio-title': '',
     'portfolio-customer': '',
+    'portfolio-customer-pic': '',
+    'portfolio-customer-contact': '',
     'portfolio-source-type': 'direct_company',
     'portfolio-source-detail': '',
     'portfolio-partner': '',
-    'portfolio-decision': 'review',
+    'portfolio-outcome': 'pending',
+    'portfolio-outcome-reason': '',
     'portfolio-stage': 'incoming',
+    'portfolio-next-action': '',
+    'portfolio-next-action-date': '',
     'portfolio-notes': '',
     'portfolio-reference': '',
     'portfolio-value': '',
+    'portfolio-ams-quote-value': '',
+    'portfolio-vendor-value': '',
+    'portfolio-final-order-value': '',
     'portfolio-privacy': 'false'
   };
   Object.entries(ids).forEach(([id, value]) => {
@@ -4776,6 +4967,7 @@ function resetPortfolioForm() {
   const saveBtn = document.getElementById('portfolio-save-btn');
   if (saveBtn) { saveBtn.textContent = 'Save Portfolio Entry'; saveBtn.disabled = false; }
   renderPortfolioFilePreview();
+  syncPortfolioOutcomeFields();
 }
 
 function openPortfolioForm(id = '') {
@@ -4792,14 +4984,22 @@ function openPortfolioForm(id = '') {
       'portfolio-type': row.entry_type || 'project',
       'portfolio-title': row.title || '',
       'portfolio-customer': row.customer_name || '',
+      'portfolio-customer-pic': row.customer_pic || '',
+      'portfolio-customer-contact': row.customer_contact || '',
       'portfolio-source-type': row.source_type || 'other',
       'portfolio-source-detail': row.source_detail || '',
       'portfolio-partner': row.partner_vendor || '',
-      'portfolio-decision': row.decision || 'review',
-      'portfolio-stage': row.stage || 'incoming',
+      'portfolio-outcome': portfolioOutcome(row),
+      'portfolio-outcome-reason': row.outcome_reason || '',
+      'portfolio-stage': portfolioStage(row),
+      'portfolio-next-action': row.next_action || '',
+      'portfolio-next-action-date': row.next_action_date || '',
       'portfolio-notes': row.notes || '',
       'portfolio-reference': row.reference_no || '',
       'portfolio-value': row.estimated_value == null ? '' : String(row.estimated_value),
+      'portfolio-ams-quote-value': row.ams_quote_value == null ? '' : String(row.ams_quote_value),
+      'portfolio-vendor-value': row.vendor_value == null ? '' : String(row.vendor_value),
+      'portfolio-final-order-value': row.final_order_value == null ? '' : String(row.final_order_value),
       'portfolio-privacy': row.is_private ? 'true' : 'false'
     };
     Object.entries(values).forEach(([fieldId, value]) => {
@@ -4810,6 +5010,7 @@ function openPortfolioForm(id = '') {
     if (title) title.textContent = 'Edit Project / BOQ / Order';
   }
   renderPortfolioFilePreview();
+  syncPortfolioOutcomeFields();
   form.style.display = 'block';
   form.scrollIntoView({ behavior:'smooth', block:'start' });
   setTimeout(() => document.getElementById('portfolio-title')?.focus(), 120);
@@ -4865,24 +5066,28 @@ function renderPortfolioStats(rows = portfolioCache) {
   if (!wrap) return;
   const data = rows || [];
   const total = data.length;
-  const cont = data.filter(x => x.decision === 'continue').length;
-  const review = data.filter(x => x.decision === 'review' || x.decision === 'hold').length;
-  const no = data.filter(x => x.decision === 'not_proceed').length;
+  const active = data.filter(x => portfolioOutcome(x) === 'pending' && portfolioStage(x) !== 'completed' && portfolioStage(x) !== 'closed').length;
+  const won = data.filter(x => portfolioOutcome(x) === 'won').length;
+  const closed = data.filter(x => ['lost','cancelled','not_pursued'].includes(portfolioOutcome(x))).length;
+  const followUps = data.filter(portfolioIsFollowUpDue).length;
   wrap.innerHTML = `
     <div class="portfolio-stat"><div class="portfolio-stat-label">Total Entries</div><div class="portfolio-stat-value">${total}</div></div>
-    <div class="portfolio-stat"><div class="portfolio-stat-label">Continue</div><div class="portfolio-stat-value">${cont}</div></div>
-    <div class="portfolio-stat"><div class="portfolio-stat-label">Review / Hold</div><div class="portfolio-stat-value">${review}</div></div>
-    <div class="portfolio-stat"><div class="portfolio-stat-label">Not Proceed</div><div class="portfolio-stat-value">${no}</div></div>`;
+    <div class="portfolio-stat"><div class="portfolio-stat-label">Active Pipeline</div><div class="portfolio-stat-value">${active}</div></div>
+    <div class="portfolio-stat"><div class="portfolio-stat-label">Won / Approved</div><div class="portfolio-stat-value">${won}</div></div>
+    <div class="portfolio-stat"><div class="portfolio-stat-label">Lost / Closed</div><div class="portfolio-stat-value">${closed}</div></div>
+    <div class="portfolio-stat"><div class="portfolio-stat-label">Follow-ups Due</div><div class="portfolio-stat-value">${followUps}</div></div>`;
 }
 
 function portfolioFilteredRows(rows) {
   const type = document.getElementById('portfolio-type-filter')?.value || '';
-  const decision = document.getElementById('portfolio-decision-filter')?.value || '';
+  const outcome = document.getElementById('portfolio-outcome-filter')?.value || '';
   const stage = document.getElementById('portfolio-stage-filter')?.value || '';
+  const source = document.getElementById('portfolio-source-filter')?.value || '';
   return (rows || []).filter(row =>
     (!type || row.entry_type === type) &&
-    (!decision || row.decision === decision) &&
-    (!stage || row.stage === stage)
+    (!outcome || portfolioOutcome(row) === outcome) &&
+    (!stage || portfolioStage(row) === stage) &&
+    (!source || row.source_type === source)
   );
 }
 
@@ -4893,6 +5098,19 @@ function portfolioAttachmentHtml(row) {
     <a class="portfolio-attachment" href="${escAttr(a.url || '#')}" target="_blank" rel="noopener" title="${escAttr(a.name || 'Attachment')}">
       <i class="ti ${fileIconFor(a.name || '')}"></i><span>${escHtml(a.name || 'Attachment')}</span>
     </a>`).join('')}</div>`;
+}
+
+function portfolioValuesHtml(row) {
+  const values = [
+    ['Estimated Opportunity', row.estimated_value],
+    ['AMS Quotation', row.ams_quote_value],
+    ['Vendor / Cost Reference', row.vendor_value],
+    ['Final PO / Order', row.final_order_value]
+  ].filter(([, value]) => formatPortfolioValue(value));
+  if (!values.length) return '';
+  return `<div class="portfolio-value-grid">${values.map(([label, value]) => `
+    <div class="portfolio-value-item"><span>${escHtml(label)}</span><strong>${escHtml(formatPortfolioValue(value))}</strong></div>
+  `).join('')}</div>`;
 }
 
 function displayPortfolio(rows = portfolioCache) {
@@ -4907,13 +5125,17 @@ function displayPortfolio(rows = portfolioCache) {
   list.innerHTML = filtered.map(row => {
     const typeLabel = PORTFOLIO_TYPE_LABEL[row.entry_type] || row.entry_type || 'Project';
     const sourceLabel = PORTFOLIO_SOURCE_LABEL[row.source_type] || row.source_type || '—';
-    const decision = row.decision || 'review';
-    const decisionLabel = PORTFOLIO_DECISION_LABEL[decision] || decision;
-    const stageLabel = PORTFOLIO_STAGE_LABEL[row.stage] || row.stage || '—';
+    const outcome = portfolioOutcome(row);
+    const outcomeLabel = PORTFOLIO_OUTCOME_LABEL[outcome] || outcome;
+    const stage = portfolioStage(row);
+    const stageLabel = PORTFOLIO_STAGE_LABEL[stage] || stage || '—';
+    const reasonLabel = PORTFOLIO_OUTCOME_REASON_LABEL[row.outcome_reason] || row.outcome_reason || '';
     const dateText = row.entry_date ? new Date(row.entry_date + 'T00:00:00').toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'numeric'}) : 'No date';
-    const valueText = formatPortfolioValue(row.estimated_value);
+    const nextDateText = row.next_action_date ? new Date(row.next_action_date + 'T00:00:00').toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'numeric'}) : '';
+    const nextDue = portfolioIsFollowUpDue(row);
+    const picLine = [row.customer_pic, row.customer_contact].filter(Boolean).join(' · ');
     return `
-      <article class="portfolio-card decision-${escAttr(decision)}">
+      <article class="portfolio-card outcome-${escAttr(outcome)}">
         <div class="portfolio-card-head">
           <div style="min-width:0">
             <div class="portfolio-card-title">${escHtml(row.title || 'Untitled')}</div>
@@ -4922,15 +5144,23 @@ function displayPortfolio(rows = portfolioCache) {
           <span class="portfolio-badge type">${escHtml(typeLabel)}</span>
         </div>
         <div class="portfolio-badges">
-          <span class="portfolio-badge ${escAttr(decision)}">${escHtml(decisionLabel)}</span>
+          <span class="portfolio-badge ${escAttr(outcome)}">${escHtml(outcomeLabel)}</span>
           <span class="portfolio-badge stage">${escHtml(stageLabel)}</span>
         </div>
         <div class="portfolio-meta-grid">
           <div class="portfolio-meta"><strong>Source:</strong> ${escHtml(sourceLabel)}${row.source_detail ? ' — ' + escHtml(row.source_detail) : ''}</div>
           <div class="portfolio-meta"><strong>Partner / Vendor:</strong> ${escHtml(row.partner_vendor || '—')}</div>
+          <div class="portfolio-meta"><strong>Customer PIC:</strong> ${escHtml(picLine || '—')}</div>
           <div class="portfolio-meta"><strong>Reference:</strong> ${escHtml(row.reference_no || '—')}</div>
-          <div class="portfolio-meta"><strong>Value:</strong> ${escHtml(valueText || '—')}</div>
+          ${reasonLabel ? `<div class="portfolio-meta" style="grid-column:1/-1"><strong>Loss / Stop Reason:</strong> ${escHtml(reasonLabel)}</div>` : ''}
         </div>
+        ${portfolioValuesHtml(row)}
+        ${(row.next_action || row.next_action_date) ? `
+          <div class="portfolio-next-action ${nextDue ? 'due' : ''}">
+            <strong>${nextDue ? 'Follow-up due:' : 'Next Action:'}</strong>
+            ${escHtml(row.next_action || 'Follow up')}
+            ${nextDateText ? ` · ${escHtml(nextDateText)}` : ''}
+          </div>` : ''}
         ${row.notes ? `<div class="portfolio-notes">${escHtml(row.notes)}</div>` : ''}
         ${portfolioAttachmentHtml(row)}
         <div class="portfolio-card-sub" style="margin-top:9px">Added by ${escHtml(row.created_by || '—')}</div>
@@ -4949,6 +5179,12 @@ function applyPortfolioFilters() {
   else displayPortfolio(portfolioCache);
 }
 
+function isPortfolioSchemaError(error) {
+  const msg = String(error?.message || error || '');
+  return error?.code === '42P01' ||
+    /project_portfolio|does not exist|schema cache|could not find.*column|column .* does not exist/i.test(msg);
+}
+
 async function renderPortfolio() {
   const list = document.getElementById('portfolio-list');
   if (!list) return;
@@ -4959,10 +5195,10 @@ async function renderPortfolio() {
   ).catch(err => ({ data:null, error:err }));
   if (error) {
     const msg = String(error.message || error);
-    if (error.code === '42P01' || /project_portfolio|does not exist|schema cache/i.test(msg)) {
+    if (isPortfolioSchemaError(error)) {
       const banner = document.getElementById('portfolio-setup-banner');
       if (banner) banner.style.display = 'block';
-      list.innerHTML = '<div class="portfolio-empty" style="grid-column:1/-1">Portfolio setup is required once. Use the setup box above, then refresh WorkBoard.</div>';
+      list.innerHTML = '<div class="portfolio-empty" style="grid-column:1/-1">Portfolio database setup is pending. The schema is ready, but database access security must be finalized before enabling it.</div>';
     } else {
       list.innerHTML = `<div class="portfolio-empty" style="grid-column:1/-1">Failed to load portfolio: ${escHtml(msg)}</div>`;
     }
@@ -4970,6 +5206,8 @@ async function renderPortfolio() {
     renderPortfolioStats([]);
     return;
   }
+  const banner = document.getElementById('portfolio-setup-banner');
+  if (banner) banner.style.display = 'none';
   portfolioCache = applyPrivacy(data || []);
   renderPortfolioStats(portfolioCache);
   displayPortfolio(portfolioCache);
@@ -4990,21 +5228,34 @@ async function savePortfolio() {
       newFiles = await uploadFilesToStorage(portfolioPendingFiles, 'portfolio');
     }
     const attachments = [...portfolioAttachments, ...newFiles];
-    const estimatedValue = portfolioValueNumber(document.getElementById('portfolio-value')?.value);
+    const outcome = document.getElementById('portfolio-outcome')?.value || 'pending';
+    const stage = document.getElementById('portfolio-stage')?.value || 'incoming';
+    const outcomeReason = ['lost','cancelled','not_pursued'].includes(outcome)
+      ? (document.getElementById('portfolio-outcome-reason')?.value || null)
+      : null;
 
     const payload = {
       entry_date: document.getElementById('portfolio-date')?.value || todayStr(),
       entry_type: document.getElementById('portfolio-type')?.value || 'project',
       title,
       customer_name: document.getElementById('portfolio-customer')?.value.trim() || null,
+      customer_pic: document.getElementById('portfolio-customer-pic')?.value.trim() || null,
+      customer_contact: document.getElementById('portfolio-customer-contact')?.value.trim() || null,
       source_type: document.getElementById('portfolio-source-type')?.value || 'other',
       source_detail: document.getElementById('portfolio-source-detail')?.value.trim() || null,
       partner_vendor: document.getElementById('portfolio-partner')?.value.trim() || null,
       reference_no: document.getElementById('portfolio-reference')?.value.trim() || null,
-      decision: document.getElementById('portfolio-decision')?.value || 'review',
-      stage: document.getElementById('portfolio-stage')?.value || 'incoming',
+      outcome,
+      outcome_reason: outcomeReason,
+      decision: portfolioLegacyDecision(outcome, stage),
+      stage,
+      next_action: document.getElementById('portfolio-next-action')?.value.trim() || null,
+      next_action_date: document.getElementById('portfolio-next-action-date')?.value || null,
       notes: document.getElementById('portfolio-notes')?.value.trim() || null,
-      estimated_value: estimatedValue,
+      estimated_value: portfolioValueNumber(document.getElementById('portfolio-value')?.value),
+      ams_quote_value: portfolioValueNumber(document.getElementById('portfolio-ams-quote-value')?.value),
+      vendor_value: portfolioValueNumber(document.getElementById('portfolio-vendor-value')?.value),
+      final_order_value: portfolioValueNumber(document.getElementById('portfolio-final-order-value')?.value),
       attachments,
       is_private: document.getElementById('portfolio-privacy')?.value === 'true',
       updated_at: new Date().toISOString()
@@ -5023,7 +5274,7 @@ async function savePortfolio() {
     await renderPortfolio();
   } catch (error) {
     const msg = String(error?.message || error);
-    if (/project_portfolio|does not exist|schema cache/i.test(msg)) {
+    if (isPortfolioSchemaError(error)) {
       const banner = document.getElementById('portfolio-setup-banner');
       if (banner) banner.style.display = 'block';
     }
@@ -8137,9 +8388,13 @@ function prettifyExcelKey(k) {
     start_date: 'Start', due_date: 'Due', notes: 'Notes',
     attachments: 'Attachments', priority: 'Priority', start_time: 'Start Time',
     end_time: 'End Time', name: 'Name', channel: 'Channel', sender: 'Sender', is_edited: 'Edited',
-    entry_type: 'Type', customer_name: 'Customer / Requester', source_type: 'Order Source',
-    source_detail: 'Source Detail', partner_vendor: 'Partner / Vendor', reference_no: 'Reference No.',
-    decision: 'Decision', stage: 'Current Stage', estimated_value: 'Estimated / Order Value'
+    entry_type: 'Type', customer_name: 'Customer / Requester', customer_pic: 'Customer PIC',
+    customer_contact: 'PIC Contact', source_type: 'Lead / Order Source', source_detail: 'Source Detail',
+    partner_vendor: 'Partner / Vendor', reference_no: 'Reference No.', decision: 'Legacy Decision',
+    outcome: 'Outcome', outcome_reason: 'Loss / Stop Reason', stage: 'Current Stage',
+    next_action: 'Next Action', next_action_date: 'Follow-up Date',
+    estimated_value: 'Estimated Opportunity Value', ams_quote_value: 'AMS Quotation Value',
+    vendor_value: 'Vendor / Cost Reference', final_order_value: 'Final PO / Order Value'
   };
   return map[k] || (k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' '));
 }
