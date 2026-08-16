@@ -2425,19 +2425,19 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
             </div>
             <div class="portfolio-field">
               <label class="portfolio-label" for="portfolio-outcome-reason">Loss / Stop Reason</label>
-              <select id="portfolio-outcome-reason">
-                <option value="">— Not applicable / unknown —</option>
-                <option value="price_high">Price too high / not competitive</option>
-                <option value="lost_competitor">Lost to competitor</option>
-                <option value="customer_cancelled">Customer cancelled requirement</option>
-                <option value="no_response">No response / inactive</option>
-                <option value="vendor_issue">Vendor / supply issue</option>
-                <option value="spec_mismatch">Specification mismatch</option>
-                <option value="budget_issue">Customer budget issue</option>
-                <option value="schedule_issue">Schedule / lead-time issue</option>
-                <option value="internal_decision">Internal AMS decision</option>
-                <option value="other">Other</option>
-              </select>
+              <input id="portfolio-outcome-reason" list="portfolio-outcome-reason-list"
+                placeholder="Choose a suggestion or type your own reason" />
+              <datalist id="portfolio-outcome-reason-list">
+                <option value="Price too high / not competitive"></option>
+                <option value="Lost to competitor"></option>
+                <option value="Customer cancelled requirement"></option>
+                <option value="No response / inactive"></option>
+                <option value="Vendor / supply issue"></option>
+                <option value="Specification mismatch"></option>
+                <option value="Customer budget issue"></option>
+                <option value="Schedule / lead-time issue"></option>
+                <option value="Internal AMS decision"></option>
+              </datalist>
             </div>
 
             <div class="portfolio-field span-2">
@@ -2464,19 +2464,19 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
               </div>
               <div class="portfolio-field">
                 <label class="portfolio-label" for="portfolio-value">Estimated Opportunity Value (IDR)</label>
-                <input id="portfolio-value" inputmode="numeric" placeholder="e.g. 15000000" />
+                <input id="portfolio-value" inputmode="numeric" placeholder="e.g. 327.166.950" onblur="normalizePortfolioMoneyInput(this)" />
               </div>
               <div class="portfolio-field">
                 <label class="portfolio-label" for="portfolio-ams-quote-value">AMS Quotation Value (IDR)</label>
-                <input id="portfolio-ams-quote-value" inputmode="numeric" placeholder="AMS selling price / SPH value" />
+                <input id="portfolio-ams-quote-value" inputmode="numeric" placeholder="AMS selling price / SPH value" onblur="normalizePortfolioMoneyInput(this)" />
               </div>
               <div class="portfolio-field">
                 <label class="portfolio-label" for="portfolio-vendor-value">Vendor / Cost Reference (IDR)</label>
-                <input id="portfolio-vendor-value" inputmode="numeric" placeholder="Vendor quote or cost reference" />
+                <input id="portfolio-vendor-value" inputmode="numeric" placeholder="Vendor quote or cost reference" onblur="normalizePortfolioMoneyInput(this)" />
               </div>
               <div class="portfolio-field">
                 <label class="portfolio-label" for="portfolio-final-order-value">Final PO / Order Value (IDR)</label>
-                <input id="portfolio-final-order-value" inputmode="numeric" placeholder="Final won / PO value" />
+                <input id="portfolio-final-order-value" inputmode="numeric" placeholder="Final won / PO value" onblur="normalizePortfolioMoneyInput(this)" />
               </div>
               <div class="portfolio-field">
                 <label class="portfolio-label" for="portfolio-privacy">Visibility</label>
@@ -4892,9 +4892,15 @@ function syncPortfolioOutcomeFields() {
   const outcome = document.getElementById('portfolio-outcome')?.value || 'pending';
   const reason = document.getElementById('portfolio-outcome-reason');
   if (!reason) return;
-  const needsReason = ['lost','cancelled','not_pursued'].includes(outcome);
-  reason.disabled = !needsReason;
-  reason.title = needsReason ? 'Select the main reason this opportunity stopped.' : 'Available when Outcome is Lost, Cancelled, or Not Pursued.';
+  const stopped = ['lost','cancelled','not_pursued'].includes(outcome);
+  // Keep this field usable at all times. User can choose a suggestion or type a custom reason.
+  reason.disabled = false;
+  reason.placeholder = stopped
+    ? 'Choose a suggestion or type the actual reason'
+    : 'Optional — use if the opportunity stops or is lost';
+  reason.title = stopped
+    ? 'Record the main reason this opportunity stopped. You may type a custom reason.'
+    : 'Optional. This can be filled later if the opportunity is lost, cancelled, or not pursued.';
 }
 
 function copyPortfolioSetupSql() {
@@ -4912,10 +4918,77 @@ function copyPortfolioSetupSql() {
 }
 
 function portfolioValueNumber(value) {
-  const cleaned = String(value == null ? '' : value).replace(/[^\d-]/g, '');
-  if (!cleaned) return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : null;
+  const raw = String(value == null ? '' : value).trim();
+  if (!raw) return null;
+
+  // Read ONLY the first amount-like number. This prevents text such as
+  // "Rp327.166.950 incl. PPN 11%" from becoming 32,716,695,011.
+  const match = raw.match(/-?\d(?:[\d\s.,]*\d)?/);
+  if (!match) return null;
+  let token = match[0].replace(/\s+/g, '');
+
+  const dotCount = (token.match(/\./g) || []).length;
+  const commaCount = (token.match(/,/g) || []).length;
+
+  // Multiple same separators are thousand separators: 327.166.950 / 327,166,950
+  if ((dotCount > 1 && commaCount === 0) || (commaCount > 1 && dotCount === 0)) {
+    token = token.replace(/[.,]/g, '');
+  } else if (dotCount && commaCount) {
+    // Mixed style: the last separator is decimal only when followed by 1–2 digits.
+    const lastDot = token.lastIndexOf('.');
+    const lastComma = token.lastIndexOf(',');
+    const decimalPos = Math.max(lastDot, lastComma);
+    const decimals = token.length - decimalPos - 1;
+    if (decimals >= 1 && decimals <= 2) {
+      const whole = token.slice(0, decimalPos).replace(/[.,]/g, '');
+      const fraction = token.slice(decimalPos + 1);
+      token = whole + '.' + fraction;
+    } else {
+      token = token.replace(/[.,]/g, '');
+    }
+  } else if (dotCount === 1 || commaCount === 1) {
+    const sep = dotCount ? '.' : ',';
+    const pos = token.indexOf(sep);
+    const decimals = token.length - pos - 1;
+    // For IDR, 3 trailing digits means a thousands group. 1–2 may be decimals.
+    token = (decimals === 3)
+      ? token.replace(sep, '')
+      : token.replace(sep, '.');
+  }
+
+  const n = Number(token);
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
+
+function normalizePortfolioMoneyInput(input) {
+  if (!input) return;
+  const n = portfolioValueNumber(input.value);
+  if (n == null) {
+    if (!String(input.value || '').trim()) input.value = '';
+    return;
+  }
+  input.value = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
+}
+
+function formatPortfolioInputValue(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
+}
+
+function portfolioOutcomeReasonValue(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  const lowered = raw.toLowerCase();
+  for (const [code, label] of Object.entries(PORTFOLIO_OUTCOME_REASON_LABEL)) {
+    if (lowered === code.toLowerCase() || lowered === label.toLowerCase()) return code;
+  }
+  return raw;
+}
+
+function portfolioOutcomeReasonInputValue(value) {
+  if (!value) return '';
+  return PORTFOLIO_OUTCOME_REASON_LABEL[value] || String(value);
 }
 
 function formatPortfolioValue(value) {
@@ -4990,16 +5063,16 @@ function openPortfolioForm(id = '') {
       'portfolio-source-detail': row.source_detail || '',
       'portfolio-partner': row.partner_vendor || '',
       'portfolio-outcome': portfolioOutcome(row),
-      'portfolio-outcome-reason': row.outcome_reason || '',
+      'portfolio-outcome-reason': portfolioOutcomeReasonInputValue(row.outcome_reason),
       'portfolio-stage': portfolioStage(row),
       'portfolio-next-action': row.next_action || '',
       'portfolio-next-action-date': row.next_action_date || '',
       'portfolio-notes': row.notes || '',
       'portfolio-reference': row.reference_no || '',
-      'portfolio-value': row.estimated_value == null ? '' : String(row.estimated_value),
-      'portfolio-ams-quote-value': row.ams_quote_value == null ? '' : String(row.ams_quote_value),
-      'portfolio-vendor-value': row.vendor_value == null ? '' : String(row.vendor_value),
-      'portfolio-final-order-value': row.final_order_value == null ? '' : String(row.final_order_value),
+      'portfolio-value': formatPortfolioInputValue(row.estimated_value),
+      'portfolio-ams-quote-value': formatPortfolioInputValue(row.ams_quote_value),
+      'portfolio-vendor-value': formatPortfolioInputValue(row.vendor_value),
+      'portfolio-final-order-value': formatPortfolioInputValue(row.final_order_value),
       'portfolio-privacy': row.is_private ? 'true' : 'false'
     };
     Object.entries(values).forEach(([fieldId, value]) => {
@@ -5230,9 +5303,9 @@ async function savePortfolio() {
     const attachments = [...portfolioAttachments, ...newFiles];
     const outcome = document.getElementById('portfolio-outcome')?.value || 'pending';
     const stage = document.getElementById('portfolio-stage')?.value || 'incoming';
-    const outcomeReason = ['lost','cancelled','not_pursued'].includes(outcome)
-      ? (document.getElementById('portfolio-outcome-reason')?.value || null)
-      : null;
+    const outcomeReason = portfolioOutcomeReasonValue(
+      document.getElementById('portfolio-outcome-reason')?.value
+    );
 
     const payload = {
       entry_date: document.getElementById('portfolio-date')?.value || todayStr(),

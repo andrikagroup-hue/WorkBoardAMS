@@ -2,9 +2,9 @@
 
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
-**Status sinkronisasi:** 15 Agustus 2026
-**Pasangan kode terbaru:** `index(86).html`
-**SHA-256 pasangan kode:** `2d37392eeab662c1a7ee9307c4511200c32890234cc0d453c8353bfbb4ddcb85`
+**Status sinkronisasi:** 16 Agustus 2026
+**Pasangan kode terbaru:** `index(87).html`
+**SHA-256 pasangan kode:** `077f7ee8b365eb1c98f1195b3eca0f1a7d85dfcb32bac06626ff5b4f0368690d`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(86).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(87).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -530,13 +530,14 @@ All Links saat ini memiliki:
   - `cancelled` = kebutuhan dibatalkan customer;
   - `not_pursued` = AMS memutuskan tidak melanjutkan.
 - Istilah `Continue` tidak lagi dipakai pada UI karena ambigu. Legacy column `decision` tetap dipertahankan untuk kompatibilitas data/versi lama dan diisi otomatis dari `outcome`/`stage`.
-- `outcome_reason` dipakai hanya untuk Lost, Cancelled, atau Not Pursued. Pilihan terstruktur mencakup harga terlalu tinggi/tidak kompetitif, kalah kompetitor, customer cancelled, no response, vendor/supply issue, specification mismatch, budget issue, schedule/lead-time issue, internal AMS decision, dan Other.
+- `outcome_reason` bersifat opsional dan selalu dapat diedit. UI memakai input dengan suggestion list: user dapat memilih alasan umum atau mengetik alasan custom. Alasan terstruktur mencakup harga terlalu tinggi/tidak kompetitif, kalah kompetitor, customer cancelled, no response, vendor/supply issue, specification mismatch, budget issue, schedule/lead-time issue, dan internal AMS decision. Nilai lama berbentuk code tetap kompatibel.
 - `next_action` dan `next_action_date` ditambahkan agar Portfolio bukan hanya arsip tetapi juga menunjukkan tindakan berikutnya. Kartu menandai follow-up yang sudah jatuh tempo.
 - Nilai komersial dipisahkan agar tidak salah menganggap harga vendor sebagai harga AMS:
   - `estimated_value` = Estimated Opportunity Value;
   - `ams_quote_value` = AMS Quotation / SPH Value;
   - `vendor_value` = Vendor / Cost Reference;
   - `final_order_value` = Final PO / Order Value.
+- Input nilai IDR memakai parser aman yang hanya membaca angka nominal pertama. Paste seperti `Rp327.166.950 incl. PPN 11%` harus disimpan sebagai `327166950`, bukan menggabungkan angka `11` dari PPN. Saat field kehilangan fokus, nominal diformat dengan pemisah ribuan Indonesia.
 - Field lain: `reference_no`, `notes`, `attachments`, dan `is_private`.
 - Dashboard ringkas menampilkan Total Entries, Active Pipeline, Won/Approved, Lost/Closed, dan Follow-ups Due.
 - Filter tersedia untuk Type, Outcome, Stage, dan Source.
@@ -548,8 +549,8 @@ All Links saat ini memiliki:
 - Portfolio dapat diekspor ke Excel/PDF/PNG dari panel aktif dan disertakan pada JSON Backup.
 - Rename user memperbarui `project_portfolio.created_by`; penghapusan user admin tidak otomatis menghapus Portfolio karena Portfolio adalah riwayat perusahaan.
 - Bug duplikasi render attachment pada kartu Portfolio telah dihapus; attachment hanya dirender satu kali.
-- SQL Portfolio disiapkan dengan jalur upgrade `ADD COLUMN IF NOT EXISTS` agar kompatibel dengan skema awal.
-- **Security hold:** WorkBoard masih belum memakai Supabase Auth/RLS. Setup banner tidak lagi menyuruh user langsung menjalankan SQL; schema SQL disimpan untuk dipakai setelah keamanan akses database diputuskan. Jangan menyarankan `Run without RLS` untuk tabel Portfolio tanpa keputusan keamanan eksplisit dari user.
+- SQL Portfolio memakai jalur upgrade `ADD COLUMN IF NOT EXISTS` agar kompatibel dengan skema awal.
+- Tabel Portfolio sudah digunakan pada WorkBoard. RLS/Supabase Auth masih ditunda berdasarkan keputusan user; jangan mengubah arsitektur auth/RLS tanpa permintaan eksplisit berikutnya.
 - Tracker, Kanban, Gantt, Matrix, Recurring, Capture, Logbook, dan tabel lama tidak diubah sumber datanya oleh penyempurnaan Portfolio ini.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
@@ -605,6 +606,15 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 16 Agustus 2026
+
+- Memperbaiki `Loss / Stop Reason`: field tidak lagi disabled saat Outcome masih Pending dan sekarang dapat dipilih dari suggestion list atau diketik bebas sebagai alasan custom.
+- Menjaga kompatibilitas alasan lama berbentuk code (`price_high`, `lost_competitor`, dan seterusnya) sambil mengizinkan alasan teks custom.
+- Memperbaiki parser nilai Portfolio agar hanya membaca nominal pertama. Teks seperti `Rp327.166.950 incl. PPN 11%` tidak lagi berubah menjadi `32716695011`.
+- Menambahkan normalisasi tampilan empat field nilai IDR pada blur agar angka tampil dengan pemisah ribuan Indonesia.
+- Perubahan ini tidak membutuhkan SQL baru dan tidak mengubah tabel/database Portfolio.
+- RLS/Supabase Auth tetap ditunda sesuai keputusan user saat ini.
 
 ### 15 Agustus 2026
 
