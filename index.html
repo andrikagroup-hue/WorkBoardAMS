@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v97 — Mobile More Navigation Fix — 19 Aug 2026 -->
+<!-- WorkBoard AMS v98 — Management Leave Approval Access — 19 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -2267,6 +2267,9 @@ body.authenticated .auth-gate { display:none !important; }
             <i class="ti ti-fingerprint"></i> Attendance
             <span class="nav-badge badge-blue" id="badge-absen"></span>
           </button>
+          <button class="nav-sub-item" id="nav-admin-leave" style="display:none" onclick="switchPanel('adminleave',this)">
+            <i class="ti ti-calendar-off"></i> Leave Management
+          </button>
         </div>
       </div>
 
@@ -2322,9 +2325,6 @@ body.authenticated .auth-gate { display:none !important; }
         <div class="nav-submenu">
           <button class="nav-sub-item" id="nav-admin-users" onclick="switchPanel('adminusers',this)">
             <i class="ti ti-users-group"></i> Users & Access
-          </button>
-          <button class="nav-sub-item" id="nav-admin-leave" onclick="switchPanel('adminleave',this)">
-            <i class="ti ti-calendar-off"></i> Leave Management
           </button>
         </div>
       </div>
@@ -3837,13 +3837,13 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
       <!-- ── Admin: Manage Users ─────────────────── -->
       <div class="panel" id="panel-adminusers">
         <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#92400E">
-          <strong>👑 Owner Controls</strong> — Only the WorkBoard Owner can manage user access and leave. Roles can be corrected here without deleting a user's work history.
+          <strong>👑 Owner Controls</strong> — Only the WorkBoard Owner can manage user roles and account access. Leave approvals are handled separately in HR → Leave Management.
         </div>
 
         <!-- Tab navigasi -->
         <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0">
           <button class="admin-tab active" id="admin-tab-users" onclick="switchAdminTab('users')"><i class="ti ti-users"></i> Users & Access</button>
-          <button class="admin-tab" id="admin-tab-leave" onclick="switchAdminTab('leave')"><i class="ti ti-calendar-off"></i> Manage Leave</button>
+          <button class="admin-tab" id="admin-tab-leave" style="display:none" onclick="switchAdminTab('leave')"><i class="ti ti-calendar-off"></i> Manage Leave</button>
         </div>
 
         <!-- Panel: Daftar User -->
@@ -3883,10 +3883,10 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
         </div>
       </div>
 
-      <!-- ── Leave Management (Owner) ──────── -->
+      <!-- ── Leave Management (Management + Owner) ──────── -->
       <div class="panel" id="panel-adminleave">
         <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#92400E">
-          <strong>👑 Leave Management</strong> — Owner-only review for employee leave, sick, and time-off requests.
+          <strong>Leave Management</strong> — Management and Owner can review, approve, reject, or reset employee leave, sick, and time-off requests. Delete remains Owner-only.
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
           <div style="font-size:13px;font-weight:600;color:var(--text1)">📋 Leave / Sick / Time Off Requests</div>
@@ -4696,7 +4696,8 @@ function startChatPolling() {
 // ── Panel switching ────────────────────────
 async function switchPanel(id, el) {
   if (id === 'result' && !hasManagementAccess()) { alert('Management Report is available only to Management and Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
-  if ((id === 'adminusers' || id === 'adminleave') && !isOwner()) { alert('Owner access required.'); id='focus'; el=document.getElementById('nsub-focus'); }
+  if (id === 'adminusers' && !isOwner()) { alert('Users & Access is available only to Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
+  if (id === 'adminleave' && !hasManagementAccess()) { alert('Leave Management is available only to Management and Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
   if (id === 'brain' || id === 'followup') {
     id = 'focus';
     el = document.getElementById('nsub-focus');
@@ -4728,7 +4729,7 @@ async function switchPanel(id, el) {
     chat: 'Work Talk',
     absen: 'HR — Attendance',
     adminusers: '👑 Users & Access',
-    adminleave: '👑 Leave Management',
+    adminleave: 'HR — Leave Management',
     links: 'Resources',
     passvault: '🔐 Password Manager',
     faq: '📖 Guide & FAQ'
@@ -10107,11 +10108,11 @@ function openNavGroupForPanel(panelId) {
     portfolio: 'ng-projects', tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects', recurring: 'ng-projects',
     notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
-    absen: 'ng-hr',
+    absen: 'ng-hr', adminleave: 'ng-hr',
     result: 'ng-reports',
     links: 'ng-links', passvault: 'ng-links',
     faq: 'ng-help',
-    adminusers: 'ng-settings', adminleave: 'ng-settings'
+    adminusers: 'ng-settings'
   };
   const groupId = map[panelId];
   if (panelId === 'focus') { document.querySelectorAll('.nav-group.open').forEach(g => g.classList.remove('open')); return; }
@@ -11861,6 +11862,7 @@ restoreTodoDraft();
         <div class="mobile-hub-grid">
           <button class="mobile-hub-item" onclick="mobileHubNavigate('chat')"><i class="ti ti-message-circle-2"></i><span>Work Talk<small>Team communication</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('absen')"><i class="ti ti-fingerprint"></i><span>Attendance<small>Attendance and leave</small></span></button>
+          <button class="mobile-hub-item" id="bn-admin-leave" style="display:none" onclick="mobileHubNavigate('adminleave')"><i class="ti ti-calendar-off"></i><span>Leave Management<small>Management / Owner approval</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('links')"><i class="ti ti-link"></i><span>Resources<small>Links and references</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('passvault')"><i class="ti ti-lock"></i><span>Password Manager<small>Encrypted private vault</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('faq')"><i class="ti ti-help-circle"></i><span>Help<small>Guide and FAQ</small></span></button>
@@ -11870,7 +11872,6 @@ restoreTodoDraft();
         <div class="mobile-hub-label">Owner Controls</div>
         <div class="mobile-hub-grid">
           <button class="mobile-hub-item" id="bn-admin-users" onclick="mobileHubNavigate('adminusers')"><i class="ti ti-users-group"></i><span>Users & Access<small>Owner only</small></span></button>
-          <button class="mobile-hub-item" id="bn-admin-leave" onclick="mobileHubNavigate('adminleave')"><i class="ti ti-calendar-off"></i><span>Leave Management<small>Owner only</small></span></button>
         </div>
       </div>
     </div>
@@ -12475,11 +12476,11 @@ function applyAdminVisibility() {
   const navEl = document.getElementById('nav-admin-users');
   if (navEl) navEl.style.display = owner ? 'flex' : 'none';
   const navLeaveEl = document.getElementById('nav-admin-leave');
-  if (navLeaveEl) navLeaveEl.style.display = owner ? 'flex' : 'none';
+  if (navLeaveEl) navLeaveEl.style.display = canReport ? 'flex' : 'none';
   const bnAdminEl = document.getElementById('bn-admin-users');
   if (bnAdminEl) bnAdminEl.style.display = owner ? 'flex' : 'none';
   const bnLeaveEl = document.getElementById('bn-admin-leave');
-  if (bnLeaveEl) bnLeaveEl.style.display = owner ? 'flex' : 'none';
+  if (bnLeaveEl) bnLeaveEl.style.display = canReport ? 'flex' : 'none';
   const mobileHubAdmin = document.getElementById('mobile-hub-admin');
   if (mobileHubAdmin) mobileHubAdmin.style.display = owner ? 'block' : 'none';
   const reportDesktop = document.getElementById('ng-reports');
@@ -12573,10 +12574,11 @@ function switchAdminTab(tab) {
 // Shared rendering helper for both Leave Management panels
 async function _renderAdminLeaveInto(listEl, filterSelectEl, typeSelectEl) {
   const currentUser = getUser();
-  const isAdmin = isOwner();
+  const canManageLeave = hasManagementAccess();
+  const owner = isOwner();
   if (!listEl) return;
-  if (!isAdmin) {
-    listEl.innerHTML = '<div class="empty-msg">Owner access required.</div>';
+  if (!canManageLeave) {
+    listEl.innerHTML = '<div class="empty-msg">Management or Owner access required.</div>';
     return;
   }
   listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading...</div>';
@@ -12626,14 +12628,14 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
           &nbsp;·&nbsp;Submitted: ${diajukan}
         </div>
         ${lv.alasan ? `<div class="admin-leave-alasan">"${escHtml(lv.alasan)}"</div>` : ''}
-        ${lv.catatan_admin ? `<div style="font-size:11px;margin-top:4px;color:#1F4443"><i class="ti ti-message"></i> Owner note: ${escHtml(lv.catatan_admin)}</div>` : ''}
+        ${lv.catatan_admin ? `<div style="font-size:11px;margin-top:4px;color:#1F4443"><i class="ti ti-message"></i> Management note: ${escHtml(lv.catatan_admin)}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;min-width:110px">
         <span class="admin-leave-badge alb-${st}">${statusLabel[st] || st}</span>
         ${st !== 'approved' ? `<button class="btn-sm" style="color:var(--success);border-color:var(--success)" onclick="adminUpdateLeaveStatus('${lv.id}','approved')"><i class="ti ti-check"></i> Approve</button>` : ''}
         ${st !== 'rejected' ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminUpdateLeaveStatus('${lv.id}','rejected')"><i class="ti ti-x"></i> Reject</button>` : ''}
         ${st !== 'pending' ? `<button class="btn-sm" onclick="adminUpdateLeaveStatus('${lv.id}','pending')" title="Reset to pending"><i class="ti ti-refresh"></i> Reset</button>` : ''}
-        <button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteLeave('${lv.id}')"><i class="ti ti-trash"></i></button>
+        ${owner ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteLeave('${lv.id}')" title="Delete request — Owner only"><i class="ti ti-trash"></i></button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -12657,28 +12659,25 @@ async function renderAdminLeave() {
 }
 
 async function adminUpdateLeaveStatus(id, newStatus) {
-  const currentUser = getUser();
-  const isAdmin = isOwner();
-  if (!isAdmin) return alert('Owner access required.');
+  if (!hasManagementAccess()) return alert('Management or Owner access required.');
 
-  let catatanAdmin = null;
+  let managementNote = null;
   if (newStatus === 'rejected') {
-    catatanAdmin = prompt('Reason for rejection (optional):') || null;
+    managementNote = prompt('Reason for rejection (optional):') || null;
   }
 
-  const updatePayload = { status: newStatus };
-  if (catatanAdmin !== null) updatePayload.catatan_admin = catatanAdmin;
-  if (newStatus === 'pending') updatePayload.catatan_admin = null; // reset catatan saat reset
-
   try {
-    const { data, error } = await withTimeout(
-      sb.from('leave_requests').update(updatePayload).eq('id', id).select()
+    const { error } = await withTimeout(
+      sb.rpc('workboard_manage_leave_status', {
+        p_leave_id: id,
+        p_status: newStatus,
+        p_admin_note: managementNote
+      })
     );
     if (error) {
-      return alert('Failed to update status: ' + error.message + '\n\nDetail: ' + JSON.stringify(error));
-    }
-    if (!data || data.length === 0) {
-      return alert('Data not found or no changes made. Try refreshing the page.');
+      const missingRpc = String(error.message || '').toLowerCase().includes('workboard_manage_leave_status') || String(error.code || '') === 'PGRST202';
+      if (missingRpc) return alert('Leave approval setup is not installed yet. Run WORKBOARD_AUTH_V98_LEAVE_MANAGEMENT.sql in Supabase, then try again.');
+      return alert('Failed to update status: ' + error.message);
     }
   } catch(e) {
     return alert('Error: ' + e.message);
@@ -12686,6 +12685,8 @@ async function adminUpdateLeaveStatus(id, newStatus) {
 
   await renderAdminLeave();
   await renderAdminLeaveStandalone();
+  if (currentPanel === 'absen') await renderAbsenRekap();
+  if (currentPanel === 'result') await renderManagementReport();
 }
 
 async function adminDeleteLeave(id) {
@@ -13111,9 +13112,9 @@ function renderFaq() {
       section: '👥 HR — Attendance & Leave',
       items: [
         { q: 'How do I Clock In/Out?', a: 'Open the <strong>Attendance</strong> panel, click the <strong>Clock In</strong> button. The system will ask for a photo and GPS location. Click <strong>Clock Out</strong> when you\'re done working.' },
-        { q: 'How do I request leave/sick leave/time off?', a: 'In the Attendance panel, scroll down to the "Request Leave/Sick/Time Off" section, choose the type, fill in the date and reason, then click Submit. The initial status is <strong>Pending</strong> until approved by the Owner.' },
-        { q: 'How are leave requests managed?', a: 'The <strong>Owner</strong> opens <strong>Owner Controls → Leave Management</strong> and can Approve, Reject, or Reset a request.' },
-        { q: 'What do the leave statuses mean?', a: '⏳ Pending = not yet processed by the Owner · ✅ Approved = approved · ❌ Rejected = rejected (a reason note from the Owner will be included).' },
+        { q: 'How do I request leave/sick leave/time off?', a: 'In the Attendance panel, scroll down to the "Request Leave/Sick/Time Off" section, choose the type, fill in the date and reason, then click Submit. The initial status is <strong>Pending</strong> until reviewed by Management or Owner.' },
+        { q: 'How are leave requests managed?', a: '<strong>Management or Owner</strong> opens <strong>HR → Leave Management</strong> and can Approve, Reject, or Reset a request. Only Owner can delete a request.' },
+        { q: 'What do the leave statuses mean?', a: '⏳ Pending = waiting for Management/Owner review · ✅ Approved = approved · ❌ Rejected = rejected (a reviewer note may be included).' },
       ]
     },
     {

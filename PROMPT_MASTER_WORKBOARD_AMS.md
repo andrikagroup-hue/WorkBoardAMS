@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 19 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `36f0d58a75c7d44518386b24b3cd76da9e136c45e0c396cf8f3c02ff3d6eb709`
+**SHA-256 pasangan kode:** `2d199feede7a3d9f67e444a6c575ce84703bd31f1687da23e19bda9e6c318b90`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v97 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v98 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -294,7 +294,8 @@ Snapshot ini dibuat dari `index.html` v97 yang dipasangkan dengan prompt ini.
 - Grup `Projects` membuka satu `Projects Workspace`; Portfolio, Tracker, Kanban, Gantt, Matrix, dan Recurring berpindah melalui tab internal.
 - Grup `Personal` hanya berisi Notes, To Do, dan Notepad. Brain Dump, Follow Up, dan Waiting disatukan di Capture.
 - Navigasi mobile memakai `Today`, `Daily`, `Projects`, `Report`, dan `More`; tombol `Report` hanya terlihat untuk Owner/Management.
-- Bottom navigation mobile memakai slot fleksibel: Owner/Management melihat 5 tombol tersebut, sedangkan Staff melihat 4 tombol karena `Report` disembunyikan. Tombol `More` wajib selalu terlihat dan membuka Notes, To Do, Notepad, Work Talk, Attendance, Resources, Password Manager, Help, serta Owner Controls sesuai role.
+- Bottom navigation mobile memakai slot fleksibel: Owner/Management melihat 5 tombol tersebut, sedangkan Staff melihat 4 tombol karena `Report` disembunyikan. Tombol `More` wajib selalu terlihat dan membuka Notes, To Do, Notepad, Work Talk, Attendance, Resources, Password Manager, Help, serta kontrol sesuai role.
+- `Leave Management` berada di area HR dan dapat dibuka Owner/Management pada desktop maupun mobile. `Users & Access` tetap Owner-only.
 - Global Search, Global Filter, Export, dan Work Alarm berada di top bar.
 - **Tidak ada tombol `+ Add` global di top bar.**
 
@@ -340,7 +341,7 @@ Aturan:
 | Resources | Password Manager | `vault_keys` dan `password_vault_v2`; private per user dan terenkripsi end-to-end |
 | Help | Guide & FAQ | Konten FAQ yang dirender JavaScript |
 | Owner Controls | Users & Access | `workboard_profiles`; Owner mengubah role Staff/Management dan Active/Inactive |
-| Owner Controls | Leave Management | Owner-only untuk approve/reject/reset/delete leave |
+| HR | Leave Management | `leave_requests`; Owner/Management dapat review + Approve/Reject/Reset; Delete tetap Owner-only |
 
 Catatan ketergantungan:
 
@@ -363,6 +364,7 @@ Catatan ketergantungan:
 - RLS aktif mulai v91: request tanpa sesi Auth tidak boleh memperoleh akses tabel WorkBoard yang dimigrasikan.
 - Staff tetap dapat melihat data Team / Company sesuai aturan panel sumber, tetapi tidak mendapat menu Management Report.
 - Management mendapat Management Report dan data reporting yang memang Team / Company; private personal data user lain tidak dibuka.
+- Management dan Owner dapat membuka `HR → Leave Management` serta Approve / Reject / Reset request Leave, Sick, dan Time Off. Delete request tetap hanya Owner. `Users & Access` tetap hanya Owner.
 - Owner (Ratu) mendapat seluruh kontrol WorkBoard/company yang dirancang untuk Owner, tetapi Password Manager dan data personal private user lain tetap mengikuti policy private masing-masing.
 
 ### 15.5 All Links — kondisi terbaru
@@ -628,6 +630,7 @@ All Links saat ini memiliki:
 - Tabel baru `workboard_profiles` menyimpan `auth.users.id`, full name, email, role, active state, dan onboarding state.
 - Authorization tidak bergantung pada `raw_user_meta_data`; role efektif dibaca dari `workboard_profiles`.
 - `Users & Access` hanya Owner dan tersedia di desktop serta mobile. Owner dapat mengubah Staff ↔ Management dan Active ↔ Inactive; Owner sendiri terkunci.
+- `Leave Management` bukan bagian dari hak User Access: Owner/Management dapat melakukan review serta Approve/Reject/Reset leave request; Delete request tetap Owner-only.
 - Akun inactive tidak dapat memakai WorkBoard; RLS juga menolak akses data walau sesi lama masih tersimpan.
 - `Switch User` lama menjadi Sign Out. Rename profile dari UI dinonaktifkan karena data legacy masih memakai nama pada `created_by` / `user_name`.
 - RLS diaktifkan pada tabel WorkBoard yang dimigrasikan. Anon tidak diberi akses tabel tersebut; role `authenticated` mendapat hak yang dibatasi policy.
@@ -690,6 +693,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Login nama bebas tidak muncul kembali; app hanya terbuka setelah Supabase Auth + profile valid.
 - [ ] Register hanya menyediakan Staff / Management; Owner tidak tersedia sebagai pilihan.
 - [ ] Ratu/Owner masuk ke Today dan memiliki Users & Access; Management masuk ke Management Report; Staff masuk ke Today.
+- [ ] Leave Management tersedia untuk Owner/Management di desktop dan mobile; Users & Access tetap Owner-only; Staff tidak dapat membuka Leave Management.
 - [ ] Email/password, Forgot Password, onboarding Google, Sign Out, dan account state responsive pada desktop/HP.
 - [ ] Role tidak ditentukan dari teks nama seperti admin/bos/hrd.
 - [ ] RLS tidak membuka Brain Dump, Notes, Notepad, To Do private, atau Password Vault milik user lain.
@@ -712,6 +716,17 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — v98 Management Leave Approval Access
+
+- Memindahkan akses `Leave Management` ke area HR agar tidak lagi terlihat sebagai Owner-only user control.
+- Owner dan Management dapat membuka Leave Management, melihat request Leave/Sick/Time Off, serta melakukan `Approve`, `Reject`, dan `Reset`.
+- `Users & Access` tetap sepenuhnya Owner-only; Management tidak dapat mengubah role atau status aktif user.
+- Tombol Delete leave request tetap hanya muncul dan bekerja untuk Owner.
+- Desktop menampilkan `HR → Leave Management`; mobile menampilkan `Leave Management` di `More → Work` hanya untuk Owner/Management.
+- Update status memakai RPC `workboard_manage_leave_status()` yang memvalidasi role server-side dan hanya mengubah `status`/`catatan_admin`, sehingga Management tidak diberi UPDATE luas ke seluruh kolom `leave_requests`.
+- Membutuhkan SQL kecil `WORKBOARD_AUTH_V98_LEAVE_MANAGEMENT.sql` setelah RLS v91 aktif.
+- FAQ dan label UI terkait diperbarui menjadi Management/Owner review; tidak ada data leave lama yang dihapus.
 
 ### 19 Agustus 2026 — v97 Mobile More Navigation Fix
 
