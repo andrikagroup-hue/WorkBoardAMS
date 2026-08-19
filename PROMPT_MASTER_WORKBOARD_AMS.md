@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `8c830637dcab134bc8d4e3a12c24f83d00cc1e2494220615e690d740b3c434fd`
+**SHA-256 pasangan kode:** `9c4df63f6257013f989950164d61c40a50c12c7b99587e96ef69db08c5d4e6f7`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v102 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v103 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -525,7 +525,8 @@ All Links saat ini memiliki:
 - Footer editor menampilkan word count dan character count.
 - Mode full-screen dapat ditutup menggunakan tombol toolbar atau tombol Escape.
 - Draft Protection, ownership/private filter, Gemini Writing Assistant, tabel database, dan struktur penyimpanan lama tetap dipertahankan.
-- Fitur ini tidak memerlukan SQL baru. Bucket Storage `attachments` tetap harus tersedia seperti kebutuhan lampiran Logbook yang sudah ada.
+- Fitur rich-text image masih memakai bucket legacy `attachments` dan public URL sampai migrasi private-image khusus selesai; jangan menganggap gambar embedded sudah ikut hardening attachment v103.
+- Perubahan private file attachment v103 tidak mengubah mekanisme gambar embedded pada editor.
 
 ### 15.14 Lampiran PowerPoint
 
@@ -533,9 +534,12 @@ All Links saat ini memiliki:
 - File picker harus menampilkan PowerPoint melalui ekstensi file dan MIME type resmi Microsoft PowerPoint.
 - Batas ukuran lampiran adalah 20 MB per file.
 - Validasi jenis dan ukuran file dilakukan kembali di JavaScript, bukan hanya melalui filter file picker.
-- File PowerPoint memakai ikon presentasi dan disimpan di bucket Storage `attachments` seperti lampiran lain.
-- PowerPoint dibuka atau diunduh dari tautan lampiran; WorkBoard tidak menjalankan preview slide di dalam aplikasi.
-- Perubahan ini tidak memerlukan SQL atau tabel baru.
+- Mulai v103, file attachment baru Logbook, Portfolio, dan Work Talk disimpan di bucket private `workboard-private`; metadata record menyimpan `bucket` + `path`, bukan public URL.
+- Akses download memakai sesi Supabase Auth dan Storage RLS: Logbook/Portfolio mengikuti visibility record, sedangkan Work Talk mengikuti visibility channel termasuk DM participant-only.
+- PowerPoint dibuka/diunduh melalui authenticated download; WorkBoard tidak menjalankan preview slide di dalam aplikasi.
+- File attachment legacy yang sudah lebih dulu memiliki `url` publik tetap kompatibel dan belum dipindahkan otomatis pada v103.
+- Embedded image dari Rich Text Editor masih memakai mekanisme legacy `attachments` sampai migrasi khusus image selesai.
+- v103 membutuhkan bucket private `workboard-private` serta policy dari `WORKBOARD_STORAGE_V103_PRIVATE_ATTACHMENTS.sql`; tidak menambah tabel aplikasi baru.
 
 ### 15.15 Project / BOQ / Order Portfolio
 
@@ -567,7 +571,7 @@ All Links saat ini memiliki:
 - Full-text search bebas mencakup customer, PIC/contact, source, partner/vendor, reference, outcome, loss reason, stage, next action/date, notes, semua nilai komersial, pembuat, dan nama lampiran.
 - Hasil search memakai mekanisme highlight WorkBoard yang sama; data private user lain tidak boleh masuk hasil.
 - Team / Company adalah visibility default. Private mengikuti `applyPrivacy()`.
-- Lampiran Portfolio memakai bucket Storage `attachments`, folder `portfolio`, format file dan batas 20 MB yang sama dengan lampiran WorkBoard.
+- Lampiran Portfolio baru memakai bucket private `workboard-private` dengan path berbasis `portfolio/<record_id>/<uploader_uid>/...`; akses file mengikuti RLS record Portfolio sehingga Team/Company dan Private tetap konsisten.
 - Add/Edit/Delete tersedia pada kartu; tombol Add bersifat lokal dan tidak memakai `handleAdd()`.
 - Portfolio dapat diekspor ke Excel/PDF/PNG dari panel aktif dan disertakan pada JSON Backup.
 - Rename user memperbarui `project_portfolio.created_by`; penghapusan user admin tidak otomatis menghapus Portfolio karena Portfolio adalah riwayat perusahaan.
@@ -639,7 +643,7 @@ All Links saat ini memiliki:
 - Data Team / Company tetap dapat dibaca sesuai aturan lama; private personal tetap hanya pemilik. Management dapat membaca data reporting; Owner mendapat kontrol company yang diperlukan.
 - Password Vault E2EE tetap owner-of-vault only dan tidak pernah dibuka ke Management/Owner lain.
 - Work Talk DM tetap hanya participant; hide/unhide room tetap dipertahankan melalui izin update terbatas pada `hidden_by`.
-- Storage bucket `attachments` tidak diubah mode privacy pada migrasi v91 agar URL lampiran historis tidak rusak; hardening Storage dapat dilakukan sebagai migrasi terpisah jika direncanakan.
+- Bucket legacy `attachments` tetap tidak diubah mode privacy agar URL historis tidak rusak. Mulai v103, file attachment baru Logbook/Portfolio/Work Talk memakai bucket private `workboard-private` + Storage RLS; embedded rich-text images masih legacy sampai migrasi image khusus.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
@@ -709,6 +713,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Font, ukuran, heading, list, indent, alignment, warna, highlight, link, undo, redo, divider, table, image, dan full-screen editor tetap berfungsi.
 - [ ] Paste gambar dan upload gambar tetap menuju Supabase Storage, bukan disimpan sebagai base64 di database.
 - [ ] Lampiran `.ppt` dan `.pptx` tetap terlihat di file picker Logbook dan Work Talk, maksimal 20 MB per file.
+- [ ] File attachment baru Logbook/Portfolio/Work Talk memakai `workboard-private` dan authenticated download; record legacy dengan `url` tetap dapat dibuka.
 - [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
 - [ ] Numbering hasil paste tidak kembali ke angka 1 setelah bullet, paragraf kosong, atau blok daftar terpisah.
 - [ ] Search bebas pada setiap panel menemukan kata dari isi penuh, rich text, tag, tanggal, status, dan nama lampiran tanpa membuka data privat user lain.
@@ -718,6 +723,17 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v103 Authenticated Private File Attachments
+
+- File attachment baru pada Logbook, Portfolio, dan Work Talk tidak lagi dibuat sebagai public URL.
+- WorkBoard menyimpan attachment baru sebagai metadata `bucket` + `path` di bucket private `workboard-private`, lalu mengunduhnya melalui Supabase Storage client dengan sesi Auth aktif.
+- Path Logbook dan Portfolio membawa `record_id` sehingga policy Storage mengevaluasi visibility record saat file dibuka: Team/Company mengikuti akses record, Private hanya creator.
+- Path Work Talk membawa `channel_id` + `message_id`; policy Storage mengikuti visibility channel dan membatasi DM hanya kepada participant.
+- Record baru Logbook, Portfolio, dan Chat message sekarang membuat UUID di browser sebelum upload sehingga attachment dapat dikaitkan ke record/channel tanpa public URL.
+- Attachment legacy yang masih berbentuk `{name,url,...}` tetap kompatibel dan masih dibuka melalui URL lama; v103 tidak memindahkan atau menghapus file historis secara otomatis.
+- Embedded images dari Rich Text Editor sengaja belum dipindahkan pada patch ini karena URL gambar tersimpan di HTML body dan memerlukan migrasi terpisah agar tidak merusak Notes/Notepad/Logbook lama.
+- Membutuhkan bucket private `workboard-private` dan SQL `WORKBOARD_STORAGE_V103_PRIVATE_ATTACHMENTS.sql`; role, Users & Access, Leave Management, dan tabel data aplikasi tidak diubah.
 
 ### 20 Agustus 2026 — v102 Management Approved Leave Reporting
 

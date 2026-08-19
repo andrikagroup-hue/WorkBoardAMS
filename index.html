@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v102 — Management Approved Leave Reporting — 20 Aug 2026 -->
+<!-- WorkBoard AMS v103 — Authenticated Private File Attachments — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -677,6 +677,9 @@ textarea { resize: vertical; }
   background:var(--bg2); color:var(--text2); font-size:10px; text-decoration:none; max-width:100%;
 }
 .portfolio-attachment span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:190px; }
+button.portfolio-attachment, button.chat-attach-chip, button.wb-secure-attachment {
+  border:0; font-family:inherit; cursor:pointer;
+}
 .portfolio-actions { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; justify-content:flex-end; }
 .portfolio-empty { padding:24px; text-align:center; color:var(--text3); font-size:12px; border:1px dashed var(--border2); border-radius:10px; }
 .portfolio-file-preview { display:flex; gap:5px; flex-wrap:wrap; margin-top:7px; }
@@ -5870,10 +5873,7 @@ function portfolioFilteredRows(rows) {
 function portfolioAttachmentHtml(row) {
   const attachments = Array.isArray(row.attachments) ? row.attachments : [];
   if (!attachments.length) return '';
-  return `<div class="portfolio-attachments">${attachments.map(a => `
-    <a class="portfolio-attachment" href="${escAttr(a.url || '#')}" target="_blank" rel="noopener" title="${escAttr(a.name || 'Attachment')}">
-      <i class="ti ${fileIconFor(a.name || '')}"></i><span>${escHtml(a.name || 'Attachment')}</span>
-    </a>`).join('')}</div>`;
+  return `<div class="portfolio-attachments">${attachments.map(a => storedAttachmentHtml(a, 'portfolio-attachment')).join('')}</div>`;
 }
 
 function portfolioValuesHtml(row) {
@@ -6028,9 +6028,11 @@ async function savePortfolio() {
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = portfolioPendingFiles.length ? 'Uploading attachments...' : 'Saving...'; }
 
   try {
+    const recordId = editingPortfolioId || wbNewRecordId();
+    const isPrivate = document.getElementById('portfolio-privacy')?.value === 'true';
     let newFiles = [];
     if (portfolioPendingFiles.length) {
-      newFiles = await uploadFilesToStorage(portfolioPendingFiles, 'portfolio');
+      newFiles = await uploadSecureFilesToStorage(portfolioPendingFiles, 'portfolio', recordId);
     }
     const attachments = [...portfolioAttachments, ...newFiles];
     const outcome = document.getElementById('portfolio-outcome')?.value || 'pending';
@@ -6062,7 +6064,7 @@ async function savePortfolio() {
       vendor_value: portfolioValueNumber(document.getElementById('portfolio-vendor-value')?.value),
       final_order_value: portfolioValueNumber(document.getElementById('portfolio-final-order-value')?.value),
       attachments,
-      is_private: document.getElementById('portfolio-privacy')?.value === 'true',
+      is_private: isPrivate,
       updated_at: new Date().toISOString()
     };
 
@@ -6070,6 +6072,7 @@ async function savePortfolio() {
     if (editingPortfolioId) {
       ({ error } = await withTimeout(sb.from('project_portfolio').update(payload).eq('id', editingPortfolioId), 15000));
     } else {
+      payload.id = recordId;
       payload.created_by = getUser();
       ({ error } = await withTimeout(sb.from('project_portfolio').insert(payload), 15000));
     }
@@ -7613,7 +7616,9 @@ function filterSupportedAttachments(files) {
   return valid;
 }
 
-// Upload satu atau beberapa file ke Supabase Storage, kembalikan array {name,url,size,type}
+// Legacy public upload helper is kept only for rich-text embedded images until their
+// dedicated private-image migration is completed. File attachments use the authenticated
+// private bucket helper below and never receive a public URL.
 async function uploadFilesToStorage(fileList, folder) {
   const uploaded = [];
   for (const file of fileList) {
@@ -7625,6 +7630,98 @@ async function uploadFilesToStorage(fileList, folder) {
     uploaded.push({ name: file.name, url: pub.publicUrl, size: file.size, type: file.type });
   }
   return uploaded;
+}
+
+const WB_SECURE_ATTACHMENT_BUCKET = 'workboard-private';
+
+function wbRandomFileToken() {
+  try { return crypto.randomUUID().slice(0, 8); }
+  catch (_) { return Math.random().toString(36).slice(2, 10); }
+}
+
+function wbNewRecordId() {
+  try { return crypto.randomUUID(); }
+  catch (_) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+}
+
+async function uploadSecureFilesToStorage(fileList, resource, recordId, options = {}) {
+  const uid = currentAuthUser?.id;
+  if (!uid) { alert('Please sign in again before uploading attachments.'); return []; }
+  if (!recordId) { alert('Attachment record ID is missing.'); return []; }
+  const uploaded = [];
+  const channelId = options.channelId || '';
+  for (const file of fileList) {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const stamp = `${Date.now()}-${wbRandomFileToken()}-${safeName}`;
+    let path;
+    if (resource === 'chat') {
+      if (!channelId) { alert('Chat channel is missing.'); continue; }
+      path = `chat/${channelId}/${recordId}/${uid}/${stamp}`;
+    } else {
+      path = `${resource}/${recordId}/${uid}/${stamp}`;
+    }
+    const { error } = await sb.storage.from(WB_SECURE_ATTACHMENT_BUCKET).upload(path, file);
+    if (error) {
+      alert('Failed to upload "' + file.name + '": ' + error.message);
+      continue;
+    }
+    uploaded.push({
+      name: file.name,
+      bucket: WB_SECURE_ATTACHMENT_BUCKET,
+      path,
+      size: file.size,
+      type: file.type,
+      secure: true
+    });
+  }
+  return uploaded;
+}
+
+function isSecureAttachment(a) {
+  return !!(a && a.bucket && a.path);
+}
+
+function storedAttachmentHtml(a, className = '', extraStyle = '') {
+  const name = a?.name || 'Attachment';
+  const inner = `<i class="ti ${fileIconFor(name)}"></i><span>${escHtml(name)}</span>`;
+  if (isSecureAttachment(a)) {
+    return `<button type="button" class="${escAttr((className + ' wb-secure-attachment').trim())}" style="${escAttr(extraStyle)}" data-bucket="${escAttr(a.bucket)}" data-path="${escAttr(a.path)}" data-name="${escAttr(name)}" onclick="downloadSecureAttachment(this)" title="Download ${escAttr(name)}">${inner}</button>`;
+  }
+  const url = a?.url || '#';
+  return `<a class="${escAttr(className)}" style="${escAttr(extraStyle)}" href="${escAttr(url)}" target="_blank" rel="noopener" download="${escAttr(name)}" title="Download ${escAttr(name)}">${inner}</a>`;
+}
+
+async function downloadSecureAttachment(button) {
+  const bucket = button?.dataset?.bucket;
+  const path = button?.dataset?.path;
+  const name = button?.dataset?.name || 'attachment';
+  if (!bucket || !path) return alert('Attachment storage reference is incomplete.');
+  const oldHtml = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i><span>Opening...</span>';
+  try {
+    const { data, error } = await sb.storage.from(bucket).download(path);
+    if (error) throw error;
+    const objectUrl = URL.createObjectURL(data);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = name;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+  } catch (error) {
+    alert('Could not open attachment: ' + (error.message || error));
+  } finally {
+    button.disabled = false;
+    button.innerHTML = oldHtml;
+  }
 }
 
 // Render daftar lampiran yang sedang menempel di form (bisa dihapus sebelum simpan)
@@ -7674,11 +7771,12 @@ async function saveLog() {
   const saveBtn = document.getElementById('log-save-btn');
   const originalBtnText = saveBtn.textContent;
 
+  const recordId = editingLogId || wbNewRecordId();
   let newFiles = [];
   if (logPendingFiles.length) {
     saveBtn.textContent = 'Uploading attachments...';
     saveBtn.disabled = true;
-    newFiles = await uploadFilesToStorage(logPendingFiles, 'logbook');
+    newFiles = await uploadSecureFilesToStorage(logPendingFiles, 'logbook', recordId);
     saveBtn.disabled = false;
   }
   const attachments = [...logAttachments, ...newFiles];
@@ -7699,6 +7797,7 @@ async function saveLog() {
   if (editingLogId) {
     ({ error } = await sb.from('logbook_entries').update(payload).eq('id', editingLogId));
   } else {
+    payload.id = recordId;
     ({ error } = await sb.from('logbook_entries').insert(payload));
   }
   if (error) {
@@ -10434,7 +10533,7 @@ function displayLogbook(data) {
   const entriesHtml = activeRows.map((active) => {
     const attachHtml = (active.attachments && active.attachments.length) ? `
       <div class="log-attachments" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px">
-        ${active.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit" title="Download ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
+        ${active.attachments.map(a => storedAttachmentHtml(a, '', 'display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit')).join('')}
       </div>` : '';
     const tItem = active.tracker_item_id ? trackerStatusMap[active.tracker_item_id] : null;
     const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px" title="Linked to Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
@@ -10809,7 +10908,7 @@ function renderChatThread(messages) {
     const time = m.created_at ? new Date(m.created_at).toLocaleString('en-US', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
     const attachHtml = (m.attachments && m.attachments.length) ? `
       <div class="chat-attach-list">
-        ${m.attachments.map(a => `<a class="chat-attach-chip" href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" title="Download ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
+        ${m.attachments.map(a => storedAttachmentHtml(a, 'chat-attach-chip')).join('')}
       </div>` : '';
     const actionsHtml = own ? `
       <span class="chat-msg-actions">
@@ -10907,11 +11006,13 @@ async function sendChatMessage() {
 
   // ── Send new message ──
   if (!text && !chatAttachments.length) return;
+  const messageId = wbNewRecordId();
   let uploaded = [];
   if (chatAttachments.length) {
-    uploaded = await uploadFilesToStorage(chatAttachments, 'chat');
+    uploaded = await uploadSecureFilesToStorage(chatAttachments, 'chat', messageId, { channelId: activeChatChannelId });
   }
   const payload = {
+    id: messageId,
     channel_id: activeChatChannelId,
     sender: getUser(),
     body: text,
