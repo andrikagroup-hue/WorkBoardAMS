@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v99 — Approved Leave Integrity Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v100 — Schedule Output Escaping Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -6241,7 +6241,7 @@ async function renderScheduleWeekGlance(baseDateStr) {
     const dayEvents = data.filter(e => e.event_date === dStr);
     const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
     const evHtml = dayEvents.length
-      ? dayEvents.slice(0, 3).map(e => `<div class="sched-week-event-line">• ${e.title}</div>`).join('')
+      ? dayEvents.slice(0, 3).map(e => `<div class="sched-week-event-line">• ${escHtml(e.title || '')}</div>`).join('')
         + (dayEvents.length > 3 ? `<div class="sched-week-event-line">+${dayEvents.length - 3} lainnya</div>` : '')
       : `<div class="sched-week-empty">Tidak ada kegiatan</div>`;
     return `<div class="sched-week-item">
@@ -6266,14 +6266,14 @@ function displaySchedule(data) {
     evs.forEach(e => {
       const completed = e.category === 'green';
       html += `<div class="event-card ev-${e.category}" data-id="${e.id}">
-        <div class="ev-title">${e.title}
+        <div class="ev-title">${escHtml(e.title || '')}
           <span>
             <button class="ev-del" onclick="editSchedule('${e.id}')" aria-label="Edit" title="Edit"><i class="ti ti-pencil" aria-hidden="true"></i></button>
             <button class="ev-del" onclick="delSchedule('${e.id}')" aria-label="Delete"><i class="ti ti-x" aria-hidden="true"></i></button>
           </span>
         </div>
-        ${e.location ? `<div class="ev-meta"><i class="ti ti-map-pin" aria-hidden="true"></i> ${e.location}</div>` : ''}
-        <div class="ev-meta">${e.is_private ? '🔒 ' : ''}<i class="ti ti-user" aria-hidden="true"></i> ${e.created_by || '-'}</div>
+        ${e.location ? `<div class="ev-meta"><i class="ti ti-map-pin" aria-hidden="true"></i> ${escHtml(e.location)}</div>` : ''}
+        <div class="ev-meta">${e.is_private ? '🔒 ' : ''}<i class="ti ti-user" aria-hidden="true"></i> ${escHtml(e.created_by || '-')}</div>
         ${completed ? '<div class="schedule-complete-pill"><i class="ti ti-check"></i> Completed</div>' : `
           <div class="schedule-event-actions">
             <button class="focus-mini-btn today-action-done" onclick="scheduleDone('${e.id}')">Done</button>

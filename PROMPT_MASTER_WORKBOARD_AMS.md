@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `625647d70f330bba2d597b8c82efadb0f88c8bcc6304c77837f60c80af6801eb`
+**SHA-256 pasangan kode:** `fa3458938af1e6952edd7316042a48a08fe5cfa13a7e8fb2b7209bf3ec9c4693`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v99 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v100 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -717,6 +717,15 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v100 Schedule Output Escaping Fix
+
+- Menutup Stored XSS pada Daily Schedule dengan meng-escape output user sebelum dimasukkan ke `innerHTML`.
+- `title` Schedule di grid utama sekarang dirender melalui `escHtml()`.
+- `location` dan `created_by` pada kartu Schedule sekarang dirender melalui `escHtml()`.
+- `title` pada `Week at a Glance` juga dirender melalui `escHtml()`.
+- Tidak mengubah penyimpanan data, role, privasi, action Schedule, mobile navigation, atau tabel/database.
+- Tidak memerlukan SQL atau migrasi database baru.
 
 ### 20 Agustus 2026 — v99 Approved Leave Integrity Fix
 
