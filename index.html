@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v101 — Safe Attendance Setup SQL — 20 Aug 2026 -->
+<!-- WorkBoard AMS v102 — Management Approved Leave Reporting — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -8984,6 +8984,38 @@ function resultReportToday() {
   if (mode) mode.value = 'daily';
   renderManagementReport();
 }
+function managementAttendanceWithApprovedLeave(attendanceRows, leaveRows, range) {
+  const combined = [...(attendanceRows || [])];
+  const occupied = new Set(combined.map(r => `${managementNormalizeText(r.user_name)}|${String(r.tanggal || '').slice(0,10)}`));
+  const validTypes = new Set(['izin','sakit','cuti']);
+  (leaveRows || []).forEach(lv => {
+    const user = String(lv.user_name || '').trim();
+    const type = String(lv.tipe || '').trim();
+    if (!user || !validTypes.has(type) || !lv.dari_tanggal || !lv.sampai_tanggal) return;
+    let day = lv.dari_tanggal > range.start ? lv.dari_tanggal : range.start;
+    const last = lv.sampai_tanggal < range.end ? lv.sampai_tanggal : range.end;
+    while (day <= last) {
+      const key = `${managementNormalizeText(user)}|${day}`;
+      if (!occupied.has(key)) {
+        combined.push({
+          id:`leave_${lv.id}_${day}`,
+          _virtualLeave:true,
+          _leaveId:lv.id,
+          user_name:user,
+          tanggal:day,
+          status:type,
+          clock_in:null,
+          clock_out:null,
+          terlambat_menit:0,
+          keterangan:lv.alasan || ''
+        });
+        occupied.add(key);
+      }
+      day = addDaysStr(day, 1);
+    }
+  });
+  return combined.sort((a,b) => String(a.tanggal || '').localeCompare(String(b.tanggal || '')) || managementNormalizeText(a.user_name).localeCompare(managementNormalizeText(b.user_name)));
+}
 function managementAttendanceSummary(rows, employee, mode) {
   const labelMap = { hadir:'Present', terlambat:'Late', izin:'Leave', sakit:'Sick', cuti:'Time Off' };
   const totalMinutes = rows.reduce((sum,r)=>{
@@ -8994,7 +9026,11 @@ function managementAttendanceSummary(rows, employee, mode) {
   const hours = totalMinutes ? `${Math.floor(totalMinutes/60)}h ${Math.round(totalMinutes%60)}m` : '—';
   if (employee !== '__all__' && mode === 'daily') {
     const r = rows[0];
-    if (!r) return { title:`${employee} — no attendance record`, sub:'No Clock In / attendance record for this date.' };
+    if (!r) return { title:`${employee} — no attendance record`, sub:'No Clock In or approved leave record for this date.' };
+    if (['izin','sakit','cuti'].includes(r.status)) {
+      const label = labelMap[r.status] || r.status || 'Leave';
+      return { title:`${employee} — ${label}`, sub:`Approved ${label}${r.keterangan?` · ${r.keterangan}`:''}` };
+    }
     const ci = r.clock_in ? new Date(r.clock_in).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '—';
     const co = r.clock_out ? new Date(r.clock_out).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '—';
     return { title:`${employee} — ${labelMap[r.status] || r.status || 'Attendance'}`, sub:`Clock In ${ci} · Clock Out ${co} · Work time ${hours}${r.terlambat_menit?` · Late ${r.terlambat_menit} min`:''}` };
@@ -9002,7 +9038,7 @@ function managementAttendanceSummary(rows, employee, mode) {
   const counts = {};
   rows.forEach(r=>{ counts[r.status||'hadir']=(counts[r.status||'hadir']||0)+1; });
   const people = new Set(rows.map(r=>r.user_name).filter(Boolean)).size;
-  return { title:`${people} employee${people===1?'':'s'} with attendance records`, sub:`Present ${counts.hadir||0} · Late ${counts.terlambat||0} · Leave ${counts.izin||0} · Sick ${counts.sakit||0} · Time Off ${counts.cuti||0} · Total work ${hours}` };
+  return { title:`${people} employee${people===1?'':'s'} with attendance / approved leave records`, sub:`Present ${counts.hadir||0} · Late ${counts.terlambat||0} · Leave ${counts.izin||0} · Sick ${counts.sakit||0} · Time Off ${counts.cuti||0} · Total work ${hours}` };
 }
 async function renderManagementReport() {
   if (!hasManagementAccess()) return;
@@ -9020,13 +9056,14 @@ async function renderManagementReport() {
     const employeeSel = document.getElementById('result-employee-select');
     const employee = employeeSel?.value || (hasManagementAccess() ? '__all__' : getUser());
 
-    const [sRes,lRes,tRes,pRes,aRes,tdRes] = await Promise.all([
+    const [sRes,lRes,tRes,pRes,aRes,tdRes,leaveRes] = await Promise.all([
       withTimeout(sb.from('schedule_events').select('*').gte('event_date',range.start).lte('event_date',range.end).order('event_date').order('time_start'),15000),
       withTimeout(sb.from('logbook_entries').select('*').gte('entry_date',range.start).lte('entry_date',range.end).order('entry_date',{ascending:false}).order('created_at',{ascending:false}),15000),
       withTimeout(sb.from('time_plan_tracker').select('*'),15000).catch(error=>({data:[],error})),
       withTimeout(sb.from('project_portfolio').select('*').order('updated_at',{ascending:false}),15000).catch(error=>({data:[],error})),
       withTimeout(sb.from('attendance').select('*').gte('tanggal',range.start).lte('tanggal',range.end).order('tanggal'),15000).catch(error=>({data:[],error})),
-      withTimeout(sb.from('todos').select('*'),15000).catch(error=>({data:[],error}))
+      withTimeout(sb.from('todos').select('*'),15000).catch(error=>({data:[],error})),
+      withTimeout(sb.from('leave_requests').select('*').eq('status','approved').lte('dari_tanggal',range.end).gte('sampai_tanggal',range.start),15000).catch(error=>({data:[],error}))
     ]);
     if (sRes.error) throw sRes.error;
     if (lRes.error) throw lRes.error;
@@ -9035,7 +9072,9 @@ async function renderManagementReport() {
     let logs = managementEmployeeFilter(managementPublicRows(lRes.data), 'created_by', employee);
     let trackers = managementEmployeeFilter(managementPublicRows(tRes.data), 'created_by', employee);
     let portfolio = managementEmployeeFilter(managementPublicRows(pRes.data), 'created_by', employee);
-    let attendance = managementEmployeeFilter(aRes.data || [], 'user_name', employee);
+    if (leaveRes.error) console.warn('Management approved leave load failed:', leaveRes.error);
+    let attendance = managementAttendanceWithApprovedLeave(aRes.data || [], leaveRes.data || [], range);
+    attendance = managementEmployeeFilter(attendance, 'user_name', employee);
     let workTodos = managementEmployeeFilter(managementPublicRows(tdRes.data), 'created_by', employee);
 
     // Report is a reading layer, not a raw-table dump. Exact duplicate records are collapsed here

@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `7dabd9476f1ff4311473226bf91cdbe8deed5a3e8576bb8e21fa5bcb92825140`
+**SHA-256 pasangan kode:** `8c830637dcab134bc8d4e3a12c24f83d00cc1e2494220615e690d740b3c434fd`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v101 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v102 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -336,7 +336,7 @@ Aturan:
 | Communication | Work Talk | `chat_channels`, `chat_messages`, realtime, polling, DM, dan online presence |
 | HR | Attendance | `attendance`, foto, GPS, clock in/out |
 | HR | Leave Request | `leave_requests` |
-| Management | Management Report | Daily / Weekly / Monthly dari Schedule, Logbook aktual, Waiting/Carry Forward, Attendance, Portfolio/Project; analytics bulanan lama tetap tersedia |
+| Management | Management Report | Daily / Weekly / Monthly dari Schedule, Logbook aktual, Waiting/Carry Forward, Attendance + approved Leave/Sick/Time Off, Portfolio/Project; analytics bulanan lama tetap tersedia |
 | Resources | All Links | `app_links`; data bersama tim |
 | Resources | Password Manager | `vault_keys` dan `password_vault_v2`; private per user dan terenkripsi end-to-end |
 | Help | Guide & FAQ | Konten FAQ yang dirender JavaScript |
@@ -594,6 +594,7 @@ All Links saat ini memiliki:
 - `Management Report` adalah menu utama untuk role `Management` dan `Owner`, bukan submenu tersembunyi.
 - `Management` masuk langsung ke Management Report setelah login; `Owner` dan `Staff` masuk ke Today.
 - Filter report: `Daily`, `Weekly`, `Monthly`, reference date, dan employee atau `All Team`.
+- Attendance pada report utama menggabungkan row `attendance` dengan `leave_requests` berstatus `approved` yang overlap dengan periode. Approved Leave/Sick/Time Off dihitung per hari dalam range dan tidak diduplikasi jika user sudah memiliki attendance row pada tanggal yang sama.
 - Urutan utama: Planned, Plan Done, Completed, Unplanned, Waiting, Carry Forward, Attendance, Planned Activities, Completed Results, Waiting/Carry Forward, dan Project/Opportunity Status.
 - Report hanya memakai data kerja Team / Company yang diizinkan policy; Brain Dump, Notes private, Personal To Do private, Notepad, dan Password Manager tidak masuk report.
 - Management Report adalah **reading layer**, bukan raw-table dump. Exact duplicate Schedule/Completed records dikolaps pada tampilan report tanpa menghapus atau mengubah data sumber.
@@ -717,6 +718,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v102 Management Approved Leave Reporting
+
+- Management Report utama sekarang mengambil `leave_requests` berstatus `approved` dengan kondisi overlap **AND** terhadap range Daily / Weekly / Monthly.
+- Approved Leave / Sick / Time Off diubah menjadi virtual attendance row per tanggal hanya pada reading layer report; tidak membuat atau mengubah record di tabel `attendance`.
+- Jika user sudah memiliki attendance row pada tanggal yang sama, approved leave tidak ditambahkan lagi sehingga tidak terjadi double-count.
+- Daily report untuk satu employee sekarang menampilkan status Approved Leave / Sick / Time Off secara langsung, bukan `no attendance record`.
+- Weekly/Monthly attendance summary ikut menghitung total hari approved Leave / Sick / Time Off.
+- Tidak mengubah Leave Management, role, Users & Access, Attendance clock-in/out, atau RLS/database.
+- Tidak memerlukan SQL baru.
 
 ### 20 Agustus 2026 — v101 Safe Attendance Setup SQL
 
