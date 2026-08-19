@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 19 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `6af948fa0fe6c710d40a83b57b6d9706eeada87ffe6f7a8ec3ad8d90e217e00c`
+**SHA-256 pasangan kode:** `36f0d58a75c7d44518386b24b3cd76da9e136c45e0c396cf8f3c02ff3d6eb709`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v96 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v97 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -294,6 +294,7 @@ Snapshot ini dibuat dari `index.html` v96 yang dipasangkan dengan prompt ini.
 - Grup `Projects` membuka satu `Projects Workspace`; Portfolio, Tracker, Kanban, Gantt, Matrix, dan Recurring berpindah melalui tab internal.
 - Grup `Personal` hanya berisi Notes, To Do, dan Notepad. Brain Dump, Follow Up, dan Waiting disatukan di Capture.
 - Navigasi mobile memakai `Today`, `Daily`, `Projects`, `Report`, dan `More`; tombol `Report` hanya terlihat untuk Owner/Management.
+- Bottom navigation mobile memakai slot fleksibel: Owner/Management melihat 5 tombol tersebut, sedangkan Staff melihat 4 tombol karena `Report` disembunyikan. Tombol `More` wajib selalu terlihat dan membuka Notes, To Do, Notepad, Work Talk, Attendance, Resources, Password Manager, Help, serta Owner Controls sesuai role.
 - Global Search, Global Filter, Export, dan Work Alarm berada di top bar.
 - **Tidak ada tombol `+ Add` global di top bar.**
 
@@ -711,6 +712,14 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — v97 Mobile More Navigation Fix
+
+- Memperbaiki bottom navigation mobile yang berisi 5 tombol tetapi masih dirender dalam grid 4 kolom dengan `overflow:hidden`, sehingga tombol kelima `More` terpotong di HP Owner/Management.
+- Bottom navigation sekarang memakai slot flex yang membagi lebar otomatis: Owner/Management melihat `Today`, `Daily`, `Projects`, `Report`, `More`; Staff tetap mendapat 4 tombol karena `Report` disembunyikan.
+- `More` kembali selalu dapat dibuka untuk mengakses Notes, To Do, Notepad, Work Talk, Attendance, Resources, Password Manager, Help, dan Owner Controls sesuai role.
+- Tidak mengubah data, tabel, panel, hak akses, fungsi Notes/To Do/Notepad, atau navigasi desktop.
+- Tidak memerlukan SQL atau migrasi database.
 
 ### 19 Agustus 2026 — v96 Today Done Guard + Portfolio Total
 
