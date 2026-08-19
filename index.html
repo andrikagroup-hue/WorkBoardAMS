@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WorkBoard AMS — Daily Company Management</title>
-  <!-- WorkBoard v92 Management Report Dedup — 19 Aug 2026 -->
+  <!-- WorkBoard v93 Report Employee Cleanup — 19 Aug 2026 -->
 
   <!-- ── PWA: bisa di-"Add to Home Screen" jadi kayak app ── -->
   <link rel="manifest" href="manifest.json">
@@ -8770,7 +8770,8 @@ function managementPublicRows(data) {
 }
 function managementEmployeeFilter(rows, field, employee) {
   if (!employee || employee === '__all__') return rows || [];
-  return (rows || []).filter(row => String(row?.[field] || '') === String(employee));
+  const wanted = managementNormalizeText(employee);
+  return (rows || []).filter(row => managementNormalizeText(row?.[field]) === wanted);
 }
 function managementTagList(row) {
   return Array.isArray(row?.tags) ? row.tags : [];
@@ -8833,27 +8834,43 @@ function managementListHtml(items, emptyText, limit=12) {
   const visible = items.slice(0,limit);
   return visible.join('') + (items.length > limit ? `<div class="mr-more-note">+${items.length-limit} more in this period</div>` : '');
 }
+async function getManagementReportEmployees() {
+  const fallback = [getUser()].filter(Boolean);
+  try {
+    const { data, error } = await withTimeout(sb.rpc('workboard_report_employees'), 8000);
+    if (error) throw error;
+    const names = (data || []).map(row => {
+      if (typeof row === 'string') return row;
+      return row?.full_name || row?.name || '';
+    }).map(v => String(v || '').trim()).filter(Boolean);
+    if (!names.some(name => managementNormalizeText(name) === managementNormalizeText(getUser()))) names.push(getUser());
+    return [...new Map(names.map(name => [managementNormalizeText(name), name])).values()]
+      .sort((a,b)=>a.localeCompare(b));
+  } catch (err) {
+    console.warn('Management employee list fallback:', err);
+    return [...new Set(fallback)];
+  }
+}
 async function ensureManagementEmployeeOptions() {
   const sel = document.getElementById('result-employee-select');
   if (!sel) return;
   const manager = hasManagementAccess();
-  const roleKey = manager ? 'manager' : 'user';
+  const roleKey = `${getRole() || 'staff'}:${getUser()}`;
   if (!managementEmployeeOptionsLoaded || managementEmployeeOptionsRole !== roleKey) {
-    let users = [];
-    try { users = (await getAllKnownUsers()).map(u => u.name).filter(Boolean); } catch (_) {}
-    if (!users.includes(getUser())) users.push(getUser());
-    users = [...new Set(users)].sort((a,b)=>a.localeCompare(b));
+    const previous = sel.value;
+    const users = await getManagementReportEmployees();
     sel.innerHTML = (manager ? '<option value="__all__">All Team</option>' : '') +
       users.map(name => `<option value="${escAttr(name)}">${escHtml(name)}</option>`).join('');
     managementEmployeeOptionsLoaded = true;
     managementEmployeeOptionsRole = roleKey;
+    if (previous && [...sel.options].some(opt => opt.value === previous)) sel.value = previous;
   }
   if (!manager) {
     sel.value = getUser();
     sel.disabled = true;
   } else {
     sel.disabled = false;
-    if (!sel.value) sel.value = '__all__';
+    if (!sel.value || ![...sel.options].some(opt => opt.value === sel.value)) sel.value = '__all__';
   }
 }
 function resultReportToday() {

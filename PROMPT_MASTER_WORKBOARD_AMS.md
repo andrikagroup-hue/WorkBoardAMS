@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 19 Agustus 2026
-**Pasangan kode terbaru:** `index(20260819-v92-MANAGEMENT-REPORT-DEDUP).html`
-**SHA-256 pasangan kode:** `ed6966e431d811ebe47af5845b19cc90729fa821b7ab824fa1a10bb5e96d3fff`
+**Pasangan kode terbaru:** `index.html`
+**SHA-256 pasangan kode:** `9ee2dc06eac94b2c5bae88fe9d60de34af4863f30ceebe44e6baeb385f3fec65`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(20260819-v92-MANAGEMENT-REPORT-DEDUP).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v93 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -685,6 +685,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — v93 Report Employee Cleanup
+
+- Membersihkan dropdown `Employee` pada Management Report agar hanya menampilkan akun WorkBoard aktif dari `workboard_profiles`, bukan nama legacy/test yang pernah tersimpan di Schedule, Logbook, Attendance, Chat, atau tabel lama.
+- Menambahkan RPC aman `workboard_report_employees()` yang hanya mengembalikan nama aktif; Owner/Management dapat melihat daftar nama untuk report tanpa membuka email profile.
+- Filter employee dibuat case-insensitive sehingga data legacy seperti `andri` tetap dapat dibaca saat profile aktif bernama `Andri`.
+- `All Team` tetap mempertahankan data historis perusahaan; perubahan hanya membersihkan pilihan employee dan tidak menghapus data lama.
+- Standar file GitHub dikunci menjadi hanya `index.html` dan `PROMPT_MASTER_WORKBOARD_AMS.md`; nomor versi/changelog disimpan di dalam file, bukan nama file.
+- Perubahan berlaku pada Management Report desktop dan mobile karena keduanya memakai sumber opsi/filter yang sama.
+- Membutuhkan satu SQL kecil `WORKBOARD_AUTH_V93_REPORT_EMPLOYEE_NAMES.sql` setelah RLS v91 aktif.
 
 ### 19 Agustus 2026 — v92 Management Report Dedup
 
