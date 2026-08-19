@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 19 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `8f8c44ccbcc6655fae4476681ddd83dbbd723fb2f14777bf13fa469b74e7b497`
+**SHA-256 pasangan kode:** `4341b669ab2c55b227a648296fe84088430c9dd24a0e6931afe7fb4ad9d161b8`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v93 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v95 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -597,7 +597,7 @@ All Links saat ini memiliki:
 - Monthly Analytics & Attendance lama tetap tersedia dalam bagian expandable supaya layar utama lebih mudah dibaca.
 - Desktop memakai tombol utama `Management Report`; mobile memakai tombol `Report` yang hanya terlihat untuk Owner/Management.
 
-### 15.18 Logbook Actual-Work Rule — v94
+### 15.18 Logbook Actual-Work + Daily Binder — v95
 
 - Logbook kembali ke fungsi inti: **apa yang benar-benar SUDAH dikerjakan**, bukan histori perubahan state pekerjaan.
 - `Done` / `Done Now` boleh membuat Auto Logbook; `Waiting`, `Tomorrow / Carry Forward`, dan `Cancelled` tidak membuat Logbook baru.
@@ -606,6 +606,11 @@ All Links saat ini memiliki:
 - Exact duplicate legacy Auto Logbook dikolaps pada layer tampilan; tidak ada record database yang dihapus.
 - Legacy auto completed yang dulu tersimpan sebagai `Note` dinormalisasi pada tampilan menjadi `Report`; manual Note milik user tidak diubah.
 - Auto completed entry tanpa body menampilkan ringkasan sistem yang ringkas di halaman binder sehingga tidak tampak sebagai halaman kosong.
+- **Tampilan Logbook dikelompokkan per tanggal:** satu tanggal menjadi satu halaman binder, sedangkan setiap aktivitas tetap disimpan sebagai record `logbook_entries` terpisah agar integrasi Today, Management Report, source marker, tracker link, edit/delete, attachment, dan audit history tidak rusak.
+- Index binder di kiri menampilkan tanggal + jumlah aktivitas pada tanggal tersebut, bukan satu baris untuk setiap aktivitas.
+- Halaman kanan menampilkan seluruh completed activities pada tanggal aktif dalam satu halaman harian; setiap aktivitas tetap memiliki badge type, body/ringkasan, tag, attachment, Gemini, Edit, dan Delete sendiri.
+- Search dan tab All/Reports/Notes/Meetings/Issues tetap bekerja pada record yang cocok lalu hasilnya dikelompokkan kembali per tanggal.
+- Pada mobile, index tanggal berada di atas dan halaman harian di bawah melalui layout responsif yang sama; tidak ada alur data mobile terpisah.
 - Perubahan berlaku pada desktop dan mobile karena keduanya memakai `renderLogbook()` dan action flow yang sama.
 - Tidak memerlukan SQL baru.
 
@@ -635,6 +640,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] One Thing Now hanya menampilkan satu item utama dan tidak dibanjiri Schedule legacy lama.
 - [ ] Quick Capture dapat menyimpan Today, Follow Up, Waiting Reply, Project, Brain Dump, dan Done Now.
 - [ ] Aksi Done dari Today membuat Logbook otomatis tanpa input ulang.
+- [ ] Binder Logbook menampilkan satu halaman per tanggal dan seluruh completed activities pada tanggal tersebut tanpa menggabungkan record database sumber.
 - [ ] Waiting dan Tomorrow tetap muncul kembali saat waktunya tiba.
 - [ ] Schedule tetap dapat Add/Edit/Delete dan aksi Done/Waiting/Tomorrow tidak menghapus data rencana.
 - [ ] Portfolio default Needs Action, sementara Waiting/Upcoming/All tetap dapat dibuka.
@@ -699,6 +705,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — v95 Daily Logbook Binder
+
+- Mengubah **presentation layer** Logbook menjadi satu halaman binder per tanggal. Semua completed activities pada tanggal yang sama tampil bersama dalam satu daily page.
+- Record `logbook_entries` **tidak digabung di database**. Setiap aktivitas tetap terpisah agar integrasi Today, Management Report, source marker/dedup, Tracker, attachment, edit/delete, export, dan audit history tetap aman.
+- Index kiri sekarang berisi tanggal + jumlah aktivitas + ringkasan tipe, bukan satu judul per record.
+- Daily page kanan menampilkan seluruh activity cards untuk tanggal aktif; tiap activity tetap punya type, waktu log, body/auto summary, tags, attachments, Gemini, Edit, dan Delete.
+- Search dan binder tabs tetap memfilter record terlebih dahulu, lalu hasil yang lolos dikelompokkan per tanggal.
+- Mobile memakai grouping yang sama; index tanggal menjadi bagian atas dan halaman harian berada di bawah.
+- Tidak memerlukan SQL baru dan tidak menghapus data lama.
 
 ### 19 Agustus 2026 — v94 Logbook Actual-Work Cleanup
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v94 — Logbook Actual-Work Cleanup — 19 Aug 2026 -->
+<!-- WorkBoard AMS v95 — Daily Logbook Binder — 19 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -866,6 +866,30 @@ textarea { resize: vertical; }
 .np-page-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .np-page-body { font-size: 13.5px; line-height: 1.95; color: var(--text2); }
 .np-empty-page { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text3); font-size: 13px; }
+
+/* Logbook v95 — one binder page per calendar date; source entries stay separate in Supabase. */
+.log-day-index-title { font-size: 15px; font-weight: 800; color: var(--text1); line-height: 1.2; }
+.log-day-index-count { font-size: 10.5px; color: var(--text3); margin-top: 4px; }
+.log-day-page-title { font-size: 23px; font-weight: 750; font-family: Georgia, 'Times New Roman', serif; color: var(--text1); line-height: 1.25; }
+.log-day-page-sub { font-size: 11.5px; color: var(--text3); margin-top: 5px; }
+.log-day-entries { display: grid; gap: 13px; }
+.log-day-entry { background: rgba(255,255,255,.58); border: 1px solid rgba(47,99,100,.13); border-radius: 12px; padding: 14px 15px; box-shadow: 0 1px 5px rgba(60,40,50,.035); }
+.log-day-entry-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding-bottom:8px; margin-bottom:8px; border-bottom:1px dashed rgba(0,0,0,.12); }
+.log-day-entry-title { font-size:14px; font-weight:750; color:var(--text1); line-height:1.4; }
+.log-day-entry-meta { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:4px; font-size:10.5px; color:var(--text3); }
+.log-day-entry-body { font-size:12.5px; color:var(--text2); line-height:1.7; }
+.log-day-entry .log-tags { margin-top:9px !important; }
+.log-day-entry .np-page-actions { opacity:.78; }
+.log-day-entry:hover .np-page-actions { opacity:1; }
+
+@media (max-width:720px) {
+  .log-day-page-title { font-size:19px; }
+  .log-day-entry { padding:12px; }
+  .log-day-entry-head { gap:6px; }
+  .log-day-entry-title { font-size:13px; }
+  .log-day-entry .np-page-actions { opacity:1; }
+  .np-page-wrap { padding:20px 16px; }
+}
 
 /* 5 palet pastel Notepad — sesuai referensi cover & tab */
 .np-pink   { --np-bg: #FBEEF1; --np-accent: #EFB3C2; }
@@ -10262,40 +10286,90 @@ function logbookAutoSummary(row) {
   return `<div style="display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid rgba(47,99,100,.14);border-radius:10px;background:rgba(255,255,255,.55);font-size:12px;color:var(--text2)"><i class="ti ti-circle-check" style="color:#16a34a;font-size:16px"></i><span><strong style="color:var(--text1)">${escHtml(source)}</strong><br><span style="font-size:11px;opacity:.72">Logged automatically from WorkBoard.</span></span></div>`;
 }
 
+function logbookDayKey(row) {
+  if (row?.entry_date) return String(row.entry_date).slice(0,10);
+  if (row?.created_at) return new Date(row.created_at).toISOString().slice(0,10);
+  return 'undated';
+}
+
+function logbookDayLabel(dayKey, longForm=false) {
+  if (!dayKey || dayKey === 'undated') return 'Undated';
+  const d = new Date(dayKey + 'T00:00:00');
+  return d.toLocaleDateString('en-US', longForm
+    ? { weekday:'long', day:'2-digit', month:'long', year:'numeric' }
+    : { day:'2-digit', month:'short', year:'numeric' });
+}
+
 function displayLogbook(data) {
   logbookViewCache = Array.isArray(data) ? data : [];
   const typeLabel = {meeting:'Meeting',report:'Report',note:'Note',issue:'Issue'};
   const list = document.getElementById('logbook-list');
   if (!data || !data.length) { list.innerHTML = '<div class="empty-msg">No matching entries.</div>'; logActiveId = null; return; }
-  if (!logActiveId || !data.some(l => l.id === logActiveId)) logActiveId = data[0].id;
 
-  const indexHtml = data.map((l, i) => {
+  // Keep every activity as its own database record for Today, Report, edit/delete, source markers,
+  // and tracker links. The binder is only grouped visually so one calendar day = one page.
+  const groups = [];
+  const byDay = new Map();
+  for (const row of data) {
+    const key = logbookDayKey(row);
+    if (!byDay.has(key)) {
+      const group = { key, rows: [] };
+      byDay.set(key, group);
+      groups.push(group);
+    }
+    byDay.get(key).rows.push(row);
+  }
+
+  let activeDay = null;
+  if (logActiveId) {
+    const selected = data.find(l => l.id === logActiveId);
+    if (selected) activeDay = logbookDayKey(selected);
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(String(logActiveId)) || logActiveId === 'undated') activeDay = logActiveId;
+  }
+  if (!activeDay || !byDay.has(activeDay)) activeDay = groups[0].key;
+  logActiveId = activeDay;
+
+  const indexHtml = groups.map((g, i) => {
     const c = NP_COLORS[i % NP_COLORS.length];
-    const d = l.entry_date ? new Date(l.entry_date + 'T00:00:00').toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}) : (l.created_at ? new Date(l.created_at).toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}) : '');
-    return `<div class="np-index-item ${c}${l.id === logActiveId ? ' active' : ''}" onclick="selectLogItem('${l.id}')">
-      <div class="np-index-title">${l.is_private?'🔒 ':''}${escHtml(l.title)}</div>
-      <div class="np-index-date">${d} · <span class="log-type lt-${l.type}" style="font-size:9px">${typeLabel[l.type]||l.type}</span></div>
+    const typeCounts = {};
+    g.rows.forEach(r => typeCounts[r.type] = (typeCounts[r.type] || 0) + 1);
+    const typeSummary = Object.entries(typeCounts).map(([type,count]) => `${count} ${typeLabel[type] || type}`).join(' · ');
+    return `<div class="np-index-item ${c}${g.key === activeDay ? ' active' : ''}" onclick="selectLogDay('${g.key}')">
+      <div class="log-day-index-title">${escHtml(logbookDayLabel(g.key))}</div>
+      <div class="log-day-index-count">${g.rows.length} ${g.rows.length === 1 ? 'activity' : 'activities'}${typeSummary ? ` · ${escHtml(typeSummary)}` : ''}</div>
     </div>`;
   }).join('');
 
-  const activeIdx = data.findIndex(l => l.id === logActiveId);
-  const active = data[activeIdx];
-  const activeColor = NP_COLORS[activeIdx % NP_COLORS.length];
-  const d = active.entry_date ? new Date(active.entry_date + 'T00:00:00').toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}) : (active.created_at ? new Date(active.created_at).toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}) : '');
-  const attachHtml = (active.attachments && active.attachments.length) ? `
-    <div class="log-attachments" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:12px">
-      ${active.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit" title="Download ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
-    </div>` : '';
-  const tItem = active.tracker_item_id ? trackerStatusMap[active.tracker_item_id] : null;
-  const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px;margin-left:6px" title="Terhubung ke Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
+  const activeIdx = groups.findIndex(g => g.key === activeDay);
+  const activeGroup = groups[activeIdx];
+  const activeColor = NP_COLORS[Math.max(0,activeIdx) % NP_COLORS.length];
 
-  list.innerHTML = `
-    <div class="np-index">${indexHtml}</div>
-    <div class="np-page-wrap ${activeColor}">
-      <div class="np-page-header">
+  // Old newest-first query order is retained in storage/cache, but a daily page reads more naturally
+  // from the earliest logged item to the latest. Missing created_at values keep their stable order.
+  const activeRows = [...activeGroup.rows].sort((a,b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return ta - tb;
+  });
+
+  const entriesHtml = activeRows.map((active) => {
+    const attachHtml = (active.attachments && active.attachments.length) ? `
+      <div class="log-attachments" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px">
+        ${active.attachments.map(a => `<a href="${a.url}" target="_blank" rel="noopener" download="${escHtml(a.name)}" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit" title="Download ${escHtml(a.name)}"><i class="ti ${fileIconFor(a.name)}"></i> ${escHtml(a.name)}</a>`).join('')}
+      </div>` : '';
+    const tItem = active.tracker_item_id ? trackerStatusMap[active.tracker_item_id] : null;
+    const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px" title="Linked to Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
+    const bodyHtml = String(active.body || '').trim() ? renderBody(active.body) : logbookAutoSummary(active);
+    const timeLabel = active.created_at ? new Date(active.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `<section class="log-day-entry">
+      <div class="log-day-entry-head">
         <div>
-          <div class="np-page-title">${active.is_private?'🔒 ':''}${escHtml(active.title)}</div>
-          <div class="np-page-date"><span class="log-type lt-${active.type}" style="margin-right:6px">${typeLabel[active.type]||active.type}</span>${d}${trackerBadge}</div>
+          <div class="log-day-entry-title">${active.is_private?'🔒 ':''}${escHtml(active.title)}</div>
+          <div class="log-day-entry-meta">
+            <span class="log-type lt-${active.type}">${typeLabel[active.type]||active.type}</span>
+            ${timeLabel ? `<span>${escHtml(timeLabel)}</span>` : ''}
+            ${trackerBadge}
+          </div>
         </div>
         <div class="np-page-actions">
           <button class="ev-del" onclick="openWritingAssistant('logbook','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
@@ -10303,15 +10377,34 @@ function displayLogbook(data) {
           <button class="ev-del" onclick="delLog('${active.id}')" title="Delete"><i class="ti ti-x"></i></button>
         </div>
       </div>
-      <div class="np-page-body ql-editor" style="padding:0">${renderBody(active.body)}</div>
-      <div class="log-tags" style="margin-top:12px">${(active.tags||[]).map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
+      <div class="log-day-entry-body ql-editor" style="padding:0">${bodyHtml}</div>
+      <div class="log-tags">${(active.tags||[]).map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
       ${attachHtml}
+    </section>`;
+  }).join('');
+
+  list.innerHTML = `
+    <div class="np-index">${indexHtml}</div>
+    <div class="np-page-wrap ${activeColor}">
+      <div class="np-page-header">
+        <div>
+          <div class="log-day-page-title">${escHtml(logbookDayLabel(activeDay, true))}</div>
+          <div class="log-day-page-sub">${activeRows.length} completed ${activeRows.length === 1 ? 'activity' : 'activities'} on this daily page</div>
+        </div>
+      </div>
+      <div class="log-day-entries">${entriesHtml}</div>
     </div>`;
 }
 
-function selectLogItem(id) {
-  logActiveId = id;
+function selectLogDay(dayKey) {
+  logActiveId = dayKey;
   displayLogbook(logbookViewCache.length ? logbookViewCache : logbookCache);
+}
+
+// Backward-compatible helper: if an old handler still selects a record ID, open that record's daily page.
+function selectLogItem(id) {
+  const row = (logbookViewCache.length ? logbookViewCache : logbookCache).find(x => x.id === id);
+  selectLogDay(row ? logbookDayKey(row) : id);
 }
 
 let notesActiveId = null;
