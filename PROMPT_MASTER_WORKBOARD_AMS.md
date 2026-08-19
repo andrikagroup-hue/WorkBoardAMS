@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 19 Agustus 2026
-**Pasangan kode terbaru:** `index(20260819-v91-AUTH-ROLES).html`
-**SHA-256 pasangan kode:** `12dd073cf21566e24746f436d1f3fc11eac870b322c6ea100eae887291d37911`
+**Pasangan kode terbaru:** `index(20260819-v92-MANAGEMENT-REPORT-DEDUP).html`
+**SHA-256 pasangan kode:** `ed6966e431d811ebe47af5845b19cc90729fa821b7ab824fa1a10bb5e96d3fff`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(20260819-v91-AUTH-ROLES).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(20260819-v92-MANAGEMENT-REPORT-DEDUP).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -587,7 +587,11 @@ All Links saat ini memiliki:
 - Filter report: `Daily`, `Weekly`, `Monthly`, reference date, dan employee atau `All Team`.
 - Urutan utama: Planned, Plan Done, Completed, Unplanned, Waiting, Carry Forward, Attendance, Planned Activities, Completed Results, Waiting/Carry Forward, dan Project/Opportunity Status.
 - Report hanya memakai data kerja Team / Company yang diizinkan policy; Brain Dump, Notes private, Personal To Do private, Notepad, dan Password Manager tidak masuk report.
-- Waiting/carry-forward memakai event/status yang sudah dihasilkan workflow Today dan Logbook, dengan deduplikasi agar satu action tidak dihitung dua kali.
+- Management Report adalah **reading layer**, bukan raw-table dump. Exact duplicate Schedule/Completed records dikolaps pada tampilan report tanpa menghapus atau mengubah data sumber.
+- Jika satu action sudah Done lalu next state-nya Waiting, report menampilkan **satu cerita** di Completed dengan badge `Done → Waiting`, bukan mengulang item yang sama lagi di Waiting.
+- Untuk periode yang mencakup hari ini, Waiting membaca **current state** dari To Do/Portfolio/Tracker dan tidak lagi mencampur history waiting Logbook. Untuk periode lampau, history waiting Logbook tetap dapat dipakai sebagai jejak periode tersebut.
+- Portfolio berstatus Waiting ditampilkan sebagai attention item dan tidak diulang lagi di `Project / Opportunity Status`; bagian Project Status hanya menampilkan opportunity aktif non-waiting.
+- Planned yang judulnya sama tetap boleh tampil lebih dari sekali jika waktu/lokasi berbeda; hanya record Schedule yang benar-benar identik yang dikolaps.
 - Monthly Analytics & Attendance lama tetap tersedia dalam bagian expandable supaya layar utama lebih mudah dibaca.
 - Desktop memakai tombol utama `Management Report`; mobile memakai tombol `Report` yang hanya terlihat untuk Owner/Management.
 
@@ -681,6 +685,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — v92 Management Report Dedup
+
+- Merapikan Management Report agar satu pekerjaan tidak muncul berulang di beberapa bagian hanya karena sumber datanya berasal dari Schedule, Logbook, Waiting state, atau Portfolio.
+- Mengkolaps exact duplicate `Completed Results` pada layer report tanpa menghapus data Logbook lama. Contoh dua record identik pada hari/user/body yang sama hanya dibaca sebagai satu hasil oleh report.
+- Exact duplicate Schedule juga dikolaps; Schedule dengan judul sama tetapi waktu/lokasi berbeda tetap dianggap aktivitas terpisah.
+- Action yang selesai lalu masuk Waiting digabung menjadi satu card `Done → Waiting` di Completed, bukan diulang lagi di Waiting.
+- Waiting untuk periode yang mencakup hari ini menggunakan current state; waiting history Logbook tidak dicampur ke daftar current attention.
+- Portfolio Waiting tidak diulang lagi di Project Status; Project Status hanya berisi opportunity aktif non-waiting.
+- Perubahan hanya pada layer Management Report desktop/mobile dan helper dedupe; tidak ada data database yang dihapus dan tidak membutuhkan SQL baru.
 
 ### 19 Agustus 2026 — v91 Authentication & Roles
 

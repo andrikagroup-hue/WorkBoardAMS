@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WorkBoard AMS — Daily Company Management</title>
-  <!-- WorkBoard v91 Auth & Roles — 19 Aug 2026 -->
+  <!-- WorkBoard v92 Management Report Dedup — 19 Aug 2026 -->
 
   <!-- ── PWA: bisa di-"Add to Home Screen" jadi kayak app ── -->
   <link rel="manifest" href="manifest.json">
@@ -8775,6 +8775,52 @@ function managementEmployeeFilter(rows, field, employee) {
 function managementTagList(row) {
   return Array.isArray(row?.tags) ? row.tags : [];
 }
+function managementNormalizeText(value) {
+  return String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\[[^\]]+\]/g, ' ')
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+function managementOwnerTitleKey(owner, title) {
+  return `${managementNormalizeText(owner)}|${managementNormalizeText(title)}`;
+}
+function managementDedupeScheduleRows(rows) {
+  const seen = new Set();
+  return (rows || []).filter(row => {
+    const key = [
+      managementNormalizeText(row.created_by),
+      String(row.event_date || '').slice(0,10),
+      String(row.time_start || '').slice(0,5),
+      managementNormalizeText(row.title),
+      managementNormalizeText(row.location)
+    ].join('|');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+function managementDedupeCompletedLogs(rows) {
+  const map = new Map();
+  (rows || []).forEach(row => {
+    const key = [
+      managementNormalizeText(row.created_by),
+      String(row.entry_date || '').slice(0,10),
+      managementNormalizeText(row.title),
+      managementNormalizeText(row.body)
+    ].join('|');
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, { ...row, tags:[...new Set(managementTagList(row))], _mergedCount:1 });
+      return;
+    }
+    existing._mergedCount += 1;
+    existing.tags = [...new Set([...managementTagList(existing), ...managementTagList(row)])];
+  });
+  return [...map.values()];
+}
 function managementDateInRange(value, start, end) {
   const d = String(value || '').slice(0,10);
   return !!d && d >= start && d <= end;
@@ -8871,56 +8917,80 @@ async function renderManagementReport() {
     let attendance = managementEmployeeFilter(aRes.data || [], 'user_name', employee);
     let workTodos = managementEmployeeFilter(managementPublicRows(tdRes.data), 'created_by', employee);
 
-    const completedLogs = logs.filter(l => {
+    // Report is a reading layer, not a raw-table dump. Exact duplicate records are collapsed here
+    // without deleting or rewriting the underlying WorkBoard history.
+    schedule = managementDedupeScheduleRows(schedule);
+    const completedLogs = managementDedupeCompletedLogs(logs.filter(l => {
       const tags=managementTagList(l);
       return !tags.includes('waiting') && !tags.includes('cancelled') && !tags.includes('carried-forward');
-    });
+    }));
     const unplanned = completedLogs.filter(l => managementTagList(l).includes('unplanned'));
-    const waitingLogs = logs.filter(l => managementTagList(l).includes('waiting'));
     const carryLogs = logs.filter(l => managementTagList(l).includes('carried-forward'));
     const schedDone = schedule.filter(e => e.category === 'green');
     const planRate = schedule.length ? Math.round(schedDone.length / schedule.length * 100) : 0;
 
-    const currentWaitingPortfolio = portfolio.filter(r => portfolioIsWaitingState(r) && !portfolioIsClosed(r));
-    const currentWaitingTracker = trackers.filter(t => t.status === 'on_hold');
-    const currentWaitingTodos = workTodos.filter(t => !t.is_done && focusIsWaiting(t));
-    const currentCarryTodos = workTodos.filter(t => !t.is_done && focusIsCarry(t) && (!t.due_date || t.due_date <= range.end));
+    const today = todayStr();
+    const rangeIncludesToday = today >= range.start && today <= range.end;
+    const historicalWaitingLogs = rangeIncludesToday ? [] : logs.filter(l => managementTagList(l).includes('waiting'));
+    const currentWaitingPortfolio = rangeIncludesToday ? portfolio.filter(r => portfolioIsWaitingState(r) && !portfolioIsClosed(r)) : [];
+    const currentWaitingTracker = rangeIncludesToday ? trackers.filter(t => t.status === 'on_hold') : [];
+    const currentWaitingTodos = rangeIncludesToday ? workTodos.filter(t => !t.is_done && focusIsWaiting(t)) : [];
+    const currentCarryTodos = rangeIncludesToday ? workTodos.filter(t => !t.is_done && focusIsCarry(t) && (!t.due_date || t.due_date <= range.end)) : [];
+
     const waitingEntries = [];
     const waitingSeen = new Set();
-    const addWaitingEntry = (title, meta, owner='') => {
-      const key = `${String(owner||'').toLowerCase()}|${String(title||'').toLowerCase().replace(/\s+/g,' ').trim()}`;
+    const addWaitingEntry = (title, meta, owner='', source='') => {
+      const key = managementOwnerTitleKey(owner, title);
       if (waitingSeen.has(key)) return;
       waitingSeen.add(key);
-      waitingEntries.push({title,meta});
+      waitingEntries.push({title,meta,owner,key,source});
     };
-    waitingLogs.forEach(l => addWaitingEntry(
+    historicalWaitingLogs.forEach(l => addWaitingEntry(
       l.title || 'Waiting',
       `${l.entry_date}${employee==='__all__'&&l.created_by?` · ${l.created_by}`:''}${l.body?` · ${String(l.body).replace(/<[^>]*>/g,'').slice(0,90)}`:''}`,
-      l.created_by
+      l.created_by,
+      'history'
     ));
     currentWaitingTodos.forEach(t => addWaitingEntry(
       stripTodoInternalMarkers(t.text) || 'Waiting',
       `${t.due_date?`Review ${t.due_date}`:'Waiting for reply'}${employee==='__all__'&&t.created_by?` · ${t.created_by}`:''}`,
-      t.created_by
+      t.created_by,
+      'todo'
     ));
     currentWaitingPortfolio.forEach(r => addWaitingEntry(
       r.next_action || r.title || 'Portfolio waiting',
       `${r.customer_name||''}${r.next_action_date?` · review ${r.next_action_date}`:''}${employee==='__all__'&&r.created_by?` · ${r.created_by}`:''}`,
-      r.created_by
+      r.created_by,
+      'portfolio'
     ));
     currentWaitingTracker.forEach(t => addWaitingEntry(
       t.subject || 'Project waiting',
       `${t.due_date?`Review ${t.due_date}`:'On Hold'}${employee==='__all__'&&t.created_by?` · ${t.created_by}`:''}`,
-      t.created_by
+      t.created_by,
+      'tracker'
     ));
+
+    // If an action was completed and its next state is Waiting, show one story in Completed
+    // (Done → Waiting) instead of repeating the same action in two report sections.
+    const completedKeys = new Set(completedLogs.map(l => managementOwnerTitleKey(l.created_by, l.title)));
+    const waitingContinuation = new Map();
+    const standaloneWaitingEntries = [];
+    waitingEntries.forEach(entry => {
+      if (completedKeys.has(entry.key)) {
+        if (!waitingContinuation.has(entry.key)) waitingContinuation.set(entry.key, entry);
+      } else {
+        standaloneWaitingEntries.push(entry);
+      }
+    });
     const waitingCount = waitingEntries.length;
+
     const carryEntries = [];
     const carrySeen = new Set();
     const addCarryEntry = (title, meta, owner='') => {
-      const key = `${String(owner||'').toLowerCase()}|${String(title||'').toLowerCase().replace(/\s+/g,' ').trim()}`;
+      const key = managementOwnerTitleKey(owner, title);
       if (carrySeen.has(key)) return;
       carrySeen.add(key);
-      carryEntries.push({title,meta});
+      carryEntries.push({title,meta,owner,key});
     };
     carryLogs.forEach(l => addCarryEntry(
       l.title || 'Carried forward',
@@ -8957,30 +9027,36 @@ async function renderManagementReport() {
     ));
     const completedItems = completedLogs.map(l => {
       const tags=managementTagList(l);
+      const continuation = waitingContinuation.get(managementOwnerTitleKey(l.created_by, l.title));
+      const baseMeta = `${l.entry_date}${ownerMeta(l)}${l.body?` · ${String(l.body).replace(/<[^>]*>/g,'').slice(0,90)}`:''}`;
+      const continuationMeta = continuation ? `${baseMeta} · Next: ${continuation.meta}` : baseMeta;
       return managementItemHtml(
         l.title || 'Completed activity',
-        `${l.entry_date}${ownerMeta(l)}${l.body?` · ${String(l.body).replace(/<[^>]*>/g,'').slice(0,90)}`:''}`,
-        tags.includes('unplanned')?'Unplanned':'Done',
-        tags.includes('unplanned')?'unplanned':'done'
+        continuationMeta,
+        continuation ? 'Done → Waiting' : (tags.includes('unplanned')?'Unplanned':'Done'),
+        continuation ? 'waiting' : (tags.includes('unplanned')?'unplanned':'done')
       );
     });
-    const pendingItems = waitingEntries.map(x => managementItemHtml(x.title, x.meta, 'Waiting','waiting'));
+    const pendingItems = standaloneWaitingEntries.map(x => managementItemHtml(x.title, x.meta, 'Waiting','waiting'));
     carryEntries.forEach(x => pendingItems.push(managementItemHtml(x.title, x.meta, 'Carry','carry')));
 
+    // A waiting Portfolio is already represented as an attention item above. Keep Project Status
+    // for active/non-waiting opportunities so the same project is not shown twice on one report.
     const activePortfolio = portfolio.filter(r => !portfolioIsClosed(r));
-    const projectItems = activePortfolio
+    const projectPortfolio = activePortfolio.filter(r => !portfolioIsWaitingState(r));
+    const projectItems = projectPortfolio
       .slice(0,12)
       .map(r => {
         const stage = PORTFOLIO_STAGE_LABEL[portfolioStage(r)] || portfolioStage(r) || 'Active';
         const title = r.customer_name ? `${r.customer_name} — ${r.title||'Opportunity'}` : (r.title||'Opportunity');
         const meta = `${stage}${r.next_action?` · Next: ${r.next_action}`:''}${r.next_action_date?` · ${r.next_action_date}`:''}${ownerMeta(r)}`;
-        return managementItemHtml(title, meta, portfolioIsWaitingState(r)?'Waiting':'Active', portfolioIsWaitingState(r)?'waiting':'');
+        return managementItemHtml(title, meta, 'Active', '');
       });
 
     document.getElementById('mr-planned-count').textContent=schedule.length;
     document.getElementById('mr-completed-count').textContent=completedLogs.length;
     document.getElementById('mr-pending-count').textContent=pendingItems.length;
-    document.getElementById('mr-project-count').textContent=activePortfolio.length;
+    document.getElementById('mr-project-count').textContent=projectPortfolio.length;
     document.getElementById('mr-planned-list').innerHTML=managementListHtml(plannedItems,'No planned activities for this period.');
     document.getElementById('mr-completed-list').innerHTML=managementListHtml(completedItems,'No completed activities recorded for this period.');
     document.getElementById('mr-pending-list').innerHTML=managementListHtml(pendingItems,'No waiting or carry-forward activity needs management attention.');
