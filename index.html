@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v103 — Authenticated Private File Attachments — 20 Aug 2026 -->
+<!-- WorkBoard AMS v104 — Attachment Display & Open Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -677,9 +677,30 @@ textarea { resize: vertical; }
   background:var(--bg2); color:var(--text2); font-size:10px; text-decoration:none; max-width:100%;
 }
 .portfolio-attachment span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:190px; }
-button.portfolio-attachment, button.chat-attach-chip, button.wb-secure-attachment {
-  border:0; font-family:inherit; cursor:pointer;
+.wb-secure-attachment, .wb-legacy-attachment {
+  font-family:inherit; cursor:pointer; pointer-events:auto; position:relative; z-index:2;
 }
+button.portfolio-attachment, button.chat-attach-chip, button.wb-secure-attachment {
+  border:0;
+}
+.log-entry-attachments {
+  margin-top:10px; padding-top:9px; border-top:1px dashed rgba(0,0,0,.12);
+  position:relative; z-index:2; clear:both;
+}
+.log-entry-attachments-label {
+  font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase;
+  letter-spacing:.04em; margin-bottom:6px;
+}
+.log-entry-attachments-list { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.log-entry-attachment-chip {
+  display:inline-flex; align-items:center; gap:5px; max-width:100%;
+  padding:5px 8px; border:1px solid var(--border2); border-radius:7px;
+  background:rgba(255,255,255,.76); color:var(--text2); font-size:10.5px;
+  text-decoration:none; cursor:pointer; pointer-events:auto; position:relative; z-index:3;
+}
+.log-entry-attachment-chip:hover { background:var(--bg2); color:var(--text1); }
+.log-entry-attachment-chip span { max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.log-entry-attachment-chip.is-loading { opacity:.65; cursor:wait; }
 .portfolio-actions { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; justify-content:flex-end; }
 .portfolio-empty { padding:24px; text-align:center; color:var(--text3); font-size:12px; border:1px dashed var(--border2); border-radius:10px; }
 .portfolio-file-preview { display:flex; gap:5px; flex-wrap:wrap; margin-top:7px; }
@@ -7690,38 +7711,46 @@ function storedAttachmentHtml(a, className = '', extraStyle = '') {
   const name = a?.name || 'Attachment';
   const inner = `<i class="ti ${fileIconFor(name)}"></i><span>${escHtml(name)}</span>`;
   if (isSecureAttachment(a)) {
-    return `<button type="button" class="${escAttr((className + ' wb-secure-attachment').trim())}" style="${escAttr(extraStyle)}" data-bucket="${escAttr(a.bucket)}" data-path="${escAttr(a.path)}" data-name="${escAttr(name)}" onclick="downloadSecureAttachment(this)" title="Download ${escAttr(name)}">${inner}</button>`;
+    return `<a href="#" role="button" class="${escAttr((className + ' wb-secure-attachment').trim())}" style="${escAttr(extraStyle)}" data-bucket="${escAttr(a.bucket)}" data-path="${escAttr(a.path)}" data-name="${escAttr(name)}" onclick="return downloadSecureAttachment(event,this)" title="Download ${escAttr(name)}">${inner}</a>`;
   }
   const url = a?.url || '#';
-  return `<a class="${escAttr(className)}" style="${escAttr(extraStyle)}" href="${escAttr(url)}" target="_blank" rel="noopener" download="${escAttr(name)}" title="Download ${escAttr(name)}">${inner}</a>`;
+  return `<a class="${escAttr((className + ' wb-legacy-attachment').trim())}" style="${escAttr(extraStyle)}" href="${escAttr(url)}" target="_blank" rel="noopener" download="${escAttr(name)}" title="Download ${escAttr(name)}">${inner}</a>`;
 }
 
-async function downloadSecureAttachment(button) {
-  const bucket = button?.dataset?.bucket;
-  const path = button?.dataset?.path;
-  const name = button?.dataset?.name || 'attachment';
-  if (!bucket || !path) return alert('Attachment storage reference is incomplete.');
-  const oldHtml = button.innerHTML;
-  button.disabled = true;
-  button.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i><span>Opening...</span>';
+async function downloadSecureAttachment(event, linkEl) {
+  if (event) { event.preventDefault(); event.stopPropagation(); }
+  const bucket = linkEl?.dataset?.bucket;
+  const path = linkEl?.dataset?.path;
+  const name = linkEl?.dataset?.name || 'attachment';
+  if (!bucket || !path) { alert('Attachment storage reference is incomplete.'); return false; }
+  if (linkEl.dataset.loading === '1') return false;
+  const oldHtml = linkEl.innerHTML;
+  linkEl.dataset.loading = '1';
+  linkEl.classList.add('is-loading');
+  linkEl.setAttribute('aria-busy','true');
+  linkEl.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i><span>Downloading...</span>';
   try {
     const { data, error } = await sb.storage.from(bucket).download(path);
     if (error) throw error;
+    if (!data) throw new Error('The attachment file could not be read.');
     const objectUrl = URL.createObjectURL(data);
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = name;
-    link.rel = 'noopener';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+    const dl = document.createElement('a');
+    dl.href = objectUrl;
+    dl.download = name;
+    dl.style.display = 'none';
+    document.body.appendChild(dl);
+    dl.click();
+    dl.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
   } catch (error) {
-    alert('Could not open attachment: ' + (error.message || error));
+    alert('Could not download attachment: ' + (error.message || error));
   } finally {
-    button.disabled = false;
-    button.innerHTML = oldHtml;
+    delete linkEl.dataset.loading;
+    linkEl.classList.remove('is-loading');
+    linkEl.removeAttribute('aria-busy');
+    linkEl.innerHTML = oldHtml;
   }
+  return false;
 }
 
 // Render daftar lampiran yang sedang menempel di form (bisa dihapus sebelum simpan)
@@ -10532,8 +10561,11 @@ function displayLogbook(data) {
 
   const entriesHtml = activeRows.map((active) => {
     const attachHtml = (active.attachments && active.attachments.length) ? `
-      <div class="log-attachments" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:10px">
-        ${active.attachments.map(a => storedAttachmentHtml(a, '', 'display:inline-flex;align-items:center;gap:3px;font-size:10px;background:rgba(0,0,0,0.06);border-radius:5px;padding:2px 6px;text-decoration:none;color:inherit')).join('')}
+      <div class="log-entry-attachments">
+        <div class="log-entry-attachments-label">Attachments</div>
+        <div class="log-entry-attachments-list">
+          ${active.attachments.map(a => storedAttachmentHtml(a, 'log-entry-attachment-chip')).join('')}
+        </div>
       </div>` : '';
     const tItem = active.tracker_item_id ? trackerStatusMap[active.tracker_item_id] : null;
     const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px" title="Linked to Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
@@ -10556,7 +10588,7 @@ function displayLogbook(data) {
         </div>
       </div>
       <div class="log-day-entry-body ql-editor" style="padding:0">${bodyHtml}</div>
-      <div class="log-tags">${(active.tags||[]).map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
+      <div class="log-tags">${(active.tags||[]).map(t=>`<span class="tag">#${escHtml(String(t))}</span>`).join('')}</div>
       ${attachHtml}
     </section>`;
   }).join('');

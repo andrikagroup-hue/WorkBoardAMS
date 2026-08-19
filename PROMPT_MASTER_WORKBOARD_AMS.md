@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `9c4df63f6257013f989950164d61c40a50c12c7b99587e96ef69db08c5d4e6f7`
+**SHA-256 pasangan kode:** `6cb532f30cfd5694e3ffb8aa9a65944cc0e3fc5b17b7534198cff08a1b3dd46c`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v103 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v104 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -536,6 +536,8 @@ All Links saat ini memiliki:
 - Validasi jenis dan ukuran file dilakukan kembali di JavaScript, bukan hanya melalui filter file picker.
 - Mulai v103, file attachment baru Logbook, Portfolio, dan Work Talk disimpan di bucket private `workboard-private`; metadata record menyimpan `bucket` + `path`, bukan public URL.
 - Akses download memakai sesi Supabase Auth dan Storage RLS: Logbook/Portfolio mengikuti visibility record, sedangkan Work Talk mengikuti visibility channel termasuk DM participant-only.
+- Mulai v104, secure attachment dirender sebagai link interaktif yang jelas dan memicu authenticated blob download; state `Downloading...` ditampilkan saat file sedang diambil.
+- Pada Logbook, attachment tampil di dalam activity card pada bagian `Attachments`, bukan sebagai chip terlepas di bawah halaman binder.
 - PowerPoint dibuka/diunduh melalui authenticated download; WorkBoard tidak menjalankan preview slide di dalam aplikasi.
 - File attachment legacy yang sudah lebih dulu memiliki `url` publik tetap kompatibel dan belum dipindahkan otomatis pada v103.
 - Embedded image dari Rich Text Editor masih memakai mekanisme legacy `attachments` sampai migrasi khusus image selesai.
@@ -621,6 +623,7 @@ All Links saat ini memiliki:
 - **Tampilan Logbook dikelompokkan per tanggal:** satu tanggal menjadi satu halaman binder, sedangkan setiap aktivitas tetap disimpan sebagai record `logbook_entries` terpisah agar integrasi Today, Management Report, source marker, tracker link, edit/delete, attachment, dan audit history tidak rusak.
 - Index binder di kiri menampilkan tanggal + jumlah aktivitas pada tanggal tersebut, bukan satu baris untuk setiap aktivitas.
 - Halaman kanan menampilkan seluruh completed activities pada tanggal aktif dalam satu halaman harian; setiap aktivitas tetap memiliki badge type, body/ringkasan, tag, attachment, Gemini, Edit, dan Delete sendiri.
+- Mulai v104, tag Logbook di-escape sebelum dirender dan attachment memiliki wrapper per-activity agar struktur HTML kartu tidak dapat rusak oleh isi tag serta file selalu tampil pada activity yang benar.
 - Search dan tab All/Reports/Notes/Meetings/Issues tetap bekerja pada record yang cocok lalu hasilnya dikelompokkan kembali per tanggal.
 - Pada mobile, index tanggal berada di atas dan halaman harian di bawah melalui layout responsif yang sama; tidak ada alur data mobile terpisah.
 - Perubahan berlaku pada desktop dan mobile karena keduanya memakai `renderLogbook()` dan action flow yang sama.
@@ -723,6 +726,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v104 Attachment Display & Open Fix
+
+- Memperbaiki attachment Logbook secure yang tersimpan tetapi tidak tampil konsisten sebagai bagian dari activity card.
+- Logbook sekarang menampilkan bagian `Attachments` di dalam setiap activity card; file tidak lagi tampak terlepas di bawah halaman binder.
+- Secure attachment dirender sebagai link interaktif dengan pointer state yang jelas dan authenticated blob download melalui sesi Supabase yang aktif.
+- Saat file diambil, label berubah menjadi `Downloading...`; kegagalan download menampilkan error yang eksplisit.
+- Tag Logbook sekarang di-escape sebelum masuk ke `innerHTML` untuk mencegah markup tag merusak struktur activity card.
+- Helper attachment yang sama tetap dipakai Portfolio dan Work Talk sehingga secure file tetap kompatibel; attachment legacy `{name,url}` tidak diubah.
+- Storage bucket, Storage RLS v103, role, Users & Access, Leave Management, dan database schema tidak diubah. Tidak membutuhkan SQL baru.
 
 ### 20 Agustus 2026 — v103 Authenticated Private File Attachments
 
