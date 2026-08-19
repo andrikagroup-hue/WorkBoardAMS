@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WorkBoard AMS — Daily Company Management</title>
-  <!-- Integrated Today v89 bugfix — 19 Aug 2026 -->
+  <!-- WorkBoard v91 Auth & Roles — 19 Aug 2026 -->
 
   <!-- ── PWA: bisa di-"Add to Home Screen" jadi kayak app ── -->
   <link rel="manifest" href="manifest.json">
@@ -1127,6 +1127,75 @@ body.editor-fullscreen-open { overflow: hidden; }
 .todo-del:hover { color: var(--danger); }
 
 /* ── Result ─────────────────────────────────── */
+.management-report-hero {
+  background: linear-gradient(135deg, #EEF4F1 0%, #F7F1E7 100%);
+  border: 1px solid var(--border2); border-radius: 14px; padding: 16px;
+  margin-bottom: 12px; box-shadow: 0 4px 16px rgba(47,99,100,.06);
+}
+.mr-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.mr-eyebrow { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); }
+.mr-title { font-size:21px; font-weight:800; color:var(--text1); margin-top:2px; }
+.mr-sub { font-size:11px; color:var(--text2); margin-top:4px; line-height:1.45; }
+.mr-live { font-size:10px; font-weight:800; color:#166534; background:#DCFCE7; border:1px solid #BBF7D0; border-radius:999px; padding:4px 8px; white-space:nowrap; }
+.mr-filter-grid { display:grid; grid-template-columns:150px 165px minmax(180px,1fr) auto; gap:8px; align-items:end; }
+.mr-field label { display:block; font-size:9.5px; font-weight:800; color:var(--text3); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.mr-field select, .mr-field input { width:100%; min-height:34px; background:rgba(255,255,255,.82); }
+.mr-summary { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; margin-bottom:12px; }
+.mr-stat { background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:11px 12px; min-width:0; }
+.mr-stat .label { font-size:9.5px; color:var(--text3); font-weight:700; line-height:1.25; }
+.mr-stat .value { font-size:22px; font-weight:800; color:var(--text1); margin-top:3px; }
+.mr-stat.planned { border-top:3px solid #2F6364; }
+.mr-stat.done { border-top:3px solid #22C55E; }
+.mr-stat.actual { border-top:3px solid #7FADD1; }
+.mr-stat.unplanned { border-top:3px solid #C08A3E; }
+.mr-stat.waiting { border-top:3px solid #A78BFA; }
+.mr-stat.carry { border-top:3px solid #F59E0B; }
+.mr-attendance-strip {
+  background:#F7F9F8; border:1px solid var(--border); border-radius:11px; padding:11px 13px;
+  margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+}
+.mr-attendance-main { display:flex; align-items:center; gap:9px; min-width:0; }
+.mr-attendance-icon { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:#E5F1EF; color:var(--accent); font-size:17px; }
+.mr-attendance-text strong { display:block; font-size:12px; color:var(--text1); }
+.mr-attendance-text span { display:block; font-size:10.5px; color:var(--text2); margin-top:2px; }
+.mr-report-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+.mr-section { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px; min-width:0; }
+.mr-section-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.mr-section-title { font-size:11px; font-weight:800; color:var(--text1); text-transform:uppercase; letter-spacing:.04em; }
+.mr-section-count { font-size:9.5px; color:var(--text2); background:var(--bg2); border-radius:999px; padding:2px 7px; }
+.mr-list { display:flex; flex-direction:column; gap:6px; }
+.mr-item { border:1px solid var(--border); border-radius:9px; padding:8px 9px; background:rgba(255,255,255,.7); }
+.mr-item-top { display:flex; align-items:flex-start; gap:7px; justify-content:space-between; }
+.mr-item-title { font-size:11.5px; font-weight:700; color:var(--text1); line-height:1.35; overflow-wrap:anywhere; }
+.mr-item-meta { font-size:9.5px; color:var(--text3); margin-top:3px; line-height:1.35; }
+.mr-pill { flex-shrink:0; font-size:8.5px; font-weight:800; border-radius:999px; padding:2px 6px; background:var(--bg2); color:var(--text2); }
+.mr-pill.done { background:#DCFCE7; color:#166534; }
+.mr-pill.waiting { background:#EEF3F6; color:#375665; }
+.mr-pill.carry { background:#FFF4D6; color:#7C5A16; }
+.mr-pill.unplanned { background:#FFF1E7; color:#92400E; }
+.mr-empty { font-size:10.5px; color:var(--text3); text-align:center; padding:14px 6px; border:1px dashed var(--border2); border-radius:9px; }
+.mr-more-note { font-size:9.5px; color:var(--text3); text-align:right; margin-top:6px; }
+.mr-plan-progress { display:flex; align-items:center; gap:10px; margin-bottom:12px; background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:10px 12px; }
+.mr-plan-bar { flex:1; height:8px; background:var(--bg2); border-radius:999px; overflow:hidden; }
+.mr-plan-fill { height:100%; background:var(--accent); border-radius:999px; }
+.mr-plan-text { font-size:10.5px; color:var(--text2); white-space:nowrap; }
+.mr-legacy-details { margin-top:14px; border:1px solid var(--border); border-radius:12px; background:var(--surface); overflow:hidden; }
+.mr-legacy-details > summary { cursor:pointer; list-style:none; padding:11px 13px; font-size:11px; font-weight:800; color:var(--text2); background:var(--bg2); }
+.mr-legacy-details > summary::-webkit-details-marker { display:none; }
+.mr-legacy-details > summary::before { content:'›'; display:inline-block; margin-right:7px; transition:transform .15s; }
+.mr-legacy-details[open] > summary::before { transform:rotate(90deg); }
+.mr-legacy-body { padding:12px; }
+@media (max-width:1000px) {
+  .mr-summary { grid-template-columns:repeat(3,1fr); }
+  .mr-filter-grid { grid-template-columns:1fr 1fr; }
+}
+@media (max-width:700px) {
+  .mr-report-grid { grid-template-columns:1fr; }
+  .mr-summary { grid-template-columns:repeat(2,1fr); }
+  .mr-filter-grid { grid-template-columns:1fr; }
+  .mr-head { flex-direction:column; }
+  .mr-title { font-size:18px; }
+}
 .result-header { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
 .res-card { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; border-left: 3px solid; }
 .rc-blue { border-color: #2F6364; }
@@ -1191,7 +1260,7 @@ body.editor-fullscreen-open { overflow: hidden; }
   color: var(--link-accent); font-size: 10.5px; font-weight: 700;
 }
 .link-grid {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 .link-card {
@@ -1922,9 +1991,133 @@ body.mobile-hub-open { overflow:hidden; }
   .portfolio-view-tabs { flex-wrap:nowrap; overflow-x:auto; padding-bottom:2px; }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTH GATE — Supabase Auth + WorkBoard roles (v91)
+   ═══════════════════════════════════════════════════════════════ */
+body.auth-pending .app, body.auth-guest .app { display:none !important; }
+body.authenticated .auth-gate { display:none !important; }
+.auth-gate {
+  position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center;
+  padding:22px; background:
+    radial-gradient(circle at 15% 15%, rgba(143,191,138,.22), transparent 34%),
+    radial-gradient(circle at 88% 14%, rgba(127,173,209,.20), transparent 30%),
+    linear-gradient(145deg,#EEEAE3 0%,#F7F4EE 44%,#E6EFED 100%);
+  overflow:auto;
+}
+.auth-shell { width:min(430px,100%); }
+.auth-brand { text-align:center; margin-bottom:14px; }
+.auth-logo-mark { width:58px; height:58px; margin:0 auto 9px; border-radius:18px; display:flex; align-items:center; justify-content:center; background:var(--accent); color:#fff; font-size:26px; box-shadow:0 10px 26px rgba(47,99,100,.18); }
+.auth-brand h1 { font-size:22px; color:var(--text1); letter-spacing:-.4px; }
+.auth-brand p { font-size:11px; color:var(--text2); margin-top:4px; }
+.auth-card { background:rgba(250,248,244,.96); border:1px solid rgba(47,99,100,.18); border-radius:18px; padding:18px; box-shadow:0 18px 50px rgba(42,38,34,.12); backdrop-filter:blur(12px); }
+.auth-tabs { display:grid; grid-template-columns:1fr 1fr; background:var(--bg2); border-radius:10px; padding:3px; margin-bottom:15px; }
+.auth-tab { border:0; background:transparent; color:var(--text2); border-radius:8px; padding:8px; font:inherit; font-size:11.5px; font-weight:750; cursor:pointer; }
+.auth-tab.active { background:var(--surface); color:var(--accent); box-shadow:0 2px 7px rgba(0,0,0,.06); }
+.auth-view { display:none; }
+.auth-view.active { display:block; }
+.auth-field { margin-bottom:10px; }
+.auth-field label { display:block; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--text3); margin:0 0 4px 2px; }
+.auth-field input, .auth-field select { width:100%; min-height:42px; font-size:13px; background:#fff; }
+.auth-primary { width:100%; justify-content:center; min-height:42px; font-weight:800; margin-top:4px; }
+.auth-divider { display:flex; align-items:center; gap:9px; color:var(--text3); font-size:9.5px; margin:14px 0; }
+.auth-divider::before,.auth-divider::after { content:''; height:1px; flex:1; background:var(--border); }
+.auth-google { width:100%; min-height:41px; justify-content:center; background:#fff; color:var(--text1); font-weight:750; }
+.auth-google-g { width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:#fff; border:1px solid #ddd; font-weight:900; color:#4285F4; }
+.auth-link-row { display:flex; justify-content:center; gap:8px; margin-top:12px; font-size:10.5px; color:var(--text3); }
+.auth-link { border:0; background:none; color:var(--accent); cursor:pointer; font:inherit; font-weight:750; padding:0; }
+.auth-message { display:none; margin-bottom:12px; border-radius:9px; padding:9px 10px; font-size:10.5px; line-height:1.45; }
+.auth-message.show { display:block; }
+.auth-message.info { background:#EEF3F6; color:#375665; border:1px solid #C8D6DE; }
+.auth-message.success { background:#ECF8EF; color:#166534; border:1px solid #BBE2C5; }
+.auth-message.error { background:#FFF0EE; color:#9F2D24; border:1px solid #E7B8B3; }
+.auth-role-note { background:#F7F1E7; border:1px solid #DED1BC; border-radius:9px; padding:8px 9px; font-size:10px; color:var(--text2); line-height:1.45; margin-top:7px; }
+.auth-mini-title { font-size:16px; font-weight:800; color:var(--text1); margin-bottom:5px; }
+.auth-mini-sub { font-size:10.5px; color:var(--text2); line-height:1.5; margin-bottom:13px; }
+.auth-footer { text-align:center; font-size:9.5px; color:var(--text3); margin-top:10px; }
+.user-role-chip { font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; padding:2px 6px; border-radius:999px; background:rgba(255,255,255,.16); color:var(--sb-text); }
+.account-signout-btn { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18); border-radius:5px; cursor:pointer; color:var(--sb-text); font-size:11px; padding:2px 6px; }
+.owner-access-row { display:grid; grid-template-columns:minmax(0,1.3fr) 145px 100px auto; gap:8px; align-items:center; width:100%; }
+.owner-access-email { font-size:10px; color:var(--text3); margin-top:2px; overflow-wrap:anywhere; }
+.owner-role-lock { font-size:10px; font-weight:800; color:#7C5A16; background:#FFF4D6; border:1px solid #E8D39D; border-radius:999px; padding:4px 8px; text-align:center; }
+.owner-active-badge { font-size:9.5px; font-weight:800; border-radius:999px; padding:4px 7px; text-align:center; }
+.owner-active-badge.on { background:#DCFCE7; color:#166534; }
+.owner-active-badge.off { background:#FEE2E2; color:#991B1B; }
+@media (max-width:700px) {
+  .auth-gate { padding:14px; align-items:flex-start; padding-top:7vh; }
+  .auth-card { border-radius:15px; padding:15px; }
+  .auth-brand h1 { font-size:20px; }
+  .owner-access-row { grid-template-columns:1fr; }
+  .owner-access-row .btn-sm { width:100%; justify-content:center; }
+}
+
   </style>
 </head>
-<body>
+<body class="auth-pending">
+
+<div class="auth-gate" id="auth-gate" aria-live="polite">
+  <div class="auth-shell">
+    <div class="auth-brand">
+      <div class="auth-logo-mark"><i class="ti ti-layout-dashboard"></i></div>
+      <h1>WorkBoard AMS</h1>
+      <p>Integrated Work Management · PT Andrika Mitra Solusi</p>
+    </div>
+    <div class="auth-card">
+      <div id="auth-message" class="auth-message"></div>
+
+      <div id="auth-standard-view">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="auth-tab-login" type="button" onclick="showAuthTab('login')">Sign In</button>
+          <button class="auth-tab" id="auth-tab-register" type="button" onclick="showAuthTab('register')">Create Account</button>
+        </div>
+
+        <div class="auth-view active" id="auth-view-login">
+          <div class="auth-field"><label>Email</label><input id="auth-login-email" type="email" autocomplete="email" placeholder="name@company.com" /></div>
+          <div class="auth-field"><label>Password</label><input id="auth-login-password" type="password" autocomplete="current-password" placeholder="Your password" onkeydown="if(event.key==='Enter')authSignIn()" /></div>
+          <button class="btn-sm btn-primary auth-primary" id="auth-login-btn" type="button" onclick="authSignIn()"><i class="ti ti-login-2"></i> Sign In</button>
+          <div class="auth-divider">OR</div>
+          <button class="btn-sm auth-google" type="button" onclick="authGoogle('login')"><span class="auth-google-g">G</span> Continue with Google</button>
+          <div class="auth-link-row"><button class="auth-link" type="button" onclick="authForgotPassword()">Forgot password?</button></div>
+        </div>
+
+        <div class="auth-view" id="auth-view-register">
+          <div class="auth-field"><label>Full Name</label><input id="auth-register-name" autocomplete="name" placeholder="Your name" /></div>
+          <div class="auth-field"><label>Email</label><input id="auth-register-email" type="email" autocomplete="email" placeholder="name@company.com" /></div>
+          <div class="auth-field"><label>Password</label><input id="auth-register-password" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" /></div>
+          <div class="auth-field"><label>Confirm Password</label><input id="auth-register-confirm" type="password" autocomplete="new-password" placeholder="Repeat password" /></div>
+          <div class="auth-field"><label>WorkBoard Role</label><select id="auth-register-role"><option value="staff">Staff</option><option value="management">Management</option></select></div>
+          <div class="auth-role-note"><strong>Owner is not selectable.</strong> Owner access is reserved for Ratu. If a role is selected incorrectly, Ratu can correct it later in Users & Access.<br><span style="display:inline-block;margin-top:4px">Using Google? Only Full Name and Role are needed before you continue.</span></div>
+          <button class="btn-sm btn-primary auth-primary" id="auth-register-btn" type="button" onclick="authSignUp()"><i class="ti ti-user-plus"></i> Create Account</button>
+          <div class="auth-divider">OR</div>
+          <button class="btn-sm auth-google" type="button" onclick="authGoogle('register')"><span class="auth-google-g">G</span> Register with Google</button>
+        </div>
+      </div>
+
+      <div class="auth-view" id="auth-view-verify">
+        <div class="auth-mini-title">Check your email</div>
+        <div class="auth-mini-sub">Open the verification email from WorkBoard, verify your address, then return here and sign in.</div>
+        <button class="btn-sm btn-primary auth-primary" type="button" onclick="showAuthTab('login')">Back to Sign In</button>
+      </div>
+
+      <div class="auth-view" id="auth-view-onboarding">
+        <div class="auth-mini-title">Complete your WorkBoard profile</div>
+        <div class="auth-mini-sub">Choose the name WorkBoard should use on activity records and select your role.</div>
+        <div class="auth-field"><label>Full Name</label><input id="auth-onboarding-name" autocomplete="name" placeholder="Your name" /></div>
+        <div class="auth-field"><label>Role</label><select id="auth-onboarding-role"><option value="staff">Staff</option><option value="management">Management</option></select></div>
+        <button class="btn-sm btn-primary auth-primary" id="auth-onboarding-btn" type="button" onclick="authCompleteOnboarding()">Continue to WorkBoard</button>
+      </div>
+
+      <div class="auth-view" id="auth-view-recovery">
+        <div class="auth-mini-title">Set a new password</div>
+        <div class="auth-mini-sub">Enter a new password for your WorkBoard account.</div>
+        <div class="auth-field"><label>New Password</label><input id="auth-recovery-password" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" /></div>
+        <div class="auth-field"><label>Confirm Password</label><input id="auth-recovery-confirm" type="password" autocomplete="new-password" placeholder="Repeat password" /></div>
+        <button class="btn-sm btn-primary auth-primary" type="button" onclick="authSetNewPassword()">Update Password</button>
+      </div>
+    </div>
+    <div class="auth-footer">Internal WorkBoard access · PT Andrika Mitra Solusi</div>
+  </div>
+</div>
 
 <div class="app">
 
@@ -1940,10 +2133,10 @@ body.mobile-hub-open { overflow:hidden; }
       <div class="sb-date" id="sidebar-date">—</div>
       <div class="sb-user">
         <div class="sb-user-dot"></div>
-        <span class="sb-user-name" id="user-name">—</span>
+        <div style="min-width:0;flex:1"><span class="sb-user-name" id="user-name">—</span><div style="margin-top:2px"><span class="user-role-chip" id="user-role">—</span></div></div>
         <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
-          <button style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);border-radius:5px;cursor:pointer;color:var(--sb-text);font-size:10px;padding:2px 6px;white-space:nowrap" onclick="switchUser()" title="Log in as another user on this device">⇄ Switch</button>
-          <button style="background:none;border:none;cursor:pointer;color:var(--sb-text-dim);font-size:13px;padding:2px 4px;line-height:1" onclick="renameUser()" title="Change my name">✎</button>
+          <button class="account-signout-btn" onclick="showAccountInfo()" title="Account information"><i class="ti ti-user-circle"></i></button>
+          <button class="account-signout-btn" onclick="signOutWorkBoard()" title="Sign out"><i class="ti ti-logout-2"></i></button>
         </div>
       </div>
       <div id="online-users-wrap" style="margin-top:6px;padding:4px 8px;background:rgba(255,255,255,0.10);border-radius:6px;display:none">
@@ -2050,19 +2243,13 @@ body.mobile-hub-open { overflow:hidden; }
         </div>
       </div>
 
-      <!-- REPORTS -->
-      <div class="nav-group" id="ng-reports">
-        <button class="nav-item" onclick="toggleNavGroup('ng-reports')" title="Reports">
-          <i class="ti ti-chart-bar nav-icon"></i>
-          <span class="nav-label-text">Reports</span>
-          <i class="ti ti-chevron-right nav-arrow"></i>
+      <!-- MANAGEMENT REPORT — first-class destination for management -->
+      <div class="nav-home" id="ng-reports">
+        <button class="nav-item" id="nsub-result" onclick="switchPanel('result',this)" title="Management Report">
+          <i class="ti ti-chart-donut-3 nav-icon"></i>
+          <span class="nav-label-text">Management Report</span>
+          <span class="nav-badge badge-blue" style="font-size:9px">LIVE</span>
         </button>
-        <div class="nav-submenu">
-          <button class="nav-sub-item" id="nsub-result" onclick="switchPanel('result',this)">
-            <i class="ti ti-chart-pie"></i> Result
-            <span class="nav-badge badge-blue" style="font-size:9px">this month</span>
-          </button>
-        </div>
       </div>
 
       <!-- QUICK LINKS -->
@@ -2102,12 +2289,12 @@ body.mobile-hub-open { overflow:hidden; }
       <div class="nav-group" id="ng-settings" style="display:none">
         <button class="nav-item" onclick="toggleNavGroup('ng-settings')" title="Settings">
           <i class="ti ti-settings nav-icon"></i>
-          <span class="nav-label-text">Settings</span>
+          <span class="nav-label-text">Owner Controls</span>
           <i class="ti ti-chevron-right nav-arrow"></i>
         </button>
         <div class="nav-submenu">
           <button class="nav-sub-item" id="nav-admin-users" onclick="switchPanel('adminusers',this)">
-            <i class="ti ti-users-group"></i> Manage Users
+            <i class="ti ti-users-group"></i> Users & Access
           </button>
           <button class="nav-sub-item" id="nav-admin-leave" onclick="switchPanel('adminleave',this)">
             <i class="ti ti-calendar-off"></i> Leave Management
@@ -2130,10 +2317,10 @@ body.mobile-hub-open { overflow:hidden; }
       <div class="top-title" id="panel-title">Today</div>
       <div class="top-actions">
         <div style="display:flex;align-items:center;gap:5px">
-          <button class="user-pill-mobile" id="user-pill-mobile" onclick="switchUser()" title="Switch to another user">
-            <i class="ti ti-user-circle"></i> <span id="user-name-mobile">—</span> <i class="ti ti-arrows-exchange" style="font-size:10px;opacity:.7"></i>
+          <button class="user-pill-mobile" id="user-pill-mobile" onclick="showAccountInfo()" title="Account information">
+            <i class="ti ti-user-circle"></i> <span id="user-name-mobile">—</span> <span id="user-role-mobile" style="font-size:8px;opacity:.72;text-transform:uppercase">—</span>
           </button>
-          <button style="background:none;border:none;cursor:pointer;color:#475569;font-size:15px;padding:4px;line-height:1;display:flex;align-items:center" onclick="renameUser()" title="Change my name"><i class="ti ti-pencil"></i></button>
+          <button style="background:none;border:none;cursor:pointer;color:#475569;font-size:15px;padding:4px;line-height:1;display:flex;align-items:center" onclick="signOutWorkBoard()" title="Sign out"><i class="ti ti-logout-2"></i></button>
         </div>
         <div class="search-filter-wrap" id="global-search-wrap" style="display:none">
           <input class="global-search" id="global-search-input" placeholder="Search..." oninput="applyGlobalSearch()" autocomplete="off">
@@ -2278,7 +2465,7 @@ body.mobile-hub-open { overflow:hidden; }
             <button class="focus-mode-btn" data-focus-mode="project" onclick="setFocusCaptureMode('project',this)">Project</button>
             <button class="focus-mode-btn" data-focus-mode="inbox" onclick="setFocusCaptureMode('inbox',this)">Brain Dump</button>
           </div>
-          <div class="focus-capture-hint">Capture first. Details can be added later. Brain Dump stays private and never becomes a boss activity unless you turn it into work.</div>
+          <div class="focus-capture-hint">Capture first. Details can be added later. Brain Dump stays private and never becomes a management activity unless you turn it into work.</div>
           <div id="focus-capture-status" style="font-size:10.5px;color:var(--text3);margin-top:6px"></div>
         </div>
 
@@ -3366,9 +3553,85 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
       <!-- ── Result ─────────────────────────────── -->
       <div class="panel" id="panel-result">
 
+        <div class="management-report-hero">
+          <div class="mr-head">
+            <div>
+              <div class="mr-eyebrow">Management visibility</div>
+              <div class="mr-title">Management Report</div>
+              <div class="mr-sub">Plan vs actual work, attendance, waiting items, carry forward, and project status — without exposing private Brain Dump, Notes, or Password Manager data.</div>
+            </div>
+            <div class="mr-live" id="result-management-status">LIVE</div>
+          </div>
+          <div class="mr-filter-grid">
+            <div class="mr-field">
+              <label for="result-report-mode">View</label>
+              <select id="result-report-mode" onchange="renderManagementReport()">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <div class="mr-field">
+              <label for="result-report-date">Reference date</label>
+              <input type="date" id="result-report-date" onchange="renderManagementReport()" />
+            </div>
+            <div class="mr-field" id="result-employee-wrap">
+              <label for="result-employee-select">Employee</label>
+              <select id="result-employee-select" onchange="renderManagementReport()">
+                <option value="">Loading employees...</option>
+              </select>
+            </div>
+            <button class="btn-sm btn-primary" type="button" onclick="resultReportToday()" style="height:34px;justify-content:center"><i class="ti ti-calendar"></i> Today</button>
+          </div>
+        </div>
+
+        <div class="mr-summary" id="result-management-summary">
+          <div class="mr-stat planned"><div class="label">Planned</div><div class="value">—</div></div>
+          <div class="mr-stat done"><div class="label">Plan Done</div><div class="value">—</div></div>
+          <div class="mr-stat actual"><div class="label">Completed</div><div class="value">—</div></div>
+          <div class="mr-stat unplanned"><div class="label">Unplanned</div><div class="value">—</div></div>
+          <div class="mr-stat waiting"><div class="label">Waiting</div><div class="value">—</div></div>
+          <div class="mr-stat carry"><div class="label">Carry Forward</div><div class="value">—</div></div>
+        </div>
+
+        <div class="mr-plan-progress" id="result-plan-progress">
+          <div class="mr-plan-text">Loading plan progress...</div>
+          <div class="mr-plan-bar"><div class="mr-plan-fill" style="width:0%"></div></div>
+        </div>
+
+        <div class="mr-attendance-strip" id="result-management-attendance">
+          <div class="loading-msg">Loading attendance...</div>
+        </div>
+
+        <div class="mr-report-grid">
+          <section class="mr-section">
+            <div class="mr-section-head"><div class="mr-section-title">📅 Planned Activities</div><span class="mr-section-count" id="mr-planned-count">0</span></div>
+            <div class="mr-list" id="mr-planned-list"><div class="mr-empty">Loading...</div></div>
+          </section>
+          <section class="mr-section">
+            <div class="mr-section-head"><div class="mr-section-title">✅ Completed Results</div><span class="mr-section-count" id="mr-completed-count">0</span></div>
+            <div class="mr-list" id="mr-completed-list"><div class="mr-empty">Loading...</div></div>
+          </section>
+        </div>
+
+        <div class="mr-report-grid">
+          <section class="mr-section">
+            <div class="mr-section-head"><div class="mr-section-title">⏳ Waiting / Carry Forward</div><span class="mr-section-count" id="mr-pending-count">0</span></div>
+            <div class="mr-list" id="mr-pending-list"><div class="mr-empty">Loading...</div></div>
+          </section>
+          <section class="mr-section">
+            <div class="mr-section-head"><div class="mr-section-title">📁 Project / Opportunity Status</div><span class="mr-section-count" id="mr-project-count">0</span></div>
+            <div class="mr-list" id="mr-project-list"><div class="mr-empty">Loading...</div></div>
+          </section>
+        </div>
+
+        <details class="mr-legacy-details" id="result-monthly-analytics">
+          <summary>Monthly Analytics & Attendance</summary>
+          <div class="mr-legacy-body">
+
         <!-- Filter bulan -->
         <div class="result-filter-bar">
-          <label style="font-size:12px;color:var(--text2);font-weight:500">📅 Periode:</label>
+          <label style="font-size:12px;color:var(--text2);font-weight:500">📅 Period:</label>
           <input type="month" id="result-month-input" style="font-size:12px" onchange="renderResult()" />
           <button class="btn-sm" onclick="document.getElementById('result-month-input').value=todayStr().substring(0,7);renderResult()">This Month</button>
           <span id="result-period-label" style="font-size:11px;color:var(--text3);margin-left:4px"></span>
@@ -3443,9 +3706,9 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
         <!-- Grafik Schedule harian -->
         <div class="chart-section" style="margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div class="chart-title" style="margin-bottom:0">Grafik Jadwal Harian (Schedule)</div>
+            <div class="chart-title" style="margin-bottom:0">Daily Schedule Activity</div>
             <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
-              <span><span style="display:inline-block;width:10px;height:10px;background:#2F6364;border-radius:2px;margin-right:3px"></span>Ada jadwal</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#2F6364;border-radius:2px;margin-right:3px"></span>Has schedule</span>
               <span><span style="display:inline-block;width:10px;height:10px;background:#E2E8F0;border-radius:2px;margin-right:3px"></span>Empty</span>
             </div>
           </div>
@@ -3457,10 +3720,10 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
         <!-- Grafik Tracker harian -->
         <div class="chart-section" style="margin-bottom:12px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div class="chart-title" style="margin-bottom:0">Grafik Aktivitas Tracker Harian</div>
+            <div class="chart-title" style="margin-bottom:0">Daily Tracker Activity</div>
             <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
               <span><span style="display:inline-block;width:10px;height:10px;background:#22C55E;border-radius:2px;margin-right:3px"></span>All done</span>
-              <span><span style="display:inline-block;width:10px;height:10px;background:#F59E0B;border-radius:2px;margin-right:3px"></span>Ada yg pending</span>
+              <span><span style="display:inline-block;width:10px;height:10px;background:#F59E0B;border-radius:2px;margin-right:3px"></span>Has pending items</span>
             </div>
           </div>
           <div class="absen-daily-chart" id="tracker-daily-chart">
@@ -3470,7 +3733,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="chart-section">
-            <div class="chart-title">Distribusi Status Tracker</div>
+            <div class="chart-title">Tracker Status Distribution</div>
             <div id="activity-dist"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div></div>
           </div>
           <div class="chart-section">
@@ -3478,6 +3741,9 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
             <div id="notes-summary"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div></div>
           </div>
         </div>
+
+          </div>
+        </details>
       </div>
 
       <!-- ── Absensi ─────────────────────────── -->
@@ -3543,20 +3809,19 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
       <!-- ── Admin: Manage Users ─────────────────── -->
       <div class="panel" id="panel-adminusers">
         <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#92400E">
-          <strong>⚠️ Admin Panel</strong> — Only visible to accounts with admin access.
-          Deleting a user will delete all of that user's attendance, leave, schedule, tracker, and notes data. This action <strong>cannot be undone</strong>.
+          <strong>👑 Owner Controls</strong> — Only the WorkBoard Owner can manage user access and leave. Roles can be corrected here without deleting a user's work history.
         </div>
 
         <!-- Tab navigasi -->
         <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0">
-          <button class="admin-tab active" id="admin-tab-users" onclick="switchAdminTab('users')"><i class="ti ti-users"></i> Manage Users</button>
+          <button class="admin-tab active" id="admin-tab-users" onclick="switchAdminTab('users')"><i class="ti ti-users"></i> Users & Access</button>
           <button class="admin-tab" id="admin-tab-leave" onclick="switchAdminTab('leave')"><i class="ti ti-calendar-off"></i> Manage Leave</button>
         </div>
 
         <!-- Panel: Daftar User -->
         <div id="admin-section-users">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-size:13px;font-weight:600;color:var(--text1)">👥 Registered User List</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text1)">👥 WorkBoard Accounts</div>
             <button class="btn-sm" onclick="renderAdminUsers()"><i class="ti ti-refresh"></i> Refresh</button>
           </div>
           <div id="admin-users-list">
@@ -3590,10 +3855,10 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
         </div>
       </div>
 
-      <!-- ── Leave Management (Admin) ──────── -->
+      <!-- ── Leave Management (Owner) ──────── -->
       <div class="panel" id="panel-adminleave">
         <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#92400E">
-          <strong>⚙️ Leave Management</strong> — Approve, reject, or delete employee leave/sick/time-off requests.
+          <strong>👑 Leave Management</strong> — Owner-only review for employee leave, sick, and time-off requests.
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
           <div style="font-size:13px;font-weight:600;color:var(--text1)">📋 Leave / Sick / Time Off Requests</div>
@@ -3735,7 +4000,7 @@ ON CONFLICT DO NOTHING;</code>
         <div id="vault-state-new" style="display:none;max-width:420px;margin:20px auto">
           <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:var(--radius-lg);padding:20px 22px;color:#fff;margin-bottom:16px">
             <div style="font-size:16px;font-weight:700;margin-bottom:5px">🔐 Setup Password Vault</div>
-            <div style="font-size:12px;opacity:.9;line-height:1.5">This vault is end-to-end encrypted — the data can only be unlocked by you, via your Master Password. Admin, AMS, and even Claude cannot see its contents.</div>
+            <div style="font-size:12px;opacity:.9;line-height:1.5">This vault is end-to-end encrypted — the data can only be unlocked by you, via your Master Password. The WorkBoard Owner, AMS, and external assistants cannot see its contents.</div>
           </div>
           <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Master Password (min. 8 characters)</label>
           <input type="password" id="vault-setup-pw1" class="form-input" style="font-size:13px;width:100%;margin-bottom:10px">
@@ -3918,9 +4183,201 @@ function nowTime() {
   return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
 }
 
-// Helper: nama pengguna dari localStorage
+// ── Authenticated WorkBoard identity ──────────────────────────
+let currentAuthUser = null;
+let currentProfile = null;
+let workboardInitialized = false;
+let workboardRealtimeStarted = false;
+
 function getUser() {
-  return localStorage.getItem('wb_user') || 'User';
+  return currentProfile?.full_name || localStorage.getItem('wb_user') || 'User';
+}
+function getRole() { return String(currentProfile?.role || '').toLowerCase(); }
+function isOwner() { return getRole() === 'owner'; }
+function hasManagementAccess() { return ['owner','management'].includes(getRole()); }
+function isActiveWorkBoardUser() { return !!currentProfile?.is_active; }
+function roleLabel(role = getRole()) {
+  return role === 'owner' ? 'Owner' : role === 'management' ? 'Management' : 'Staff';
+}
+function authRedirectUrl() {
+  return window.location.origin + window.location.pathname;
+}
+function setAuthMessage(message = '', type = 'info') {
+  const el = document.getElementById('auth-message');
+  if (!el) return;
+  el.textContent = message;
+  el.className = 'auth-message' + (message ? ` show ${type}` : '');
+}
+function showAuthOnlyView(viewId) {
+  document.getElementById('auth-standard-view')?.classList.toggle('auth-view', viewId !== 'standard');
+  const standard = document.getElementById('auth-standard-view');
+  if (standard) standard.style.display = viewId === 'standard' ? 'block' : 'none';
+  ['verify','onboarding','recovery'].forEach(name => {
+    const el = document.getElementById('auth-view-' + name);
+    if (el) el.classList.toggle('active', viewId === name);
+  });
+}
+function showAuthTab(tab = 'login') {
+  showAuthOnlyView('standard');
+  setAuthMessage('');
+  document.getElementById('auth-tab-login')?.classList.toggle('active', tab === 'login');
+  document.getElementById('auth-tab-register')?.classList.toggle('active', tab === 'register');
+  document.getElementById('auth-view-login')?.classList.toggle('active', tab === 'login');
+  document.getElementById('auth-view-register')?.classList.toggle('active', tab === 'register');
+}
+function setAuthBusy(buttonId, busy, busyText = 'Please wait...') {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+  if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerHTML;
+  btn.disabled = !!busy;
+  btn.innerHTML = busy ? `<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> ${busyText}` : btn.dataset.originalText;
+}
+async function fetchWorkBoardProfile(userId) {
+  const { data, error } = await sb.from('workboard_profiles').select('*').eq('id', userId).maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+function applyProfileToUi() {
+  const name = getUser();
+  const role = roleLabel();
+  localStorage.setItem('wb_user', name); // legacy data compatibility
+  const nameEl = document.getElementById('user-name');
+  const nameMobile = document.getElementById('user-name-mobile');
+  const roleEl = document.getElementById('user-role');
+  const roleMobile = document.getElementById('user-role-mobile');
+  if (nameEl) nameEl.textContent = name;
+  if (nameMobile) nameMobile.textContent = name;
+  if (roleEl) roleEl.textContent = role;
+  if (roleMobile) roleMobile.textContent = role;
+}
+async function activateAuthenticatedSession(session) {
+  if (!session?.user) return false;
+  currentAuthUser = session.user;
+  let profile;
+  try {
+    profile = await fetchWorkBoardProfile(session.user.id);
+  } catch (error) {
+    document.body.className = 'auth-guest';
+    setAuthMessage('WorkBoard authentication setup is not installed yet. Run WORKBOARD_AUTH_V91.sql in Supabase first, then reload this page.', 'error');
+    showAuthTab('login');
+    return false;
+  }
+  if (!profile) {
+    document.body.className = 'auth-guest';
+    setAuthMessage('Your WorkBoard profile is missing. Please contact Ratu.', 'error');
+    return false;
+  }
+  currentProfile = profile;
+  if (!profile.is_active) {
+    await sb.auth.signOut();
+    currentAuthUser = null; currentProfile = null;
+    localStorage.removeItem('wb_user');
+    document.body.className = 'auth-guest';
+    showAuthTab('login');
+    setAuthMessage('This WorkBoard account is inactive. Please contact Ratu.', 'error');
+    return false;
+  }
+  if (!profile.onboarding_complete) {
+    const pending = (() => { try { return JSON.parse(localStorage.getItem('wb_oauth_onboarding') || 'null'); } catch (_) { return null; } })();
+    const suggestedName = pending?.name || profile.full_name || session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+    const suggestedRole = ['staff','management'].includes(pending?.role) ? pending.role : (profile.role === 'management' ? 'management' : 'staff');
+    document.getElementById('auth-onboarding-name').value = suggestedName;
+    document.getElementById('auth-onboarding-role').value = suggestedRole;
+    document.body.className = 'auth-guest';
+    showAuthOnlyView('onboarding');
+    setAuthMessage(profile.role === 'owner' ? 'Owner access is reserved for Ratu. Confirm your WorkBoard display name to continue.' : 'Finish your profile to continue.', 'info');
+    return false;
+  }
+  applyProfileToUi();
+  document.body.className = 'authenticated';
+  document.getElementById('auth-gate')?.setAttribute('aria-hidden','true');
+  await initializeWorkBoardAfterAuth();
+  return true;
+}
+async function authSignIn() {
+  const email = (document.getElementById('auth-login-email')?.value || '').trim();
+  const password = document.getElementById('auth-login-password')?.value || '';
+  if (!email || !password) return setAuthMessage('Enter your email and password.', 'error');
+  setAuthBusy('auth-login-btn', true, 'Signing in...'); setAuthMessage('');
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  setAuthBusy('auth-login-btn', false);
+  if (error) return setAuthMessage(error.message || 'Sign in failed.', 'error');
+  await activateAuthenticatedSession(data.session);
+}
+async function authSignUp() {
+  const fullName = (document.getElementById('auth-register-name')?.value || '').trim();
+  const email = (document.getElementById('auth-register-email')?.value || '').trim();
+  const password = document.getElementById('auth-register-password')?.value || '';
+  const confirmPw = document.getElementById('auth-register-confirm')?.value || '';
+  const requestedRole = document.getElementById('auth-register-role')?.value || 'staff';
+  if (!fullName || !email) return setAuthMessage('Full name and email are required.', 'error');
+  if (password.length < 8) return setAuthMessage('Password must be at least 8 characters.', 'error');
+  if (password !== confirmPw) return setAuthMessage('Passwords do not match.', 'error');
+  if (!['staff','management'].includes(requestedRole)) return setAuthMessage('Choose Staff or Management.', 'error');
+  setAuthBusy('auth-register-btn', true, 'Creating account...'); setAuthMessage('');
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { full_name: fullName, requested_role: requestedRole }, emailRedirectTo: authRedirectUrl() }
+  });
+  setAuthBusy('auth-register-btn', false);
+  if (error) return setAuthMessage(error.message || 'Registration failed.', 'error');
+  if (data.session) return activateAuthenticatedSession(data.session);
+  showAuthOnlyView('verify');
+  setAuthMessage('Account created. Verify your email before signing in.', 'success');
+}
+async function authGoogle(mode = 'login') {
+  if (mode === 'register') {
+    const name = (document.getElementById('auth-register-name')?.value || '').trim();
+    const role = document.getElementById('auth-register-role')?.value || 'staff';
+    if (!name) return setAuthMessage('Enter your Full Name before registering with Google.', 'error');
+    localStorage.setItem('wb_oauth_onboarding', JSON.stringify({ name, role, ts: Date.now() }));
+  } else {
+    localStorage.removeItem('wb_oauth_onboarding');
+  }
+  const { error } = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:authRedirectUrl() } });
+  if (error) setAuthMessage(error.message || 'Google sign in failed.', 'error');
+}
+async function authCompleteOnboarding() {
+  const name = (document.getElementById('auth-onboarding-name')?.value || '').trim();
+  const role = document.getElementById('auth-onboarding-role')?.value || 'staff';
+  if (!name) return setAuthMessage('Full name is required.', 'error');
+  if (!['staff','management'].includes(role)) return setAuthMessage('Choose Staff or Management.', 'error');
+  setAuthBusy('auth-onboarding-btn', true, 'Saving profile...');
+  const { error } = await sb.rpc('workboard_complete_onboarding', { p_full_name:name, p_role:role });
+  setAuthBusy('auth-onboarding-btn', false);
+  if (error) return setAuthMessage(error.message || 'Could not complete profile.', 'error');
+  localStorage.removeItem('wb_oauth_onboarding');
+  const { data:{ session } } = await sb.auth.getSession();
+  await activateAuthenticatedSession(session);
+}
+async function authForgotPassword() {
+  const email = (document.getElementById('auth-login-email')?.value || '').trim();
+  if (!email) return setAuthMessage('Enter your email first, then click Forgot password.', 'info');
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo:authRedirectUrl() });
+  if (error) return setAuthMessage(error.message || 'Could not send reset email.', 'error');
+  setAuthMessage('Password reset email sent. Check your inbox.', 'success');
+}
+async function authSetNewPassword() {
+  const pw = document.getElementById('auth-recovery-password')?.value || '';
+  const confirmPw = document.getElementById('auth-recovery-confirm')?.value || '';
+  if (pw.length < 8) return setAuthMessage('Password must be at least 8 characters.', 'error');
+  if (pw !== confirmPw) return setAuthMessage('Passwords do not match.', 'error');
+  const { error } = await sb.auth.updateUser({ password:pw });
+  if (error) return setAuthMessage(error.message || 'Could not update password.', 'error');
+  setAuthMessage('Password updated. Please sign in again.', 'success');
+  await sb.auth.signOut();
+  setTimeout(() => window.location.reload(), 500);
+}
+async function signOutWorkBoard() {
+  if (!confirm('Sign out of WorkBoard on this device?')) return;
+  try { await sb.auth.signOut(); } catch (_) {}
+  localStorage.removeItem('wb_user');
+  currentAuthUser = null; currentProfile = null;
+  window.location.reload();
+}
+function showAccountInfo() {
+  if (!currentAuthUser || !currentProfile) return;
+  alert(`${currentProfile.full_name}\n${currentAuthUser.email || currentProfile.email || ''}\nRole: ${roleLabel()}\n\nUse the sign-out button to switch accounts.`);
 }
 
 // Helper: terapkan filter privat/publik ke query select.
@@ -3947,7 +4404,7 @@ function applyOwner(data) {
 // Wrapper query dengan timeout 10 detik agar tidak loading abadi
 function withTimeout(promise, ms = 10000) {
   const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Timeout — periksa koneksi atau API key Supabase')), ms)
+    setTimeout(() => reject(new Error('Timeout — check your connection or Supabase configuration')), ms)
   );
   return Promise.race([promise, timeout]);
 }
@@ -4102,44 +4559,31 @@ function scheduleFocusQuickCaptureReset() {
 }
 window.addEventListener('pageshow', scheduleFocusQuickCaptureReset);
 
-// ── Init ───────────────────────────────────
-window.addEventListener('DOMContentLoaded', async () => {
+// ── Init after authentication ────────────────────────────────
+async function initializeWorkBoardAfterAuth() {
+  if (workboardInitialized) { applyProfileToUi(); applyAdminVisibility(); return; }
+  workboardInitialized = true;
   scheduleFocusQuickCaptureReset();
   initPanelSearchEngines();
   updateLogViewIcon();
-  // Cek nama pengguna — kalau belum pernah diisi di device ini, WAJIB tanya
-  // (don't silently default to "User" just because the box was empty or OK was clicked).
-  let user = localStorage.getItem('wb_user');
-  if (!user) {
-    let input = null;
-    while (true) {
-      input = prompt('Welcome to WorkBoard! 👋\nEnter YOUR NAME (this is what others will see in chat & activity):');
-      if (input === null) { user = 'User'; break; } // truly canceled
-      if (input.trim()) { user = input.trim(); break; }
-      alert('Name can\'t be empty, please try again 🙏');
-    }
-    localStorage.setItem('wb_user', user);
-  }
-  document.getElementById('user-name').textContent = user;
-  const unm = document.getElementById('user-name-mobile');
-  if (unm) unm.textContent = user;
+  applyProfileToUi();
 
-  // Tampilkan tanggal
   const now = new Date();
   document.getElementById('sidebar-date').textContent =
     DAYS[now.getDay()] + ', ' + now.getDate() + ' ' + MONTHS[now.getMonth()] + ' ' + now.getFullYear();
 
-  // Set default tanggal input
   const todayInputs = document.querySelectorAll('.input-today');
   todayInputs.forEach(el => { el.value = todayStr(); });
 
-  applyAdminVisibility(); // tampilkan/sembunyikan menu Settings
-  // Capture is the first, standalone ADHD-friendly entry point.
-  await renderTodayFocus();
+  applyAdminVisibility();
+  // Owner (Ratu) and Staff start at Today. Management starts at Management Report.
+  if (getRole() === 'management') await switchPanel('result', document.getElementById('nsub-result'));
+  else await switchPanel('focus', document.getElementById('nsub-focus'));
+
   generateDueRecurringTasks().then(() => {
-    // Kalau ada entri baru yang barusan digenerate & lagi lihat Daily Schedule, refresh biar langsung kelihatan
     if (currentPanel === 'schedule') renderSchedule();
     if (currentPanel === 'focus') renderTodayFocus();
+    if (currentPanel === 'result' && hasManagementAccess()) renderManagementReport();
   }).catch(() => {});
   updateDailyProgress();
   loadChatLastRead();
@@ -4148,28 +4592,52 @@ window.addEventListener('DOMContentLoaded', async () => {
   initOnlinePresence();
   initChatNotification();
 
-  // Hitung jumlah links untuk badge sidebar
   sb.from('app_links').select('id', { count: 'exact', head: true }).then(({ count }) => {
     const badge = document.getElementById('badge-links');
     if (badge) badge.textContent = count > 0 ? count : '—';
   }).catch(() => {});
 
-  // Hitung jumlah password vault untuk badge sidebar (khusus milik user ini — vault privat per orang)
   sb.from('password_vault_v2').select('id', { count: 'exact', head: true }).eq('created_by', getUser()).then(({ count }) => {
     const badge = document.getElementById('badge-passvault');
     if (badge) badge.textContent = count > 0 ? count : '—';
   }).catch(() => {});
 
-  // Daftarkan service worker biar app ini bisa di-"Add to Home Screen" / di-install
-  // SW v2: sekarang juga dipakai untuk Work-Break Alarm notification sistem
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then((reg) => {
-      // Paksa update sw.js kalau ada versi baru
-      reg.update();
-    }).catch(() => {
-      // Diamkan kalau gagal (misal dibuka dari file lokal tanpa https) — app tetap jalan normal
-    });
+    navigator.serviceWorker.register('sw.js').then(reg => reg.update()).catch(() => {});
   }
+  window.dispatchEvent(new CustomEvent('workboard-auth-ready'));
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  showAuthTab('login');
+  document.body.className = 'auth-pending';
+  const { data:{ session }, error } = await sb.auth.getSession();
+  if (error) {
+    document.body.className = 'auth-guest';
+    setAuthMessage(error.message || 'Could not restore your WorkBoard session.', 'error');
+    return;
+  }
+  if (session) await activateAuthenticatedSession(session);
+  else document.body.className = 'auth-guest';
+});
+
+sb.auth.onAuthStateChange((event, session) => {
+  setTimeout(async () => {
+    if (event === 'PASSWORD_RECOVERY') {
+      currentAuthUser = session?.user || null;
+      document.body.className = 'auth-guest';
+      showAuthOnlyView('recovery');
+      setAuthMessage('Choose a new password for your WorkBoard account.', 'info');
+      return;
+    }
+    if (event === 'SIGNED_IN' && session && !workboardInitialized) await activateAuthenticatedSession(session);
+    if (event === 'SIGNED_OUT') {
+      currentAuthUser = null; currentProfile = null;
+      localStorage.removeItem('wb_user');
+      document.body.className = 'auth-guest';
+      showAuthTab('login');
+    }
+  }, 0);
 });
 
 // Realtime kadang putus diam-diam (terutama di HP saat browser di-minimize/layar dikunci).
@@ -4199,6 +4667,8 @@ function startChatPolling() {
 
 // ── Panel switching ────────────────────────
 async function switchPanel(id, el) {
+  if (id === 'result' && !hasManagementAccess()) { alert('Management Report is available only to Management and Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
+  if ((id === 'adminusers' || id === 'adminleave') && !isOwner()) { alert('Owner access required.'); id='focus'; el=document.getElementById('nsub-focus'); }
   if (id === 'brain' || id === 'followup') {
     id = 'focus';
     el = document.getElementById('nsub-focus');
@@ -4225,12 +4695,12 @@ async function switchPanel(id, el) {
     logbook: 'Logbook',
     notes: 'Notes',
     todo: 'To Do',
-    result: 'Reports — Result',
+    result: 'Management Report',
     notepad: 'Notepad',
     chat: 'Work Talk',
     absen: 'HR — Attendance',
-    adminusers: '⚙️ Manage Users',
-    adminleave: '⚙️ Leave Management',
+    adminusers: '👑 Users & Access',
+    adminleave: '👑 Leave Management',
     links: 'Resources',
     passvault: '🔐 Password Manager',
     faq: '📖 Guide & FAQ'
@@ -6537,6 +7007,7 @@ async function generateOneRecurringOccurrence(tpl, dateStr) {
       status: 'not_started',
       schedule_duration: d.schedule_duration || '',
       start_date: dateStr,
+      due_date: dateStr,
       notes: d.notes || '',
       is_private: !!tpl.is_private,
       created_by: tpl.created_by || getUser(),
@@ -7739,7 +8210,7 @@ let todayWaitingCache=[];
 let todayLogCache=[];
 
 async function autoLogActivity({title, body='', tags=[], isPrivate=false, trackerId=null, entryDate=null}) {
-  const payload={ type:'note', title:title||'Completed activity', body:body||'', tags:Array.from(new Set(['auto',...(tags||[])])), is_private:!!isPrivate, created_by:getUser(), attachments:[], tracker_item_id:trackerId||null, entry_date:entryDate||todayStr() };
+  const payload={ type:'report', title:title||'Completed activity', body:body||'', tags:Array.from(new Set(['auto',...(tags||[])])), is_private:!!isPrivate, created_by:getUser(), attachments:[], tracker_item_id:trackerId||null, entry_date:entryDate||todayStr() };
   const {error}=await sb.from('logbook_entries').insert(payload);
   if(error){ console.error('Auto Logbook failed',error); alert('The activity was updated, but automatic Logbook failed: '+error.message); return false; }
   if(currentPanel==='logbook') await renderLogbook();
@@ -7915,15 +8386,16 @@ async function renderTodayFocus() {
     document.getElementById('focus-waiting').innerHTML=waiting.length?waiting.slice(0,12).map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">Nothing is waiting for a reply.</div>';
     const inbox=allTodos.filter(t=>!t.is_done&&focusIsInbox(t));
     document.getElementById('focus-inbox').innerHTML=inbox.length?inbox.slice(0,12).map(t=>`<div class="brain-item"><div class="brain-item-text">${focusEscape(stripTodoInternalMarkers(t.text))}</div><div class="brain-item-actions"><button class="brain-action" onclick="brainMoveToToday('${t.id}')">Today</button><button class="brain-action" onclick="brainMoveToFollowUp('${t.id}')">Follow Up</button><button class="brain-action" onclick="focusOpenTodo('${t.id}')">Open</button><button class="brain-action" onclick="focusDone('${t.id}')">Archive</button></div></div>`).join(''):'<div class="focus-empty">Brain Dump is empty.</div>';
+    const completedTodayRows=todayLogCache.filter(l=>!(l.tags||[]).includes('waiting')&&!(l.tags||[]).includes('cancelled')&&!(l.tags||[]).includes('carried-forward'));
     const completedList=document.getElementById('today-completed-list');
-    if(completedList) completedList.innerHTML=todayLogCache.length?todayLogCache.slice(0,20).map(l=>`<div class="today-completed-item"><span>✅</span><div><strong>${focusEscape(l.title||'Activity')}</strong>${l.tags?.includes('unplanned')?'<span class="today-task-source carry">Unplanned</span>':''}</div><span class="today-completed-time">${l.created_at?new Date(l.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):''}</span></div>`).join(''):'<div class="focus-empty">No completed activity yet.</div>';
+    if(completedList) completedList.innerHTML=completedTodayRows.length?completedTodayRows.slice(0,20).map(l=>`<div class="today-completed-item"><span>✅</span><div><strong>${focusEscape(l.title||'Activity')}</strong>${l.tags?.includes('unplanned')?'<span class="today-task-source carry">Unplanned</span>':''}</div><span class="today-completed-time">${l.created_at?new Date(l.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):''}</span></div>`).join(''):'<div class="focus-empty">No completed activity yet.</div>';
     const planned=schedAll.filter(e=>e.event_date===today).length;
     const plannedDone=schedAll.filter(e=>e.event_date===today && e.category==='green').length;
-    const completed=todayLogCache.filter(l=>!(l.tags||[]).includes('waiting')&&!(l.tags||[]).includes('cancelled')).length;
+    const completed=completedTodayRows.length;
     const waitingCount=waiting.length; const followCount=followupsAll.length;
     const pct=planned?Math.min(100,Math.round(plannedDone/planned*100)):0;
     document.getElementById('focus-overview').innerHTML=`<div class="today-overview-wrap"><div class="today-donut" style="--done-pct:${pct}%"><div class="today-donut-center"><strong>${pct}%</strong><span>planned done</span></div></div><div class="today-stat-grid"><div class="today-stat-chip"><span>Planned</span><strong>${planned}</strong></div><div class="today-stat-chip"><span>Completed</span><strong>${completed}</strong></div><div class="today-stat-chip"><span>Follow-up due</span><strong>${followCount}</strong></div><div class="today-stat-chip"><span>Waiting</span><strong>${waitingCount}</strong></div></div></div>`;
-    document.getElementById('today-active-count').textContent=active.length; document.getElementById('focus-today-count').textContent=upNext.length; document.getElementById('focus-follow-count').textContent=followCount; document.getElementById('focus-wait-count').textContent=waitingCount; document.getElementById('focus-inbox-count').textContent=inbox.length; document.getElementById('today-completed-count').textContent=todayLogCache.length;
+    document.getElementById('today-active-count').textContent=active.length; document.getElementById('focus-today-count').textContent=upNext.length; document.getElementById('focus-follow-count').textContent=followCount; document.getElementById('focus-wait-count').textContent=waitingCount; document.getElementById('focus-inbox-count').textContent=inbox.length; document.getElementById('today-completed-count').textContent=completedTodayRows.length;
     const badge=document.getElementById('badge-focus'); if(badge)badge.textContent=Math.min(99,active.length); const brainBadge=document.getElementById('badge-brain'); if(brainBadge)brainBadge.textContent=inbox.length; const followBadge=document.getElementById('badge-followup'); if(followBadge)followBadge.textContent=followCount+waitingCount;
   }catch(e){ top.innerHTML=`<div class="empty-msg" style="color:var(--danger)">Could not load Today: ${focusEscape(e.message)}</div>`; }
 }
@@ -7939,7 +8411,8 @@ async function quickCaptureTodo() {
   btn.disabled=true; status.textContent='Saving...';
   if(focusCaptureMode==='project'){ const r=await quickCaptureProject(raw); btn.disabled=false; input.value=''; status.textContent=r.ok?'Project saved ✓':'Project table was unavailable — saved safely to Brain Dump ✓'; setTimeout(()=>{status.textContent='';},3000); await renderTodayFocus(); return; }
   let text='[Today] '+raw, dueDate=todayStr(); if(focusCaptureMode==='followup')text='[Follow Up] '+raw; if(focusCaptureMode==='waiting'){text='[Waiting] '+raw;dueDate=await askTodayDate('Review this waiting item on',addDaysStr(todayStr(),3)); if(!dueDate){btn.disabled=false;status.textContent='';return;}} if(focusCaptureMode==='inbox'){text='[Inbox] '+raw;dueDate=null;}
-  const {error}=await sb.from('todos').insert({text,priority:'med',due_date:dueDate,assigned_to:null,is_private:true,created_by:getUser()}); btn.disabled=false; if(error){status.textContent='Failed: '+error.message;return;} input.value=''; const savedLabel=focusCaptureMode==='today'?'Added for today ✓':focusCaptureMode==='followup'?'Follow-up saved ✓':focusCaptureMode==='waiting'?'Waiting item saved ✓':'Brain Dump saved ✓'; status.textContent=savedLabel; setTimeout(()=>{if(status.textContent===savedLabel)status.textContent='';},2500); await renderTodayFocus(); updateDailyProgress();
+  const captureIsPrivate=focusCaptureMode==='inbox';
+  const {error}=await sb.from('todos').insert({text,priority:'med',due_date:dueDate,assigned_to:null,is_private:captureIsPrivate,created_by:getUser()}); btn.disabled=false; if(error){status.textContent='Failed: '+error.message;return;} input.value=''; const savedLabel=focusCaptureMode==='today'?'Added for today ✓':focusCaptureMode==='followup'?'Follow-up saved ✓':focusCaptureMode==='waiting'?'Waiting item saved ✓':'Brain Dump saved ✓'; status.textContent=savedLabel; setTimeout(()=>{if(status.textContent===savedLabel)status.textContent='';},2500); await renderTodayFocus(); updateDailyProgress();
 }
 async function quickCaptureDoneNow(){
   const input=document.getElementById('focus-quick-input'), status=document.getElementById('focus-capture-status'); const raw=(input?.value||'').trim(); if(!raw){input?.focus();return;} status.textContent='Logging completed activity...'; const ok=await autoLogActivity({title:raw,tags:['unplanned'],isPrivate:false}); if(!ok){status.textContent='Could not log activity.';return;} input.value=''; status.textContent='Unplanned activity logged ✓'; showAfterDonePrompt(raw); await renderTodayFocus(); updateDailyProgress();
@@ -7975,10 +8448,12 @@ async function todayWaiting(src,id){
 }
 async function todayTomorrow(src,id){
   const item=todayFindItem(src,id); if(!item)return; const tomorrow=addDaysStr(todayStr(),1);
-  if(src==='todo'){ const t=item.raw; const marker=linkedScheduleId(t.text); const extras=['Carry',...(marker?[`Schedule:${marker}`]:[])]; const {error}=await sb.from('todos').update({text:setTodoStateText(t.text,'Today',extras),due_date:tomorrow,is_done:false,done_at:null}).eq('id',id); if(error)return alert('Failed: '+error.message); }
-  else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Today] [Carry] [Schedule:${id}] ${r.title}`,priority:'med',due_date:tomorrow,assigned_to:null,is_private:true,created_by:getUser()}); if(error)return alert('Failed: '+error.message); }
-  else if(src==='tracker'){ const {error}=await sb.from('time_plan_tracker').update({due_date:tomorrow,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); }
-  else if(src==='portfolio'){ const {error}=await sb.from('project_portfolio').update({next_action_date:tomorrow,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); }
+  let title=item.title,isPrivate=false;
+  if(src==='todo'){ const t=item.raw; const marker=linkedScheduleId(t.text); const extras=['Carry',...(marker?[`Schedule:${marker}`]:[])]; const {error}=await sb.from('todos').update({text:setTodoStateText(t.text,'Today',extras),due_date:tomorrow,is_done:false,done_at:null}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=todayLogPrivacyForTodo(t); }
+  else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Today] [Carry] [Schedule:${id}] ${r.title}`,priority:'med',due_date:tomorrow,assigned_to:null,is_private:true,created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
+  else if(src==='tracker'){ const r=item.raw; const {error}=await sb.from('time_plan_tracker').update({due_date:tomorrow,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
+  else if(src==='portfolio'){ const r=item.raw; title=r.next_action||item.title; const {error}=await sb.from('project_portfolio').update({next_action_date:tomorrow,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
+  await autoLogActivity({title,body:`Carried forward to ${tomorrow}`,tags:['carried-forward'],isPrivate,trackerId:src==='tracker'?id:null});
   await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); updateDailyProgress();
 }
 async function todayCancel(src,id){
@@ -8263,8 +8738,268 @@ function filterTodo(f, el) {
 // ── RESULT ─────────────────────────────────
 // Cache untuk export Excel dari result panel
 let resultAbsenCache = [];
+let managementEmployeeOptionsLoaded = false;
+let managementEmployeeOptionsRole = null;
+
+function localYmd(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function managementReportRange(mode, anchorStr) {
+  const base = new Date((anchorStr || todayStr()) + 'T00:00:00');
+  let start = new Date(base), end = new Date(base);
+  if (mode === 'weekly') {
+    const day = start.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    start.setDate(start.getDate() + diffToMonday);
+    end = new Date(start); end.setDate(end.getDate() + 6);
+  } else if (mode === 'monthly') {
+    start = new Date(base.getFullYear(), base.getMonth(), 1);
+    end = new Date(base.getFullYear(), base.getMonth()+1, 0);
+  }
+  const startStr = localYmd(start), endStr = localYmd(end);
+  const label = mode === 'daily'
+    ? start.toLocaleDateString('en-US',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})
+    : mode === 'weekly'
+      ? `${start.toLocaleDateString('en-US',{day:'2-digit',month:'short'})} – ${end.toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'})}`
+      : start.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  return { start:startStr, end:endStr, label };
+}
+function managementPublicRows(data) {
+  return (data || []).filter(row => row.is_private !== true);
+}
+function managementEmployeeFilter(rows, field, employee) {
+  if (!employee || employee === '__all__') return rows || [];
+  return (rows || []).filter(row => String(row?.[field] || '') === String(employee));
+}
+function managementTagList(row) {
+  return Array.isArray(row?.tags) ? row.tags : [];
+}
+function managementDateInRange(value, start, end) {
+  const d = String(value || '').slice(0,10);
+  return !!d && d >= start && d <= end;
+}
+function managementItemHtml(title, meta='', pill='', pillClass='') {
+  return `<div class="mr-item"><div class="mr-item-top"><div style="min-width:0"><div class="mr-item-title">${escHtml(title || 'Activity')}</div>${meta?`<div class="mr-item-meta">${escHtml(meta)}</div>`:''}</div>${pill?`<span class="mr-pill ${pillClass}">${escHtml(pill)}</span>`:''}</div></div>`;
+}
+function managementListHtml(items, emptyText, limit=12) {
+  if (!items.length) return `<div class="mr-empty">${escHtml(emptyText)}</div>`;
+  const visible = items.slice(0,limit);
+  return visible.join('') + (items.length > limit ? `<div class="mr-more-note">+${items.length-limit} more in this period</div>` : '');
+}
+async function ensureManagementEmployeeOptions() {
+  const sel = document.getElementById('result-employee-select');
+  if (!sel) return;
+  const manager = hasManagementAccess();
+  const roleKey = manager ? 'manager' : 'user';
+  if (!managementEmployeeOptionsLoaded || managementEmployeeOptionsRole !== roleKey) {
+    let users = [];
+    try { users = (await getAllKnownUsers()).map(u => u.name).filter(Boolean); } catch (_) {}
+    if (!users.includes(getUser())) users.push(getUser());
+    users = [...new Set(users)].sort((a,b)=>a.localeCompare(b));
+    sel.innerHTML = (manager ? '<option value="__all__">All Team</option>' : '') +
+      users.map(name => `<option value="${escAttr(name)}">${escHtml(name)}</option>`).join('');
+    managementEmployeeOptionsLoaded = true;
+    managementEmployeeOptionsRole = roleKey;
+  }
+  if (!manager) {
+    sel.value = getUser();
+    sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    if (!sel.value) sel.value = '__all__';
+  }
+}
+function resultReportToday() {
+  const date = document.getElementById('result-report-date');
+  const mode = document.getElementById('result-report-mode');
+  if (date) date.value = todayStr();
+  if (mode) mode.value = 'daily';
+  renderManagementReport();
+}
+function managementAttendanceSummary(rows, employee, mode) {
+  const labelMap = { hadir:'Present', terlambat:'Late', izin:'Leave', sakit:'Sick', cuti:'Time Off' };
+  const totalMinutes = rows.reduce((sum,r)=>{
+    if (!r.clock_in || !r.clock_out) return sum;
+    const diff=(new Date(r.clock_out)-new Date(r.clock_in))/60000;
+    return diff>0 ? sum+diff : sum;
+  },0);
+  const hours = totalMinutes ? `${Math.floor(totalMinutes/60)}h ${Math.round(totalMinutes%60)}m` : '—';
+  if (employee !== '__all__' && mode === 'daily') {
+    const r = rows[0];
+    if (!r) return { title:`${employee} — no attendance record`, sub:'No Clock In / attendance record for this date.' };
+    const ci = r.clock_in ? new Date(r.clock_in).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '—';
+    const co = r.clock_out ? new Date(r.clock_out).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '—';
+    return { title:`${employee} — ${labelMap[r.status] || r.status || 'Attendance'}`, sub:`Clock In ${ci} · Clock Out ${co} · Work time ${hours}${r.terlambat_menit?` · Late ${r.terlambat_menit} min`:''}` };
+  }
+  const counts = {};
+  rows.forEach(r=>{ counts[r.status||'hadir']=(counts[r.status||'hadir']||0)+1; });
+  const people = new Set(rows.map(r=>r.user_name).filter(Boolean)).size;
+  return { title:`${people} employee${people===1?'':'s'} with attendance records`, sub:`Present ${counts.hadir||0} · Late ${counts.terlambat||0} · Leave ${counts.izin||0} · Sick ${counts.sakit||0} · Time Off ${counts.cuti||0} · Total work ${hours}` };
+}
+async function renderManagementReport() {
+  if (!hasManagementAccess()) return;
+  const statusEl = document.getElementById('result-management-status');
+  const summaryEl = document.getElementById('result-management-summary');
+  if (!summaryEl) return;
+  if (statusEl) { statusEl.textContent='LOADING'; statusEl.style.opacity='.65'; }
+  try {
+    await ensureManagementEmployeeOptions();
+    const modeEl = document.getElementById('result-report-mode');
+    const dateEl = document.getElementById('result-report-date');
+    if (dateEl && !dateEl.value) dateEl.value = todayStr();
+    const mode = modeEl?.value || 'daily';
+    const range = managementReportRange(mode, dateEl?.value || todayStr());
+    const employeeSel = document.getElementById('result-employee-select');
+    const employee = employeeSel?.value || (hasManagementAccess() ? '__all__' : getUser());
+
+    const [sRes,lRes,tRes,pRes,aRes,tdRes] = await Promise.all([
+      withTimeout(sb.from('schedule_events').select('*').gte('event_date',range.start).lte('event_date',range.end).order('event_date').order('time_start'),15000),
+      withTimeout(sb.from('logbook_entries').select('*').gte('entry_date',range.start).lte('entry_date',range.end).order('entry_date',{ascending:false}).order('created_at',{ascending:false}),15000),
+      withTimeout(sb.from('time_plan_tracker').select('*'),15000).catch(error=>({data:[],error})),
+      withTimeout(sb.from('project_portfolio').select('*').order('updated_at',{ascending:false}),15000).catch(error=>({data:[],error})),
+      withTimeout(sb.from('attendance').select('*').gte('tanggal',range.start).lte('tanggal',range.end).order('tanggal'),15000).catch(error=>({data:[],error})),
+      withTimeout(sb.from('todos').select('*'),15000).catch(error=>({data:[],error}))
+    ]);
+    if (sRes.error) throw sRes.error;
+    if (lRes.error) throw lRes.error;
+
+    let schedule = managementEmployeeFilter(managementPublicRows(sRes.data), 'created_by', employee);
+    let logs = managementEmployeeFilter(managementPublicRows(lRes.data), 'created_by', employee);
+    let trackers = managementEmployeeFilter(managementPublicRows(tRes.data), 'created_by', employee);
+    let portfolio = managementEmployeeFilter(managementPublicRows(pRes.data), 'created_by', employee);
+    let attendance = managementEmployeeFilter(aRes.data || [], 'user_name', employee);
+    let workTodos = managementEmployeeFilter(managementPublicRows(tdRes.data), 'created_by', employee);
+
+    const completedLogs = logs.filter(l => {
+      const tags=managementTagList(l);
+      return !tags.includes('waiting') && !tags.includes('cancelled') && !tags.includes('carried-forward');
+    });
+    const unplanned = completedLogs.filter(l => managementTagList(l).includes('unplanned'));
+    const waitingLogs = logs.filter(l => managementTagList(l).includes('waiting'));
+    const carryLogs = logs.filter(l => managementTagList(l).includes('carried-forward'));
+    const schedDone = schedule.filter(e => e.category === 'green');
+    const planRate = schedule.length ? Math.round(schedDone.length / schedule.length * 100) : 0;
+
+    const currentWaitingPortfolio = portfolio.filter(r => portfolioIsWaitingState(r) && !portfolioIsClosed(r));
+    const currentWaitingTracker = trackers.filter(t => t.status === 'on_hold');
+    const currentWaitingTodos = workTodos.filter(t => !t.is_done && focusIsWaiting(t));
+    const currentCarryTodos = workTodos.filter(t => !t.is_done && focusIsCarry(t) && (!t.due_date || t.due_date <= range.end));
+    const waitingEntries = [];
+    const waitingSeen = new Set();
+    const addWaitingEntry = (title, meta, owner='') => {
+      const key = `${String(owner||'').toLowerCase()}|${String(title||'').toLowerCase().replace(/\s+/g,' ').trim()}`;
+      if (waitingSeen.has(key)) return;
+      waitingSeen.add(key);
+      waitingEntries.push({title,meta});
+    };
+    waitingLogs.forEach(l => addWaitingEntry(
+      l.title || 'Waiting',
+      `${l.entry_date}${employee==='__all__'&&l.created_by?` · ${l.created_by}`:''}${l.body?` · ${String(l.body).replace(/<[^>]*>/g,'').slice(0,90)}`:''}`,
+      l.created_by
+    ));
+    currentWaitingTodos.forEach(t => addWaitingEntry(
+      stripTodoInternalMarkers(t.text) || 'Waiting',
+      `${t.due_date?`Review ${t.due_date}`:'Waiting for reply'}${employee==='__all__'&&t.created_by?` · ${t.created_by}`:''}`,
+      t.created_by
+    ));
+    currentWaitingPortfolio.forEach(r => addWaitingEntry(
+      r.next_action || r.title || 'Portfolio waiting',
+      `${r.customer_name||''}${r.next_action_date?` · review ${r.next_action_date}`:''}${employee==='__all__'&&r.created_by?` · ${r.created_by}`:''}`,
+      r.created_by
+    ));
+    currentWaitingTracker.forEach(t => addWaitingEntry(
+      t.subject || 'Project waiting',
+      `${t.due_date?`Review ${t.due_date}`:'On Hold'}${employee==='__all__'&&t.created_by?` · ${t.created_by}`:''}`,
+      t.created_by
+    ));
+    const waitingCount = waitingEntries.length;
+    const carryEntries = [];
+    const carrySeen = new Set();
+    const addCarryEntry = (title, meta, owner='') => {
+      const key = `${String(owner||'').toLowerCase()}|${String(title||'').toLowerCase().replace(/\s+/g,' ').trim()}`;
+      if (carrySeen.has(key)) return;
+      carrySeen.add(key);
+      carryEntries.push({title,meta});
+    };
+    carryLogs.forEach(l => addCarryEntry(
+      l.title || 'Carried forward',
+      `${l.entry_date}${employee==='__all__'&&l.created_by?` · ${l.created_by}`:''}${l.body?` · ${String(l.body).replace(/<[^>]*>/g,'').slice(0,90)}`:''}`,
+      l.created_by
+    ));
+    currentCarryTodos.forEach(t => addCarryEntry(
+      stripTodoInternalMarkers(t.text) || 'Carried forward',
+      `${t.due_date?`Continue ${t.due_date}`:'Carry forward'}${employee==='__all__'&&t.created_by?` · ${t.created_by}`:''}`,
+      t.created_by
+    ));
+
+    summaryEl.innerHTML = `
+      <div class="mr-stat planned"><div class="label">Planned</div><div class="value">${schedule.length}</div></div>
+      <div class="mr-stat done"><div class="label">Plan Done</div><div class="value">${schedDone.length}</div></div>
+      <div class="mr-stat actual"><div class="label">Completed</div><div class="value">${completedLogs.length}</div></div>
+      <div class="mr-stat unplanned"><div class="label">Unplanned</div><div class="value">${unplanned.length}</div></div>
+      <div class="mr-stat waiting"><div class="label">Waiting</div><div class="value">${waitingCount}</div></div>
+      <div class="mr-stat carry"><div class="label">Carry Forward</div><div class="value">${carryEntries.length}</div></div>`;
+
+    const planProgress=document.getElementById('result-plan-progress');
+    if (planProgress) planProgress.innerHTML=`<div class="mr-plan-text"><strong>${planRate}%</strong> of planned activities completed · ${escHtml(range.label)}${employee==='__all__'?' · All Team':` · ${escHtml(employee)}`}</div><div class="mr-plan-bar"><div class="mr-plan-fill" style="width:${planRate}%"></div></div>`;
+
+    const att = managementAttendanceSummary(attendance, employee, mode);
+    const attEl=document.getElementById('result-management-attendance');
+    if (attEl) attEl.innerHTML=`<div class="mr-attendance-main"><div class="mr-attendance-icon"><i class="ti ti-fingerprint"></i></div><div class="mr-attendance-text"><strong>${escHtml(att.title)}</strong><span>${escHtml(att.sub)}</span></div></div><span class="mr-pill">${escHtml(range.label)}</span>`;
+
+    const ownerMeta = row => employee==='__all__' && row.created_by ? ` · ${row.created_by}` : '';
+    const plannedItems = schedule.map(e => managementItemHtml(
+      e.title || 'Planned activity',
+      `${e.event_date}${e.time_start?` · ${String(e.time_start).slice(0,5)}`:''}${e.location?` · ${e.location}`:''}${ownerMeta(e)}`,
+      e.category==='green'?'Done':'Planned',
+      e.category==='green'?'done':''
+    ));
+    const completedItems = completedLogs.map(l => {
+      const tags=managementTagList(l);
+      return managementItemHtml(
+        l.title || 'Completed activity',
+        `${l.entry_date}${ownerMeta(l)}${l.body?` · ${String(l.body).replace(/<[^>]*>/g,'').slice(0,90)}`:''}`,
+        tags.includes('unplanned')?'Unplanned':'Done',
+        tags.includes('unplanned')?'unplanned':'done'
+      );
+    });
+    const pendingItems = waitingEntries.map(x => managementItemHtml(x.title, x.meta, 'Waiting','waiting'));
+    carryEntries.forEach(x => pendingItems.push(managementItemHtml(x.title, x.meta, 'Carry','carry')));
+
+    const activePortfolio = portfolio.filter(r => !portfolioIsClosed(r));
+    const projectItems = activePortfolio
+      .slice(0,12)
+      .map(r => {
+        const stage = PORTFOLIO_STAGE_LABEL[portfolioStage(r)] || portfolioStage(r) || 'Active';
+        const title = r.customer_name ? `${r.customer_name} — ${r.title||'Opportunity'}` : (r.title||'Opportunity');
+        const meta = `${stage}${r.next_action?` · Next: ${r.next_action}`:''}${r.next_action_date?` · ${r.next_action_date}`:''}${ownerMeta(r)}`;
+        return managementItemHtml(title, meta, portfolioIsWaitingState(r)?'Waiting':'Active', portfolioIsWaitingState(r)?'waiting':'');
+      });
+
+    document.getElementById('mr-planned-count').textContent=schedule.length;
+    document.getElementById('mr-completed-count').textContent=completedLogs.length;
+    document.getElementById('mr-pending-count').textContent=pendingItems.length;
+    document.getElementById('mr-project-count').textContent=activePortfolio.length;
+    document.getElementById('mr-planned-list').innerHTML=managementListHtml(plannedItems,'No planned activities for this period.');
+    document.getElementById('mr-completed-list').innerHTML=managementListHtml(completedItems,'No completed activities recorded for this period.');
+    document.getElementById('mr-pending-list').innerHTML=managementListHtml(pendingItems,'No waiting or carry-forward activity needs management attention.');
+    document.getElementById('mr-project-list').innerHTML=managementListHtml(projectItems,'No active project / opportunity status to show.');
+
+    // Keep the legacy monthly analytics synchronized with the selected reference month.
+    const monthInput=document.getElementById('result-month-input');
+    if (monthInput && dateEl?.value) monthInput.value=dateEl.value.slice(0,7);
+    if (statusEl) { statusEl.textContent='LIVE'; statusEl.style.opacity='1'; }
+  } catch (error) {
+    console.error('Management Report failed', error);
+    if (statusEl) { statusEl.textContent='ERROR'; statusEl.style.opacity='1'; }
+    document.getElementById('mr-planned-list').innerHTML=`<div class="mr-empty">Could not load report: ${escHtml(error.message||String(error))}</div>`;
+  }
+}
 
 async function renderResult() {
+  if (!hasManagementAccess()) return alert('Management Report is available only to Management and Owner.');
+  await renderManagementReport();
   // ── Set default bulan ke bulan ini jika belum dipilih ──
   const monthInput = document.getElementById('result-month-input');
   if (monthInput && !monthInput.value) monthInput.value = todayStr().substring(0, 7);
@@ -8306,7 +9041,7 @@ async function renderResult() {
 
   // ── Boss-friendly work summary — data bulan penuh ──
   const schedDone = sd.filter(e => e.category === 'green').length;
-  const completedLogs = ld.filter(l => !(l.tags || []).includes('waiting') && !(l.tags || []).includes('cancelled')).length;
+  const completedLogs = ld.filter(l => !(l.tags || []).includes('waiting') && !(l.tags || []).includes('cancelled') && !(l.tags || []).includes('carried-forward')).length;
   const unplannedLogs = ld.filter(l => (l.tags || []).includes('unplanned')).length;
   const waitingTodos = td.filter(t => !t.is_done && focusIsWaiting(t)).length;
   const waitingProjects = pf.filter(r => portfolioIsWaitingState(r) && !portfolioIsClosed(r)).length;
@@ -8486,12 +9221,12 @@ async function renderResult() {
   }
 
   // ── Distribusi status Tracker bulan ini ──
-  const statCounts = { done: 0, prog: 0, not_started: 0, skipped: 0, on_hold: 0 };
+  const statCounts = { done: 0, in_progress: 0, not_started: 0, skipped: 0, on_hold: 0 };
   tr.forEach(t => { if (statCounts[t.status] !== undefined) statCounts[t.status]++; });
   const totalTrk = tr.length || 1;
   const trkStatDefs = [
     { name: 'Done', key: 'done', color: '#22C55E' },
-    { name: 'In Progress', key: 'prog', color: '#2F6364' },
+    { name: 'In Progress', key: 'in_progress', color: '#2F6364' },
     { name: 'Not Started', key: 'not_started', color: '#94A3B8' },
     { name: 'On Hold', key: 'on_hold', color: '#F59E0B' },
     { name: 'Skipped', key: 'skipped', color: '#EF4444' },
@@ -8558,7 +9293,7 @@ async function updateDailyProgress() {
       sb.from('logbook_entries').select('id,tags,created_by,is_private').eq('entry_date',today)
     ]);
     const planned=applyPrivacy(s.data||[]).filter(x=>String(x.created_by||'')===String(user||''));
-    const logs=applyPrivacy(l.data||[]).filter(x=>String(x.created_by||'')===String(user||'') && !(x.tags||[]).includes('waiting') && !(x.tags||[]).includes('cancelled'));
+    const logs=applyPrivacy(l.data||[]).filter(x=>String(x.created_by||'')===String(user||'') && !(x.tags||[]).includes('waiting') && !(x.tags||[]).includes('cancelled') && !(x.tags||[]).includes('carried-forward'));
     const prog=planned.length?Math.min(100,Math.round(logs.length/planned.length*100)):(logs.length?100:0);
     document.getElementById('daily-prog').style.width=prog+'%';
     document.getElementById('daily-prog-val').textContent=prog+'%';
@@ -9151,8 +9886,10 @@ function setupRealtime() {
     .subscribe();
 }
 
-// Mulai realtime setelah DOM ready
-window.addEventListener('DOMContentLoaded', () => {
+// Start realtime only after an authenticated WorkBoard session is ready.
+window.addEventListener('workboard-auth-ready', () => {
+  if (workboardRealtimeStarted) return;
+  workboardRealtimeStarted = true;
   setupRealtime();
 });
 
@@ -9188,79 +9925,12 @@ function openNavGroupForPanel(panelId) {
   if (grp) grp.classList.add('open');
 }
 
-// Switch User: log in as another user on this device (without migrating data)
-async function switchUser() {
-  const currentName = getUser();
-  const input = prompt(
-    'Log in as who on this device?\n' +
-    '(The new name you type will become active immediately. Each person\'s data stays separate.)',
-    ''
-  );
-  if (!input || !input.trim()) return;
-  const newName = input.trim();
-  if (newName === currentName) return;
+// Legacy compatibility: Switch User now signs out to the authenticated login screen.
+async function switchUser() { await signOutWorkBoard(); }
 
-  localStorage.setItem('wb_user', newName);
-  const elName = document.getElementById('user-name');
-  const elNameMobile = document.getElementById('user-name-mobile');
-  if (elName) elName.textContent = newName;
-  if (elNameMobile) elNameMobile.textContent = newName;
-  applyAdminVisibility();
-  await refreshCurrentPanel();
-}
-
-// Change Name: rename yourself — all existing data is moved to the new name
+// Display names are established at registration. Owner can correct roles in Users & Access.
 async function renameUser() {
-  const oldName = getUser();
-  const input = prompt(
-    'Change your name from "' + oldName + '" to what?\n' +
-    '(All your existing data will be moved to this new name.)',
-    oldName
-  );
-  if (!input || !input.trim()) return;
-  const newName = input.trim();
-  if (newName === oldName) return;
-
-  // If the new name is already used by someone else → reject, don't mix data
-  let existing = null;
-  try {
-    const known = await getAllKnownUsers();
-    existing = known.find(u => u.name === newName);
-  } catch (e) { /* if the check fails, continue anyway */ }
-
-  if (existing) {
-    alert(
-      `The name "${newName}" is already used by another WorkBoard user.\n\n` +
-      `Choose a different name, or use the "Switch" button if you really do want to log in as "${newName}".`
-    );
-    return;
-  }
-
-  if (!confirm(
-    `Change name from "${oldName}" to "${newName}"?\n\n` +
-    `All your history (schedule, tracker, logbook, notes, to do, notepad, chat, attendance, leave) ` +
-    `will be moved to this new name.`
-  )) return;
-
-  const elName = document.getElementById('user-name');
-  const elNameMobile = document.getElementById('user-name-mobile');
-  if (elName) elName.textContent = '⏳ Changing name...';
-
-  try {
-    const res = await renameUserEverywhere(oldName, newName);
-    localStorage.setItem('wb_user', newName);
-    if (elName) elName.textContent = newName;
-    if (elNameMobile) elNameMobile.textContent = newName;
-    await refreshCurrentPanel();
-    if (!res.ok) {
-      alert(`Name changed to "${newName}", but ${res.failedCount} part(s) of the data failed to update (possibly connection/RLS). Please check again later or retry.`);
-    } else {
-      alert(`✅ Name successfully changed to "${newName}" across all data.`);
-    }
-  } catch (e) {
-    if (elName) elName.textContent = oldName;
-    alert('Failed to change name: ' + e.message);
-  }
+  alert('Display-name editing is disabled in v91 to protect historical ownership links. If a registration name is incorrect, contact Ratu before creating work data.');
 }
 let notepadCache = [];
 let notepadViewCache = [];
@@ -10878,6 +11548,7 @@ restoreTodoDraft();
     <button class="bn-item active" id="bn-core-capture" onclick="openHomeCapture(this)" aria-label="Today"><i class="ti ti-target-arrow"></i><span>Today</span><span class="bn-badge hidden" id="bn-badge-focus"></span></button>
     <button class="bn-item" id="bn-core-daily" onclick="openMobileHub('daily',this)" aria-label="Daily"><i class="ti ti-calendar-event"></i><span>Daily</span><span class="bn-badge hidden" id="bn-badge-daily"></span></button>
     <button class="bn-item" id="bn-core-projects" onclick="openProjectsMobile(this)" aria-label="Projects"><i class="ti ti-folders"></i><span>Projects</span><span class="bn-badge hidden" id="bn-badge-projects"></span></button>
+    <button class="bn-item" id="bn-core-report" onclick="switchPanelMobile('result',this)" aria-label="Management Report"><i class="ti ti-chart-donut-3"></i><span>Report</span></button>
     <button class="bn-item" id="bn-core-more" onclick="openMobileHub('more',this)" aria-label="More"><i class="ti ti-grid-dots"></i><span>More</span><span class="bn-badge hidden" id="bn-badge-more"></span></button>
   </div>
 </nav>
@@ -10911,17 +11582,16 @@ restoreTodoDraft();
         <div class="mobile-hub-grid">
           <button class="mobile-hub-item" onclick="mobileHubNavigate('chat')"><i class="ti ti-message-circle-2"></i><span>Work Talk<small>Team communication</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('absen')"><i class="ti ti-fingerprint"></i><span>Attendance<small>Attendance and leave</small></span></button>
-          <button class="mobile-hub-item" onclick="mobileHubNavigate('result')"><i class="ti ti-chart-bar"></i><span>Reports<small>Monthly results</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('links')"><i class="ti ti-link"></i><span>Resources<small>Links and references</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('passvault')"><i class="ti ti-lock"></i><span>Password Manager<small>Encrypted private vault</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('faq')"><i class="ti ti-help-circle"></i><span>Help<small>Guide and FAQ</small></span></button>
         </div>
       </div>
       <div class="mobile-hub-section mobile-hub-admin" id="mobile-hub-admin">
-        <div class="mobile-hub-label">Settings</div>
+        <div class="mobile-hub-label">Owner Controls</div>
         <div class="mobile-hub-grid">
-          <button class="mobile-hub-item" id="bn-admin-users" onclick="mobileHubNavigate('adminusers')"><i class="ti ti-users-group"></i><span>Manage Users<small>Admin only</small></span></button>
-          <button class="mobile-hub-item" id="bn-admin-leave" onclick="mobileHubNavigate('adminleave')"><i class="ti ti-calendar-off"></i><span>Leave Management<small>Admin only</small></span></button>
+          <button class="mobile-hub-item" id="bn-admin-users" onclick="mobileHubNavigate('adminusers')"><i class="ti ti-users-group"></i><span>Users & Access<small>Owner only</small></span></button>
+          <button class="mobile-hub-item" id="bn-admin-leave" onclick="mobileHubNavigate('adminleave')"><i class="ti ti-calendar-off"></i><span>Leave Management<small>Owner only</small></span></button>
         </div>
       </div>
     </div>
@@ -10932,6 +11602,7 @@ restoreTodoDraft();
 const MOBILE_PANEL_BUCKET = {
   focus:'capture', schedule:'daily', logbook:'daily',
   portfolio:'projects', tracker:'projects', kanban:'projects', gantt:'projects', matrix:'projects', recurring:'projects',
+  result:'report',
   brain:'capture', followup:'capture'
 };
 
@@ -11038,7 +11709,7 @@ window.addEventListener('DOMContentLoaded', syncBottomNavBadges);
 // ============================================================
 // ABSENSI — WorkBoard AMS
 // Fitur: Clock In/Out, Izin/Sakit/Cuti, GPS, Foto Selfie
-// Real-time, Export Excel/PDF, Admin-only delete/edit
+// Real-time, Export Excel/PDF, Owner-only delete/edit
 // ============================================================
 
 const ABSEN_SQL = `-- Jalankan di Supabase SQL Editor
@@ -11457,7 +12128,7 @@ async function renderAbsenRekap() {
     }
 
     const currentUser = getUser();
-    const isAdmin = currentUser.toLowerCase().includes('admin') || currentUser.toLowerCase().includes('bos') || currentUser.toLowerCase().includes('hrd');
+    const isAdmin = isOwner();
 
     let html = `<table class="task-table" style="min-width:600px">
       <thead><tr>
@@ -11502,7 +12173,8 @@ async function renderAbsenRekap() {
 
 // Admin delete absensi (attendance row atau leave_request)
 async function adminDeleteAbsen(id, leaveId) {
-  if (!confirm('Delete this attendance record? (Only admins can do this)')) return;
+  if (!isOwner()) return alert('Owner access required.');
+  if (!confirm('Delete this attendance record? (Owner only)')) return;
   let error;
   if (leaveId) {
     // Ini adalah leave_request row
@@ -11514,28 +12186,27 @@ async function adminDeleteAbsen(id, leaveId) {
   else await renderAbsenRekap();
 }
 
-// ── ADMIN: Manage Users ──────────────────────────────────────
-// Tampilkan/sembunyikan menu Settings berdasarkan apakah user adalah admin
+// ── ROLE-BASED VISIBILITY ───────────────────────────────────
+// Legacy function name kept so older callers continue to work.
 function applyAdminVisibility() {
-  const currentUser = getUser();
-  const isAdmin = currentUser.toLowerCase().includes('admin')
-    || currentUser.toLowerCase().includes('bos')
-    || currentUser.toLowerCase().includes('hrd');
-  // Desktop: show/hide Settings nav-group
+  const owner = isOwner();
+  const canReport = hasManagementAccess();
   const ngSettings = document.getElementById('ng-settings');
-  if (ngSettings) ngSettings.style.display = isAdmin ? 'block' : 'none';
-  // Keep legacy IDs working for any other code that references them
+  if (ngSettings) ngSettings.style.display = owner ? 'block' : 'none';
   const navEl = document.getElementById('nav-admin-users');
-  if (navEl) navEl.style.display = isAdmin ? 'flex' : 'none';
+  if (navEl) navEl.style.display = owner ? 'flex' : 'none';
   const navLeaveEl = document.getElementById('nav-admin-leave');
-  if (navLeaveEl) navLeaveEl.style.display = isAdmin ? 'flex' : 'none';
-  // Bottom nav admin button
+  if (navLeaveEl) navLeaveEl.style.display = owner ? 'flex' : 'none';
   const bnAdminEl = document.getElementById('bn-admin-users');
-  if (bnAdminEl) bnAdminEl.style.display = isAdmin ? 'flex' : 'none';
+  if (bnAdminEl) bnAdminEl.style.display = owner ? 'flex' : 'none';
   const bnLeaveEl = document.getElementById('bn-admin-leave');
-  if (bnLeaveEl) bnLeaveEl.style.display = isAdmin ? 'flex' : 'none';
+  if (bnLeaveEl) bnLeaveEl.style.display = owner ? 'flex' : 'none';
   const mobileHubAdmin = document.getElementById('mobile-hub-admin');
-  if (mobileHubAdmin) mobileHubAdmin.style.display = isAdmin ? 'block' : 'none';
+  if (mobileHubAdmin) mobileHubAdmin.style.display = owner ? 'block' : 'none';
+  const reportDesktop = document.getElementById('ng-reports');
+  if (reportDesktop) reportDesktop.style.display = canReport ? 'block' : 'none';
+  const reportMobile = document.getElementById('bn-core-report');
+  if (reportMobile) reportMobile.style.display = canReport ? 'flex' : 'none';
 }
 
 // Kumpulkan semua nama unik dari berbagai tabel di Supabase
@@ -11543,7 +12214,7 @@ async function getAllKnownUsers() {
   const safe = q => withTimeout(q, 8000).then(r => (r.data||[]).map(x => x.user_name || x.created_by || x.sender || '')).catch(() => []);
   const [
     onlineNames, attendNames, leaveNames,
-    schedNames, trackerNames, portfolioNames, logNames,
+    schedNames, trackerNames, projectTrackerNames, portfolioNames, logNames,
     noteNames, todoNames, chatNames
   ] = await Promise.all([
     safe(sb.from('online_presence').select('user_name')),
@@ -11551,13 +12222,14 @@ async function getAllKnownUsers() {
     safe(sb.from('leave_requests').select('user_name')),
     safe(sb.from('schedule_events').select('created_by')),
     safe(sb.from('tracker_items').select('created_by')),
+    safe(sb.from('time_plan_tracker').select('created_by')),
     safe(sb.from('project_portfolio').select('created_by')),
     safe(sb.from('logbook_entries').select('created_by')),
     safe(sb.from('notes').select('created_by')),
     safe(sb.from('todos').select('created_by')),
     safe(sb.from('chat_messages').select('sender')),
   ]);
-  const results = [onlineNames, attendNames, leaveNames, schedNames, trackerNames, portfolioNames, logNames, noteNames, todoNames, chatNames];
+  const results = [onlineNames, attendNames, leaveNames, schedNames, trackerNames, projectTrackerNames, portfolioNames, logNames, noteNames, todoNames, chatNames];
   const onlineRes = await withTimeout(sb.from('online_presence').select('user_name,last_seen'), 8000).catch(() => ({data:[]}));
   const onlineMap = {};
   ((onlineRes.data)||[]).forEach(u => { onlineMap[u.user_name] = u.last_seen; });
@@ -11573,51 +12245,43 @@ async function getAllKnownUsers() {
 }
 
 async function renderAdminUsers() {
-  const currentUser = getUser();
-  const isAdmin = currentUser.toLowerCase().includes('admin')
-    || currentUser.toLowerCase().includes('bos')
-    || currentUser.toLowerCase().includes('hrd');
-  if (!isAdmin) {
-    document.getElementById('admin-users-list').innerHTML = '<div class="empty-msg">⛔ Access denied — only admins can view this page.</div>';
-    return;
-  }
   const listEl = document.getElementById('admin-users-list');
-  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading...</div>';
-
-  const users = await getAllKnownUsers();
-  if (!users.length) {
-    listEl.innerHTML = '<div class="empty-msg">No registered users yet.</div>';
+  if (!listEl) return;
+  if (!isOwner()) {
+    listEl.innerHTML = '<div class="empty-msg">Owner access required.</div>';
     return;
   }
-
-  const now = Date.now();
-  const ONLINE_CUTOFF_MS = 90 * 1000; // 90 detik
-
-  listEl.innerHTML = users.map(u => {
-    const isOnline = u.last_seen && (now - new Date(u.last_seen).getTime()) < ONLINE_CUTOFF_MS;
-    const isSelf = u.name === currentUser;
-    const isAdminUser = u.name.toLowerCase().includes('admin') || u.name.toLowerCase().includes('bos') || u.name.toLowerCase().includes('hrd');
-    const avatarLetter = u.name.charAt(0).toUpperCase();
-    const lastSeenStr = u.last_seen
-      ? new Date(u.last_seen).toLocaleString('en-US', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
-      : 'Never logged in';
-    return `<div class="admin-user-row">
-      <div class="admin-user-avatar">${avatarLetter}</div>
-      <div class="admin-user-info">
-        <div class="admin-user-name">${escHtml(u.name)} ${isSelf ? '<span style="font-size:10px;color:var(--text3)">(Kamu)</span>' : ''}</div>
-        <div class="admin-user-meta">Terakhir online: ${lastSeenStr}</div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        ${isOnline ? '<span class="admin-user-badge online">🟢 Online</span>' : ''}
-        ${isAdminUser ? '<span class="admin-user-badge admin">⭐ Admin</span>' : ''}
-        <button class="btn-sm" onclick="adminRenameUser('${u.name.replace(/'/g,"\\'")}')\" title="Change this user's name"><i class="ti ti-pencil"></i> Rename</button>
-        ${!isSelf ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminDeleteUser('${u.name.replace(/'/g,"\\'")}\')" title="Delete all data for this user"><i class="ti ti-user-minus"></i> Delete</button>` : ''}
-      </div>
-    </div>`;
+  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading accounts...</div>';
+  const { data, error } = await sb.from('workboard_profiles').select('id,full_name,email,role,is_active,created_at,updated_at').order('created_at',{ascending:true});
+  if (error) {
+    listEl.innerHTML = `<div class="empty-msg" style="color:var(--danger)">Could not load Users & Access: ${escHtml(error.message)}</div>`;
+    return;
+  }
+  const rows = data || [];
+  if (!rows.length) { listEl.innerHTML='<div class="empty-msg">No WorkBoard accounts yet.</div>'; return; }
+  listEl.innerHTML = rows.map(p => {
+    const ownerRow = p.role === 'owner';
+    const self = p.id === currentAuthUser?.id;
+    const roleControl = ownerRow
+      ? '<span class="owner-role-lock">👑 Owner</span>'
+      : `<select id="owner-role-${p.id}" style="width:100%"><option value="staff" ${p.role==='staff'?'selected':''}>Staff</option><option value="management" ${p.role==='management'?'selected':''}>Management</option></select>`;
+    const activeControl = ownerRow
+      ? '<span class="owner-active-badge on">Active</span>'
+      : `<select id="owner-active-${p.id}" style="width:100%"><option value="true" ${p.is_active?'selected':''}>Active</option><option value="false" ${!p.is_active?'selected':''}>Inactive</option></select>`;
+    return `<div class="admin-user-row"><div class="owner-access-row"><div style="min-width:0"><div class="admin-user-name">${escHtml(p.full_name || 'Unnamed')}${self?' <span style="font-size:9px;color:var(--text3)">(you)</span>':''}</div><div class="owner-access-email">${escHtml(p.email || '')}</div></div>${roleControl}${activeControl}<div>${ownerRow?'':`<button class="btn-sm btn-primary" style="width:100%;justify-content:center" onclick="ownerSaveUserAccess('${p.id}')"><i class="ti ti-device-floppy"></i> Save</button>`}</div></div></div>`;
   }).join('');
 }
+async function ownerSaveUserAccess(userId) {
+  if (!isOwner()) return alert('Owner access required.');
+  const role = document.getElementById('owner-role-' + userId)?.value || 'staff';
+  const active = (document.getElementById('owner-active-' + userId)?.value || 'true') === 'true';
+  if (!['staff','management'].includes(role)) return alert('Role must be Staff or Management.');
+  const { error } = await sb.rpc('workboard_owner_set_access', { p_user_id:userId, p_role:role, p_active:active });
+  if (error) return alert('Could not update access: ' + error.message);
+  await renderAdminUsers();
+}
 
-// ── Admin Tab switching ────────────────────────────────────────
+// ── Owner Tab switching ────────────────────────────────────────
 function switchAdminTab(tab) {
   document.getElementById('admin-section-users').style.display = tab === 'users' ? '' : 'none';
   document.getElementById('admin-section-leave').style.display = tab === 'leave' ? '' : 'none';
@@ -11630,12 +12294,10 @@ function switchAdminTab(tab) {
 // Shared rendering helper for both Leave Management panels
 async function _renderAdminLeaveInto(listEl, filterSelectEl, typeSelectEl) {
   const currentUser = getUser();
-  const isAdmin = currentUser.toLowerCase().includes('admin')
-    || currentUser.toLowerCase().includes('bos')
-    || currentUser.toLowerCase().includes('hrd');
+  const isAdmin = isOwner();
   if (!listEl) return;
   if (!isAdmin) {
-    listEl.innerHTML = '<div class="empty-msg">⛔ Akses ditolak.</div>';
+    listEl.innerHTML = '<div class="empty-msg">Owner access required.</div>';
     return;
   }
   listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading...</div>';
@@ -11685,7 +12347,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
           &nbsp;·&nbsp;Submitted: ${diajukan}
         </div>
         ${lv.alasan ? `<div class="admin-leave-alasan">"${escHtml(lv.alasan)}"</div>` : ''}
-        ${lv.catatan_admin ? `<div style="font-size:11px;margin-top:4px;color:#1F4443"><i class="ti ti-message"></i> Admin note: ${escHtml(lv.catatan_admin)}</div>` : ''}
+        ${lv.catatan_admin ? `<div style="font-size:11px;margin-top:4px;color:#1F4443"><i class="ti ti-message"></i> Owner note: ${escHtml(lv.catatan_admin)}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;min-width:110px">
         <span class="admin-leave-badge alb-${st}">${statusLabel[st] || st}</span>
@@ -11717,10 +12379,8 @@ async function renderAdminLeave() {
 
 async function adminUpdateLeaveStatus(id, newStatus) {
   const currentUser = getUser();
-  const isAdmin = currentUser.toLowerCase().includes('admin')
-    || currentUser.toLowerCase().includes('bos')
-    || currentUser.toLowerCase().includes('hrd');
-  if (!isAdmin) return alert('Akses ditolak.');
+  const isAdmin = isOwner();
+  if (!isAdmin) return alert('Owner access required.');
 
   let catatanAdmin = null;
   if (newStatus === 'rejected') {
@@ -11751,10 +12411,8 @@ async function adminUpdateLeaveStatus(id, newStatus) {
 
 async function adminDeleteLeave(id) {
   const currentUser = getUser();
-  const isAdmin = currentUser.toLowerCase().includes('admin')
-    || currentUser.toLowerCase().includes('bos')
-    || currentUser.toLowerCase().includes('hrd');
-  if (!isAdmin) return alert('Akses ditolak.');
+  const isAdmin = isOwner();
+  if (!isAdmin) return alert('Owner access required.');
   if (!confirm('Delete this leave request? This action cannot be undone.')) return;
   const { error } = await withTimeout(sb.from('leave_requests').delete().eq('id', id));
   if (error) return alert('Failed to delete: ' + error.message);
@@ -11791,10 +12449,8 @@ async function adminRenameUser(oldName) {
 
 async function adminDeleteUser(targetName) {
   const currentUser = getUser();
-  const isAdmin = currentUser.toLowerCase().includes('admin')
-    || currentUser.toLowerCase().includes('bos')
-    || currentUser.toLowerCase().includes('hrd');
-  if (!isAdmin) return alert('Akses ditolak.');
+  const isAdmin = isOwner();
+  if (!isAdmin) return alert('Owner access required.');
   if (targetName === currentUser) return alert('You can\u2019t delete your own account.');
 
   if (!confirm(
@@ -12152,7 +12808,7 @@ function renderFaq() {
       section: '🚀 Getting Started with WorkBoard',
       items: [
         { q: 'How do I log in?', a: 'WorkBoard uses your name as identity. The first time you open the app, you\'ll be asked to enter your name. There are two different buttons in the top-left corner: the <b>⇄ Switch</b> button to log in as another user on the same device (without changing anyone\'s data), and the <b>✎</b> (pencil) button to change your own name along with all your existing data.' },
-        { q: 'Who can become an Admin?', a: 'Admin access is granted by PT. Andrika Mitra Solusi management. Contact your supervisor or HR if you need additional access.' },
+        { q: 'What are the WorkBoard roles?', a: '<strong>Owner</strong> is reserved for Ratu. New users can register as <strong>Staff</strong> or <strong>Management</strong>. Ratu can correct a role later in Users & Access.' },
         { q: 'Is data stored in the cloud?', a: 'Yes. All data is stored in Supabase (cloud database). It can be accessed from a phone, desktop, or any browser as long as you\'re connected to the internet.' },
       ]
     },
@@ -12176,9 +12832,9 @@ function renderFaq() {
       section: '👥 HR — Attendance & Leave',
       items: [
         { q: 'How do I Clock In/Out?', a: 'Open the <strong>Attendance</strong> panel, click the <strong>Clock In</strong> button. The system will ask for a photo and GPS location. Click <strong>Clock Out</strong> when you\'re done working.' },
-        { q: 'How do I request leave/sick leave/time off?', a: 'In the Attendance panel, scroll down to the "Request Leave/Sick/Time Off" section, choose the type, fill in the date and reason, then click Submit. The initial status is <strong>Pending</strong> until approved by an admin.' },
-        { q: 'How does an admin approve leave requests?', a: 'Admin/Manager/HR opens the <strong>Manage Users</strong> panel → <strong>Manage Leave</strong> tab. From there they can click Approve, Reject (with a reason), or Reset to Pending.' },
-        { q: 'What do the leave statuses mean?', a: '⏳ Pending = not yet processed by an admin · ✅ Approved = approved · ❌ Rejected = rejected (a reason note from the admin will be included).' },
+        { q: 'How do I request leave/sick leave/time off?', a: 'In the Attendance panel, scroll down to the "Request Leave/Sick/Time Off" section, choose the type, fill in the date and reason, then click Submit. The initial status is <strong>Pending</strong> until approved by the Owner.' },
+        { q: 'How are leave requests managed?', a: 'The <strong>Owner</strong> opens <strong>Owner Controls → Leave Management</strong> and can Approve, Reject, or Reset a request.' },
+        { q: 'What do the leave statuses mean?', a: '⏳ Pending = not yet processed by the Owner · ✅ Approved = approved · ❌ Rejected = rejected (a reason note from the Owner will be included).' },
       ]
     },
     {
@@ -12200,7 +12856,7 @@ function renderFaq() {
     {
       section: '📊 Result (Reports)',
       items: [
-        { q: 'What does Result show?', a: 'A monthly work summary for management: planned activities, completed Logbook results, unplanned completed work, waiting/carry-forward status, attendance, and the existing operational charts.' },
+        { q: 'What does Management Report show?', a: 'A management-first Daily, Weekly, or Monthly view of planned activities, completed Logbook results, unplanned work, waiting/carry-forward status, attendance, and active project or opportunity status. Monthly analytics remain available in the expandable section below.' },
         { q: 'What do the Sick/Leave/Time Off numbers in Result mean?', a: 'Those numbers are <strong>total days</strong> (not number of people). For example, "Sick: 3" means there were 3 total sick days that month across all employees.' },
         { q: 'How do I export a report?', a: 'Click the <strong>Export</strong> button in the top-right corner. Excel, PDF, PNG Screenshot, or JSON Backup formats are available.' },
       ]
@@ -12217,13 +12873,14 @@ function renderFaq() {
       section: '📱 App & PWA',
       items: [
         { q: 'How do I install WorkBoard on my phone?', a: 'Open WorkBoard in Chrome (Android) or Safari (iPhone). Tap the "Add to Home Screen" icon that appears in the browser. WorkBoard will install like a regular app.' },
+        { q: 'How do I sign in?', a: 'Use your verified email and password, or choose <strong>Continue with Google</strong>. New users can self-register as Staff or Management; Owner is reserved for Ratu.' },
         { q: 'Why does the phone view look different from desktop?', a: 'On phones, the sidebar is replaced with a bottom navigation bar. Swipe right to see all menus. It works exactly the same as on desktop.' },
         { q: 'Can it be used offline?', a: 'The interface can appear offline (PWA cache), but data requires an internet connection since it\'s stored in Supabase cloud.' },
       ]
     },
   ];
 
-  const isAdmin = getUser().toLowerCase().includes('admin') || getUser().toLowerCase().includes('bos') || getUser().toLowerCase().includes('hrd');
+  const isAdmin = isOwner();
 
   el.innerHTML = faqs.map(section => `
     <div style="margin-bottom:20px">
@@ -12244,7 +12901,7 @@ function renderFaq() {
   `).join('') + `
     <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1px solid #bae6fd;border-radius:var(--radius-lg);padding:14px 16px;margin-top:8px;font-size:12px;color:#0c4a6e">
       <div style="font-weight:700;margin-bottom:4px">💡 Need more help?</div>
-      Contact the company admin or check the <strong>Work Talk</strong> panel to coordinate with the team.
+      Contact the WorkBoard Owner or check the <strong>Work Talk</strong> panel to coordinate with the team.
     </div>
   `;
 }

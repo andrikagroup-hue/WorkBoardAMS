@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 19 Agustus 2026
-**Pasangan kode terbaru:** `index(20260819-INTEGRATED-TODAY-v89-BUGFIX).html`
-**SHA-256 pasangan kode:** `18b7c62b19ed67033b93490bd68a663a9d7b45252b21171c785afa5f2702edde`
+**Pasangan kode terbaru:** `index(20260819-v91-AUTH-ROLES).html`
+**SHA-256 pasangan kode:** `12dd073cf21566e24746f436d1f3fc11eac870b322c6ea100eae887291d37911`
 
 ---
 
@@ -81,7 +81,7 @@ Checklist wajib:
 - [ ] Fungsi render pada panel switch
 - [ ] Mapping pembuka grup sidebar
 - [ ] Status menu aktif desktop–mobile
-- [ ] Show/hide admin pada desktop dan mobile
+- [ ] Visibilitas role Owner / Management / Staff pada desktop dan mobile
 - [ ] Tampilan responsif pada layar kecil
 
 Jangan menyatakan pekerjaan selesai kalau perubahan navigasi baru diterapkan di salah satu tampilan.
@@ -123,7 +123,7 @@ Sebelum membuat atau mengubah query database:
 2. Pertahankan filter privasi yang sudah digunakan panel sumber.
 3. Visualisasi ulang dari tabel yang sama harus mengikuti privasi tabel sumber.
 4. Jangan mengambil semua data lalu menampilkannya tanpa filter privasi yang sesuai.
-5. Admin hanya boleh melihat data tambahan pada panel yang memang dirancang untuk admin.
+5. Owner / Management hanya boleh melihat data tambahan pada panel yang memang dirancang untuk role tersebut; data private personal tetap mengikuti aturan sumber.
 
 Prinsip fungsi:
 
@@ -135,14 +135,18 @@ Jika belum yakin apakah data harus publik atau privat, jangan menebak. Tanyakan 
 
 ---
 
-## 7. USER DAN ADMIN
+## 7. USER, AUTHENTICATION, DAN ROLE
 
-- User aktif disimpan menggunakan `localStorage` key `wb_user`.
-- **Switch User** berarti berpindah user tanpa memindahkan data.
-- **Change/Rename User** berarti mengganti nama serta memigrasikan keterkaitan data yang memang harus mengikuti nama tersebut.
-- Kriteria penentuan admin yang sudah ada di kode tidak boleh ditampilkan di UI, FAQ, tooltip, atau pesan kepada user.
-- Menu admin wajib disembunyikan pada sidebar desktop dan bottom navigation mobile untuk user non-admin.
-- Jangan mengganti sistem login atau menambahkan Supabase Auth/PIN admin tanpa permintaan eksplisit.
+- Identitas utama user menggunakan **Supabase Auth**, bukan lagi nama bebas dari prompt browser.
+- Login tersedia melalui **Email + Password** dan **Continue with Google** setelah provider Google dikonfigurasi di Supabase.
+- Registrasi mandiri hanya boleh memilih role `Staff` atau `Management`; `Owner` tidak pernah menjadi pilihan registrasi.
+- Role `Owner` dicadangkan untuk **Ratu**. Bootstrap awal menggunakan Full Name `Ratu`; setelah Owner ada, tidak boleh ada Owner kedua melalui registrasi biasa.
+- Role disimpan di tabel `workboard_profiles`, bukan berdasarkan kata pada nama user dan bukan berdasarkan metadata yang dapat diubah user.
+- `Ratu / Owner` dapat mengubah role user lain antara `Staff` dan `Management`, serta mengaktifkan/menonaktifkan akun melalui `Users & Access`.
+- `localStorage` key `wb_user` hanya dipertahankan sebagai **mirror nama legacy** untuk kompatibilitas data lama (`created_by` / `user_name`), bukan sebagai autentikasi.
+- **Switch User** lama diganti dengan **Sign Out** lalu login memakai akun yang benar.
+- Nama profile tidak boleh diganti bebas dari UI karena nama masih menjadi ownership key pada data legacy.
+- Owner / Management / Staff wajib memiliki visibilitas menu yang sama-sama benar pada desktop dan mobile.
 
 ---
 
@@ -198,7 +202,7 @@ Sebelum memberikan file hasil:
 - [ ] Pastikan fitur lama yang berkaitan masih bekerja.
 - [ ] Pastikan desktop dan mobile sama-sama diperbarui.
 - [ ] Pastikan filter privasi masih diterapkan.
-- [ ] Pastikan admin visibility masih benar.
+- [ ] Pastikan role visibility Owner / Management / Staff masih benar.
 - [ ] Pastikan teks UI baru menggunakan English.
 - [ ] Pastikan tidak ada kredensial atau data sensitif di source.
 - [ ] Pastikan perubahan database dijelaskan jika ada.
@@ -219,8 +223,8 @@ Jangan mengatakan “sudah aman” atau “semua berjalan” hanya karena kode b
 ## 12. KEPUTUSAN PROYEK YANG TETAP
 
 - WorkBoard tetap berupa aplikasi satu file HTML utama kecuali saya meminta perubahan arsitektur.
-- Supabase Auth ditunda.
-- PIN/password khusus admin tidak diperlukan.
+- **Supabase Auth aktif mulai v91** untuk Email/Password dan Google OAuth; database WorkBoard diproteksi dengan RLS berbasis user terautentikasi.
+- Tidak ada lagi konsep akun Admin/Boss/HRD berdasarkan nama; role resmi hanya `Owner`, `Management`, dan `Staff`.
 - Rekap gaji dikerjakan di SiAkun, bukan WorkBoard.
 - Push notification saat browser tertutup total ditunda.
 - Background batik Mega Mendung/Parang tidak digunakan.
@@ -277,19 +281,19 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(20260819-INTEGRATED-TODAY-v89-BUGFIX).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(20260819-v91-AUTH-ROLES).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
 - Aplikasi utama tetap berupa satu file HTML berisi HTML, CSS, dan JavaScript.
 - Data utama disimpan di Supabase.
 - Aplikasi mendaftarkan `sw.js` untuk PWA dan Work-Break Alarm.
-- Identitas user aktif tetap menggunakan `localStorage` key `wb_user`.
-- Navigasi desktop menggunakan sidebar bertingkat dengan `Today` sebagai tombol mandiri dan panel awal.
+- Identitas user aktif memakai Supabase Auth + profile `workboard_profiles`; `wb_user` hanya mirror nama untuk kompatibilitas data legacy.
+- Navigasi desktop menampilkan `Today` dan, untuk Owner/Management, `Management Report` sebagai tombol mandiri. Owner/Staff masuk ke Today; Management masuk langsung ke Management Report.
 - Grup `Daily` hanya berisi `Daily Schedule` dan `Logbook`.
 - Grup `Projects` membuka satu `Projects Workspace`; Portfolio, Tracker, Kanban, Gantt, Matrix, dan Recurring berpindah melalui tab internal.
 - Grup `Personal` hanya berisi Notes, To Do, dan Notepad. Brain Dump, Follow Up, dan Waiting disatukan di Capture.
-- Navigasi mobile menggunakan empat tombol inti tetap: `Today`, `Daily`, `Projects`, dan `More`.
+- Navigasi mobile memakai `Today`, `Daily`, `Projects`, `Report`, dan `More`; tombol `Report` hanya terlihat untuk Owner/Management.
 - Global Search, Global Filter, Export, dan Work Alarm berada di top bar.
 - **Tidak ada tombol `+ Add` global di top bar.**
 
@@ -330,19 +334,19 @@ Aturan:
 | Communication | Work Talk | `chat_channels`, `chat_messages`, realtime, polling, DM, dan online presence |
 | HR | Attendance | `attendance`, foto, GPS, clock in/out |
 | HR | Leave Request | `leave_requests` |
-| Reports | Result | Rekap bulanan dari Schedule, tracker lama, Logbook, Notes, To Do, Attendance, dan Leave |
+| Management | Management Report | Daily / Weekly / Monthly dari Schedule, Logbook aktual, Waiting/Carry Forward, Attendance, Portfolio/Project; analytics bulanan lama tetap tersedia |
 | Resources | All Links | `app_links`; data bersama tim |
 | Resources | Password Manager | `vault_keys` dan `password_vault_v2`; private per user dan terenkripsi end-to-end |
 | Help | Guide & FAQ | Konten FAQ yang dirender JavaScript |
-| Settings | Manage Users | Menu admin |
-| Settings | Leave Management | Menu admin |
+| Owner Controls | Users & Access | `workboard_profiles`; Owner mengubah role Staff/Management dan Active/Inactive |
+| Owner Controls | Leave Management | Owner-only untuk approve/reject/reset/delete leave |
 
 Catatan ketergantungan:
 
 - Portfolio adalah panel baru di Projects Workspace dengan tabel `project_portfolio`; Tracker, Kanban, Gantt, Matrix, dan Recurring tetap merupakan panel lama yang dipertahankan dan tidak diubah sumber datanya.
 - `time_plan_tracker` dipakai bersama oleh Tracker, Kanban, Gantt, Decision Matrix, Recurring Task, dan tautan status Logbook.
 - `tracker_items` belum boleh dihapus hanya karena form lamanya tidak aktif; Result dan fungsi lain masih mereferensikannya.
-- Mode Today, Brain Dump, Follow Up, Waiting Reply, serta To Do memakai tabel `todos` yang sama dan harus tetap owner-only.
+- Mode Today, Brain Dump, Follow Up, Waiting Reply, serta To Do memakai tabel `todos` yang sama. Brain Dump/personal data tetap private; work-state Team/Company dapat dibaca Management Report sesuai RLS.
 - Rename user menyentuh banyak tabel. Jangan mengurangi daftar migrasi nama tanpa audit semua tabel.
 
 ### 15.4 Aturan visibilitas tim yang disetujui
@@ -355,6 +359,10 @@ Catatan ketergantungan:
 - Portfolio bersifat Team / Company secara default; entri yang ditandai Private hanya boleh terlihat oleh pembuatnya melalui `applyPrivacy()`.
 - Visualisasi turunan seperti Kanban, Gantt, Decision Matrix, Result, dan badge harus mengikuti aturan privasi sumber data.
 - Jangan mengubah data bersama menjadi owner-only hanya karena aplikasi digunakan banyak orang.
+- RLS aktif mulai v91: request tanpa sesi Auth tidak boleh memperoleh akses tabel WorkBoard yang dimigrasikan.
+- Staff tetap dapat melihat data Team / Company sesuai aturan panel sumber, tetapi tidak mendapat menu Management Report.
+- Management mendapat Management Report dan data reporting yang memang Team / Company; private personal data user lain tidak dibuka.
+- Owner (Ratu) mendapat seluruh kontrol WorkBoard/company yang dirancang untuk Owner, tetapi Password Manager dan data personal private user lain tetap mengikuti policy private masing-masing.
 
 ### 15.5 All Links — kondisi terbaru
 
@@ -417,7 +425,7 @@ All Links saat ini memiliki:
 
 ### 15.9 Today dan Quick Capture
 
-- `Today` menjadi panel awal pada desktop dan mobile dan merupakan pusat kerja harian.
+- `Today` menjadi pusat kerja harian. Owner dan Staff masuk ke Today; Management masuk langsung ke Management Report namun tetap dapat membuka Today.
 - Today tidak membuat tabel baru; ia mengagregasi data yang sudah ada berdasarkan status, tanggal, next action, dan waiting state.
 - Sumber Today: To Do/Follow Up/Waiting/Brain Dump (`todos`), Schedule (`schedule_events`), Project Tracker (`time_plan_tracker`), Portfolio (`project_portfolio`), Completed Today (`logbook_entries`), Attendance, dan Work Alarm.
 - Hanya pekerjaan yang membutuhkan perhatian sekarang yang ditonjolkan. `One Thing Now` menampilkan tepat satu tindakan teratas; item lain masuk `Up Next`, Follow Up, Waiting, Brain Dump, atau Completed Today.
@@ -442,8 +450,8 @@ All Links saat ini memiliki:
 - Tampilan proyek terakhir disimpan pada `localStorage` key `wb_last_project_view`.
 - Top title tetap `Projects` saat berpindah tab.
 - Desktop dan mobile memakai satu pintu Projects; keenam tampilan proyek (Portfolio, Tracker, Kanban, Gantt, Matrix, Recurring) memakai tab workspace yang sama.
-- Bottom navigation mobile hanya memiliki empat tombol inti. `Daily` membuka action sheet berisi Daily Schedule dan Logbook; `More` membuka action sheet untuk Personal, Work, Resources, Help, dan Settings admin.
-- Tombol `Today` adalah tombol pertama dan membuka panel Today sambil langsung memfokuskan Quick Capture. Panel selain Today, Daily, dan Projects menandai tombol `More` sebagai aktif.
+- Bottom navigation mobile memiliki lima slot: `Today`, `Daily`, `Projects`, `Report`, dan `More`; `Report` disembunyikan untuk Staff. `Daily` membuka Daily Schedule/Logbook dan `More` menampung fitur lain serta Owner Controls bila berhak.
+- Tombol `Today` membuka Today sambil memfokuskan Quick Capture; Management Report menandai tombol `Report` aktif; menu Owner di More hanya muncul untuk Owner.
 - Tidak ada tabel, fungsi data, atau panel lama yang dihapus.
 
 ### 15.11 Unified Activity Flow — Schedule → Today → Done → Logbook
@@ -489,7 +497,7 @@ All Links saat ini memiliki:
 - Model default Edge Function yang telah dideploy adalah `gemini-3.1-flash-lite`; model dapat diganti melalui secret `GEMINI_MODEL` tanpa mengubah HTML.
 - Tidak ada Puter.js fallback. Kegagalan atau habisnya kuota Gemini hanya boleh menonaktifkan pengolahan tulisan; Smart Focus lokal dan seluruh WorkBoard harus tetap berjalan.
 - Setup Gemini tidak memerlukan SQL, tetapi memerlukan deploy Edge Function dan secrets `GEMINI_API_KEY` serta `WORKBOARD_AI_ACCESS_KEY`.
-- Karena Supabase Auth masih ditunda, access code adalah pengaman tambahan dan bukan pengganti autentikasi per user.
+- Supabase Auth aktif mulai v91. Access code Gemini tetap hanya menjadi pengaman khusus Edge Function dan tidak menggantikan role/RLS WorkBoard.
 
 
 
@@ -556,10 +564,10 @@ All Links saat ini memiliki:
 - Rename user memperbarui `project_portfolio.created_by`; penghapusan user admin tidak otomatis menghapus Portfolio karena Portfolio adalah riwayat perusahaan.
 - Bug duplikasi render attachment pada kartu Portfolio telah dihapus; attachment hanya dirender satu kali.
 - SQL Portfolio memakai jalur upgrade `ADD COLUMN IF NOT EXISTS` agar kompatibel dengan skema awal.
-- Tabel Portfolio sudah digunakan pada WorkBoard. RLS/Supabase Auth masih ditunda berdasarkan keputusan user; jangan mengubah arsitektur auth/RLS tanpa permintaan eksplisit berikutnya.
+- Tabel Portfolio sudah digunakan pada WorkBoard dan mulai v91 mengikuti Supabase Auth/RLS: Team / Company dapat dibaca user aktif, Private hanya pembuat; modifikasi mengikuti policy role/ownership.
 - Tracker, Kanban, Gantt, Matrix, Recurring, Capture, Logbook, dan tabel lama tidak diubah sumber datanya oleh penyempurnaan Portfolio ini.
 
-### 15.16 Integrasi Attendance, Work Alarm, Portfolio Action-First, dan Boss Result
+### 15.16 Integrasi Attendance, Work Alarm, Portfolio Action-First, dan Management Result
 
 - Today menampilkan status Attendance ringkas: Not Clocked In, Clocked In, atau Completed. Clock In/Out tetap memakai panel Attendance untuk selfie dan GPS, lalu kembali ke Today jika proses dimulai dari Today.
 - Detail Attendance, Leave/Sick/Time Off, rekap, GPS, dan foto tetap berada di panel HR; tidak dipindahkan ke Quick Capture.
@@ -568,9 +576,38 @@ All Links saat ini memiliki:
 - Portfolio default menjadi `Needs Action`, dengan tampilan tambahan `Waiting`, `Upcoming`, dan `All Opportunities`.
 - Kartu Portfolio menonjolkan Customer/Project, Stage, Next Action, Follow-up Date, serta tombol tindakan; data komersial/PIC/source/vendor/notes/attachment tetap berada di `More Details`.
 - Form Portfolio dibuat progressive disclosure: Project/Opportunity, Customer, Next Action, dan follow-up menjadi bagian utama; field lain opsional di More Details. Semua ID dan field database lama tetap dipertahankan.
-- Result bagian atas sekarang lebih berorientasi boss: Planned Activities, Completed Activities dari Logbook, Unplanned Completed, serta Waiting / Carry Forward. Grafik/fungsi laporan lama tetap dipertahankan untuk kompatibilitas.
+- Management Report menonjolkan Planned, Plan Done, Completed actual Logbook, Unplanned, Waiting, Carry Forward, Attendance, dan Project/Opportunity; analytics lama tetap dipertahankan di bagian expandable.
 - Blok one-time bulk import Password Vault yang berisi kredensial plaintext telah dihapus dari HTML. Password Vault terenkripsi tetap dipertahankan. Kredensial yang pernah berada di source/repository lama harus dianggap pernah terekspos dan dirotasi bila masih aktif.
 - Tidak membutuhkan SQL baru.
+
+### 15.17 Management Report
+
+- `Management Report` adalah menu utama untuk role `Management` dan `Owner`, bukan submenu tersembunyi.
+- `Management` masuk langsung ke Management Report setelah login; `Owner` dan `Staff` masuk ke Today.
+- Filter report: `Daily`, `Weekly`, `Monthly`, reference date, dan employee atau `All Team`.
+- Urutan utama: Planned, Plan Done, Completed, Unplanned, Waiting, Carry Forward, Attendance, Planned Activities, Completed Results, Waiting/Carry Forward, dan Project/Opportunity Status.
+- Report hanya memakai data kerja Team / Company yang diizinkan policy; Brain Dump, Notes private, Personal To Do private, Notepad, dan Password Manager tidak masuk report.
+- Waiting/carry-forward memakai event/status yang sudah dihasilkan workflow Today dan Logbook, dengan deduplikasi agar satu action tidak dihitung dua kali.
+- Monthly Analytics & Attendance lama tetap tersedia dalam bagian expandable supaya layar utama lebih mudah dibaca.
+- Desktop memakai tombol utama `Management Report`; mobile memakai tombol `Report` yang hanya terlihat untuk Owner/Management.
+
+### 15.18 Authentication, Roles, dan Users & Access — v91
+
+- Supabase Auth menggantikan login nama bebas. App tetap tersembunyi sampai sesi Auth dan profile WorkBoard valid.
+- Metode: Email + Password, email verification sesuai setting Supabase, Forgot Password, serta Google OAuth setelah provider Google dan redirect URL dikonfigurasi.
+- Registrasi meminta Full Name dan role `Staff` / `Management`. `Owner` tidak pernah dapat dipilih oleh user baru.
+- Owner tunggal adalah Ratu. Pada bootstrap awal, Full Name `Ratu` dapat menjadi Owner jika belum ada Owner; policy/database mencegah Owner kedua.
+- Tabel baru `workboard_profiles` menyimpan `auth.users.id`, full name, email, role, active state, dan onboarding state.
+- Authorization tidak bergantung pada `raw_user_meta_data`; role efektif dibaca dari `workboard_profiles`.
+- `Users & Access` hanya Owner dan tersedia di desktop serta mobile. Owner dapat mengubah Staff ↔ Management dan Active ↔ Inactive; Owner sendiri terkunci.
+- Akun inactive tidak dapat memakai WorkBoard; RLS juga menolak akses data walau sesi lama masih tersimpan.
+- `Switch User` lama menjadi Sign Out. Rename profile dari UI dinonaktifkan karena data legacy masih memakai nama pada `created_by` / `user_name`.
+- RLS diaktifkan pada tabel WorkBoard yang dimigrasikan. Anon tidak diberi akses tabel tersebut; role `authenticated` mendapat hak yang dibatasi policy.
+- Data Team / Company tetap dapat dibaca sesuai aturan lama; private personal tetap hanya pemilik. Management dapat membaca data reporting; Owner mendapat kontrol company yang diperlukan.
+- Password Vault E2EE tetap owner-of-vault only dan tidak pernah dibuka ke Management/Owner lain.
+- Work Talk DM tetap hanya participant; hide/unhide room tetap dipertahankan melalui izin update terbatas pada `hidden_by`.
+- Storage bucket `attachments` tidak diubah mode privacy pada migrasi v91 agar URL lampiran historis tidak rusak; hardening Storage dapat dilakukan sebagai migrasi terpisah jika direncanakan.
+- Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
@@ -614,11 +651,18 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Follow Up eksplisit tidak tampil ganda sebagai Waiting Reply.
 - [ ] Kanban, Gantt, Decision Matrix, Recurring Task, dan Logbook tetap sinkron dengan `time_plan_tracker`.
 - [ ] `tracker_items` tidak dihapus tanpa audit Result dan semua referensinya.
-- [ ] Menu admin desktop dan mobile tetap tersembunyi untuk non-admin.
+- [ ] `Users & Access` / Owner Controls hanya terlihat untuk Owner pada desktop dan mobile; `Management Report` hanya Owner/Management.
 - [ ] UI baru menggunakan English.
 - [ ] Draft Logbook, Notes, To Do, Notepad, dan Work Talk tetap pulih setelah berpindah panel.
 - [ ] Password Manager dan field sensitif tidak masuk ke penyimpanan draft.
 - [ ] Prompt Master ikut diperbarui jika kondisi implementasi berubah.
+- [ ] Login nama bebas tidak muncul kembali; app hanya terbuka setelah Supabase Auth + profile valid.
+- [ ] Register hanya menyediakan Staff / Management; Owner tidak tersedia sebagai pilihan.
+- [ ] Ratu/Owner masuk ke Today dan memiliki Users & Access; Management masuk ke Management Report; Staff masuk ke Today.
+- [ ] Email/password, Forgot Password, onboarding Google, Sign Out, dan account state responsive pada desktop/HP.
+- [ ] Role tidak ditentukan dari teks nama seperti admin/bos/hrd.
+- [ ] RLS tidak membuka Brain Dump, Notes, Notepad, To Do private, atau Password Vault milik user lain.
+- [ ] User inactive ditolak pada UI dan database policy.
 - [ ] `GEMINI_API_KEY` tidak pernah ditulis di HTML atau file publik.
 - [ ] Pemanggilan Gemini tetap melalui Edge Function `workboard-ai`.
 - [ ] Access code Gemini tidak disimpan lebih lama dari sesi browser.
@@ -637,6 +681,26 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — v91 Authentication & Roles
+
+- Mengganti prompt nama bebas/localStorage sebagai login dengan Supabase Auth.
+- Menambahkan Sign In Email/Password, Create Account, email verification flow, Forgot Password, Continue/Register with Google, dan onboarding OAuth responsif desktop/mobile.
+- Role resmi menjadi `Owner`, `Management`, `Staff`; tidak ada lagi rule admin/boss/hrd berdasarkan nama.
+- Registrasi mandiri hanya Staff/Management. Owner dicadangkan untuk Ratu dan tidak muncul di pilihan registrasi.
+- Menambahkan `workboard_profiles`, role helper/RPC, Users & Access Owner-only, role edit Staff↔Management, dan Active/Inactive.
+- Management masuk langsung ke Management Report; Owner/Staff masuk ke Today. Tombol Report hanya Owner/Management dan Owner Controls hanya Owner pada desktop/mobile.
+- Menambahkan RLS untuk tabel WorkBoard utama serta mencabut akses `anon` pada tabel yang dimigrasikan. Data Team / Company tetap mengikuti pola shared; private personal tetap dibatasi pemilik.
+- Sign Out menggantikan Switch User; nama profile tidak diedit bebas agar ownership key data legacy tidak pecah.
+- Work Talk hide/unhide dipertahankan dengan hak UPDATE terbatas pada field `hidden_by`.
+- Mempertahankan seluruh ID/fungsi legacy dan perubahan v90 Management Report; tidak ada ID/fungsi v89/v90 yang dihapus.
+- Perubahan memakai migrasi bertahap `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` → upload/test v91 → `WORKBOARD_AUTH_V91_STEP3_RLS.sql`; Google provider/redirect URL dikonfigurasi jika Google Login akan digunakan.
+
+### 19 Agustus 2026 — v90 Management Report
+
+- Mengangkat `Management Report` menjadi menu utama desktop dan tombol `Report` mobile.
+- Menambahkan Daily / Weekly / Monthly + employee / All Team, ringkasan Planned/Completed/Waiting/Carry Forward/Attendance/Project, dan menyimpan analytics lama dalam bagian expandable.
+- Quick Capture kerja menjadi Team / Company, Brain Dump tetap private; carry-forward dicatat di Logbook; recurring tracker mengisi due date; status `in_progress` analytics diperbaiki.
 
 ### 19 Agustus 2026 — Integrated Today v89 Bugfix
 
