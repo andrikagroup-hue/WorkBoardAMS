@@ -2,9 +2,9 @@
 
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
-**Status sinkronisasi:** 16 Agustus 2026
-**Pasangan kode terbaru:** `index(87).html`
-**SHA-256 pasangan kode:** `077f7ee8b365eb1c98f1195b3eca0f1a7d85dfcb32bac06626ff5b4f0368690d`
+**Status sinkronisasi:** 19 Agustus 2026
+**Pasangan kode terbaru:** `index(20260819-INTEGRATED-TODAY-v88).html`
+**SHA-256 pasangan kode:** `a776fc37122d829105a0a78c457e51bab088791622ae95b5181cb085fb21ed81`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(87).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(20260819-INTEGRATED-TODAY-v88).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -285,11 +285,11 @@ Snapshot ini dibuat dari `index(87).html` yang dipasangkan dengan prompt ini.
 - Data utama disimpan di Supabase.
 - Aplikasi mendaftarkan `sw.js` untuk PWA dan Work-Break Alarm.
 - Identitas user aktif tetap menggunakan `localStorage` key `wb_user`.
-- Navigasi desktop menggunakan sidebar bertingkat dengan `Capture` sebagai tombol mandiri dan panel awal.
+- Navigasi desktop menggunakan sidebar bertingkat dengan `Today` sebagai tombol mandiri dan panel awal.
 - Grup `Daily` hanya berisi `Daily Schedule` dan `Logbook`.
 - Grup `Projects` membuka satu `Projects Workspace`; Portfolio, Tracker, Kanban, Gantt, Matrix, dan Recurring berpindah melalui tab internal.
 - Grup `Personal` hanya berisi Notes, To Do, dan Notepad. Brain Dump, Follow Up, dan Waiting disatukan di Capture.
-- Navigasi mobile menggunakan empat tombol inti tetap: `Capture`, `Daily`, `Projects`, dan `More`; tidak ada lagi tombol Home dan Capture yang terpisah.
+- Navigasi mobile menggunakan empat tombol inti tetap: `Today`, `Daily`, `Projects`, dan `More`.
 - Global Search, Global Filter, Export, dan Work Alarm berada di top bar.
 - **Tidak ada tombol `+ Add` global di top bar.**
 
@@ -315,7 +315,7 @@ Aturan:
 
 | Grup | Panel/tampilan | Sumber/ketergantungan utama |
 |---|---|---|
-| Capture | Capture / One Thing Now | `todos`; owner-only; satu input terpadu untuk Today, Follow Up, Waiting Reply, dan Brain Dump serta kartu ringkas untuk masing-masing hasil |
+| Today | Today / One Thing Now | Agregasi `todos`, `schedule_events`, `time_plan_tracker`, `project_portfolio`, `logbook_entries`, Attendance, dan Work Alarm; Quick Capture tetap owner-only untuk data pribadi |
 | Daily | Daily Schedule | `schedule_events`, public + private |
 | Daily | Logbook | `logbook_entries`, lampiran Supabase Storage, tautan ke `time_plan_tracker`, dan Smart Next-Step Suggestion |
 | Projects | Portfolio tab | `project_portfolio`; riwayat Project/BOQ/Order yang masuk AMS, customer/PIC, sumber lead/order, partner/vendor, stage, outcome, loss/stop reason, next action, follow-up date, beberapa jenis nilai komersial, notes, lampiran, dan public/private |
@@ -415,23 +415,20 @@ All Links saat ini memiliki:
 
 ---
 
-### 15.9 Capture dan Quick Capture
+### 15.9 Today dan Quick Capture
 
-- `Capture` menjadi panel awal ketika WorkBoard dibuka pada desktop dan mobile.
-- Capture memakai tabel `todos` yang sudah ada; tidak memerlukan tabel atau kolom database baru.
-- Data tetap private dan difilter dengan `applyOwner()` untuk user aktif.
-- Header menampilkan sapaan sesuai waktu, tombol lokal `What should I do next?`, serta satu tugas utama sebagai `One Thing Now`.
-- Quick Capture menerima satu kalimat dan tombol Enter dengan mode `Today`, `Follow Up`, `Waiting Reply`, dan `Brain Dump`.
-- Penanda internal `[Today]`, `[Follow Up]`, `[Waiting]`, dan `[Inbox]` disimpan di `todos.text` tetapi disembunyikan dari kartu Capture.
-- Maksimal dua tugas lain tersedia sebagai `Up Next`, tetapi dibuat tertutup secara default agar Capture hanya menonjolkan satu pekerjaan utama; urutan mempertimbangkan overdue, deadline hari ini, follow-up, dan priority.
-- Setiap kartu menyediakan `Done`, `Later 30m`, `Tomorrow`, dan `Open`.
-- `Later 30m` memakai `localStorage` per user dan berlaku pada seluruh kartu tugas di Capture.
-- Capture adalah satu-satunya tempat capture cepat untuk Follow Up, Waiting Reply, dan Brain Dump; tidak ada form atau menu sidebar terpisah untuk ketiganya.
-- Kartu sekunder Follow Up, Waiting, Added for Today, dan Brain Dump disembunyikan otomatis ketika tidak memiliki isi agar halaman tidak memanjang tanpa manfaat.
-- Capture memakai kelompok warna pastel kalem yang mengikuti nuansa Logbook: sage, cream, dusty rose, soft blue, dan lilac; warna tidak boleh terlalu terang.
-- Badge Capture pada desktop dan mobile menunjukkan tugas overdue + jatuh tempo hari ini; Follow Up, Waiting, dan Brain Dump tetap terlihat melalui kartu Capture.
-- Panel To Do lama, dashboard bulanan, autosave draft, serta struktur tabel `todos` tetap dipertahankan.
-- Fitur ini tidak membutuhkan SQL baru.
+- `Today` menjadi panel awal pada desktop dan mobile dan merupakan pusat kerja harian.
+- Today tidak membuat tabel baru; ia mengagregasi data yang sudah ada berdasarkan status, tanggal, next action, dan waiting state.
+- Sumber Today: To Do/Follow Up/Waiting/Brain Dump (`todos`), Schedule (`schedule_events`), Project Tracker (`time_plan_tracker`), Portfolio (`project_portfolio`), Completed Today (`logbook_entries`), Attendance, dan Work Alarm.
+- Hanya pekerjaan yang membutuhkan perhatian sekarang yang ditonjolkan. `One Thing Now` menampilkan tepat satu tindakan teratas; item lain masuk `Up Next`, Follow Up, Waiting, Brain Dump, atau Completed Today.
+- Untuk mencegah data legacy membanjiri Today, Schedule lama tanpa status baru hanya otomatis ditarik maksimal 7 hari ke belakang. Schedule hari ini tetap selalu tampil; pekerjaan lama lain tetap tersedia di panel asal.
+- Portfolio tanpa Next Action hanya menampilkan satu reminder `Set Next Action` di Today pada satu waktu; seluruh daftar `Needs Action` tetap tersedia di Portfolio.
+- Quick Capture menerima satu kalimat dengan mode `Today`, `Follow Up`, `Waiting Reply`, `Project`, dan `Brain Dump`.
+- `Done Now` mencatat pekerjaan mendadak langsung ke Logbook sebagai aktivitas unplanned tanpa harus membuat Schedule terlebih dahulu.
+- Brain Dump tetap private dan tidak menjadi aktivitas boss sampai user mengubahnya menjadi pekerjaan.
+- Setelah pekerjaan selesai, WorkBoard menawarkan langkah berikutnya: Nothing, Waiting Reply, atau Follow Up Again.
+- `Later 30m` hanya menyembunyikan sementara item dari Today pada perangkat/user aktif; data sumber tidak dihapus.
+- Tidak membutuhkan SQL atau migrasi database baru.
 
 ### 15.10 Projects Workspace
 
@@ -443,27 +440,33 @@ All Links saat ini memiliki:
 - Top title tetap `Projects` saat berpindah tab.
 - Desktop dan mobile memakai satu pintu Projects; keenam tampilan proyek (Portfolio, Tracker, Kanban, Gantt, Matrix, Recurring) memakai tab workspace yang sama.
 - Bottom navigation mobile hanya memiliki empat tombol inti. `Daily` membuka action sheet berisi Daily Schedule dan Logbook; `More` membuka action sheet untuk Personal, Work, Resources, Help, dan Settings admin.
-- Tombol `Capture` adalah tombol pertama dan membuka panel Capture sambil langsung memfokuskan input terpadu. Panel selain Capture, Daily, dan Projects menandai tombol `More` sebagai aktif.
+- Tombol `Today` adalah tombol pertama dan membuka panel Today sambil langsung memfokuskan Quick Capture. Panel selain Today, Daily, dan Projects menandai tombol `More` sebagai aktif.
 - Tidak ada tabel, fungsi data, atau panel lama yang dihapus.
 
-### 15.11 Unified Capture dan Smart Next-Step
+### 15.11 Unified Activity Flow — Schedule → Today → Done → Logbook
 
-- Capture memakai satu input untuk empat mode: `Today`, `Follow Up`, `Waiting Reply`, dan `Brain Dump`.
-- Brain Dump tetap disimpan sebagai item `[Inbox]`, Follow Up sebagai `[Follow Up]`, dan Waiting Reply sebagai `[Waiting]` pada tabel `todos`; penanda disembunyikan dari kartu Capture.
-- Brain Dump dan Follow Up Center tidak ditampilkan lagi sebagai menu desktop, menu mobile, atau form terpisah.
-- Panel dan fungsi lama Brain Dump/Follow Up tetap dipertahankan secara internal untuk kompatibilitas data, tetapi navigasi lama diarahkan kembali ke Capture.
-- Item eksplisit `[Follow Up]` tidak boleh muncul ganda sebagai Waiting hanya karena kalimatnya mengandung kata “waiting”.
-- Setelah Logbook berhasil disimpan, pemeriksaan kata kunci lokal dapat menawarkan `Add Follow Up` atau `Add Waiting Reply` melalui toast non-blocking.
-- Smart Next-Step tidak mengirim isi Logbook ke layanan AI eksternal; pemeriksaan dilakukan lokal di browser.
-- Semua item baru dari Capture dan saran Logbook bersifat private serta owner-only.
-- Tidak diperlukan SQL atau migrasi database.
+- Schedule tetap berarti **rencana kerja**; Logbook tetap berarti **hasil/aktivitas yang benar-benar sudah dilakukan**.
+- Schedule dibuat lebih sederhana: field utama hanya waktu dan aktivitas; Location, Category, dan Visibility berada di `More details — optional`.
+- Category Schedule tidak lagi dipakai user sebagai status. Nilai `green` tetap dipertahankan secara internal sebagai kompatibilitas legacy ketika aksi `Done` dijalankan.
+- Aksi utama pada pekerjaan aktif: `Done`, `Waiting`, `Tomorrow`, `Later 30m`, `Open`, dan `Cancel` sesuai konteks.
+- `Done` dari Today memperbarui sumber aktivitas dan otomatis membuat entri `logbook_entries`:
+  - To Do / Follow Up → tandai `is_done`;
+  - Schedule → tandai completed legacy tanpa input ulang;
+  - Project Tracker → status `done`;
+  - Portfolio Next Action → hapus Next Action yang selesai.
+- `Waiting` menyimpan tanggal review/follow-up dan tidak terus menjadi fokus utama sebelum tanggalnya tiba.
+- `Tomorrow` membuat carry-forward tanpa mengetik ulang. Untuk Schedule, marker internal di `todos` dipakai agar tidak membutuhkan kolom database baru.
+- `Cancelled` keluar dari daftar aktif dan dicatat sebagai status aktivitas, bukan dianggap pekerjaan selesai normal.
+- `Completed Today` membaca Logbook aktual, sehingga pekerjaan planned maupun unplanned tetap terlihat sebagai hasil kerja.
+- Smart Next-Step Logbook lama tetap dipertahankan untuk kompatibilitas.
+- Tidak diperlukan SQL baru.
 
 ### 15.12 Smart Focus lokal dan Gemini Writing Assistant
 
 - WorkBoard memakai dua lapisan bantuan yang berbeda dan tidak saling bergantung:
   1. **Smart Focus lokal** untuk memilih pekerjaan berikutnya.
   2. **Gemini Writing Assistant** untuk memproses tulisan yang dipilih user.
-- Tombol `What should I do next?` berjalan sepenuhnya di browser menggunakan urutan `focusScore`, deadline, overdue, Follow Up, Waiting Reply, dan priority.
+- Tombol `What should I do next?` berjalan sepenuhnya di browser dan memilih item teratas dari antrean Today yang sudah mempertimbangkan overdue, due today, in progress, Follow Up, carry forward, Schedule, dan priority.
 - Smart Focus lokal tidak memanggil AI eksternal, tidak memakai saldo, tidak memakai kuota, tidak meminta access code, dan tidak mengirim daftar To Do keluar dari WorkBoard.
 - Smart Focus menampilkan tepat satu pekerjaan, alasan pemilihannya, langkah terkecil 2–10 menit, dan tindakan setelahnya.
 - Gemini dipanggil hanya ketika user membuka Writing Assistant pada Logbook, Notes, atau Notepad dan memilih salah satu tindakan:
@@ -553,10 +556,35 @@ All Links saat ini memiliki:
 - Tabel Portfolio sudah digunakan pada WorkBoard. RLS/Supabase Auth masih ditunda berdasarkan keputusan user; jangan mengubah arsitektur auth/RLS tanpa permintaan eksplisit berikutnya.
 - Tracker, Kanban, Gantt, Matrix, Recurring, Capture, Logbook, dan tabel lama tidak diubah sumber datanya oleh penyempurnaan Portfolio ini.
 
+### 15.16 Integrasi Attendance, Work Alarm, Portfolio Action-First, dan Boss Result
+
+- Today menampilkan status Attendance ringkas: Not Clocked In, Clocked In, atau Completed. Clock In/Out tetap memakai panel Attendance untuk selfie dan GPS, lalu kembali ke Today jika proses dimulai dari Today.
+- Detail Attendance, Leave/Sick/Time Off, rekap, GPS, dan foto tetap berada di panel HR; tidak dipindahkan ke Quick Capture.
+- Work Alarm tampil sebagai status ringkas di Today. Fase focus/break, cycle start, dan snooze disimpan agar refresh/minimized tab tidak selalu mereset timer.
+- Work Alarm melakukan tick lebih rapat dan mengecek ulang saat tab kembali visible/focus. Periodic reminder setelah browser/app benar-benar ditutup tetap tidak dijamin karena push/background notification masih ditunda.
+- Portfolio default menjadi `Needs Action`, dengan tampilan tambahan `Waiting`, `Upcoming`, dan `All Opportunities`.
+- Kartu Portfolio menonjolkan Customer/Project, Stage, Next Action, Follow-up Date, serta tombol tindakan; data komersial/PIC/source/vendor/notes/attachment tetap berada di `More Details`.
+- Form Portfolio dibuat progressive disclosure: Project/Opportunity, Customer, Next Action, dan follow-up menjadi bagian utama; field lain opsional di More Details. Semua ID dan field database lama tetap dipertahankan.
+- Result bagian atas sekarang lebih berorientasi boss: Planned Activities, Completed Activities dari Logbook, Unplanned Completed, serta Waiting / Carry Forward. Grafik/fungsi laporan lama tetap dipertahankan untuk kompatibilitas.
+- Blok one-time bulk import Password Vault yang berisi kredensial plaintext telah dihapus dari HTML. Password Vault terenkripsi tetap dipertahankan. Kredensial yang pernah berada di source/repository lama harus dianggap pernah terekspos dan dirotasi bila masih aktif.
+- Tidak membutuhkan SQL baru.
+
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
 Selain checklist pada Bagian 11, periksa:
 
+- [ ] Today menjadi panel awal pada desktop dan mobile.
+- [ ] One Thing Now hanya menampilkan satu item utama dan tidak dibanjiri Schedule legacy lama.
+- [ ] Quick Capture dapat menyimpan Today, Follow Up, Waiting Reply, Project, Brain Dump, dan Done Now.
+- [ ] Aksi Done dari Today membuat Logbook otomatis tanpa input ulang.
+- [ ] Waiting dan Tomorrow tetap muncul kembali saat waktunya tiba.
+- [ ] Schedule tetap dapat Add/Edit/Delete dan aksi Done/Waiting/Tomorrow tidak menghapus data rencana.
+- [ ] Portfolio default Needs Action, sementara Waiting/Upcoming/All tetap dapat dibuka.
+- [ ] Kartu dan form Portfolio menyembunyikan detail sekunder sampai More Details dibuka.
+- [ ] Attendance ringkas tampil di Today dan Clock In/Out tetap meminta selfie/GPS lewat alur Attendance.
+- [ ] Work Alarm tidak mereset fase hanya karena refresh dan statusnya tampil di Today.
+- [ ] Result bagian atas membedakan Planned, Completed, Unplanned, Waiting, dan Carry Forward.
+- [ ] Tidak ada array/function bulk import kredensial plaintext di source.
 - [ ] Tidak ada tombol Add global yang muncul kembali.
 - [ ] Empat tombol Add lokal masih membuka form yang benar.
 - [ ] All Links masih dapat menambah, mengedit, menghapus, memfilter, dan mengimpor CSV.
@@ -606,6 +634,23 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — Integrated Today v88
+
+- Mengubah panel awal `Capture` menjadi `Today` pada desktop dan mobile tanpa menghapus jalur data lama.
+- Today sekarang menggabungkan Schedule, To Do/Follow Up/Waiting, Project Tracker, Portfolio Next Action, Completed Logbook, Attendance, dan Work Alarm.
+- Menambahkan One Thing Now, Up Next, Follow Up Due, Waiting, Brain Dump, Completed Today, dan donut planned-vs-completed dalam tampilan yang lebih tenang.
+- Menambahkan `Done Now` untuk pekerjaan mendadak/unplanned.
+- Aksi `Done` sekarang otomatis membuat Logbook dari To Do, Schedule, Tracker, atau Portfolio Next Action.
+- Menambahkan Waiting, Tomorrow/Carry Forward, Later 30m, Cancel, serta pilihan next step setelah Done.
+- Schedule form disederhanakan menjadi waktu + aktivitas; field lain dipindahkan ke More Details. Category hijau tidak lagi menjadi pilihan status user dan hanya dipertahankan sebagai legacy compatibility.
+- Portfolio diubah menjadi action-first dengan Needs Action sebagai default, serta Waiting, Upcoming, dan All Opportunities. Form utama Portfolio dipangkas; field lengkap tetap tersedia di More Details.
+- Menambahkan guard agar Schedule legacy lebih dari 7 hari tidak membanjiri Today dan hanya satu reminder Portfolio tanpa Next Action ditampilkan di Today pada satu waktu.
+- Attendance diberi kartu status ringkas pada Today; Clock In/Out dari Today kembali ke Today setelah proses selesai.
+- Work Alarm menyimpan fase/snooze dan mengecek ulang saat tab kembali aktif agar tidak mudah reset akibat refresh/minimize.
+- Result bagian atas diubah menjadi ringkasan kerja yang lebih mudah dibaca boss tanpa menghapus grafik laporan lama.
+- Menghapus blok bulk-import Password Vault plaintext dari HTML; Password Manager terenkripsi dan fungsi Attendance/Work Talk/online presence lama tetap dipertahankan.
+- Tidak ada SQL atau migrasi database baru.
 
 ### 16 Agustus 2026
 
