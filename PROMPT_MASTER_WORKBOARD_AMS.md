@@ -3,8 +3,8 @@
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
 **Status sinkronisasi:** 19 Agustus 2026
-**Pasangan kode terbaru:** `index(20260819-INTEGRATED-TODAY-v88).html`
-**SHA-256 pasangan kode:** `a776fc37122d829105a0a78c457e51bab088791622ae95b5181cb085fb21ed81`
+**Pasangan kode terbaru:** `index(20260819-INTEGRATED-TODAY-v89-BUGFIX).html`
+**SHA-256 pasangan kode:** `18b7c62b19ed67033b93490bd68a663a9d7b45252b21171c785afa5f2702edde`
 
 ---
 
@@ -277,7 +277,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index(20260819-INTEGRATED-TODAY-v88).html` yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index(20260819-INTEGRATED-TODAY-v89-BUGFIX).html` yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -428,6 +428,9 @@ All Links saat ini memiliki:
 - Brain Dump tetap private dan tidak menjadi aktivitas boss sampai user mengubahnya menjadi pekerjaan.
 - Setelah pekerjaan selesai, WorkBoard menawarkan langkah berikutnya: Nothing, Waiting Reply, atau Follow Up Again.
 - `Later 30m` hanya menyembunyikan sementara item dari Today pada perangkat/user aktif; data sumber tidak dihapus.
+- Reminder legacy yang berasal dari judul Logbook generik seperti `Daily Activity Report` tidak lagi bersaing dengan follow-up nyata di Today; data lama tidak dihapus dan tetap dapat direview melalui To Do.
+- Item yang sudah menjadi `One Thing Now` tidak diduplikasi lagi di `Up Next` atau `Follow-ups Due`.
+- Planned count membaca seluruh Schedule hari ini, termasuk Schedule yang sudah Done, sehingga angka Planned tidak turun ketika pekerjaan selesai.
 - Tidak membutuhkan SQL atau migrasi database baru.
 
 ### 15.10 Projects Workspace
@@ -634,6 +637,18 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — Integrated Today v89 Bugfix
+
+- Memperbaiki tombol `Waiting` pada Portfolio/Project action. Date picker sekarang dipindahkan ke level global saat dibuka sehingga tetap terlihat walaupun panel Today sedang tersembunyi.
+- Waiting Portfolio sekarang memiliki tombol `Needs Action Today` dan `Change Review Date`; `Needs Action Today` membuat follow-up jatuh tempo hari ini sehingga item otomatis muncul di view Needs Action dan Today.
+- Setelah Portfolio Next Action di-Done, pilihan `Waiting Reply` / `Follow Up Again` tetap memperbarui Portfolio yang sama, bukan membuat To Do terpisah yang kehilangan konteks project.
+- Reminder lama dari Smart Logbook dengan judul generik `Daily Activity Report`, `Daily Report`, atau `Activity Report` tidak lagi memenuhi Today. Data lama tidak dihapus; reminder tersebut disembunyikan dari fokus dan tetap tersedia di To Do untuk review.
+- Smart Next-Step Logbook tidak lagi menawarkan follow-up untuk judul report generik dan tidak memunculkan suggestion baru hanya karena user mengedit Logbook lama.
+- Menghilangkan duplikasi item Follow Up antara One Thing Now, Up Next, dan Follow-ups Due.
+- Memperbaiki perhitungan Planned vs Planned Done agar jumlah Planned tidak turun ketika Schedule selesai.
+- Label Today sekarang memprioritaskan state (`Follow Up`, `Waiting`, `Carry Forward`) agar user lebih cepat memahami alasan suatu item muncul.
+- Tidak ada SQL atau migrasi database baru; tidak ada ID atau fungsi lama yang dihapus.
 
 ### 19 Agustus 2026 — Integrated Today v88
 

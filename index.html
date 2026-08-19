@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WorkBoard AMS — Daily Company Management</title>
+  <!-- Integrated Today v89 bugfix — 19 Aug 2026 -->
 
   <!-- ── PWA: bisa di-"Add to Home Screen" jadi kayak app ── -->
   <link rel="manifest" href="manifest.json">
@@ -5422,7 +5423,11 @@ function displayPortfolio(rows = portfolioCache) {
     let attentionText = row.next_action || 'No next action — set one so this opportunity cannot disappear.';
     if (waiting) attentionLabel = portfolioWaitingReviewDue(row) ? 'Waiting — review due' : 'Waiting';
     else if (due) attentionLabel = 'Action due';
-    const primaryButtons = portfolioIsClosed(row) ? '' : `
+    const primaryButtons = portfolioIsClosed(row) ? '' : waiting ? `
+      <button class="focus-mini-btn btn-primary" onclick="portfolioFollowUpNow('${row.id}')">Needs Action Today</button>
+      <button class="focus-mini-btn today-action-wait" onclick="portfolioMarkWaiting('${row.id}')">Change Review Date</button>
+      ${row.next_action ? `<button class="focus-mini-btn today-action-done" onclick="portfolioCompleteAction('${row.id}')">Done</button>` : `<button class="focus-mini-btn" onclick="portfolioSetNextAction('${row.id}')">Set Next Action</button>`}
+      <button class="focus-mini-btn" onclick="openPortfolioForm('${row.id}')">Edit</button>` : `
       ${row.next_action ? `<button class="focus-mini-btn today-action-done" onclick="portfolioCompleteAction('${row.id}')">Done</button>` : `<button class="focus-mini-btn" onclick="portfolioSetNextAction('${row.id}')">Set Next Action</button>`}
       <button class="focus-mini-btn today-action-wait" onclick="portfolioMarkWaiting('${row.id}')">Waiting</button>
       ${row.next_action ? `<button class="focus-mini-btn today-action-tomorrow" onclick="portfolioTomorrow('${row.id}')">Tomorrow</button>` : ''}
@@ -5601,9 +5606,13 @@ async function portfolioTomorrow(id) {
   if (currentPanel === 'portfolio') await renderPortfolio();
 }
 async function portfolioFollowUpNow(id) {
-  const { error } = await sb.from('project_portfolio').update({ next_action_date: todayStr(), updated_at:new Date().toISOString() }).eq('id', id);
-  if (error) return alert('Failed to update follow-up: ' + error.message);
+  const row=portfolioCache.find(x=>String(x.id)===String(id));
+  const patch={ next_action_date: todayStr(), updated_at:new Date().toISOString() };
+  if (!row?.next_action) patch.next_action=`Review / follow up ${row?.customer_name||row?.title||'opportunity'}`;
+  const { error } = await sb.from('project_portfolio').update(patch).eq('id', id);
+  if (error) return alert('Failed to move this item to Needs Action: ' + error.message);
   await renderPortfolio();
+  await renderTodayFocus();
 }
 
 async function deletePortfolio(id) {
@@ -7161,6 +7170,7 @@ async function saveLog() {
     tracker_item_id: document.getElementById('log-tracker-link').value || null,
     entry_date: document.getElementById('log-entry-date').value || todayStr()
   };
+  const wasEditingLog = !!editingLogId;
   let error;
   if (editingLogId) {
     ({ error } = await sb.from('logbook_entries').update(payload).eq('id', editingLogId));
@@ -7179,7 +7189,7 @@ async function saveLog() {
   resetLogForm();
   document.getElementById('log-form').style.display = 'none';
   await renderLogbook();
-  showLogActionSuggestion(payload);
+  if (!wasEditingLog) showLogActionSuggestion(payload);
 }
 
 // Isi form dengan data logbook yang dipilih untuk diedit
@@ -7552,6 +7562,7 @@ function detectLogAction(payload) {
   return follow ? 'followup' : waiting ? 'waiting' : null;
 }
 function showLogActionSuggestion(payload) {
+  if (isGenericActivityReportTitle(payload?.title)) return;
   const kind=detectLogAction(payload); if(!kind) return;
   document.getElementById('log-smart-suggestion')?.remove();
   const box=document.createElement('div'); box.id='log-smart-suggestion'; box.className='log-smart-suggestion';
@@ -7599,6 +7610,14 @@ function focusIsWaiting(t) {
 function focusIsInbox(t) { return /\[Inbox\]/i.test(t.text || ''); }
 function focusIsCapturedToday(t) { return /\[Today\]/i.test(t.text || ''); }
 function focusIsCarry(t) { return /\[Carry\]/i.test(t.text || ''); }
+function isGenericActivityReportTitle(value) {
+  const title=String(value||'').trim();
+  return /^(?:daily\s+activity\s+report|daily\s+report|activity\s+report)(?:\s*(?:[-–—:]|$))/i.test(title);
+}
+function isLegacyLogbookReminderTodo(t) {
+  const raw=stripTodoInternalMarkers(t?.text||'');
+  return /\[Follow Up\]/i.test(String(t?.text||'')) && isGenericActivityReportTitle(raw);
+}
 let focusCaptureMode = 'today';
 function setFocusCaptureMode(mode, btn) {
   focusCaptureMode = mode;
@@ -7647,12 +7666,12 @@ function todayBelongsToUser(row) {
   return creator===user || assignment===user || (!!assignment && assignment.split(/[,;/]/).map(x=>x.trim()).includes(user));
 }
 function todaySourceLabel(item) {
-  if (item._src==='schedule') return ['Schedule','schedule'];
-  if (item._src==='tracker') return ['Tracker','tracker'];
-  if (item._src==='portfolio') return ['Project','project'];
   if (item._kind==='followup') return ['Follow Up','followup'];
   if (item._kind==='waiting') return ['Waiting','waiting'];
   if (item._kind==='carry') return ['Carry Forward','carry'];
+  if (item._src==='schedule') return ['Schedule','schedule'];
+  if (item._src==='tracker') return ['Tracker','tracker'];
+  if (item._src==='portfolio') return ['Project','project'];
   return ['Task',''];
 }
 function todayItemScore(item, today) {
@@ -7754,22 +7773,48 @@ function askTodayDate(title, defaultDate) {
   return new Promise(resolve=>{
     _todayDateResolver=resolve;
     const modal=document.getElementById('today-date-modal');
+    // Move the modal outside the hidden Today panel when another workspace launches it.
+    if (modal && modal.parentElement !== document.body) document.body.appendChild(modal);
     document.getElementById('today-date-title').textContent=title||'Choose a date';
     document.getElementById('today-date-input').value=defaultDate||todayStr();
     modal?.classList.add('show'); modal?.setAttribute('aria-hidden','false');
     setTimeout(()=>document.getElementById('today-date-input')?.focus(),30);
   });
 }
-function todayDateModalConfirm(){ const v=document.getElementById('today-date-input')?.value||''; document.getElementById('today-date-modal')?.classList.remove('show'); const r=_todayDateResolver; _todayDateResolver=null; if(r)r(v||null); }
-function todayDateModalCancel(){ document.getElementById('today-date-modal')?.classList.remove('show'); const r=_todayDateResolver; _todayDateResolver=null; if(r)r(null); }
+function todayDateModalConfirm(){ const v=document.getElementById('today-date-input')?.value||''; const modal=document.getElementById('today-date-modal'); modal?.classList.remove('show'); modal?.setAttribute('aria-hidden','true'); const r=_todayDateResolver; _todayDateResolver=null; if(r)r(v||null); }
+function todayDateModalCancel(){ const modal=document.getElementById('today-date-modal'); modal?.classList.remove('show'); modal?.setAttribute('aria-hidden','true'); const r=_todayDateResolver; _todayDateResolver=null; if(r)r(null); }
 
-function showAfterDonePrompt(title) {
+function showAfterDonePrompt(title, context={}) {
   document.getElementById('today-next-step-box')?.remove();
   const box=document.createElement('div'); box.id='today-next-step-box'; box.className='today-next-step-box';
   box.innerHTML=`<div class="today-next-step-title">Done & logged ✓</div><div class="today-next-step-sub">What happens next for “${focusEscape(title)}”?</div><div class="today-next-step-actions"><button class="btn-sm" data-next="none">Nothing</button><button class="btn-sm" data-next="waiting">Waiting Reply</button><button class="btn-sm btn-primary" data-next="followup">Follow Up Again</button></div>`;
   box.querySelector('[data-next="none"]').addEventListener('click',()=>box.remove());
-  box.querySelector('[data-next="waiting"]').addEventListener('click',async()=>{ const d=await askTodayDate('Review this waiting item on',addDaysStr(todayStr(),3)); if(!d)return; await sb.from('todos').insert({text:'[Waiting] '+title,priority:'med',due_date:d,assigned_to:null,is_private:true,created_by:getUser()}); box.remove(); await renderTodayFocus(); });
-  box.querySelector('[data-next="followup"]').addEventListener('click',async()=>{ const d=await askTodayDate('Follow up again on',addDaysStr(todayStr(),1)); if(!d)return; await sb.from('todos').insert({text:'[Follow Up] '+title,priority:'med',due_date:d,assigned_to:null,is_private:true,created_by:getUser()}); box.remove(); await renderTodayFocus(); });
+  box.querySelector('[data-next="waiting"]').addEventListener('click',async()=>{
+    const d=await askTodayDate('Review this waiting item on',addDaysStr(todayStr(),3)); if(!d)return;
+    if(context?.src==='portfolio' && context?.id){
+      const row=context.row||portfolioCache.find(x=>String(x.id)===String(context.id));
+      const target=row?.customer_name||row?.title||'customer';
+      const {error}=await sb.from('project_portfolio').update({stage:'awaiting_customer',next_action:`Follow up ${target}`,next_action_date:d,updated_at:new Date().toISOString()}).eq('id',context.id);
+      if(error)return alert('Failed to save Portfolio next action: '+error.message);
+    } else {
+      const {error}=await sb.from('todos').insert({text:'[Waiting] '+title,priority:'med',due_date:d,assigned_to:null,is_private:true,created_by:getUser()});
+      if(error)return alert('Failed: '+error.message);
+    }
+    box.remove(); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio();
+  });
+  box.querySelector('[data-next="followup"]').addEventListener('click',async()=>{
+    const d=await askTodayDate('Follow up again on',addDaysStr(todayStr(),1)); if(!d)return;
+    if(context?.src==='portfolio' && context?.id){
+      const row=context.row||portfolioCache.find(x=>String(x.id)===String(context.id));
+      const target=row?.customer_name||row?.title||'opportunity';
+      const {error}=await sb.from('project_portfolio').update({next_action:`Follow up ${target}`,next_action_date:d,updated_at:new Date().toISOString()}).eq('id',context.id);
+      if(error)return alert('Failed to save Portfolio next action: '+error.message);
+    } else {
+      const {error}=await sb.from('todos').insert({text:'[Follow Up] '+title,priority:'med',due_date:d,assigned_to:null,is_private:true,created_by:getUser()});
+      if(error)return alert('Failed: '+error.message);
+    }
+    box.remove(); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio();
+  });
   document.body.appendChild(box);
 }
 
@@ -7822,9 +7867,10 @@ async function renderTodayFocus() {
     const allTodos=todoCache;
     const scheduleHandled=new Set(allTodos.map(t=>linkedScheduleId(t.text)).filter(Boolean));
     const openTodos=allTodos.filter(t=>!t.is_done);
-    const active=[], waiting=[];
+    const active=[], waiting=[], legacyLogReminders=[];
     openTodos.forEach(t=>{
       if(focusIsInbox(t))return;
+      if(isLegacyLogbookReminderTodo(t)){ legacyLogReminders.push(t); return; }
       const base=stripTodoInternalMarkers(t.text); const isWaiting=focusIsWaiting(t); const isFollow=focusIsFollowUp(t); const carry=focusIsCarry(t);
       const due=t.due_date||null;
       const item={_src:'todo',id:t.id,title:base,due_date:due,priority:t.priority||'med',_kind:isWaiting?'waiting':isFollow?'followup':carry?'carry':'task',raw:t,meta:t.assigned_to?`Assigned: ${t.assigned_to}`:''};
@@ -7833,7 +7879,8 @@ async function renderTodayFocus() {
       if(shouldShow && !isTodayItemSnoozed('todo',t.id))active.push(item);
     });
     const legacyScheduleCutoff=addDaysStr(today,-7);
-    const sched=applyPrivacy(schedRes.data||[]).filter(e=>String(e.created_by||'')===String(user||'') && e.category!=='green' && e.event_date>=legacyScheduleCutoff && !scheduleHandled.has(String(e.id)));
+    const schedAll=applyPrivacy(schedRes.data||[]).filter(e=>String(e.created_by||'')===String(user||'') && e.event_date>=legacyScheduleCutoff);
+    const sched=schedAll.filter(e=>e.category!=='green' && !scheduleHandled.has(String(e.id)));
     sched.forEach(e=>{ const item={_src:'schedule',id:e.id,title:e.title,due_date:e.event_date,time:(e.time_start||'').slice(0,5),priority:e.category==='red'?'high':e.category==='amber'?'med':'medium',_kind:e.event_date<today?'carry':'schedule',raw:e,meta:e.location||''}; if(!isTodayItemSnoozed('schedule',e.id))active.push(item); });
     if(!trackRes.error){
       const tracks=applyPrivacy(trackRes.data||[]).filter(todayBelongsToUser);
@@ -7856,18 +7903,27 @@ async function renderTodayFocus() {
     todayLogCache=applyPrivacy(logRes.data||[]).filter(l=>String(l.created_by||'')===String(user||''));
     active.sort((a,b)=>todayItemScore(b,today)-todayItemScore(a,today));
     todayCombinedCache=active; todayWaitingCache=waiting;
-    const nowTask=active[0]||null; const upNext=active.slice(1,6); const followups=active.filter(x=>x._kind==='followup');
+    const nowTask=active[0]||null;
+    const sameAsNow=x=>!!nowTask && x._src===nowTask._src && String(x.id)===String(nowTask.id);
+    const followupsAll=active.filter(x=>x._kind==='followup');
+    const followups=followupsAll.filter(x=>!sameAsNow(x));
+    const upNext=active.filter(x=>!sameAsNow(x) && x._kind!=='followup').slice(0,5);
     top.innerHTML=nowTask?`<div class="focus-one-now">${todayItemHtml(nowTask,1)}</div><div class="focus-soft-note">Only one thing deserves the spotlight. Finish or move it, then WorkBoard will surface the next one.</div>`:'<div class="focus-empty">Nothing needs action right now. Capture one small next step above.</div>';
     document.getElementById('focus-captured-today').innerHTML=upNext.length?upNext.map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">No additional items need attention.</div>';
-    document.getElementById('focus-followups').innerHTML=followups.length?followups.map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">No follow-ups are due.</div>';
+    const legacyReminderNote=legacyLogReminders.length?`<details class="focus-next-details"><summary>${legacyLogReminders.length} old Logbook reminder${legacyLogReminders.length===1?'':'s'} hidden from Today</summary><div class="focus-soft-note">These generic “Daily Activity Report” reminders came from the old Logbook suggestion flow. They are kept in To Do so no data is deleted, but they no longer compete with real follow-ups.</div><button class="focus-mini-btn" onclick="switchPanel('todo',document.getElementById('nsub-todo'))">Review in To Do</button></details>`:'';
+    document.getElementById('focus-followups').innerHTML=(followups.length?followups.map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">No follow-ups are due.</div>')+legacyReminderNote;
     document.getElementById('focus-waiting').innerHTML=waiting.length?waiting.slice(0,12).map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">Nothing is waiting for a reply.</div>';
     const inbox=allTodos.filter(t=>!t.is_done&&focusIsInbox(t));
     document.getElementById('focus-inbox').innerHTML=inbox.length?inbox.slice(0,12).map(t=>`<div class="brain-item"><div class="brain-item-text">${focusEscape(stripTodoInternalMarkers(t.text))}</div><div class="brain-item-actions"><button class="brain-action" onclick="brainMoveToToday('${t.id}')">Today</button><button class="brain-action" onclick="brainMoveToFollowUp('${t.id}')">Follow Up</button><button class="brain-action" onclick="focusOpenTodo('${t.id}')">Open</button><button class="brain-action" onclick="focusDone('${t.id}')">Archive</button></div></div>`).join(''):'<div class="focus-empty">Brain Dump is empty.</div>';
     const completedList=document.getElementById('today-completed-list');
     if(completedList) completedList.innerHTML=todayLogCache.length?todayLogCache.slice(0,20).map(l=>`<div class="today-completed-item"><span>✅</span><div><strong>${focusEscape(l.title||'Activity')}</strong>${l.tags?.includes('unplanned')?'<span class="today-task-source carry">Unplanned</span>':''}</div><span class="today-completed-time">${l.created_at?new Date(l.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):''}</span></div>`).join(''):'<div class="focus-empty">No completed activity yet.</div>';
-    const planned=sched.filter(e=>e.event_date===today).length; const completed=todayLogCache.filter(l=>!(l.tags||[]).includes('waiting')&&!(l.tags||[]).includes('cancelled')).length; const waitingCount=waiting.length; const followCount=followups.length; const pct=planned?Math.min(100,Math.round(completed/planned*100)):(completed?100:0);
+    const planned=schedAll.filter(e=>e.event_date===today).length;
+    const plannedDone=schedAll.filter(e=>e.event_date===today && e.category==='green').length;
+    const completed=todayLogCache.filter(l=>!(l.tags||[]).includes('waiting')&&!(l.tags||[]).includes('cancelled')).length;
+    const waitingCount=waiting.length; const followCount=followupsAll.length;
+    const pct=planned?Math.min(100,Math.round(plannedDone/planned*100)):0;
     document.getElementById('focus-overview').innerHTML=`<div class="today-overview-wrap"><div class="today-donut" style="--done-pct:${pct}%"><div class="today-donut-center"><strong>${pct}%</strong><span>planned done</span></div></div><div class="today-stat-grid"><div class="today-stat-chip"><span>Planned</span><strong>${planned}</strong></div><div class="today-stat-chip"><span>Completed</span><strong>${completed}</strong></div><div class="today-stat-chip"><span>Follow-up due</span><strong>${followCount}</strong></div><div class="today-stat-chip"><span>Waiting</span><strong>${waitingCount}</strong></div></div></div>`;
-    document.getElementById('today-active-count').textContent=active.length; document.getElementById('focus-today-count').textContent=Math.max(0,active.length-1); document.getElementById('focus-follow-count').textContent=followCount; document.getElementById('focus-wait-count').textContent=waitingCount; document.getElementById('focus-inbox-count').textContent=inbox.length; document.getElementById('today-completed-count').textContent=todayLogCache.length;
+    document.getElementById('today-active-count').textContent=active.length; document.getElementById('focus-today-count').textContent=upNext.length; document.getElementById('focus-follow-count').textContent=followCount; document.getElementById('focus-wait-count').textContent=waitingCount; document.getElementById('focus-inbox-count').textContent=inbox.length; document.getElementById('today-completed-count').textContent=todayLogCache.length;
     const badge=document.getElementById('badge-focus'); if(badge)badge.textContent=Math.min(99,active.length); const brainBadge=document.getElementById('badge-brain'); if(brainBadge)brainBadge.textContent=inbox.length; const followBadge=document.getElementById('badge-followup'); if(followBadge)followBadge.textContent=followCount+waitingCount;
   }catch(e){ top.innerHTML=`<div class="empty-msg" style="color:var(--danger)">Could not load Today: ${focusEscape(e.message)}</div>`; }
 }
@@ -7907,7 +7963,7 @@ async function todayDone(src,id){
   }else if(src==='portfolio'){
     const r=item.raw; title=r.next_action||item.title; isPrivate=!!r.is_private; tags=['project']; const {error}=await sb.from('project_portfolio').update({next_action:null,next_action_date:null,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message);
   }
-  await autoLogActivity({title,body:src==='portfolio'&&item.raw?.title?`Project: ${item.raw.title}`:'',tags,isPrivate,trackerId:src==='tracker'?id:null}); showAfterDonePrompt(title); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); if(currentPanel==='tracker')await ptRefreshAllViews?.(); updateDailyProgress();
+  await autoLogActivity({title,body:src==='portfolio'&&item.raw?.title?`Project: ${item.raw.title}`:'',tags,isPrivate,trackerId:src==='tracker'?id:null}); showAfterDonePrompt(title,{src,id,row:item.raw}); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); if(currentPanel==='tracker')await ptRefreshAllViews?.(); updateDailyProgress();
 }
 async function todayWaiting(src,id){
   const item=todayFindItem(src,id); if(!item)return; const review=await askTodayDate('Review / follow up this waiting item on',addDaysStr(todayStr(),3)); if(!review)return; let title=item.title,isPrivate=false;
