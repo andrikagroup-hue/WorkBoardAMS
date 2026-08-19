@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 19 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `4341b669ab2c55b227a648296fe84088430c9dd24a0e6931afe7fb4ad9d161b8`
+**SHA-256 pasangan kode:** `6af948fa0fe6c710d40a83b57b6d9706eeada87ffe6f7a8ec3ad8d90e217e00c`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v95 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v96 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -438,11 +438,15 @@ All Links saat ini memiliki:
 - `Later 30m` hanya menyembunyikan sementara item dari Today pada perangkat/user aktif; data sumber tidak dihapus.
 - Reminder legacy yang berasal dari judul Logbook generik seperti `Daily Activity Report` tidak lagi bersaing dengan follow-up nyata di Today; data lama tidak dihapus dan tetap dapat direview melalui To Do.
 - Item yang sudah menjadi `One Thing Now` tidak diduplikasi lagi di `Up Next` atau `Follow-ups Due`.
+- `Up Next` dibatasi maksimal **2 item** agar Today tetap ringan dibaca; antrean aktif lainnya tetap tersedia dan akan naik setelah item di atasnya selesai/dipindahkan.
+- Setelah `Done`, Today memakai status source **dan** source marker Auto Logbook hari ini sebagai guard. Action source yang sama tidak boleh muncul kembali akibat stale/racing refresh; Portfolio yang baru saja selesai juga tidak langsung berubah menjadi reminder `Set Next Action` pada hari yang sama.
+- Exact duplicate yang benar-benar identik pada antrean aktif dari source type yang sama dikolaps hanya pada layer tampilan. Schedule dengan waktu berbeda tetap dianggap aktivitas berbeda.
 - Planned count membaca seluruh Schedule hari ini, termasuk Schedule yang sudah Done, sehingga angka Planned tidak turun ketika pekerjaan selesai.
 - Tidak membutuhkan SQL atau migrasi database baru.
 
 ### 15.10 Projects Workspace
 
+- Ringkasan Portfolio menampilkan 6 kartu: `Total Entries`, `Needs Action`, `Waiting`, `Upcoming`, `Active`, dan `Won / Approved`. `Total Entries` menghitung seluruh record Portfolio yang boleh terlihat oleh user setelah privacy filter.
 - Sidebar hanya menampilkan satu item `Projects Workspace`.
 - Portfolio ditambahkan sebagai tab pertama untuk mencatat Project, BOQ, dan Order yang masuk AMS.
 - Tracker, Kanban, Gantt, Matrix, dan Recurring tetap memakai panel dan fungsi render lama.
@@ -555,7 +559,7 @@ All Links saat ini memiliki:
   - `final_order_value` = Final PO / Order Value.
 - Input nilai IDR memakai parser aman yang hanya membaca angka nominal pertama. Paste seperti `Rp327.166.950 incl. PPN 11%` harus disimpan sebagai `327166950`, bukan menggabungkan angka `11` dari PPN. Saat field kehilangan fokus, nominal diformat dengan pemisah ribuan Indonesia.
 - Field lain: `reference_no`, `notes`, `attachments`, dan `is_private`.
-- Dashboard ringkas menampilkan Total Entries, Active Pipeline, Won/Approved, Lost/Closed, dan Follow-ups Due.
+- Dashboard ringkas menampilkan Total Entries, Needs Action, Waiting, Upcoming, Active, dan Won / Approved. Total Entries menghitung seluruh record Portfolio yang boleh terlihat setelah privacy filter.
 - Filter tersedia untuk Type, Outcome, Stage, dan Source.
 - Full-text search bebas mencakup customer, PIC/contact, source, partner/vendor, reference, outcome, loss reason, stage, next action/date, notes, semua nilai komersial, pembuat, dan nama lampiran.
 - Hasil search memakai mekanisme highlight WorkBoard yang sama; data private user lain tidak boleh masuk hasil.
@@ -638,12 +642,14 @@ Selain checklist pada Bagian 11, periksa:
 
 - [ ] Today menjadi panel awal pada desktop dan mobile.
 - [ ] One Thing Now hanya menampilkan satu item utama dan tidak dibanjiri Schedule legacy lama.
+- [ ] Up Next maksimal dua item, exact duplicate tidak berulang, dan item yang baru Done tidak muncul kembali pada hari yang sama.
 - [ ] Quick Capture dapat menyimpan Today, Follow Up, Waiting Reply, Project, Brain Dump, dan Done Now.
 - [ ] Aksi Done dari Today membuat Logbook otomatis tanpa input ulang.
 - [ ] Binder Logbook menampilkan satu halaman per tanggal dan seluruh completed activities pada tanggal tersebut tanpa menggabungkan record database sumber.
 - [ ] Waiting dan Tomorrow tetap muncul kembali saat waktunya tiba.
 - [ ] Schedule tetap dapat Add/Edit/Delete dan aksi Done/Waiting/Tomorrow tidak menghapus data rencana.
 - [ ] Portfolio default Needs Action, sementara Waiting/Upcoming/All tetap dapat dibuka.
+- [ ] Ringkasan Portfolio menampilkan Total Entries bersama Needs Action, Waiting, Upcoming, Active, dan Won / Approved pada desktop dan mobile.
 - [ ] Kartu dan form Portfolio menyembunyikan detail sekunder sampai More Details dibuka.
 - [ ] Attendance ringkas tampil di Today dan Clock In/Out tetap meminta selfie/GPS lewat alur Attendance.
 - [ ] Work Alarm tidak mereset fase hanya karena refresh dan statusnya tampil di Today.
@@ -705,6 +711,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — v96 Today Done Guard + Portfolio Total
+
+- Memperbaiki antrean Today agar action yang baru `Done` tidak muncul kembali akibat stale/racing refresh: source marker Auto Logbook hari ini dipakai sebagai guard tambahan terhadap status source.
+- Portfolio action yang baru selesai tidak langsung berubah menjadi reminder `Set Next Action` pada hari yang sama; jika tetap belum memiliki next action, reminder dapat muncul lagi pada hari berikutnya.
+- Menambahkan collapse untuk exact duplicate pada antrean aktif dari source type yang sama tanpa menggabungkan atau menghapus data database. Schedule dengan waktu berbeda tetap dipertahankan sebagai aktivitas berbeda.
+- Mengembalikan batas ADHD-friendly `Up Next` menjadi maksimal 2 item.
+- Menambahkan kartu `Total Entries` pada ringkasan Portfolio, sehingga urutan ringkasan menjadi Total Entries, Needs Action, Waiting, Upcoming, Active, dan Won / Approved.
+- Grid ringkasan Portfolio disesuaikan menjadi 6 kolom pada desktop dan tetap responsif menjadi 2 kolom pada layar lebih kecil.
+- Tidak ada SQL atau migrasi database baru; desktop dan mobile memakai render/function yang sama.
 
 ### 19 Agustus 2026 — v95 Daily Logbook Binder
 

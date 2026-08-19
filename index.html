@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v95 — Daily Logbook Binder — 19 Aug 2026 -->
+<!-- WorkBoard AMS v96 — Today Done Guard + Portfolio Total — 19 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -589,17 +589,18 @@ textarea { resize: vertical; }
   font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; user-select:all;
 }
 .portfolio-summary {
-  display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-bottom:12px;
+  display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin-bottom:12px;
 }
 .portfolio-stat {
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
   padding:12px 14px; box-shadow:0 2px 8px rgba(80,60,70,.04);
 }
-.portfolio-stat:nth-child(1) { background:#EEF3F6; border-color:#C8D6DE; }
-.portfolio-stat:nth-child(2) { background:#EFF5EE; border-color:#C9D8C5; }
-.portfolio-stat:nth-child(3) { background:#F7F1E7; border-color:#DED1BC; }
-.portfolio-stat:nth-child(4) { background:#F8EEF1; border-color:#E1C8CF; }
-.portfolio-stat:nth-child(5) { background:#F3EFF6; border-color:#D4C7DC; }
+.portfolio-stat:nth-child(1) { background:#F4F1EC; border-color:#D8D0C5; }
+.portfolio-stat:nth-child(2) { background:#EEF3F6; border-color:#C8D6DE; }
+.portfolio-stat:nth-child(3) { background:#EFF5EE; border-color:#C9D8C5; }
+.portfolio-stat:nth-child(4) { background:#F7F1E7; border-color:#DED1BC; }
+.portfolio-stat:nth-child(5) { background:#F8EEF1; border-color:#E1C8CF; }
+.portfolio-stat:nth-child(6) { background:#F3EFF6; border-color:#D4C7DC; }
 .portfolio-stat-label { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
 .portfolio-stat-value { font-size:23px; font-weight:800; color:var(--text1); margin-top:2px; }
 .portfolio-form {
@@ -2874,10 +2875,11 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
 
         <div class="portfolio-summary" id="portfolio-summary">
           <div class="portfolio-stat"><div class="portfolio-stat-label">Total Entries</div><div class="portfolio-stat-value">—</div></div>
-          <div class="portfolio-stat"><div class="portfolio-stat-label">Active Pipeline</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Needs Action</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Waiting</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Upcoming</div><div class="portfolio-stat-value">—</div></div>
+          <div class="portfolio-stat"><div class="portfolio-stat-label">Active</div><div class="portfolio-stat-value">—</div></div>
           <div class="portfolio-stat"><div class="portfolio-stat-label">Won / Approved</div><div class="portfolio-stat-value">—</div></div>
-          <div class="portfolio-stat"><div class="portfolio-stat-label">Lost / Closed</div><div class="portfolio-stat-value">—</div></div>
-          <div class="portfolio-stat"><div class="portfolio-stat-label">Follow-ups Due</div><div class="portfolio-stat-value">—</div></div>
         </div>
 
         <div class="portfolio-view-tabs" aria-label="Portfolio attention views">
@@ -5834,12 +5836,14 @@ function renderPortfolioStats(rows = portfolioCache) {
   const wrap = document.getElementById('portfolio-summary');
   if (!wrap) return;
   const data = rows || [];
+  const total = data.length;
   const attention = data.filter(portfolioNeedsAttention).length;
   const waiting = data.filter(x => portfolioIsWaitingState(x) && !portfolioIsClosed(x)).length;
   const upcoming = data.filter(portfolioIsUpcoming).length;
   const active = data.filter(x => !portfolioIsClosed(x)).length;
   const won = data.filter(x => portfolioOutcome(x) === 'won').length;
   wrap.innerHTML = `
+    <div class="portfolio-stat"><div class="portfolio-stat-label">Total Entries</div><div class="portfolio-stat-value">${total}</div></div>
     <div class="portfolio-stat"><div class="portfolio-stat-label">Needs Action</div><div class="portfolio-stat-value">${attention}</div></div>
     <div class="portfolio-stat"><div class="portfolio-stat-label">Waiting</div><div class="portfolio-stat-value">${waiting}</div></div>
     <div class="portfolio-stat"><div class="portfolio-stat-label">Upcoming</div><div class="portfolio-stat-value">${upcoming}</div></div>
@@ -8398,9 +8402,45 @@ async function renderTodayFocus() {
     if(todoRes.error)throw todoRes.error;
     todoCache=applyOwner(todoRes.data||[]);
     const allTodos=todoCache;
+    todayLogCache=applyPrivacy(logRes.data||[]).filter(l=>String(l.created_by||'')===String(user||''));
+    const active=[], waiting=[], legacyLogReminders=[];
+
+    // A completed source action must disappear from Today immediately after Done.
+    // Today's Auto Logbook source markers provide a second guard if source data is stale or races a refresh.
+    const completedSourceTitles=new Map();
+    todayLogCache.forEach(l=>{
+      const tags=Array.isArray(l?.tags)?l.tags:[];
+      const sourceTag=tags.find(t=>String(t).startsWith('source:'));
+      if(!sourceTag)return;
+      const sourceKey=String(sourceTag).slice(7);
+      if(!sourceKey)return;
+      const titleKey=String(l.title||'').trim().toLowerCase().replace(/\s+/g,' ');
+      if(!completedSourceTitles.has(sourceKey))completedSourceTitles.set(sourceKey,new Set());
+      completedSourceTitles.get(sourceKey).add(titleKey);
+    });
+    const wasCompletedToday=(item)=>{
+      if(!item?._src || item?.id==null)return false;
+      const sourceKey=`${item._src}:${item.id}`;
+      const doneTitles=completedSourceTitles.get(sourceKey);
+      if(!doneTitles?.size)return false;
+      // Do not immediately replace a completed Portfolio action with a same-day "Set Next Action" reminder.
+      // If no next action is set, the reminder may surface again tomorrow.
+      if(item._kind==='portfolio-noaction')return true;
+      const titleKey=String(item.title||'').trim().toLowerCase().replace(/\s+/g,' ');
+      return doneTitles.has(titleKey);
+    };
+    const activeSeen=new Set();
+    const pushActive=(item)=>{
+      if(!item || wasCompletedToday(item))return;
+      // Collapse only exact visible duplicates from the same source type. Different Schedule times stay separate.
+      const sig=[item._src,String(item.title||'').trim().toLowerCase().replace(/\s+/g,' '),item.due_date||'',item.time||'',item.meta||'',item._kind||''].join('||');
+      if(activeSeen.has(sig))return;
+      activeSeen.add(sig);
+      active.push(item);
+    };
+
     const scheduleHandled=new Set(allTodos.map(t=>linkedScheduleId(t.text)).filter(Boolean));
     const openTodos=allTodos.filter(t=>!t.is_done);
-    const active=[], waiting=[], legacyLogReminders=[];
     openTodos.forEach(t=>{
       if(focusIsInbox(t))return;
       if(isLegacyLogbookReminderTodo(t)){ legacyLogReminders.push(t); return; }
@@ -8409,15 +8449,15 @@ async function renderTodayFocus() {
       const item={_src:'todo',id:t.id,title:base,due_date:due,priority:t.priority||'med',_kind:isWaiting?'waiting':isFollow?'followup':carry?'carry':'task',raw:t,meta:t.assigned_to?`Assigned: ${t.assigned_to}`:''};
       if(isWaiting && (!due || due>today)){ waiting.push(item); return; }
       const shouldShow=(due && due<=today)||focusIsCapturedToday(t)||isFollow||carry||(isWaiting&&due&&due<=today);
-      if(shouldShow && !isTodayItemSnoozed('todo',t.id))active.push(item);
+      if(shouldShow && !isTodayItemSnoozed('todo',t.id))pushActive(item);
     });
     const legacyScheduleCutoff=addDaysStr(today,-7);
     const schedAll=applyPrivacy(schedRes.data||[]).filter(e=>String(e.created_by||'')===String(user||'') && e.event_date>=legacyScheduleCutoff);
     const sched=schedAll.filter(e=>e.category!=='green' && !scheduleHandled.has(String(e.id)));
-    sched.forEach(e=>{ const item={_src:'schedule',id:e.id,title:e.title,due_date:e.event_date,time:(e.time_start||'').slice(0,5),priority:e.category==='red'?'high':e.category==='amber'?'med':'medium',_kind:e.event_date<today?'carry':'schedule',raw:e,meta:e.location||''}; if(!isTodayItemSnoozed('schedule',e.id))active.push(item); });
+    sched.forEach(e=>{ const item={_src:'schedule',id:e.id,title:e.title,due_date:e.event_date,time:(e.time_start||'').slice(0,5),priority:e.category==='red'?'high':e.category==='amber'?'med':'medium',_kind:e.event_date<today?'carry':'schedule',raw:e,meta:e.location||''}; if(!isTodayItemSnoozed('schedule',e.id))pushActive(item); });
     if(!trackRes.error){
       const tracks=applyPrivacy(trackRes.data||[]).filter(todayBelongsToUser);
-      tracks.forEach(t=>{ const status=ptEffectiveStatus(t); const due=t.due_date||null; const item={_src:'tracker',id:t.id,title:t.subject||'Untitled tracker item',due_date:due,priority:t.priority||'medium',status:t.status||'not_started',_kind:status==='on_hold'?'waiting':'tracker',raw:t,meta:t.assignment||t.category||''}; if(status==='on_hold' && (!due||due>today)){waiting.push(item);return;} if(t.status==='in_progress'||(due&&due<=today)){if(!isTodayItemSnoozed('tracker',t.id))active.push(item);} });
+      tracks.forEach(t=>{ const status=ptEffectiveStatus(t); const due=t.due_date||null; const item={_src:'tracker',id:t.id,title:t.subject||'Untitled tracker item',due_date:due,priority:t.priority||'medium',status:t.status||'not_started',_kind:status==='on_hold'?'waiting':'tracker',raw:t,meta:t.assignment||t.category||''}; if(status==='on_hold' && (!due||due>today)){waiting.push(item);return;} if(t.status==='in_progress'||(due&&due<=today)){if(!isTodayItemSnoozed('tracker',t.id))pushActive(item);} });
     }
     if(!portRes.error){
       const ports=applyPrivacy(portRes.data||[]).filter(r=>String(r.created_by||'')===String(user||''));
@@ -8427,20 +8467,19 @@ async function renderTodayFocus() {
         const ptitle=r.customer_name?`${r.customer_name} — ${r.title||'Opportunity'}`:(r.title||'Opportunity');
         if(portfolioIsWaitingState(r)){
           const due=r.next_action_date||null; const item={_src:'portfolio',id:r.id,title:r.next_action||`Review waiting — ${ptitle}`,due_date:due,priority:'medium',_kind:'waiting',raw:r,meta:ptitle};
-          if(portfolioWaitingReviewDue(r)){ if(!isTodayItemSnoozed('portfolio',r.id))active.push(item); } else waiting.push(item); return;
+          if(portfolioWaitingReviewDue(r)){ if(!isTodayItemSnoozed('portfolio',r.id))pushActive(item); } else waiting.push(item); return;
         }
-        if(!r.next_action){ if(!noActionReminderAdded){ const item={_src:'portfolio',id:r.id,title:`Set next action — ${ptitle}`,due_date:null,priority:'low',_kind:'portfolio-noaction',raw:r,meta:PORTFOLIO_STAGE_LABEL[portfolioStage(r)]||''}; if(!isTodayItemSnoozed('portfolio',r.id))active.push(item); noActionReminderAdded=true; } return; }
-        if(!r.next_action_date || r.next_action_date<=today){ const item={_src:'portfolio',id:r.id,title:r.next_action,due_date:r.next_action_date||today,priority:'medium',_kind:'project',raw:r,meta:ptitle}; if(!isTodayItemSnoozed('portfolio',r.id))active.push(item); }
+        if(!r.next_action){ if(!noActionReminderAdded){ const item={_src:'portfolio',id:r.id,title:`Set next action — ${ptitle}`,due_date:null,priority:'low',_kind:'portfolio-noaction',raw:r,meta:PORTFOLIO_STAGE_LABEL[portfolioStage(r)]||''}; if(!isTodayItemSnoozed('portfolio',r.id))pushActive(item); noActionReminderAdded=true; } return; }
+        if(!r.next_action_date || r.next_action_date<=today){ const item={_src:'portfolio',id:r.id,title:r.next_action,due_date:r.next_action_date||today,priority:'medium',_kind:'project',raw:r,meta:ptitle}; if(!isTodayItemSnoozed('portfolio',r.id))pushActive(item); }
       });
     }
-    todayLogCache=applyPrivacy(logRes.data||[]).filter(l=>String(l.created_by||'')===String(user||''));
     active.sort((a,b)=>todayItemScore(b,today)-todayItemScore(a,today));
     todayCombinedCache=active; todayWaitingCache=waiting;
     const nowTask=active[0]||null;
     const sameAsNow=x=>!!nowTask && x._src===nowTask._src && String(x.id)===String(nowTask.id);
     const followupsAll=active.filter(x=>x._kind==='followup');
     const followups=followupsAll.filter(x=>!sameAsNow(x));
-    const upNext=active.filter(x=>!sameAsNow(x) && x._kind!=='followup').slice(0,5);
+    const upNext=active.filter(x=>!sameAsNow(x) && x._kind!=='followup').slice(0,2);
     top.innerHTML=nowTask?`<div class="focus-one-now">${todayItemHtml(nowTask,1)}</div><div class="focus-soft-note">Only one thing deserves the spotlight. Finish or move it, then WorkBoard will surface the next one.</div>`:'<div class="focus-empty">Nothing needs action right now. Capture one small next step above.</div>';
     document.getElementById('focus-captured-today').innerHTML=upNext.length?upNext.map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">No additional items need attention.</div>';
     const legacyReminderNote=legacyLogReminders.length?`<details class="focus-next-details"><summary>${legacyLogReminders.length} old Logbook reminder${legacyLogReminders.length===1?'':'s'} hidden from Today</summary><div class="focus-soft-note">These generic “Daily Activity Report” reminders came from the old Logbook suggestion flow. They are kept in To Do so no data is deleted, but they no longer compete with real follow-ups.</div><button class="focus-mini-btn" onclick="switchPanel('todo',document.getElementById('nsub-todo'))">Review in To Do</button></details>`:'';
