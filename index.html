@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v100 — Schedule Output Escaping Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v101 — Safe Attendance Setup SQL — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -11992,8 +11992,19 @@ window.addEventListener('DOMContentLoaded', syncBottomNavBadges);
 // Real-time, Export Excel/PDF, Owner-only delete/edit
 // ============================================================
 
-const ABSEN_SQL = `-- Jalankan di Supabase SQL Editor
-CREATE TABLE IF NOT EXISTS attendance (
+const ABSEN_SQL = `-- WorkBoard Attendance / Leave setup
+-- Requires the WorkBoard Auth helpers from v91+ before this script is run.
+
+DO $$ BEGIN
+  IF to_regprocedure('public.workboard_is_active()') IS NULL
+     OR to_regprocedure('public.workboard_my_name()') IS NULL
+     OR to_regprocedure('public.workboard_can_manage()') IS NULL
+     OR to_regprocedure('public.workboard_is_owner()') IS NULL THEN
+    RAISE EXCEPTION 'WorkBoard Auth setup is required before Attendance setup.';
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.attendance (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_name text NOT NULL,
   tanggal date NOT NULL,
@@ -12011,7 +12022,7 @@ CREATE TABLE IF NOT EXISTS attendance (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS leave_requests (
+CREATE TABLE IF NOT EXISTS public.leave_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_name text NOT NULL,
   tipe text NOT NULL, -- izin | sakit | cuti
@@ -12023,16 +12034,72 @@ CREATE TABLE IF NOT EXISTS leave_requests (
   created_at timestamptz DEFAULT now()
 );
 
--- RLS: semua bisa baca, tapi hanya bisa insert/update/delete milik sendiri
-ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
-ALTER TABLE leave_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leave_requests ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.attendance FROM anon;
+REVOKE ALL ON public.leave_requests FROM anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.attendance TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.leave_requests TO authenticated;
 
-CREATE POLICY "read_all_attendance" ON attendance FOR SELECT USING (true);
-CREATE POLICY "insert_own_attendance" ON attendance FOR INSERT WITH CHECK (true);
-CREATE POLICY "update_own_attendance" ON attendance FOR UPDATE USING (true);
+-- Remove only known legacy/current Attendance and Leave policies before recreating the safe set.
+DROP POLICY IF EXISTS "read_all_attendance" ON public.attendance;
+DROP POLICY IF EXISTS "insert_own_attendance" ON public.attendance;
+DROP POLICY IF EXISTS "update_own_attendance" ON public.attendance;
+DROP POLICY IF EXISTS wb_attendance_select ON public.attendance;
+DROP POLICY IF EXISTS wb_attendance_insert ON public.attendance;
+DROP POLICY IF EXISTS wb_attendance_update ON public.attendance;
+DROP POLICY IF EXISTS wb_attendance_delete ON public.attendance;
 
-CREATE POLICY "read_all_leave" ON leave_requests FOR SELECT USING (true);
-CREATE POLICY "insert_own_leave" ON leave_requests FOR INSERT WITH CHECK (true);`;
+CREATE POLICY wb_attendance_select ON public.attendance
+FOR SELECT TO authenticated
+USING (public.workboard_is_active() AND (user_name = public.workboard_my_name() OR public.workboard_can_manage()));
+
+CREATE POLICY wb_attendance_insert ON public.attendance
+FOR INSERT TO authenticated
+WITH CHECK (public.workboard_is_active() AND user_name = public.workboard_my_name());
+
+CREATE POLICY wb_attendance_update ON public.attendance
+FOR UPDATE TO authenticated
+USING (public.workboard_is_active() AND (user_name = public.workboard_my_name() OR public.workboard_is_owner()))
+WITH CHECK (public.workboard_is_active() AND (user_name = public.workboard_my_name() OR public.workboard_is_owner()));
+
+CREATE POLICY wb_attendance_delete ON public.attendance
+FOR DELETE TO authenticated
+USING (public.workboard_is_owner());
+
+DROP POLICY IF EXISTS "read_all_leave" ON public.leave_requests;
+DROP POLICY IF EXISTS "insert_own_leave" ON public.leave_requests;
+DROP POLICY IF EXISTS wb_leave_select ON public.leave_requests;
+DROP POLICY IF EXISTS wb_leave_insert ON public.leave_requests;
+DROP POLICY IF EXISTS wb_leave_update ON public.leave_requests;
+DROP POLICY IF EXISTS wb_leave_delete ON public.leave_requests;
+
+CREATE POLICY wb_leave_select ON public.leave_requests
+FOR SELECT TO authenticated
+USING (public.workboard_is_active() AND (user_name = public.workboard_my_name() OR public.workboard_can_manage()));
+
+CREATE POLICY wb_leave_insert ON public.leave_requests
+FOR INSERT TO authenticated
+WITH CHECK (
+  public.workboard_is_active()
+  AND user_name = public.workboard_my_name()
+  AND coalesce(status, 'pending') = 'pending'
+  AND catatan_admin IS NULL
+  AND tipe IN ('izin', 'sakit', 'cuti')
+  AND dari_tanggal IS NOT NULL
+  AND sampai_tanggal IS NOT NULL
+  AND dari_tanggal <= sampai_tanggal
+);
+
+-- Direct status changes remain Owner-only; Management uses workboard_manage_leave_status().
+CREATE POLICY wb_leave_update ON public.leave_requests
+FOR UPDATE TO authenticated
+USING (public.workboard_is_owner())
+WITH CHECK (public.workboard_is_owner());
+
+CREATE POLICY wb_leave_delete ON public.leave_requests
+FOR DELETE TO authenticated
+USING (public.workboard_is_owner());`;
 
 const JAM_MASUK = 8; // 08:00 = terlambat jika clock_in > jam ini
 
@@ -12144,7 +12211,7 @@ async function renderAbsenToday() {
       // Tabel belum ada — tampilkan setup banner
       document.getElementById('absen-sql-code').textContent = ABSEN_SQL;
       document.getElementById('absen-setup-banner').style.display = 'block';
-      infoEl.innerHTML = '<span style="color:var(--danger)">⚠️ Tabel belum ada — ikuti petunjuk setup di atas.</span>';
+      infoEl.innerHTML = '<span style="color:var(--danger)">⚠️ Attendance table is missing — follow the setup instructions above.</span>';
       return;
     }
 

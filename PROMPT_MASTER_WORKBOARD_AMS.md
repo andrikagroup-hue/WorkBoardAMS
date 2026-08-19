@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `fa3458938af1e6952edd7316042a48a08fe5cfa13a7e8fb2b7209bf3ec9c4693`
+**SHA-256 pasangan kode:** `7dabd9476f1ff4311473226bf91cdbe8deed5a3e8576bb8e21fa5bcb92825140`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v100 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v101 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -717,6 +717,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v101 Safe Attendance Setup SQL
+
+- Mengganti SQL setup Attendance/Leave legacy di dalam `index.html` yang sebelumnya memakai policy permisif `USING (true)` / `WITH CHECK (true)`.
+- Setup embedded sekarang mensyaratkan WorkBoard Auth helpers v91+, menolak akses `anon`, dan membuat ulang policy berbasis `workboard_is_active()`, `workboard_my_name()`, `workboard_can_manage()`, serta `workboard_is_owner()`.
+- Policy Leave INSERT pada setup embedded mengikuti hardening v99: request harus milik user aktif, `pending`, `catatan_admin` null, tipe hanya Leave/Sick/Time Off (`izin/sakit/cuti`), dan rentang tanggal valid.
+- Leave UPDATE langsung tetap Owner-only; Management tetap mengubah status melalui RPC `workboard_manage_leave_status()`.
+- Pesan setup Attendance yang terkait diterjemahkan ke English.
+- Tidak mengubah role, Users & Access, navigasi, atau alur Attendance yang sedang berjalan.
+- Tidak ada SQL baru yang perlu dijalankan pada database yang sudah memakai Auth/RLS v99; perubahan ini mengamankan SQL setup yang tertanam untuk penggunaan/recovery di masa depan.
 
 ### 20 Agustus 2026 — v100 Schedule Output Escaping Fix
 
