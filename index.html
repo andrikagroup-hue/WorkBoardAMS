@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- WorkBoard AMS v94 — Logbook Actual-Work Cleanup — 19 Aug 2026 -->
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7463,6 +7465,28 @@ function renderBody(text) {
   return plainTextToStableHtml(text);
 }
 
+function logbookVisibleRows(rows) {
+  const out=[];
+  const seenAuto=new Set();
+  for(const original of (rows||[])){
+    const tags=Array.isArray(original?.tags)?original.tags:[];
+    const isAuto=tags.includes('auto');
+    // Legacy state-history entries created by earlier Today builds are useful for old management history,
+    // but they are not actual completed work and should not clutter the Logbook binder.
+    if(isAuto && (tags.includes('waiting')||tags.includes('carried-forward')||tags.includes('cancelled'))) continue;
+    const row={...original};
+    // Older automatic completed entries were sometimes stored as Note. Present them consistently as Report.
+    if(isAuto && row.type==='note') row.type='report';
+    if(isAuto){
+      const key=[String(row.created_by||'').trim().toLowerCase(),String(row.entry_date||'').slice(0,10),String(row.title||'').trim().toLowerCase(),String(row.body||'').trim()].join('||');
+      if(seenAuto.has(key)) continue;
+      seenAuto.add(key);
+    }
+    out.push(row);
+  }
+  return out;
+}
+
 async function renderLogbook() {
   setLoading('logbook-list', true);
   let data, error;
@@ -7472,7 +7496,7 @@ async function renderLogbook() {
         .order('entry_date', { ascending: false })
         .order('created_at', { ascending: false }).limit(1000)
     ));
-    data = applyPrivacy(data);
+    data = logbookVisibleRows(applyPrivacy(data));
   } catch(e) {
     document.getElementById('logbook-list').innerHTML = '<div class="empty-msg" style="color:#e53e3e">⚠️ ' + e.message + '</div>';
     return;
@@ -8209,8 +8233,22 @@ let todayCombinedCache=[];
 let todayWaitingCache=[];
 let todayLogCache=[];
 
-async function autoLogActivity({title, body='', tags=[], isPrivate=false, trackerId=null, entryDate=null}) {
-  const payload={ type:'report', title:title||'Completed activity', body:body||'', tags:Array.from(new Set(['auto',...(tags||[])])), is_private:!!isPrivate, created_by:getUser(), attachments:[], tracker_item_id:trackerId||null, entry_date:entryDate||todayStr() };
+async function autoLogActivity({title, body='', tags=[], isPrivate=false, trackerId=null, entryDate=null, sourceKey=null}) {
+  const logDate=entryDate||todayStr();
+  const sourceTag=sourceKey?`source:${sourceKey}`:null;
+  const finalTags=Array.from(new Set(['auto',...(tags||[]),...(sourceTag?[sourceTag]:[])]));
+  const finalTitle=title||'Completed activity';
+  // Idempotency guard: the same source action should create only one automatic Logbook entry.
+  // Done Now has no sourceKey, so two genuinely separate unplanned activities with the same title are still allowed.
+  if(sourceTag){
+    try{
+      const {data:existing,error:checkError}=await sb.from('logbook_entries')
+        .select('id').eq('created_by',getUser()).eq('entry_date',logDate).eq('title',finalTitle)
+        .contains('tags',[sourceTag]).limit(1);
+      if(!checkError && existing?.length) return true;
+    }catch(e){ console.warn('Auto Logbook duplicate check skipped:',e); }
+  }
+  const payload={ type:'report', title:finalTitle, body:body||'', tags:finalTags, is_private:!!isPrivate, created_by:getUser(), attachments:[], tracker_item_id:trackerId||null, entry_date:logDate };
   const {error}=await sb.from('logbook_entries').insert(payload);
   if(error){ console.error('Auto Logbook failed',error); alert('The activity was updated, but automatic Logbook failed: '+error.message); return false; }
   if(currentPanel==='logbook') await renderLogbook();
@@ -8418,7 +8456,7 @@ async function quickCaptureDoneNow(){
   const input=document.getElementById('focus-quick-input'), status=document.getElementById('focus-capture-status'); const raw=(input?.value||'').trim(); if(!raw){input?.focus();return;} status.textContent='Logging completed activity...'; const ok=await autoLogActivity({title:raw,tags:['unplanned'],isPrivate:false}); if(!ok){status.textContent='Could not log activity.';return;} input.value=''; status.textContent='Unplanned activity logged ✓'; showAfterDonePrompt(raw); await renderTodayFocus(); updateDailyProgress();
 }
 async function focusDone(id){
-  const t=todoCache.find(x=>String(x.id)===String(id)); await sb.from('todos').update({is_done:true,done_at:new Date().toISOString()}).eq('id',id); if(t&&!focusIsInbox(t)){await autoLogActivity({title:stripTodoInternalMarkers(t.text),tags:[focusIsFollowUp(t)?'follow-up':'task'],isPrivate:todayLogPrivacyForTodo(t)});} await renderTodayFocus(); if(currentPanel==='brain')await renderBrainDump(); if(currentPanel==='followup')await renderFollowUpCenter(); updateDailyProgress();
+  const t=todoCache.find(x=>String(x.id)===String(id)); await sb.from('todos').update({is_done:true,done_at:new Date().toISOString()}).eq('id',id); if(t&&!focusIsInbox(t)){await autoLogActivity({title:stripTodoInternalMarkers(t.text),tags:[focusIsFollowUp(t)?'follow-up':'task'],isPrivate:todayLogPrivacyForTodo(t),sourceKey:`todo:${id}`});} await renderTodayFocus(); if(currentPanel==='brain')await renderBrainDump(); if(currentPanel==='followup')await renderFollowUpCenter(); updateDailyProgress();
 }
 async function focusTomorrow(id){ await todayTomorrow('todo',id); }
 async function focusOpenTodo(id){ await switchPanel('todo',document.getElementById('nsub-todo')); editTodo(id); document.getElementById('todo-input')?.focus(); }
@@ -8436,7 +8474,7 @@ async function todayDone(src,id){
   }else if(src==='portfolio'){
     const r=item.raw; title=r.next_action||item.title; isPrivate=!!r.is_private; tags=['project']; const {error}=await sb.from('project_portfolio').update({next_action:null,next_action_date:null,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message);
   }
-  await autoLogActivity({title,body:src==='portfolio'&&item.raw?.title?`Project: ${item.raw.title}`:'',tags,isPrivate,trackerId:src==='tracker'?id:null}); showAfterDonePrompt(title,{src,id,row:item.raw}); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); if(currentPanel==='tracker')await ptRefreshAllViews?.(); updateDailyProgress();
+  await autoLogActivity({title,body:src==='portfolio'&&item.raw?.title?`Project: ${item.raw.title}`:'',tags,isPrivate,trackerId:src==='tracker'?id:null,sourceKey:`${src}:${id}`}); showAfterDonePrompt(title,{src,id,row:item.raw}); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); if(currentPanel==='tracker')await ptRefreshAllViews?.(); updateDailyProgress();
 }
 async function todayWaiting(src,id){
   const item=todayFindItem(src,id); if(!item)return; const review=await askTodayDate('Review / follow up this waiting item on',addDaysStr(todayStr(),3)); if(!review)return; let title=item.title,isPrivate=false;
@@ -8444,7 +8482,8 @@ async function todayWaiting(src,id){
   else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Waiting] [Schedule:${id}] ${r.title}`,priority:'med',due_date:review,assigned_to:null,is_private:true,created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='tracker'){ const r=item.raw; const {error}=await sb.from('time_plan_tracker').update({status:'on_hold',due_date:review,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='portfolio'){ const r=item.raw; title=r.next_action||item.title; const {error}=await sb.from('project_portfolio').update({stage:'awaiting_customer',next_action:r.next_action||`Follow up ${r.customer_name||r.title||'customer'}`,next_action_date:review,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
-  await autoLogActivity({title,body:`Waiting / follow-up review: ${review}`,tags:['waiting'],isPrivate,trackerId:src==='tracker'?id:null}); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); updateDailyProgress();
+  // Waiting is a current work state, not a completed activity. Keep it in its source record and Management Report, not Logbook.
+  await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); updateDailyProgress();
 }
 async function todayTomorrow(src,id){
   const item=todayFindItem(src,id); if(!item)return; const tomorrow=addDaysStr(todayStr(),1);
@@ -8453,7 +8492,7 @@ async function todayTomorrow(src,id){
   else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Today] [Carry] [Schedule:${id}] ${r.title}`,priority:'med',due_date:tomorrow,assigned_to:null,is_private:true,created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='tracker'){ const r=item.raw; const {error}=await sb.from('time_plan_tracker').update({due_date:tomorrow,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='portfolio'){ const r=item.raw; title=r.next_action||item.title; const {error}=await sb.from('project_portfolio').update({next_action_date:tomorrow,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
-  await autoLogActivity({title,body:`Carried forward to ${tomorrow}`,tags:['carried-forward'],isPrivate,trackerId:src==='tracker'?id:null});
+  // Carry Forward changes the plan; it is not an actual completed activity and should not create a Logbook entry.
   await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); updateDailyProgress();
 }
 async function todayCancel(src,id){
@@ -8462,7 +8501,8 @@ async function todayCancel(src,id){
   else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Cancelled] [Schedule:${id}] ${r.title}`,priority:'med',due_date:null,assigned_to:null,is_private:true,is_done:true,done_at:new Date().toISOString(),created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='tracker'){ const r=item.raw; const {error}=await sb.from('time_plan_tracker').update({status:'skipped',updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='portfolio'){ const r=item.raw; title=r.next_action||item.title; const {error}=await sb.from('project_portfolio').update({next_action:null,next_action_date:null,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
-  await autoLogActivity({title,body:'Action cancelled / not continued.',tags:['cancelled'],isPrivate,trackerId:src==='tracker'?id:null}); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); updateDailyProgress();
+  // Cancelled actions remain visible through their source status/history; cancellation is not a completed Logbook activity.
+  await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); updateDailyProgress();
 }
 async function todayOpen(src,id){
   if(src==='todo')return focusOpenTodo(id);
@@ -10082,7 +10122,7 @@ function displayNotepad(items) {
           <button class="ev-del" onclick="delNpItem('${active.id}')" title="Delete"><i class="ti ti-x"></i></button>
         </div>
       </div>
-      <div class="np-page-body ql-editor" style="padding:0">${renderBody(active.body)}</div>
+      <div class="np-page-body ql-editor" style="padding:0">${renderBody(active.body) || logbookAutoSummary(active)}</div>
     </div>`;
   applyPanelSearchHighlights('notepad', document.getElementById('np-search')?.value || '');
 }
@@ -10209,6 +10249,19 @@ async function delNpItem(id) {
 // Tampilan "binder": daftar judul jadi index di kiri, isi catatan yang dipilih
 // ditampilkan penuh selebar panel di kanan — sama persis konsepnya dengan Notepad,
 // bedanya tetap ada tab kategori (All/Reports/Notes/Meetings/Issues) di atas.
+function logbookAutoSummary(row) {
+  const tags=Array.isArray(row?.tags)?row.tags:[];
+  if(!tags.includes('auto') || String(row?.body||'').trim()) return '';
+  let source='Completed activity';
+  if(tags.includes('unplanned')) source='Unplanned activity completed';
+  else if(tags.includes('schedule')||tags.includes('planned')) source='Completed from Daily Schedule';
+  else if(tags.includes('project')) source='Completed project / opportunity action';
+  else if(tags.includes('tracker')) source='Completed project tracker activity';
+  else if(tags.includes('follow-up')) source='Completed follow-up';
+  else if(tags.includes('planned-task')||tags.includes('task')) source='Completed task';
+  return `<div style="display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid rgba(47,99,100,.14);border-radius:10px;background:rgba(255,255,255,.55);font-size:12px;color:var(--text2)"><i class="ti ti-circle-check" style="color:#16a34a;font-size:16px"></i><span><strong style="color:var(--text1)">${escHtml(source)}</strong><br><span style="font-size:11px;opacity:.72">Logged automatically from WorkBoard.</span></span></div>`;
+}
+
 function displayLogbook(data) {
   logbookViewCache = Array.isArray(data) ? data : [];
   const typeLabel = {meeting:'Meeting',report:'Report',note:'Note',issue:'Issue'};

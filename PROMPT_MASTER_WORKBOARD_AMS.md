@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 19 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `9ee2dc06eac94b2c5bae88fe9d60de34af4863f30ceebe44e6baeb385f3fec65`
+**SHA-256 pasangan kode:** `8f8c44ccbcc6655fae4476681ddd83dbbd723fb2f14777bf13fa469b74e7b497`
 
 ---
 
@@ -465,10 +465,12 @@ All Links saat ini memiliki:
   - Schedule → tandai completed legacy tanpa input ulang;
   - Project Tracker → status `done`;
   - Portfolio Next Action → hapus Next Action yang selesai.
-- `Waiting` menyimpan tanggal review/follow-up dan tidak terus menjadi fokus utama sebelum tanggalnya tiba.
-- `Tomorrow` membuat carry-forward tanpa mengetik ulang. Untuk Schedule, marker internal di `todos` dipakai agar tidak membutuhkan kolom database baru.
-- `Cancelled` keluar dari daftar aktif dan dicatat sebagai status aktivitas, bukan dianggap pekerjaan selesai normal.
+- `Waiting` menyimpan tanggal review/follow-up dan tidak terus menjadi fokus utama sebelum tanggalnya tiba. **Waiting adalah state kerja, bukan hasil selesai, sehingga tidak membuat Logbook baru.**
+- `Tomorrow` membuat carry-forward tanpa mengetik ulang. Untuk Schedule, marker internal di `todos` dipakai agar tidak membutuhkan kolom database baru. **Carry Forward tidak membuat Logbook baru.**
+- `Cancelled` keluar dari daftar aktif dan dicatat pada source status/history, tetapi **tidak dibuat sebagai Logbook completed activity**.
 - `Completed Today` membaca Logbook aktual, sehingga pekerjaan planned maupun unplanned tetap terlihat sebagai hasil kerja.
+- Auto Logbook hanya dibuat untuk aktivitas yang benar-benar `Done` / `Done Now`. Auto entry memakai type `Report` dan source marker untuk mencegah satu source action ter-log dua kali karena double click / repeated render.
+- Logbook binder menyembunyikan legacy auto state-history (`waiting`, `carried-forward`, `cancelled`) dan mengkolaps exact duplicate auto entries pada layer tampilan tanpa menghapus data database lama. Legacy auto completed yang dulu tersimpan sebagai `Note` ditampilkan konsisten sebagai `Report`.
 - Smart Next-Step Logbook lama tetap dipertahankan untuk kompatibilitas.
 - Tidak diperlukan SQL baru.
 
@@ -595,7 +597,19 @@ All Links saat ini memiliki:
 - Monthly Analytics & Attendance lama tetap tersedia dalam bagian expandable supaya layar utama lebih mudah dibaca.
 - Desktop memakai tombol utama `Management Report`; mobile memakai tombol `Report` yang hanya terlihat untuk Owner/Management.
 
-### 15.18 Authentication, Roles, dan Users & Access — v91
+### 15.18 Logbook Actual-Work Rule — v94
+
+- Logbook kembali ke fungsi inti: **apa yang benar-benar SUDAH dikerjakan**, bukan histori perubahan state pekerjaan.
+- `Done` / `Done Now` boleh membuat Auto Logbook; `Waiting`, `Tomorrow / Carry Forward`, dan `Cancelled` tidak membuat Logbook baru.
+- Auto Logbook baru selalu bertipe `Report` dan diberi source marker agar action yang sama tidak menghasilkan record ganda karena double click atau render ulang.
+- Legacy auto state-history tetap berada di database untuk kompatibilitas/historical report lama, tetapi disembunyikan dari binder Logbook karena bukan completed work.
+- Exact duplicate legacy Auto Logbook dikolaps pada layer tampilan; tidak ada record database yang dihapus.
+- Legacy auto completed yang dulu tersimpan sebagai `Note` dinormalisasi pada tampilan menjadi `Report`; manual Note milik user tidak diubah.
+- Auto completed entry tanpa body menampilkan ringkasan sistem yang ringkas di halaman binder sehingga tidak tampak sebagai halaman kosong.
+- Perubahan berlaku pada desktop dan mobile karena keduanya memakai `renderLogbook()` dan action flow yang sama.
+- Tidak memerlukan SQL baru.
+
+### 15.19 Authentication, Roles, dan Users & Access — v91
 
 - Supabase Auth menggantikan login nama bebas. App tetap tersembunyi sampai sesi Auth dan profile WorkBoard valid.
 - Metode: Email + Password, email verification sesuai setting Supabase, Forgot Password, serta Google OAuth setelah provider Google dan redirect URL dikonfigurasi.
@@ -685,6 +699,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 19 Agustus 2026 — v94 Logbook Actual-Work Cleanup
+
+- Memperbaiki polusi Logbook yang terlihat setelah integrasi Today: Waiting, Carry Forward, dan Cancelled tidak lagi membuat Auto Logbook baru karena ketiganya adalah state kerja, bukan completed activity.
+- `Done` / `Done Now` tetap otomatis masuk Logbook tanpa input ulang.
+- Menambahkan source marker + duplicate guard pada Auto Logbook agar action source yang sama tidak tersimpan dua kali akibat double click / repeated render.
+- Binder Logbook menyembunyikan legacy auto state-history (`waiting`, `carried-forward`, `cancelled`) dan mengkolaps exact duplicate auto records hanya pada layer tampilan; database lama tidak dihapus.
+- Legacy Auto Logbook completed yang dulu tersimpan sebagai `Note` ditampilkan sebagai `Report`; manual Notes tetap utuh.
+- Auto Logbook completed yang tidak memiliki body sekarang menampilkan ringkasan kecil `Logged automatically from WorkBoard` agar halaman detail tidak terlihat seperti catatan kosong.
+- Perubahan diterapkan pada desktop dan mobile melalui source flow/render yang sama dan tidak membutuhkan SQL baru.
 
 ### 19 Agustus 2026 — v93 Report Employee Cleanup
 
