@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v98 — Management Leave Approval Access — 19 Aug 2026 -->
+<!-- WorkBoard AMS v99 — Approved Leave Integrity Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -8362,7 +8362,7 @@ async function renderTodayAttendanceSummary(){
   try{
     const [{data,error},{data:leaveData}]=await Promise.all([
       withTimeout(sb.from('attendance').select('*').eq('user_name',user).eq('tanggal',today).maybeSingle()),
-      withTimeout(sb.from('leave_requests').select('*').eq('user_name',user).lte('dari_tanggal',today).gte('sampai_tanggal',today).maybeSingle()).catch(()=>({data:null}))
+      withTimeout(sb.from('leave_requests').select('*').eq('user_name',user).eq('status','approved').lte('dari_tanggal',today).gte('sampai_tanggal',today).maybeSingle()).catch(()=>({data:null}))
     ]);
     if(error && (error.code==='42P01'||String(error.message||'').includes('does not exist'))){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Setup required</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; return; }
     if(error)throw error;
@@ -9225,7 +9225,7 @@ async function renderResult() {
     sb.from('notes').select('*'),
     sb.from('todos').select('*'),
     sb.from('attendance').select('*').gte('tanggal', firstDay).lte('tanggal', lastDay).order('tanggal'),
-    sb.from('leave_requests').select('*').or(`dari_tanggal.lte.${lastDay},sampai_tanggal.gte.${firstDay}`)
+    sb.from('leave_requests').select('*').eq('status','approved').lte('dari_tanggal', lastDay).gte('sampai_tanggal', firstDay)
   ]);
 
   const sd = applyPrivacy(_sr.data), tr = applyPrivacy(_tr.data);
@@ -12152,7 +12152,7 @@ async function renderAbsenToday() {
 
     // Cek leave (izin/sakit/cuti) hari ini
     const { data: leaveData } = await withTimeout(
-      sb.from('leave_requests').select('*').eq('user_name', user).lte('dari_tanggal', today).gte('sampai_tanggal', today).maybeSingle()
+      sb.from('leave_requests').select('*').eq('user_name', user).eq('status', 'approved').lte('dari_tanggal', today).gte('sampai_tanggal', today).maybeSingle()
     );
 
     if (leaveData) {
@@ -12360,7 +12360,7 @@ async function renderAbsenRekap() {
 
     // Query leave_requests yang mencakup tanggal ini
     const { data: leaveData } = await withTimeout(
-      sb.from('leave_requests').select('*').lte('dari_tanggal', filterDate).gte('sampai_tanggal', filterDate)
+      sb.from('leave_requests').select('*').eq('status', 'approved').lte('dari_tanggal', filterDate).gte('sampai_tanggal', filterDate)
     );
 
     // Gabungkan: semua user dari attendance

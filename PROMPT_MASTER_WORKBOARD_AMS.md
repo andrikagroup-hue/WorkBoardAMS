@@ -2,9 +2,9 @@
 
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
-**Status sinkronisasi:** 19 Agustus 2026
+**Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `2d199feede7a3d9f67e444a6c575ce84703bd31f1687da23e19bda9e6c318b90`
+**SHA-256 pasangan kode:** `625647d70f330bba2d597b8c82efadb0f88c8bcc6304c77837f60c80af6801eb`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v98 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v99 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -631,6 +631,7 @@ All Links saat ini memiliki:
 - Authorization tidak bergantung pada `raw_user_meta_data`; role efektif dibaca dari `workboard_profiles`.
 - `Users & Access` hanya Owner dan tersedia di desktop serta mobile. Owner dapat mengubah Staff ↔ Management dan Active ↔ Inactive; Owner sendiri terkunci.
 - `Leave Management` bukan bagian dari hak User Access: Owner/Management dapat melakukan review serta Approve/Reject/Reset leave request; Delete request tetap Owner-only.
+- Self-service INSERT ke `leave_requests` harus milik user aktif sendiri, selalu mulai dengan `status = pending`, `catatan_admin` kosong, dan `tipe` hanya `izin` / `sakit` / `cuti` (Leave / Sick / Time Off).
 - Akun inactive tidak dapat memakai WorkBoard; RLS juga menolak akses data walau sesi lama masih tersimpan.
 - `Switch User` lama menjadi Sign Out. Rename profile dari UI dinonaktifkan karena data legacy masih memakai nama pada `created_by` / `user_name`.
 - RLS diaktifkan pada tabel WorkBoard yang dimigrasikan. Anon tidak diberi akses tabel tersebut; role `authenticated` mendapat hak yang dibatasi policy.
@@ -716,6 +717,15 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v99 Approved Leave Integrity Fix
+
+- Today Attendance hanya menganggap `leave_requests` berstatus `approved` sebagai Leave/Sick/Time Off aktif.
+- Panel Attendance hanya menampilkan leave aktif jika request sudah `approved`; Pending/Rejected tidak menggantikan status clock-in.
+- Attendance Summary hanya membuat virtual leave rows dari request `approved`.
+- Management Report bulanan memakai kondisi overlap **AND** (`dari_tanggal <= lastDay` dan `sampai_tanggal >= firstDay`) serta hanya menghitung request `approved`.
+- Policy INSERT `leave_requests` diperketat melalui `WORKBOARD_AUTH_V99_LEAVE_INTEGRITY.sql`: request self-service harus milik user aktif sendiri, selalu `pending`, `catatan_admin` null, dan `tipe` hanya `izin` / `sakit` / `cuti`.
+- Tidak mengubah role, akses Leave Management, `Users & Access`, izin Delete, atau fitur lain.
 
 ### 19 Agustus 2026 — v98 Management Leave Approval Access
 
