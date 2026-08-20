@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `66aed68a7fae3be842ac3c9683d3c0b2194405744d196a6e75d761ba3d7d4395`
+**SHA-256 pasangan kode:** `48410bbe5cc7b140f62109cfd8e294cc7383cba39a2b01460b4ea5b5683dd68c`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v107 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v108 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -368,6 +368,7 @@ Catatan ketergantungan:
 - UI Schedule, Logbook, Portfolio, Project Tracker/Kanban, dan Recurring Task wajib menyembunyikan/menonaktifkan action mutasi pada row yang tidak boleh diubah user aktif. Owner yang mengedit row public user lain harus mempertahankan `created_by` asli dan privacy tetap Public.
 - Management dan Owner dapat membuka `HR → Leave Management` serta Approve / Reject / Reset request Leave, Sick, dan Time Off. Delete request tetap hanya Owner. `Users & Access` tetap hanya Owner.
 - Attendance update memakai defense-in-depth mulai v107: Staff/Management hanya boleh menyelesaikan Clock Out pada row attendance miliknya sendiri; identity, tanggal, Clock In, status, keterlambatan, GPS/foto masuk, keterangan, dan created_at tidak boleh ditulis ulang. Official Clock Out timestamp ditetapkan oleh database. Owner tetap memiliki capability administratif yang sudah ada.
+- Approved leave untuk Today Attendance dan panel Attendance mengambil maksimal satu record terbaru (`created_at` descending + `limit(1)`) agar overlapping approved leave tidak menyebabkan `.maybeSingle()` gagal. Alasan dan tanggal leave pada panel Attendance di-escape sebelum masuk `innerHTML`.
 - Owner (Ratu) mendapat seluruh kontrol WorkBoard/company yang dirancang untuk Owner, tetapi Password Manager dan data personal private user lain tetap mengikuti policy private masing-masing.
 
 ### 15.5 All Links — kondisi terbaru
@@ -732,6 +733,14 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v108 Approved Leave Display Hardening
+
+- Today Attendance dan panel Attendance tidak lagi menjalankan `.maybeSingle()` langsung pada semua approved leave yang overlap tanggal aktif; query sekarang mengurutkan `created_at` terbaru dan membatasi hasil ke satu row sebelum `.maybeSingle()`.
+- Jika ada lebih dari satu approved Leave/Sick/Time Off yang overlap pada tanggal sama, UI memakai record approved terbaru dan tidak jatuh ke error multi-row PostgREST.
+- Alasan leave serta tanggal periode pada panel Attendance di-escape sebelum dimasukkan ke `innerHTML`, menutup jalur markup/script dari isi alasan leave.
+- Label `Keterangan` pada blok yang disentuh diubah menjadi `Reason` agar konsisten dengan aturan UI English.
+- Tidak ada perubahan database, RLS, role, Leave Management workflow, Storage, atau data lama. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v107 Attendance Clock-Out Integrity Guard
 

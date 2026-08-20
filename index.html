@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v107 — Attendance Clock-Out Integrity Guard — 20 Aug 2026 -->
+<!-- WorkBoard AMS v108 — Approved Leave Display Hardening — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -8687,7 +8687,7 @@ async function renderTodayAttendanceSummary(){
   try{
     const [{data,error},{data:leaveData}]=await Promise.all([
       withTimeout(sb.from('attendance').select('*').eq('user_name',user).eq('tanggal',today).maybeSingle()),
-      withTimeout(sb.from('leave_requests').select('*').eq('user_name',user).eq('status','approved').lte('dari_tanggal',today).gte('sampai_tanggal',today).maybeSingle()).catch(()=>({data:null}))
+      withTimeout(sb.from('leave_requests').select('*').eq('user_name',user).eq('status','approved').lte('dari_tanggal',today).gte('sampai_tanggal',today).order('created_at',{ascending:false}).limit(1).maybeSingle()).catch(()=>({data:null}))
     ]);
     if(error && (error.code==='42P01'||String(error.message||'').includes('does not exist'))){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Setup required</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; return; }
     if(error)throw error;
@@ -12665,15 +12665,15 @@ async function renderAbsenToday() {
 
     // Cek leave (izin/sakit/cuti) hari ini
     const { data: leaveData } = await withTimeout(
-      sb.from('leave_requests').select('*').eq('user_name', user).eq('status', 'approved').lte('dari_tanggal', today).gte('sampai_tanggal', today).maybeSingle()
+      sb.from('leave_requests').select('*').eq('user_name', user).eq('status', 'approved').lte('dari_tanggal', today).gte('sampai_tanggal', today).order('created_at', { ascending: false }).limit(1).maybeSingle()
     );
 
     if (leaveData) {
       infoEl.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:16px;font-weight:700;color:${absenStatusColor(leaveData.tipe)}">${absenStatusLabel(leaveData.tipe)}</span>
-          <span style="color:var(--text2)">Keterangan: ${leaveData.alasan || '—'}</span>
-          <span style="color:var(--text3);font-size:11px">Period: ${leaveData.dari_tanggal} to ${leaveData.sampai_tanggal}</span>
+          <span style="color:var(--text2)">Reason: ${focusEscape(leaveData.alasan || '—')}</span>
+          <span style="color:var(--text3);font-size:11px">Period: ${focusEscape(leaveData.dari_tanggal || '—')} to ${focusEscape(leaveData.sampai_tanggal || '—')}</span>
         </div>`;
       return;
     }
