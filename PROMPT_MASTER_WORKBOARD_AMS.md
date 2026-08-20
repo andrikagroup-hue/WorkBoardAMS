@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `5adb3035421ca9edf6c59ad2be23a7208d3feb3109f5a7dc7b1eb840fad8d5ca`
+**SHA-256 pasangan kode:** `3c835f3512d0130474e04d6de22b080b5cf4378c8e087db541d25de457d524ae`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v112 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v113 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -614,7 +614,7 @@ All Links saat ini memiliki:
 - Untuk periode yang mencakup hari ini, Waiting membaca **current state** dari To Do/Portfolio/Tracker dan tidak lagi mencampur history waiting Logbook. Untuk periode lampau, history waiting Logbook tetap dapat dipakai sebagai jejak periode tersebut.
 - Portfolio berstatus Waiting ditampilkan sebagai attention item dan tidak diulang lagi di `Project / Opportunity Status`; bagian Project Status hanya menampilkan opportunity aktif non-waiting.
 - Planned yang judulnya sama tetap boleh tampil lebih dari sekali jika waktu/lokasi berbeda; hanya record Schedule yang benar-benar identik yang dikolaps.
-- Monthly Analytics & Attendance lama tetap tersedia dalam bagian expandable supaya layar utama lebih mudah dibaca. Mulai v112, rekap bulanan memakai helper gabungan attendance + approved leave yang sama: real attendance menang pada user/tanggal yang sama, overlapping approved leave hanya dihitung sekali, dan request approved terbaru menang jika ada overlap legacy.
+- Monthly Analytics & Attendance lama tetap tersedia dalam bagian expandable supaya layar utama lebih mudah dibaca. Mulai v112, rekap bulanan memakai helper gabungan attendance + approved leave yang sama: real attendance menang pada user/tanggal yang sama, overlapping approved leave hanya dihitung sekali, dan request approved terbaru menang jika ada overlap legacy. Mulai v113, seluruh analytics lama juga memakai `managementPublicRows()` untuk Schedule/Tracker/Portfolio/Logbook/To Do sehingga row Private milik user yang sedang login tidak ikut masuk laporan; query dan grafik kategori personal Notes dihapus dari Management Report.
 - Desktop memakai tombol utama `Management Report`; mobile memakai tombol `Report` yang hanya terlihat untuk Owner/Management.
 
 ### 15.18 Logbook Actual-Work + Daily Binder — v95
@@ -736,6 +736,13 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v113 Management Personal Data Exclusion
+
+- Menyamakan legacy Monthly Analytics pada Management Report dengan prinsip report utama: hanya data Team / Company (`is_private != true`) yang boleh masuk statistik perusahaan.
+- Mengganti `applyPrivacy()` dengan `managementPublicRows()` untuk Schedule, Tracker, Project Tracker, Portfolio, Logbook, dan To Do di `renderResult()` agar row Private milik user yang sedang login tidak tercampur ke laporan.
+- Menghapus query personal `notes` dari Management Report dan mengganti kartu `Notes Category Distribution` dengan penjelasan `Reporting Scope`; Notes, private To Do, Notepad, dan Password Manager tetap berada di area Personal saja.
+- Tidak mengubah RLS, tabel, role, data sumber, atau panel Personal; tidak membutuhkan SQL baru.
 
 ### 20 Agustus 2026 — v112 Management Monthly Leave Deduplication
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v112 — Management Monthly Leave Deduplication — 20 Aug 2026 -->
+<!-- WorkBoard AMS v113 — Management Personal Data Exclusion — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -3789,8 +3789,10 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
             <div id="activity-dist"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div></div>
           </div>
           <div class="chart-section">
-            <div class="chart-title">Notes Category Distribution</div>
-            <div id="notes-summary"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i></div></div>
+            <div class="chart-title">Reporting Scope</div>
+            <div id="notes-summary" style="font-size:12px;line-height:1.6;color:var(--text2)">
+              <i class="ti ti-lock" style="margin-right:5px"></i>Personal Notes, private To Do, Notepad, and Password Manager are excluded from Management Report.
+            </div>
           </div>
         </div>
 
@@ -9621,26 +9623,24 @@ async function renderResult() {
 
   // ── Fetch semua data secara paralel ──
   // Schedule & Tracker diambil range bulan penuh (bukan cuma hari ini)
-  const [_sr, _tr, _ptr, _pfr, _lr, _nr, _tdr, _absenRes, _leaveRes] = await Promise.all([
+  const [_sr, _tr, _ptr, _pfr, _lr, _tdr, _absenRes, _leaveRes] = await Promise.all([
     sb.from('schedule_events').select('*').gte('event_date', firstDay).lte('event_date', lastDay),
     sb.from('tracker_items').select('*').gte('item_date', firstDay).lte('item_date', lastDay),
     sb.from('time_plan_tracker').select('*'),
     sb.from('project_portfolio').select('*'),
     sb.from('logbook_entries').select('*').gte('entry_date', firstDay).lte('entry_date', lastDay),
-    sb.from('notes').select('*'),
     sb.from('todos').select('*'),
     sb.from('attendance').select('*').gte('tanggal', firstDay).lte('tanggal', lastDay).order('tanggal'),
     sb.from('leave_requests').select('*').eq('status','approved').lte('dari_tanggal', lastDay).gte('sampai_tanggal', firstDay)
   ]);
 
-  const sd = applyPrivacy(_sr.data), tr = applyPrivacy(_tr.data);
-  const ptr = applyPrivacy(_ptr.data || []), pf = applyPrivacy(_pfr.data || []);
-  const ld = applyPrivacy(_lr.data), nd = applyPrivacy(_nr.data), td = applyPrivacy(_tdr.data);
+  // Management analytics must never mix the signed-in user's own Private rows into company reporting.
+  const sd = managementPublicRows(_sr.data || []), tr = managementPublicRows(_tr.data || []);
+  const ptr = managementPublicRows(_ptr.data || []), pf = managementPublicRows(_pfr.data || []);
+  const ld = managementPublicRows(_lr.data || []), td = managementPublicRows(_tdr.data || []);
   const absenData = _absenRes.data || [];
   const leaveData = _leaveRes.data || [];
   const monthlyAttendance = managementAttendanceWithApprovedLeave(absenData, leaveData, { start:firstDay, end:lastDay });
-
-  const doneTodo = td.filter(t => t.is_done).length;
 
   // ── Boss-friendly work summary — data bulan penuh ──
   const schedDone = sd.filter(e => e.category === 'green').length;
@@ -9814,21 +9814,6 @@ async function renderResult() {
     `).join('') || '<div style="color:var(--text3);font-size:12px">No tracker data this month.</div>';
   }
 
-  // ── Distribusi kategori Notes ──
-  const catCount = {};
-  nd.forEach(n => { catCount[n.category] = (catCount[n.category] || 0) + 1; });
-  const catLabel = { finance: 'Finance', ops: 'Operations', hr: 'HR', strat: 'Strategy' };
-  const totalNotes = nd.length || 1;
-  const notesSumEl = document.getElementById('notes-summary');
-  if (notesSumEl) {
-    notesSumEl.innerHTML = Object.entries(catCount).map(([k, v]) => `
-      <div class="activity-row">
-        <div class="act-left">${catLabel[k] || k}</div>
-        <div class="act-bar-wrap"><div class="act-bar-fill" style="width:${Math.round(v/totalNotes*100)}%;background:#A855F7"></div></div>
-        <div class="act-pct">${v}</div>
-      </div>
-    `).join('') || '<div style="color:var(--text3);font-size:12px">No notes yet.</div>';
-  }
 }
 
 function getWeekStart() {
