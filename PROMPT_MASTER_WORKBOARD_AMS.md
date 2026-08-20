@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `98b92967cfd2be5c0ffac2060c2414e6e050cdd26f0a6729383adb4f7198ed60`
+**SHA-256 pasangan kode:** `64ce4384509c776179a31d9150f5a5949e44e6e485893eb382bdc3b596e625e0`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v128 Work Talk Mobile Composer Bottom Nav Fix yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v129 Work Talk Reply yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -669,9 +669,9 @@ All Links saat ini memiliki:
 - Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105. Mulai v124, helper upload public legacy dipertahankan hanya sebagai fail-closed guard dan tidak lagi dapat menghasilkan `getPublicUrl()`.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
-### 15.20 Work Talk — WhatsApp-style Core UX — v126–v128
+### 15.20 Work Talk — WhatsApp-style Core UX & Reply — v126–v129
 
-- Work Talk tetap memakai tabel `chat_channels` dan `chat_messages`; tidak ada tabel atau kolom baru pada fase ini.
+- Work Talk tetap memakai tabel `chat_channels` dan `chat_messages`; v129 tidak membuat tabel baru, tetapi menambahkan kolom metadata `reply_to` dan `reply_snapshot` pada `chat_messages` untuk fitur Reply.
 - Daftar conversation desktop/mobile disatukan sebagai `Recent conversations` dan diurutkan berdasarkan timestamp pesan terakhir. Channel General, Department/Team, dan DM tetap memakai tipe data lama (`umum`, `bagian`, `dm`) agar kompatibilitas data tidak berubah.
 - Setiap conversation menampilkan avatar/icon, nama, last-message preview, waktu pesan terakhir, unread badge, serta indikator online untuk DM bila presence tersedia.
 - Read marker unread tetap lokal di browser, tetapi mulai v126 dipisahkan per akun Auth agar akun berbeda pada browser yang sama tidak berbagi status baca. Tidak ada perubahan policy database untuk unread.
@@ -685,9 +685,12 @@ All Links saat ini memiliki:
 - File yang baru dipilih dapat dipreview lokal sebelum dikirim; file tetap baru diunggah setelah Send melalui helper private attachment yang sudah ada. Draft pesan tidak menyimpan file attachment.
 - Realtime dan polling tetap dipertahankan; metadata recent conversation, unread, dan presence ikut diperbarui ketika pesan berubah.
 - DM tetap participant-only berdasarkan RLS; client filtering bukan pengganti RLS. Hide/unhide tetap memakai `hidden_by`. Permanent delete channel tetap creator channel atau Owner. Edit/delete message tetap hanya sender pesan.
-- Fase v126 tidak menambahkan Reply, Sticker, GIF, Favorite, Recent Sticker, custom sticker upload, atau sticker pack. Fitur tersebut tetap ditunda sampai core chat stabil.
+- Mulai v129, setiap pesan dapat di-Reply. Composer menampilkan quoted preview sebelum Send; bubble reply menampilkan sender + excerpt pesan asal; quote dapat diklik untuk scroll/highlight ke pesan asal bila pesan tersebut masih berada dalam history yang dimuat.
+- Reply memakai dua kolom tambahan pada `chat_messages`: `reply_to` untuk UUID pesan asal dan `reply_snapshot` untuk snapshot sender/excerpt. Snapshot berada pada row pesan reply yang sama sehingga tetap mengikuti visibility channel/DM RLS; tidak ada query yang membuka pesan dari channel lain.
+- Reply tersedia untuk pesan sendiri maupun pesan user lain. Mode Reply dan Edit tidak dapat aktif bersamaan. Menghapus pesan asal tidak menghapus pesan reply; quote snapshot tetap dapat ditampilkan, sedangkan jump dinonaktifkan bila sumber tidak lagi tersedia.
+- Sticker, GIF, Favorite, Recent Sticker, custom sticker upload, dan sticker pack belum dibuat pada v129 dan tetap ditunda sampai Reply stabil.
 - Tidak mengubah Today v125, Schedule, Logbook, Portfolio, Attendance, Leave, Management Report, role, Users & Access, Password Manager, atau data personal/private lain.
-- Tidak memerlukan SQL baru.
+- v129 membutuhkan one-time SQL `WORKBOARD_V129_WORK_TALK_REPLY.sql`; SQL hanya menambah metadata Reply + index dan tidak mengubah RLS/Storage policy.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
@@ -748,7 +751,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Permanent delete Work Talk tetap hanya creator channel atau Owner; Edit/Delete message tetap hanya sender sendiri.
 - [ ] Work Talk mobile membuka list chat terlebih dahulu, conversation tampil full-screen setelah dipilih, dan Back kembali ke list tanpa merusak draft.
 - [ ] Image attachment Work Talk menggunakan preview private/signed URL atau legacy privacy bridge; file download tetap authenticated dan tidak ada `getPublicUrl()`.
-- [ ] Reply dan Sticker belum aktif pada v126; jangan menambahkannya sebelum core Work Talk stabil.
+- [ ] Work Talk Reply aktif setelah SQL v129: quoted preview tampil di composer/bubble, Reply tersedia pada pesan sendiri/orang lain, dan tap quote menuju pesan asal bila masih dimuat. Sticker tetap belum aktif.
 - [ ] Password Manager dan field sensitif tidak masuk ke penyimpanan draft.
 - [ ] Prompt Master ikut diperbarui jika kondisi implementasi berubah.
 - [ ] Login nama bebas tidak muncul kembali; app hanya terbuka setelah Supabase Auth + profile valid.
@@ -780,6 +783,18 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v129 Work Talk Reply
+
+- Menambahkan Reply to message pada Work Talk untuk desktop dan mobile tanpa mengubah struktur channel/DM yang sudah ada.
+- Tombol Reply tersedia pada pesan sendiri maupun pesan user lain. Pesan yang dipilih tampil sebagai quote ringkas di atas composer dan dapat dibatalkan sebelum Send.
+- Pesan reply menampilkan quoted sender + excerpt; tap quote melakukan scroll dan highlight ke pesan asal bila source masih berada dalam maksimal history yang sedang dimuat.
+- Reply menyimpan `reply_to` + `reply_snapshot` pada row `chat_messages`. Snapshot membuat quote tetap terbaca jika pesan asal kemudian dihapus; tidak ada FK yang menghapus/men-null-kan quote otomatis.
+- Reply dan Edit dibuat mutually exclusive agar composer tidak berada pada dua mode sekaligus.
+- Migration check dilakukan sebelum attachment di-upload ketika Reply aktif, sehingga SQL Reply yang belum dipasang tidak menyebabkan upload attachment baru sebelum insert gagal.
+- DM tetap participant-only; sender-only Edit/Delete, creator/Owner permanent delete channel, hide/unhide, realtime/polling, unread, recent ordering, private attachment, dan legacy Storage privacy bridge tidak diubah.
+- Desktop dan mobile memakai fungsi Reply yang sama; mobile tetap full-screen dan composer tetap berada di atas safe-area.
+- Membutuhkan one-time SQL `WORKBOARD_V129_WORK_TALK_REPLY.sql`. Sticker/GIF belum dibuat.
 
 ### 20 Agustus 2026 — v128 Work Talk Mobile Composer Bottom Nav Fix
 

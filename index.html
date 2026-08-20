@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v129 — Work Talk Reply — 20 Aug 2026 -->
+<!-- WorkBoard AMS v130 — Work Talk Basic Sticker — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -1838,6 +1838,52 @@ body.mobile-hub-open { overflow:hidden; }
 }
 .chat-emoji-popover button { border:none; background:none; font-size:18px; cursor:pointer; padding:4px; border-radius:6px; line-height:1; }
 .chat-emoji-popover button:hover { background:var(--bg2); }
+
+.chat-sticker-popover {
+  position:absolute; bottom:48px; left:0; z-index:210; width:min(350px,calc(100vw - 24px));
+  max-height:min(430px,62vh); display:flex; flex-direction:column; overflow:hidden;
+  background:var(--surface); border:0.5px solid var(--border2); border-radius:14px;
+  box-shadow:0 10px 32px rgba(0,0,0,.20);
+}
+.chat-sticker-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 10px 7px; border-bottom:0.5px solid var(--border); }
+.chat-sticker-title { font-size:11px; font-weight:800; color:var(--text1); }
+.chat-sticker-sub { font-size:9.5px; color:var(--text3); margin-top:1px; }
+.chat-sticker-tabs { display:flex; gap:5px; overflow-x:auto; padding:7px 8px; border-bottom:0.5px solid var(--border); scrollbar-width:none; }
+.chat-sticker-tabs::-webkit-scrollbar { display:none; }
+.chat-sticker-tab {
+  flex:0 0 auto; border:0.5px solid var(--border2); background:var(--surface); color:var(--text2);
+  border-radius:999px; padding:5px 8px; font-size:9.5px; font-weight:700; cursor:pointer;
+}
+.chat-sticker-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.chat-sticker-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; padding:9px; overflow-y:auto; }
+.chat-sticker-choice {
+  border:1px solid transparent; background:transparent; border-radius:12px; padding:3px; cursor:pointer; min-width:0;
+}
+.chat-sticker-choice:hover, .chat-sticker-choice:focus { background:var(--bg2); border-color:var(--border); outline:none; }
+.chat-sticker-card {
+  width:100%; aspect-ratio:1/1; border-radius:18px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:7px 5px; position:relative; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.10);
+  border:3px solid rgba(255,255,255,.90);
+}
+.chat-sticker-card::after { content:''; position:absolute; inset:0; border-radius:15px; box-shadow:inset 0 0 0 1px rgba(40,35,30,.08); pointer-events:none; }
+.chat-sticker-emoji { font-size:31px; line-height:1; filter:drop-shadow(0 1px 1px rgba(0,0,0,.08)); }
+.chat-sticker-text { margin-top:5px; font-size:9px; line-height:1.05; font-weight:900; text-align:center; letter-spacing:.02em; color:#302B26; }
+.chat-sticker-brand { position:absolute; right:5px; bottom:4px; font-size:6.5px; font-weight:900; letter-spacing:.08em; color:rgba(47,99,100,.72); }
+.chat-sticker-card[data-cat="ams"] { background:#E4F0EC; }
+.chat-sticker-card[data-cat="greeting"] { background:#FFF0D9; }
+.chat-sticker-card[data-cat="office"] { background:#E8EEF7; }
+.chat-sticker-card[data-cat="followup"] { background:#F7E8EE; }
+.chat-sticker-card[data-cat="safety"] { background:#FBE9DA; }
+
+.chat-sticker-message { width:118px; max-width:42vw; margin-top:2px; }
+.chat-sticker-message .chat-sticker-card { aspect-ratio:1/1; }
+.chat-sticker-message .chat-sticker-emoji { font-size:48px; }
+.chat-sticker-message .chat-sticker-text { font-size:11px; margin-top:7px; }
+.chat-sticker-message .chat-sticker-brand { font-size:7.5px; right:7px; bottom:6px; }
+.chat-sticker-reply-wrap { width:min(250px,66vw); margin-bottom:4px; }
+.chat-sticker-reply-wrap .chat-reply-quote { margin-bottom:0; background:rgba(250,248,244,.92); }
+.chat-msg-row.reply-highlight .chat-sticker-card { animation:chatReplyFlash 1.35s ease; }
+
 .chat-msg-actions { display:inline-flex; gap:1px; margin-left:2px; vertical-align:middle; }
 .chat-msg-actions i { font-size:12px; opacity:.48; cursor:pointer; padding:4px; border-radius:5px; }
 .chat-msg-actions i:hover { opacity:1; background:var(--bg2); }
@@ -1870,6 +1916,9 @@ body.mobile-hub-open { overflow:hidden; }
   .chat-thread { flex:1 1 0; min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:10px 8px; }
   .chat-image-open { max-width:min(300px,78vw); }
   .chat-image-lightbox { padding:12px; }
+  .chat-sticker-popover { position:fixed; left:8px; right:8px; bottom:calc(58px + env(safe-area-inset-bottom)); width:auto; max-height:min(470px,65dvh); }
+  .chat-sticker-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; padding:7px; }
+  .chat-sticker-message { width:112px; max-width:44vw; }
 }
 
 /* ── Work-Break Alarm ── */
@@ -11296,11 +11345,12 @@ function chatLatestTime(c) {
 function chatChannelPreview(c) {
   const meta = chatChannelMeta[c.id];
   if (!meta) return c.type === 'umum' ? 'Company-wide conversation' : (c.type === 'dm' ? 'Direct message' : 'Department / Team chat');
-  const body = String(meta.body || '').replace(/\s+/g, ' ').trim();
+  const sticker = chatStickerFromBody(meta.body);
+  const body = sticker ? '' : String(meta.body || '').replace(/\s+/g, ' ').trim();
   const attachments = Array.isArray(meta.attachments) ? meta.attachments : [];
   const firstAttachment = attachments[0];
   const mediaPrefix = firstAttachment && isChatImageAttachment(firstAttachment) ? '📷 Photo' : (attachments.length ? '📎 Attachment' : '');
-  const content = body || mediaPrefix || 'Message';
+  const content = sticker ? chatStickerPreviewLabel(sticker) : (body || mediaPrefix || 'Message');
   const prefix = String(meta.sender || '') === String(getUser() || '') ? 'You: ' : '';
   return prefix + content;
 }
@@ -11449,6 +11499,7 @@ async function openChatChannel(channelId, isUserClick) {
         <input type="file" id="chat-file-input" multiple style="display:none" onchange="onChatFilesPicked(event)" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation">
         <button class="chat-icon-btn" title="Attach file, including PowerPoint (maximum 20 MB)" aria-label="Attach file" onclick="document.getElementById('chat-file-input').click()"><i class="ti ti-paperclip"></i></button>
         <button class="chat-icon-btn" title="Emoji" aria-label="Emoji" id="chat-emoji-btn" onclick="toggleChatEmojiPicker(event)"><i class="ti ti-mood-smile"></i></button>
+        <button class="chat-icon-btn" title="Sticker" aria-label="Sticker" id="chat-sticker-btn" onclick="toggleChatStickerPicker(event)"><i class="ti ti-sticker"></i></button>
         <textarea id="chat-input" rows="1" placeholder="${window.matchMedia('(pointer: coarse)').matches ? 'Write a message...' : 'Write a message... (Enter to send, Shift+Enter for new line)'}" onkeydown="onChatInputKeydown(event)" oninput="autoGrowChatInput(this);autosaveChatDraft()"></textarea>
         <button class="chat-icon-btn chat-send" title="Send" aria-label="Send message" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
       </div>
@@ -11467,6 +11518,7 @@ async function openChatChannel(channelId, isUserClick) {
 function closeChatThreadMobile() {
   document.getElementById('chat-wrap').classList.remove('mobile-show-thread');
   document.body.classList.remove('work-talk-thread-open');
+  closeChatStickerPicker();
   closeChatImageLightbox();
 }
 
@@ -11595,6 +11647,70 @@ function chatDayLabel(value) {
   return d.toLocaleDateString('en-US', { weekday:'short', day:'2-digit', month:'short', year:d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
 }
 
+const CHAT_STICKER_TOKEN_PREFIX = '[[WB_STICKER:v1:';
+const CHAT_STICKER_CATEGORIES = [
+  { id:'ams', label:'AMS' },
+  { id:'greeting', label:'Greeting' },
+  { id:'office', label:'Office' },
+  { id:'followup', label:'Follow Up' },
+  { id:'safety', label:'Safety' }
+];
+const CHAT_STICKERS = [
+  { id:'ams_ok', category:'ams', emoji:'👍', text:'AMS OK' },
+  { id:'ams_lets_go', category:'ams', emoji:'💪', text:"LET'S GO" },
+  { id:'ams_target', category:'ams', emoji:'🎯', text:'ON TARGET' },
+  { id:'ams_great', category:'ams', emoji:'🔥', text:'GREAT JOB' },
+
+  { id:'hello', category:'greeting', emoji:'👋', text:'HELLO' },
+  { id:'thank_you', category:'greeting', emoji:'🙏', text:'THANK YOU' },
+  { id:'good_morning', category:'greeting', emoji:'☀️', text:'GOOD MORNING' },
+  { id:'good_night', category:'greeting', emoji:'🌙', text:'GOOD NIGHT' },
+
+  { id:'done', category:'office', emoji:'✅', text:'DONE' },
+  { id:'checking', category:'office', emoji:'👀', text:'CHECKING' },
+  { id:'noted', category:'office', emoji:'📌', text:'NOTED' },
+  { id:'on_it', category:'office', emoji:'🧠', text:'ON IT' },
+
+  { id:'follow_up', category:'followup', emoji:'⏰', text:'FOLLOW UP' },
+  { id:'waiting_reply', category:'followup', emoji:'💬', text:'WAITING REPLY' },
+  { id:'call_you', category:'followup', emoji:'📞', text:'CALL YOU' },
+  { id:'sent', category:'followup', emoji:'📩', text:'SENT' },
+
+  { id:'safety_first', category:'safety', emoji:'🦺', text:'SAFETY FIRST' },
+  { id:'fire_ready', category:'safety', emoji:'🧯', text:'FIRE READY' },
+  { id:'stay_safe', category:'safety', emoji:'🪖', text:'STAY SAFE' },
+  { id:'caution', category:'safety', emoji:'⚠️', text:'CAUTION' }
+];
+let activeChatStickerCategory = 'ams';
+
+function chatStickerById(id) {
+  return CHAT_STICKERS.find(s => s.id === String(id || '')) || null;
+}
+function chatStickerToken(id) {
+  return `${CHAT_STICKER_TOKEN_PREFIX}${id}]]`;
+}
+function chatStickerFromBody(body) {
+  const raw = String(body || '').trim();
+  if (!raw.startsWith(CHAT_STICKER_TOKEN_PREFIX) || !raw.endsWith(']]')) return null;
+  const id = raw.slice(CHAT_STICKER_TOKEN_PREFIX.length, -2);
+  if (!/^[a-z0-9_]+$/i.test(id)) return null;
+  return chatStickerById(id);
+}
+function chatStickerCardHtml(sticker, extraClass='') {
+  if (!sticker) return '';
+  return `<div class="chat-sticker-card${extraClass ? ' '+extraClass : ''}" data-cat="${escAttr(sticker.category)}">
+    <div class="chat-sticker-emoji">${escHtml(sticker.emoji)}</div>
+    <div class="chat-sticker-text">${escHtml(sticker.text)}</div>
+    <div class="chat-sticker-brand">AMS</div>
+  </div>`;
+}
+function chatStickerMessageHtml(sticker) {
+  return sticker ? `<div class="chat-sticker-message">${chatStickerCardHtml(sticker)}</div>` : '';
+}
+function chatStickerPreviewLabel(sticker) {
+  return sticker ? `Sticker · ${sticker.text}` : '';
+}
+
 function chatBodyPreviewPlainText(value) {
   const raw = String(value || '');
   if (!/<[a-z][\s\S]*>/i.test(raw)) return raw;
@@ -11606,6 +11722,8 @@ function chatBodyPreviewPlainText(value) {
 
 function chatMessagePreviewText(message, maxLen=110) {
   if (!message) return 'Original message unavailable';
+  const sticker = chatStickerFromBody(message.body);
+  if (sticker) return chatStickerPreviewLabel(sticker);
   let text = chatBodyPreviewPlainText(message.body || '').replace(/\s+/g, ' ').trim();
   if (!text) {
     const files = Array.isArray(message.attachments) ? message.attachments : [];
@@ -11730,14 +11848,17 @@ function renderChatThread(messages) {
     }
     const own = String(m.sender || '') === String(user || '');
     const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) : '';
+    const sticker = chatStickerFromBody(m.body);
     const attachHtml = (m.attachments && m.attachments.length) ? `<div class="chat-attach-list">${m.attachments.map(chatAttachmentHtml).join('')}</div>` : '';
     const replyAction = `<i class="ti ti-arrow-back-up" title="Reply" aria-label="Reply to message" role="button" tabindex="0" onclick="startChatReply('${m.id}')"></i>`;
-    const ownerActions = own ? `<i class="ti ti-pencil" title="Edit" aria-label="Edit message" role="button" tabindex="0" onclick="editChatMessage('${m.id}')"></i><i class="ti ti-trash" title="Delete" aria-label="Delete message" role="button" tabindex="0" onclick="deleteChatMessage('${m.id}')"></i>` : '';
-    const actionsHtml = `<span class="chat-msg-actions">${replyAction}${ownerActions}</span>`;
+    const editAction = own && !sticker ? `<i class="ti ti-pencil" title="Edit" aria-label="Edit message" role="button" tabindex="0" onclick="editChatMessage('${m.id}')"></i>` : '';
+    const deleteAction = own ? `<i class="ti ti-trash" title="Delete" aria-label="Delete message" role="button" tabindex="0" onclick="deleteChatMessage('${m.id}')"></i>` : '';
+    const actionsHtml = `<span class="chat-msg-actions">${replyAction}${editAction}${deleteAction}</span>`;
     const avatarHtml = `<div class="chat-avatar" style="background:${avatarColorFor(m.sender)}">${avatarInitials(m.sender)}</div>`;
     const quoteHtml = chatReplyQuoteHtml(m);
-    const bubbleNeeded = !!(m.body || quoteHtml);
-    const bodyHtml = bubbleNeeded ? `<div class="chat-bubble">${quoteHtml}${m.body ? `<div class="chat-message-text ql-editor">${renderBody(m.body)}</div>` : ''}</div>` : '';
+    const bodyHtml = sticker
+      ? `${quoteHtml ? `<div class="chat-sticker-reply-wrap">${quoteHtml}</div>` : ''}${chatStickerMessageHtml(sticker)}`
+      : ((m.body || quoteHtml) ? `<div class="chat-bubble">${quoteHtml}${m.body ? `<div class="chat-message-text ql-editor">${renderBody(m.body)}</div>` : ''}</div>` : '');
     html.push(`<div class="chat-msg-row ${own ? 'own' : 'other'}" data-chat-message-id="${escAttr(m.id || '')}">
       ${avatarHtml}
       <div class="chat-bubble-row ${own ? 'own' : 'other'}">
@@ -11901,6 +12022,7 @@ function editChatMessage(id) {
   const m = chatMessagesCache.find(x => x.id === id);
   if (!m) return;
   if (String(m.sender || '') !== String(getUser() || '')) return alert('You can only edit your own messages.');
+  if (chatStickerFromBody(m.body)) return alert('Stickers cannot be edited. Delete it and send another sticker instead.');
   cancelChatReply();
   editingChatMessageId = id;
   const input = document.getElementById('chat-input');
@@ -11932,10 +12054,110 @@ async function deleteChatMessage(id) {
   updateChatTotalBadgeFromMap();
 }
 
+// ── Basic Sticker picker — built-in only, no external service ──
+function closeChatStickerPicker() {
+  const pop = document.getElementById('chat-sticker-popover');
+  if (pop) pop.remove();
+  document.removeEventListener('click', closeChatStickerOnOutsideClick);
+}
+function closeChatStickerOnOutsideClick(e) {
+  const pop = document.getElementById('chat-sticker-popover');
+  const btn = document.getElementById('chat-sticker-btn');
+  if (pop && !pop.contains(e.target) && !btn?.contains(e.target)) closeChatStickerPicker();
+}
+function renderChatStickerPicker() {
+  const pop = document.getElementById('chat-sticker-popover');
+  if (!pop) return;
+  const stickers = CHAT_STICKERS.filter(s => s.category === activeChatStickerCategory);
+  pop.innerHTML = `
+    <div class="chat-sticker-head">
+      <div><div class="chat-sticker-title">AMS Stickers</div><div class="chat-sticker-sub">Tap a sticker to send</div></div>
+      <button type="button" class="ev-del" onclick="closeChatStickerPicker()" title="Close stickers" aria-label="Close stickers"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="chat-sticker-tabs">
+      ${CHAT_STICKER_CATEGORIES.map(c => `<button type="button" class="chat-sticker-tab${c.id===activeChatStickerCategory?' active':''}" onclick="setChatStickerCategory('${c.id}')">${escHtml(c.label)}</button>`).join('')}
+    </div>
+    <div class="chat-sticker-grid">
+      ${stickers.map(s => `<button type="button" class="chat-sticker-choice" onclick="sendChatSticker('${s.id}')" title="${escAttr(s.text)}" aria-label="Send sticker ${escAttr(s.text)}">${chatStickerCardHtml(s)}</button>`).join('')}
+    </div>`;
+}
+function setChatStickerCategory(categoryId) {
+  if (!CHAT_STICKER_CATEGORIES.some(c => c.id === categoryId)) return;
+  activeChatStickerCategory = categoryId;
+  renderChatStickerPicker();
+}
+function toggleChatStickerPicker(e) {
+  e?.stopPropagation?.();
+  if (!activeChatChannelId) return;
+  if (editingChatMessageId) return alert('Finish or cancel message editing before sending a sticker.');
+  const existing = document.getElementById('chat-sticker-popover');
+  if (existing) {
+    closeChatStickerPicker();
+    return;
+  }
+  const emoji = document.getElementById('chat-emoji-popover');
+  if (emoji) {
+    emoji.remove();
+    document.removeEventListener('click', closeChatEmojiOnOutsideClick);
+  }
+  const pop = document.createElement('div');
+  pop.id = 'chat-sticker-popover';
+  pop.className = 'chat-sticker-popover';
+  document.querySelector('.chat-compose')?.appendChild(pop);
+  renderChatStickerPicker();
+  setTimeout(() => document.addEventListener('click', closeChatStickerOnOutsideClick), 0);
+}
+async function sendChatSticker(stickerId) {
+  const sticker = chatStickerById(stickerId);
+  if (!sticker || !activeChatChannelId) return;
+  if (editingChatMessageId) return alert('Finish or cancel message editing before sending a sticker.');
+
+  const replySource = replyingToChatMessageId ? chatReplySource(replyingToChatMessageId) : null;
+  if (replyingToChatMessageId && !replySource) {
+    cancelChatReply();
+    return alert('The original message is no longer available.');
+  }
+  if (replyingToChatMessageId && !(await ensureChatReplySchema())) return;
+
+  const payload = {
+    id: wbNewRecordId(),
+    channel_id: activeChatChannelId,
+    sender: getUser(),
+    body: chatStickerToken(sticker.id),
+    attachments: []
+  };
+  if (replyingToChatMessageId && replySource) {
+    payload.reply_to = replyingToChatMessageId;
+    payload.reply_snapshot = chatReplySnapshotFor(replySource);
+  }
+
+  const { error } = await sb.from('chat_messages').insert(payload);
+  if (error) {
+    const msg = String(error.message || '').toLowerCase();
+    if (msg.includes('reply_to') || msg.includes('reply_snapshot')) {
+      chatReplyColumnReady = false;
+      showChatColumnMigrationBanner();
+    } else if (msg.includes('does not exist')) {
+      showChatMigrationBanner();
+    }
+    return alert('Failed to send sticker: ' + error.message);
+  }
+
+  closeChatStickerPicker();
+  cancelChatReply();
+  markChatChannelRead(activeChatChannelId);
+  await loadChatMessages(activeChatChannelId);
+  await refreshChatChannelUnreadMap();
+  delete chatMessagesCacheUnread[activeChatChannelId];
+  renderChatChannelLists();
+  updateChatTotalBadgeFromMap();
+}
+
 // ── Emoji picker sederhana (vanilla, tanpa library eksternal) ──
 const CHAT_EMOJIS = ['😀','😂','😅','😊','😍','😘','🤔','😎','😢','😭','😡','😱','🥳','👍','👎','🙏','👏','🙌','💪','🤝','❤️','🔥','✅','❌','⚠️','🎉','📌','📎','⏰','📅','💬','👀','😴','🤣','😉','😇','🙃','😬','🥺','🤗','💯','🚀','🎯','📢','🛠️','💡','✍️','🙇'];
 function toggleChatEmojiPicker(e) {
   e.stopPropagation();
+  closeChatStickerPicker();
   const existing = document.getElementById('chat-emoji-popover');
   if (existing) { existing.remove(); document.removeEventListener('click', closeChatEmojiOnOutsideClick); return; }
   const pop = document.createElement('div');
