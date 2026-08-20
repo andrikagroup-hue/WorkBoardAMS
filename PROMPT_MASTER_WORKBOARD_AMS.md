@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `56ab3de21d811807f3a981ae77df35e8e7c6f5672d60d19eb8a8d7b74c5b1949`
+**SHA-256 pasangan kode:** `6e59ac788f9b9da5fa6cc3ad8be708865a003458ed2191b0f87aa734c9fd8d2d`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v121 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v122 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -740,6 +740,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Lampiran `.ppt` dan `.pptx` tetap terlihat di file picker Logbook dan Work Talk, maksimal 20 MB per file.
 - [ ] File attachment baru Logbook/Portfolio/Work Talk memakai `workboard-private` dan authenticated download; record legacy dengan `url` dibuka lewat privacy bridge bucket `attachments` tanpa public URL langsung.
 - [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
+- [ ] Teks To Do dirender sebagai plain text/escaped output pada Week, No Date, dan hasil Search; input HTML-like tidak boleh menjadi markup aktif.
 - [ ] Numbering hasil paste tidak kembali ke angka 1 setelah bullet, paragraf kosong, atau blok daftar terpisah.
 - [ ] Search bebas pada setiap panel menemukan kata dari isi penuh, rich text, tag, tanggal, status, dan nama lampiran tanpa membuka data privat user lain.
 - [ ] Kata yang cocok pada hasil search ditampilkan bold dengan highlight lembut, lalu kembali normal saat search dibersihkan.
@@ -748,6 +749,13 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v122 To Do Output Escaping Fix
+
+- Memperbaiki renderer To Do pada Week table, No Date, dan Search/Filter flat list yang sebelumnya memasukkan `todos.text` langsung ke `innerHTML`.
+- Task text sekarang di-escape dengan `escHtml()` sebelum dirender sehingga HTML/script-like text tetap tampil sebagai tulisan biasa dan tidak dapat mengubah struktur UI.
+- Metadata bebas pada flat list (`assigned_to` dan `created_by`) ikut di-escape; due date juga dirender sebagai teks aman.
+- Data yang disimpan user tidak diubah, tidak diterjemahkan, dan tidak dimigrasikan. Tidak mengubah privacy, ownership, RLS, Management Report, Today, role, Storage, Attendance, Leave Management, atau database. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v121 Brain Dump Promotion Fix
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v121 — Brain Dump Promotion Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v122 — To Do Output Escaping Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -9094,7 +9094,7 @@ function renderTodoDashboard(all) {
           <tbody>
             ${arr.map(t => `
               <tr>
-                <td>${t.text}</td>
+                <td>${escHtml(t.text || '')}</td>
                 <td><span class="todo-status-badge ${t.is_done ? 'status-done' : 'status-pending'}" onclick="toggleTodo('${t.id}',${t.is_done})">${t.is_done ? 'Done' : 'Not Done'}</span></td>
                 <td>
                   <span class="todo-row-actions">
@@ -9125,7 +9125,7 @@ function renderTodoNoDate(all) {
         <tbody>
           ${noDate.map(t => `
             <tr>
-              <td>${t.text}</td>
+              <td>${escHtml(t.text || '')}</td>
               <td><span class="todo-status-badge ${t.is_done ? 'status-done' : 'status-pending'}" onclick="toggleTodo('${t.id}',${t.is_done})">${t.is_done ? 'Done' : 'Not Done'}</span></td>
               <td>
                 <span class="todo-row-actions">
@@ -9151,13 +9151,13 @@ function renderTodoFlatList(all) {
         ${t.is_done ? '<i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i>' : ''}
       </button>
       <div>
-        <div class="todo-text">${t.text}</div>
-        ${t.assigned_to ? `<div style="font-size:10px;color:var(--color-text-tertiary)">Assigned to: ${t.assigned_to}</div>` : ''}
+        <div class="todo-text">${escHtml(t.text || '')}</div>
+        ${t.assigned_to ? `<div style="font-size:10px;color:var(--color-text-tertiary)">Assigned to: ${escHtml(t.assigned_to)}</div>` : ''}
       </div>
       <div class="todo-meta">
         <span class="${prioClass[t.priority]}">${prioLabel[t.priority]}</span>
-        ${t.due_date ? `<span class="todo-due">${t.due_date}</span>` : ''}
-        <span style="font-size:10px;color:var(--color-text-tertiary)">${t.is_private ? '🔒 ' : ''}${t.created_by || ''}</span>
+        ${t.due_date ? `<span class="todo-due">${escHtml(t.due_date)}</span>` : ''}
+        <span style="font-size:10px;color:var(--color-text-tertiary)">${t.is_private ? '🔒 ' : ''}${escHtml(t.created_by || '')}</span>
       </div>
       <button class="todo-del" onclick="editTodo('${t.id}')" aria-label="Edit" title="Edit"><i class="ti ti-pencil" aria-hidden="true"></i></button>
       <button class="todo-del" onclick="delTodo('${t.id}')" aria-label="Delete"><i class="ti ti-x" aria-hidden="true"></i></button>
