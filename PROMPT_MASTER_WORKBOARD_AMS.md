@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `c53e8ccf4f25e58ecbc8b6238891acc7d27ecc55e87d8c30a59f87ebcd4d4e50`
+**SHA-256 pasangan kode:** `64c5ecfc51526134cd7df9d9cdbc146ff1deccc6b9bd58e6c03af6398204581b`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v119 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v120 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -349,6 +349,7 @@ Catatan ketergantungan:
 - `time_plan_tracker` dipakai bersama oleh Tracker, Kanban, Gantt, Decision Matrix, Recurring Task, dan tautan status Logbook.
 - `tracker_items` belum boleh dihapus hanya karena form lamanya tidak aktif; Result dan fungsi lain masih mereferensikannya.
 - Mode Today, Brain Dump, Follow Up, Waiting Reply, serta To Do memakai tabel `todos` yang sama. Brain Dump/personal data tetap private; work-state Team/Company dapat dibaca Management Report sesuai RLS.
+- Saat item `todos` work-state Public (Waiting / Follow Up / Carry) diedit dari panel Personal → To Do, edit hanya boleh mengubah field tugas; `is_private` dan `created_by` wajib dipertahankan. To Do manual baru dari panel Personal tetap dibuat Private.
 - Rename user menyentuh banyak tabel. Jangan mengurangi daftar migrasi nama tanpa audit semua tabel.
 
 ### 15.4 Aturan visibilitas tim yang disetujui
@@ -746,6 +747,13 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v120 To Do Edit Privacy Preservation
+
+- Memperbaiki `addTodo()` yang sebelumnya selalu menyertakan `is_private = true` dan `created_by = getUser()` saat update; akibatnya work-state Public seperti Waiting / Follow Up / Carry dapat berubah menjadi Private hanya karena diedit dari panel To Do.
+- Update To Do sekarang hanya menulis field yang memang dapat diedit (`text`, `priority`, `due_date`, `assigned_to`) sehingga privacy dan ownership row existing tetap utuh.
+- To Do manual baru dari panel Personal tetap dibuat `is_private = true` dan owner user aktif.
+- Nilai reset hidden privacy diselaraskan ke Private; tidak mengubah Today, Management Report, RLS, role, Storage, Attendance, Leave Management, atau database. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v119 After-Done Next-Step Privacy Sync
 

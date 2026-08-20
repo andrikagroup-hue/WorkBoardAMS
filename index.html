@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v119 — After-Done Next-Step Privacy Sync — 20 Aug 2026 -->
+<!-- WorkBoard AMS v120 — To Do Edit Privacy Preservation — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -9193,19 +9193,20 @@ function discardTodoDraftAndReset() {
 async function addTodo() {
   const text = document.getElementById('todo-input').value.trim();
   if (!text) return;
-  const payload = {
+  // Personal To Do entries created here are always private. When editing an
+  // existing row, do not rewrite privacy or ownership: system work-state rows
+  // (Waiting / Follow Up / Carry) may intentionally be Team/Company for reporting.
+  const editableFields = {
     text,
     priority: document.getElementById('todo-prio').value,
     due_date: document.getElementById('todo-due').value || null,
-    assigned_to: document.getElementById('todo-assign').value || null,
-    is_private: true,
-    created_by: getUser()
+    assigned_to: document.getElementById('todo-assign').value || null
   };
   let error;
   if (editingTodoId) {
-    ({ error } = await sb.from('todos').update(payload).eq('id', editingTodoId));
+    ({ error } = await sb.from('todos').update(editableFields).eq('id', editingTodoId));
   } else {
-    ({ error } = await sb.from('todos').insert(payload));
+    ({ error } = await sb.from('todos').insert({ ...editableFields, is_private: true, created_by: getUser() }));
   }
   if (error) return alert('Failed: ' + error.message);
   clearDraft(currentTodoDraftScope(), 'todo');
@@ -9235,7 +9236,7 @@ function resetTodoForm() {
   document.getElementById('todo-prio').value = 'med';
   document.getElementById('todo-due').value = '';
   document.getElementById('todo-assign').value = '';
-  document.getElementById('todo-privacy').value = 'false';
+  document.getElementById('todo-privacy').value = 'true';
   document.getElementById('todo-save-btn').textContent = 'Add';
   document.getElementById('todo-cancel-btn').style.display = 'none';
 }
