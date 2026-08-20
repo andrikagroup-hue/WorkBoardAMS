@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `f0a6aad81e7fa4f9c71bf4931a55fb7fb43ac7f7699fcc926736fa6fa89c569b`
+**SHA-256 pasangan kode:** `490e5ea92ec3a09628e6d49df8c903765fc87d4ed2faf6006d2cef8f8a7b252a`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v116 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v117 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -454,7 +454,9 @@ All Links saat ini memiliki:
 - Exact duplicate yang benar-benar identik pada antrean aktif dari source type yang sama dikolaps hanya pada layer tampilan. Schedule dengan waktu berbeda tetap dianggap aktivitas berbeda.
 - Planned count membaca seluruh Schedule hari ini, termasuk Schedule yang sudah Done, sehingga angka Planned tidak turun ketika pekerjaan selesai.
 - Sidebar `Today's Planned Progress` menghitung Schedule hari ini yang sudah Done (`category = green`) dibanding seluruh Schedule hari ini; Logbook/unplanned activity tidak boleh menaikkan persentase planned progress.
-- Tidak membutuhkan SQL atau migrasi database baru.
+- Marker internal Schedule → Waiting / Carry / Cancelled di `todos` wajib mewarisi `is_private` dari Schedule asal. Schedule Public menghasilkan marker Team/Company yang dapat dibaca Management Report; Schedule Private tetap private.
+- Jika marker Waiting/Carry yang terhubung ke Schedule diselesaikan sebagai `Done`, source Schedule ikut disinkronkan menjadi `category = green` dan Auto Logbook memakai source key Schedule agar tidak tercatat ganda.
+- v117 membutuhkan one-time SQL migration untuk menyamakan privacy marker Schedule legacy dan menyinkronkan linked marker legacy yang sudah Done.
 
 ### 15.10 Projects Workspace
 
@@ -483,7 +485,8 @@ All Links saat ini memiliki:
   - Portfolio Next Action → hapus Next Action yang selesai.
 - `Waiting` menyimpan tanggal review/follow-up dan tidak terus menjadi fokus utama sebelum tanggalnya tiba. **Waiting adalah state kerja, bukan hasil selesai, sehingga tidak membuat Logbook baru.**
 - `Tomorrow` membuat carry-forward tanpa mengetik ulang. Untuk Schedule, marker internal di `todos` dipakai agar tidak membutuhkan kolom database baru. **Carry Forward tidak membuat Logbook baru.**
-- `Cancelled` keluar dari daftar aktif dan dicatat pada source status/history, tetapi **tidak dibuat sebagai Logbook completed activity**.
+- `Cancelled` keluar dari daftar aktif dan dicatat pada source status/history, tetapi **tidak dibuat sebagai Logbook completed activity**. Untuk Schedule, state Waiting/Carry/Cancelled disimpan pada linked marker `todos` yang privacy-nya harus sama dengan Schedule sumber.
+- Menyelesaikan linked Schedule marker dari Today/Follow Up/To Do menyinkronkan Schedule sumber menjadi Done; private/public Logbook mengikuti `is_private` marker/source, bukan ditebak dari nama marker.
 - `Completed Today` membaca Logbook aktual, sehingga pekerjaan planned maupun unplanned tetap terlihat sebagai hasil kerja.
 - Auto Logbook hanya dibuat untuk aktivitas yang benar-benar `Done` / `Done Now`. Auto entry memakai type `Report` dan source marker untuk mencegah satu source action ter-log dua kali karena double click / repeated render.
 - Logbook binder menyembunyikan legacy auto state-history (`waiting`, `carried-forward`, `cancelled`) dan mengkolaps exact duplicate auto entries pada layer tampilan tanpa menghapus data database lama. Legacy auto completed yang dulu tersimpan sebagai `Note` ditampilkan konsisten sebagai `Report`.
@@ -614,7 +617,8 @@ All Links saat ini memiliki:
 - Report hanya memakai data kerja Team / Company yang diizinkan policy; Brain Dump, Notes private, Personal To Do private, Notepad, dan Password Manager tidak masuk report.
 - Management Report adalah **reading layer**, bukan raw-table dump. Exact duplicate Schedule/Completed records dikolaps pada tampilan report tanpa menghapus atau mengubah data sumber.
 - Jika satu action sudah Done lalu next state-nya Waiting, report menampilkan **satu cerita** di Completed dengan badge `Done → Waiting`, bukan mengulang item yang sama lagi di Waiting.
-- Untuk periode yang mencakup hari ini, Waiting membaca **current state** dari To Do/Portfolio/Tracker dan tidak lagi mencampur history waiting Logbook. Untuk periode lampau, history waiting Logbook tetap dapat dipakai sebagai jejak periode tersebut.
+- Untuk periode yang mencakup hari ini, Waiting membaca **current state** dari To Do/Portfolio/Tracker dan linked Schedule marker yang Public; Carry Forward Schedule juga terbaca dari marker yang sama. Untuk periode lampau, history waiting Logbook tetap dapat dipakai sebagai jejak periode tersebut.
+- Planned Activities membaca linked Schedule state untuk menampilkan badge `Waiting`, `Carry`, atau `Cancelled` bila Schedule belum Done; Schedule Private dan marker turunannya tetap tidak masuk report.
 - Portfolio berstatus Waiting ditampilkan sebagai attention item dan tidak diulang lagi di `Project / Opportunity Status`; bagian Project Status hanya menampilkan opportunity aktif non-waiting.
 - Planned yang judulnya sama tetap boleh tampil lebih dari sekali jika waktu/lokasi berbeda; hanya record Schedule yang benar-benar identik yang dikolaps.
 - Monthly Analytics & Attendance lama tetap tersedia dalam bagian expandable supaya layar utama lebih mudah dibaca. Mulai v112, rekap bulanan memakai helper gabungan attendance + approved leave yang sama: real attendance menang pada user/tanggal yang sama, overlapping approved leave hanya dihitung sekali, dan request approved terbaru menang jika ada overlap legacy. Mulai v113, seluruh analytics lama juga memakai `managementPublicRows()` untuk Schedule/Tracker/Portfolio/Logbook/To Do sehingga row Private milik user yang sedang login tidak ikut masuk laporan; query dan grafik kategori personal Notes dihapus dari Management Report.
@@ -671,6 +675,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Binder Logbook menampilkan satu halaman per tanggal dan seluruh completed activities pada tanggal tersebut tanpa menggabungkan record database sumber.
 - [ ] Waiting dan Tomorrow tetap muncul kembali saat waktunya tiba.
 - [ ] Schedule tetap dapat Add/Edit/Delete dan aksi Done/Waiting/Tomorrow tidak menghapus data rencana.
+- [ ] Waiting/Carry/Cancelled dari Schedule Public dapat dibaca Management Report, Schedule Private tetap tersembunyi, dan menyelesaikan linked marker ikut menandai Schedule sumber Done tanpa membuka Logbook private.
 - [ ] Action mutasi pada Schedule/Logbook/Portfolio/Project Tracker/Kanban/Recurring hanya muncul untuk creator atau Owner pada row Public; user lain melihat Read only dan ownership tidak berpindah saat Owner mengedit.
 - [ ] Portfolio default Needs Action, sementara Waiting/Upcoming/All tetap dapat dibuka.
 - [ ] Ringkasan Portfolio menampilkan Total Entries bersama Needs Action, Waiting, Upcoming, Active, dan Won / Approved pada desktop dan mobile.
@@ -739,6 +744,15 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v117 Schedule State Reporting Sync
+
+- Memperbaiki state Schedule Public `Waiting`, `Tomorrow/Carry`, dan `Cancelled` yang sebelumnya disimpan sebagai marker `todos` Private sehingga Management Report tidak dapat membaca perubahan state tersebut. Marker baru sekarang mewarisi `is_private` dari Schedule sumber; Schedule Private tetap private.
+- Management Report membaca linked Schedule marker Public untuk menampilkan status `Waiting`, `Carry`, atau `Cancelled` pada Planned Activities dan untuk memasukkan Waiting/Carry ke attention section tanpa membuka data personal/private.
+- Menyelesaikan linked Waiting/Carry Schedule marker dari Today/Follow Up/To Do sekarang ikut menyinkronkan source `schedule_events.category = green`; Auto Logbook memakai source key Schedule untuk mencegah duplicate completion log.
+- Memperbaiki privacy Auto Logbook linked To Do agar mengikuti `todo.is_private`; private Schedule/To Do tidak lagi berisiko menghasilkan Logbook public hanya karena memiliki marker `[Waiting]`/`[Carry]`.
+- Menambahkan one-time SQL `WORKBOARD_V117_SCHEDULE_STATE_SYNC.sql` untuk menyamakan privacy marker Schedule legacy dengan Schedule sumber dan menyinkronkan linked marker legacy yang sudah Done (Cancelled dikecualikan).
+- Tidak mengubah role, RLS utama, Attendance, Leave Management, Storage, Work Talk, atau struktur tabel.
 
 ### 20 Agustus 2026 — v116 Planned Progress Accuracy Fix
 

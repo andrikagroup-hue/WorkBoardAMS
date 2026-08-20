@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v116 — Planned Progress Accuracy Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v117 — Schedule State Reporting Sync — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -1223,6 +1223,7 @@ body.editor-fullscreen-open { overflow: hidden; }
 .mr-pill.done { background:#DCFCE7; color:#166534; }
 .mr-pill.waiting { background:#EEF3F6; color:#375665; }
 .mr-pill.carry { background:#FFF4D6; color:#7C5A16; }
+.mr-pill.cancelled { background:#F2E5EA; color:#744A59; }
 .mr-pill.unplanned { background:#FFF1E7; color:#92400E; }
 .mr-empty { font-size:10.5px; color:var(--text3); text-align:center; padding:14px 6px; border:1px dashed var(--border2); border-radius:9px; }
 .mr-more-note { font-size:9.5px; color:var(--text3); text-align:right; margin-top:6px; }
@@ -8676,7 +8677,14 @@ async function autoLogActivity({title, body='', tags=[], isPrivate=false, tracke
   if(currentPanel==='logbook') await renderLogbook();
   return true;
 }
-function todayLogPrivacyForTodo(todo){ return !(/\[(Today|Follow Up|Waiting|Carry)\]/i.test(todo?.text||'')); }
+function todayLogPrivacyForTodo(todo){ return !!todo?.is_private; }
+async function completeLinkedScheduleFromTodo(todo) {
+  const scheduleId=linkedScheduleId(todo?.text);
+  if(!scheduleId || todoMarker(todo?.text,'Cancelled')) return null;
+  const {error}=await sb.from('schedule_events').update({category:'green'}).eq('id',scheduleId).eq('created_by',getUser());
+  if(error){ console.warn('Linked Schedule completion sync failed:',error); return error; }
+  return null;
+}
 function todayFindItem(src,id){
   const cached = todayCombinedCache.find(x=>x._src===src&&String(x.id)===String(id)) || todayWaitingCache.find(x=>x._src===src&&String(x.id)===String(id));
   if (cached) return cached;
@@ -8913,7 +8921,13 @@ async function quickCaptureDoneNow(){
   const input=document.getElementById('focus-quick-input'), status=document.getElementById('focus-capture-status'); const raw=(input?.value||'').trim(); if(!raw){input?.focus();return;} status.textContent='Logging completed activity...'; const ok=await autoLogActivity({title:raw,tags:['unplanned'],isPrivate:false}); if(!ok){status.textContent='Could not log activity.';return;} input.value=''; status.textContent='Unplanned activity logged ✓'; showAfterDonePrompt(raw); await renderTodayFocus(); updateDailyProgress();
 }
 async function focusDone(id){
-  const t=todoCache.find(x=>String(x.id)===String(id)); await sb.from('todos').update({is_done:true,done_at:new Date().toISOString()}).eq('id',id); if(t&&!focusIsInbox(t)){await autoLogActivity({title:stripTodoInternalMarkers(t.text),tags:[focusIsFollowUp(t)?'follow-up':'task'],isPrivate:todayLogPrivacyForTodo(t),sourceKey:`todo:${id}`});} await renderTodayFocus(); if(currentPanel==='brain')await renderBrainDump(); if(currentPanel==='followup')await renderFollowUpCenter(); updateDailyProgress();
+  const t=todoCache.find(x=>String(x.id)===String(id));
+  const {error}=await sb.from('todos').update({is_done:true,done_at:new Date().toISOString()}).eq('id',id);
+  if(error)return alert('Failed: '+error.message);
+  const linkedId=linkedScheduleId(t?.text);
+  if(t && linkedId && !todoMarker(t.text,'Cancelled')) await completeLinkedScheduleFromTodo(t);
+  if(t&&!focusIsInbox(t)){await autoLogActivity({title:stripTodoInternalMarkers(t.text),tags:[focusIsFollowUp(t)?'follow-up':'task'],isPrivate:todayLogPrivacyForTodo(t),sourceKey:linkedId?`schedule:${linkedId}`:`todo:${id}`});}
+  await renderTodayFocus(); if(currentPanel==='brain')await renderBrainDump(); if(currentPanel==='followup')await renderFollowUpCenter(); updateDailyProgress();
 }
 async function focusTomorrow(id){ await todayTomorrow('todo',id); }
 async function focusOpenTodo(id){ await switchPanel('todo',document.getElementById('nsub-todo')); editTodo(id); document.getElementById('todo-input')?.focus(); }
@@ -8923,7 +8937,7 @@ async function todayDone(src,id){
   if(item._kind==='portfolio-noaction'){return todayOpen(src,id);}
   let title=item.title, isPrivate=false, tags=[];
   if(src==='todo'){
-    const t=item.raw; isPrivate=todayLogPrivacyForTodo(t); tags=[item._kind==='followup'?'follow-up':item._kind==='carry'?'carried-forward':item._kind==='waiting'?'waiting-resolved':'planned-task']; const {error}=await sb.from('todos').update({is_done:true,done_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message);
+    const t=item.raw; const linkedId=linkedScheduleId(t.text); isPrivate=todayLogPrivacyForTodo(t); tags=[item._kind==='followup'?'follow-up':item._kind==='carry'?'carried-forward':item._kind==='waiting'?'waiting-resolved':'planned-task']; const {error}=await sb.from('todos').update({is_done:true,done_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); if(linkedId && !todoMarker(t.text,'Cancelled')) await completeLinkedScheduleFromTodo(t); if(linkedId) item._linkedScheduleId=linkedId;
   }else if(src==='schedule'){
     const r=item.raw; isPrivate=!!r.is_private; tags=['planned','schedule']; const {error}=await sb.from('schedule_events').update({category:'green'}).eq('id',id); if(error)return alert('Failed: '+error.message);
   }else if(src==='tracker'){
@@ -8931,12 +8945,13 @@ async function todayDone(src,id){
   }else if(src==='portfolio'){
     const r=item.raw; title=r.next_action||item.title; isPrivate=!!r.is_private; tags=['project']; const {error}=await sb.from('project_portfolio').update({next_action:null,next_action_date:null,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message);
   }
-  await autoLogActivity({title,body:src==='portfolio'&&item.raw?.title?`Project: ${item.raw.title}`:'',tags,isPrivate,trackerId:src==='tracker'?id:null,sourceKey:`${src}:${id}`}); showAfterDonePrompt(title,{src,id,row:item.raw}); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); if(currentPanel==='tracker')await ptRefreshAllViews?.(); updateDailyProgress();
+  const logSourceKey=src==='todo'&&item._linkedScheduleId?`schedule:${item._linkedScheduleId}`:`${src}:${id}`;
+  await autoLogActivity({title,body:src==='portfolio'&&item.raw?.title?`Project: ${item.raw.title}`:'',tags,isPrivate,trackerId:src==='tracker'?id:null,sourceKey:logSourceKey}); showAfterDonePrompt(title,{src,id,row:item.raw}); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio(); if(currentPanel==='tracker')await ptRefreshAllViews?.(); updateDailyProgress();
 }
 async function todayWaiting(src,id){
   const item=todayFindItem(src,id); if(!item)return; const review=await askTodayDate('Review / follow up this waiting item on',addDaysStr(todayStr(),3)); if(!review)return; let title=item.title,isPrivate=false;
   if(src==='todo'){ const t=item.raw; const marker=linkedScheduleId(t.text); const newText=setTodoStateText(t.text,'Waiting',marker?[`Schedule:${marker}`]:[]); const {error}=await sb.from('todos').update({text:newText,due_date:review,is_done:false,done_at:null}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=todayLogPrivacyForTodo(t); }
-  else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Waiting] [Schedule:${id}] ${r.title}`,priority:'med',due_date:review,assigned_to:null,is_private:true,created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
+  else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Waiting] [Schedule:${id}] ${r.title}`,priority:'med',due_date:review,assigned_to:null,is_private:!!r.is_private,created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='tracker'){ const r=item.raw; const {error}=await sb.from('time_plan_tracker').update({status:'on_hold',due_date:review,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='portfolio'){ const r=item.raw; title=r.next_action||item.title; const {error}=await sb.from('project_portfolio').update({stage:'awaiting_customer',next_action:r.next_action||`Follow up ${r.customer_name||r.title||'customer'}`,next_action_date:review,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   // Waiting is a current work state, not a completed activity. Keep it in its source record and Management Report, not Logbook.
@@ -8946,7 +8961,7 @@ async function todayTomorrow(src,id){
   const item=todayFindItem(src,id); if(!item)return; const tomorrow=addDaysStr(todayStr(),1);
   let title=item.title,isPrivate=false;
   if(src==='todo'){ const t=item.raw; const marker=linkedScheduleId(t.text); const extras=['Carry',...(marker?[`Schedule:${marker}`]:[])]; const {error}=await sb.from('todos').update({text:setTodoStateText(t.text,'Today',extras),due_date:tomorrow,is_done:false,done_at:null}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=todayLogPrivacyForTodo(t); }
-  else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Today] [Carry] [Schedule:${id}] ${r.title}`,priority:'med',due_date:tomorrow,assigned_to:null,is_private:true,created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
+  else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Today] [Carry] [Schedule:${id}] ${r.title}`,priority:'med',due_date:tomorrow,assigned_to:null,is_private:!!r.is_private,created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='tracker'){ const r=item.raw; const {error}=await sb.from('time_plan_tracker').update({due_date:tomorrow,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='portfolio'){ const r=item.raw; title=r.next_action||item.title; const {error}=await sb.from('project_portfolio').update({next_action_date:tomorrow,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   // Carry Forward changes the plan; it is not an actual completed activity and should not create a Logbook entry.
@@ -8955,7 +8970,7 @@ async function todayTomorrow(src,id){
 async function todayCancel(src,id){
   const item=todayFindItem(src,id); if(!item)return; if(!confirm(`Cancel this action?\n\n${item.title}`))return; let title=item.title,isPrivate=false;
   if(src==='todo'){ const t=item.raw; const marker=linkedScheduleId(t.text); const {error}=await sb.from('todos').update({text:setTodoStateText(t.text,'Cancelled',marker?[`Schedule:${marker}`]:[]),is_done:true,done_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=todayLogPrivacyForTodo(t); }
-  else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Cancelled] [Schedule:${id}] ${r.title}`,priority:'med',due_date:null,assigned_to:null,is_private:true,is_done:true,done_at:new Date().toISOString(),created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
+  else if(src==='schedule'){ const r=item.raw; const {error}=await sb.from('todos').insert({text:`[Cancelled] [Schedule:${id}] ${r.title}`,priority:'med',due_date:null,assigned_to:null,is_private:!!r.is_private,is_done:true,done_at:new Date().toISOString(),created_by:getUser()}); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='tracker'){ const r=item.raw; const {error}=await sb.from('time_plan_tracker').update({status:'skipped',updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   else if(src==='portfolio'){ const r=item.raw; title=r.next_action||item.title; const {error}=await sb.from('project_portfolio').update({next_action:null,next_action_date:null,updated_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); isPrivate=!!r.is_private; }
   // Cancelled actions remain visible through their source status/history; cancellation is not a completed Logbook activity.
@@ -9215,7 +9230,10 @@ function resetTodoForm() {
 }
 
 async function toggleTodo(id, isDone) {
-  await sb.from('todos').update({ is_done: !isDone, done_at: !isDone ? new Date().toISOString() : null }).eq('id', id);
+  const t=todoCache.find(x=>String(x.id)===String(id));
+  const {error}=await sb.from('todos').update({ is_done: !isDone, done_at: !isDone ? new Date().toISOString() : null }).eq('id', id);
+  if(error)return alert('Failed: '+error.message);
+  if(!isDone && t && linkedScheduleId(t.text) && !todoMarker(t.text,'Cancelled')) await completeLinkedScheduleFromTodo(t);
   await renderTodo();
   updateDailyProgress();
 }
@@ -9438,6 +9456,25 @@ function managementAttendanceSummary(rows, employee, mode) {
   const people = new Set(rows.map(r=>r.user_name).filter(Boolean)).size;
   return { title:`${people} employee${people===1?'':'s'} with attendance / approved leave records`, sub:`Present ${counts.hadir||0} · Late ${counts.terlambat||0} · Leave ${counts.izin||0} · Sick ${counts.sakit||0} · Time Off ${counts.cuti||0} · Total work ${hours}` };
 }
+function managementScheduleStateMap(todos) {
+  const rows=[...(todos||[])].sort((a,b)=>
+    String(a.created_at||'').localeCompare(String(b.created_at||'')) ||
+    String(a.id||'').localeCompare(String(b.id||''))
+  );
+  const map=new Map();
+  rows.forEach(t=>{
+    const scheduleId=linkedScheduleId(t.text);
+    if(!scheduleId)return;
+    let state=null;
+    if(todoMarker(t.text,'Cancelled')) state='cancelled';
+    else if(!t.is_done && focusIsWaiting(t)) state='waiting';
+    else if(!t.is_done && focusIsCarry(t)) state='carry';
+    if(state) map.set(String(scheduleId),{state,row:t});
+    else if(t.is_done) map.delete(String(scheduleId));
+  });
+  return map;
+}
+
 async function renderManagementReport() {
   if (!hasManagementAccess()) return;
   const statusEl = document.getElementById('result-management-status');
@@ -9474,6 +9511,7 @@ async function renderManagementReport() {
     let attendance = managementAttendanceWithApprovedLeave(aRes.data || [], leaveRes.data || [], range);
     attendance = managementEmployeeFilter(attendance, 'user_name', employee);
     let workTodos = managementEmployeeFilter(managementPublicRows(tdRes.data), 'created_by', employee);
+    const scheduleStateMap = managementScheduleStateMap(workTodos);
 
     // Report is a reading layer, not a raw-table dump. Exact duplicate records are collapsed here
     // without deleting or rewriting the underlying WorkBoard history.
@@ -9577,12 +9615,17 @@ async function renderManagementReport() {
     if (attEl) attEl.innerHTML=`<div class="mr-attendance-main"><div class="mr-attendance-icon"><i class="ti ti-fingerprint"></i></div><div class="mr-attendance-text"><strong>${escHtml(att.title)}</strong><span>${escHtml(att.sub)}</span></div></div><span class="mr-pill">${escHtml(range.label)}</span>`;
 
     const ownerMeta = row => employee==='__all__' && row.created_by ? ` · ${row.created_by}` : '';
-    const plannedItems = schedule.map(e => managementItemHtml(
-      e.title || 'Planned activity',
-      `${e.event_date}${e.time_start?` · ${String(e.time_start).slice(0,5)}`:''}${e.location?` · ${e.location}`:''}${ownerMeta(e)}`,
-      e.category==='green'?'Done':'Planned',
-      e.category==='green'?'done':''
-    ));
+    const plannedItems = schedule.map(e => {
+      const state=e.category==='green'?'done':(scheduleStateMap.get(String(e.id))?.state||'planned');
+      const label={done:'Done',waiting:'Waiting',carry:'Carry',cancelled:'Cancelled',planned:'Planned'}[state]||'Planned';
+      const css={done:'done',waiting:'waiting',carry:'carry',cancelled:'cancelled'}[state]||'';
+      return managementItemHtml(
+        e.title || 'Planned activity',
+        `${e.event_date}${e.time_start?` · ${String(e.time_start).slice(0,5)}`:''}${e.location?` · ${e.location}`:''}${ownerMeta(e)}`,
+        label,
+        css
+      );
+    });
     const completedItems = completedLogs.map(l => {
       const tags=managementTagList(l);
       const continuation = waitingContinuation.get(managementOwnerTitleKey(l.created_by, l.title));
