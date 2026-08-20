@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `816825f47653550c993d2eab2546a5dd69e78b20943927a701256e117a7ce32f`
+**SHA-256 pasangan kode:** `75afedc07f26e91ab7c559e0ec7ce814dfd70af01d82972de6a286ccc2d9d083`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v110 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v111 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -705,6 +705,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] `tracker_items` tidak dihapus tanpa audit Result dan semua referensinya.
 - [ ] `Users & Access` / Owner Controls hanya terlihat untuk Owner pada desktop dan mobile; `Management Report` hanya Owner/Management.
 - [ ] UI baru menggunakan English.
+- [ ] Help / FAQ login mengikuti Supabase Auth (email/password/Google), bukan login nama lama; panduan mobile memakai bottom navigation + More, bukan swipe sidebar lama.
 - [ ] Draft Logbook, Notes, To Do, Notepad, dan Work Talk tetap pulih setelah berpindah panel.
 - [ ] Password Manager dan field sensitif tidak masuk ke penyimpanan draft.
 - [ ] Prompt Master ikut diperbarui jika kondisi implementasi berubah.
@@ -735,6 +736,15 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v111 English UI & Help Accuracy
+
+- Menerjemahkan sisa teks UI Indonesia yang masih terlihat pada To Do dashboard, Smart Focus explanation, Schedule week empty state, Notes category labels, Work Talk status/empty state, Attendance/Logbook/Notepad/Resources setup banners, Owner delete-user flow, online presence, dan tooltip Schedule chart menjadi English.
+- To Do priority display sekarang `High / Medium / Low`; summary memakai `Month / Total Tasks / Completed / Not Completed / Completion Rate`, serta weekly cards memakai `Done / Open / Week`. Nilai database/internal key tidak diubah.
+- FAQ `How do I log in?` tidak lagi menjelaskan login nama / Switch User lama; sekarang sesuai Supabase Auth dan `workboard_profiles`.
+- FAQ mobile tidak lagi menyuruh swipe untuk melihat menu; sekarang menjelaskan bottom navigation `Today / Daily / Projects / More` dan `Report` yang role-based.
+- Memperbarui komentar teknis Work Talk yang sebelumnya masih menyatakan DM hanya soft privacy; dokumentasi kode sekarang sesuai Supabase Auth + RLS participant rules.
+- Tidak mengubah database, RLS, role, privacy rules, workflow, Storage, atau data lama. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v110 Legacy Attachment Privacy Bridge
 

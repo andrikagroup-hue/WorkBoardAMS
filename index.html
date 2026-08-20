@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v110 — Legacy Attachment Privacy Bridge — 20 Aug 2026 -->
+<!-- WorkBoard AMS v111 — English UI & Help Accuracy — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -3285,7 +3285,7 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
       <!-- ── Logbook ─────────────────────────── -->
       <div class="panel" id="panel-logbook">
         <div id="logbook-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup diperlukan:</strong> Kolom di database belum lengkap. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh halaman:<br>
+          ⚠️ <strong>Setup required:</strong> The required database columns are not available yet. Run this SQL in <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh this page:<br>
           <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE logbook_entries
   ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE logbook_entries
@@ -3546,7 +3546,7 @@ ALTER TABLE logbook_entries
       <!-- ── Work Talk (Chat) ──────────────────── -->
       <div class="panel" id="panel-chat">
         <div id="chat-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup diperlukan:</strong> Tabel chat belum ada di database. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh halaman:<br>
+          ⚠️ <strong>Setup required:</strong> The chat tables are not available yet. Run this SQL in <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh this page:<br>
           <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">create table if not exists chat_channels (
   id uuid primary key default gen_random_uuid(),
   type text not null check (type in ('umum','bagian','dm')),
@@ -3568,7 +3568,7 @@ alter publication supabase_realtime add table chat_channels, chat_messages;</cod
           <button onclick="document.getElementById('chat-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
         <div id="chat-col-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup tambahan diperlukan:</strong> kolom buat fitur edit pesan & sembunyikan chat belum ada. Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh halaman:<br>
+          ⚠️ <strong>Additional setup required:</strong> The columns for message editing and hiding chats are not available yet. Run this SQL in <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh this page:<br>
           <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_edited boolean DEFAULT false;
 ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]'::jsonb;</code>
           <button onclick="document.getElementById('chat-col-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
@@ -3581,7 +3581,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
             </div>
             <div class="chat-sb-section">
               <div class="chat-sb-label">
-                <span>Bagian / Lembaga</span>
+                <span>Department / Team</span>
                 <button class="chat-sb-add" onclick="createChatChannel()" title="Buat channel bagian/lembaga baru"><i class="ti ti-plus"></i></button>
               </div>
               <div id="chat-list-bagian"><div class="chat-empty-list">Loading...</div></div>
@@ -3801,7 +3801,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
       <!-- ── Absensi ─────────────────────────── -->
       <div class="panel" id="panel-absen">
         <div id="absen-setup-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup diperlukan:</strong> Tabel absensi belum ada. Jalankan SQL di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh.<br>
+          ⚠️ <strong>Setup required:</strong> The attendance tables are not available yet. Run this SQL in <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh this page.<br>
           <code id="absen-sql-code" style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:10px;user-select:all;white-space:pre-wrap"></code>
           <button onclick="document.getElementById('absen-setup-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
@@ -3940,8 +3940,8 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
 
         <!-- Banner setup jika tabel belum ada -->
         <div id="links-setup-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup diperlukan:</strong> Tabel <code>app_links</code> belum ada. Jalankan SQL ini di
-          <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a> lalu refresh:<br>
+          ⚠️ <strong>Setup required:</strong> The <code>app_links</code> table is not available yet. Run this SQL in
+          <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh this page:<br>
           <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:8px;margin-top:8px;font-size:11px;user-select:all;white-space:pre-wrap">CREATE TABLE IF NOT EXISTS app_links (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   label text NOT NULL,
@@ -6304,7 +6304,7 @@ async function renderScheduleWeekGlance(baseDateStr) {
     const evHtml = dayEvents.length
       ? dayEvents.slice(0, 3).map(e => `<div class="sched-week-event-line">• ${escHtml(e.title || '')}</div>`).join('')
         + (dayEvents.length > 3 ? `<div class="sched-week-event-line">+${dayEvents.length - 3} lainnya</div>` : '')
-      : `<div class="sched-week-empty">Tidak ada kegiatan</div>`;
+      : `<div class="sched-week-empty">No activities</div>`;
     return `<div class="sched-week-item">
       <div class="sched-week-daynum">${d.getDate()}</div>
       <div class="sched-week-info">
@@ -8957,7 +8957,7 @@ async function renderTodo() {
 }
 
 const prioClass = {high:'prio-high',med:'prio-med',low:'prio-low'};
-const prioLabel = {high:'Tinggi',med:'Sedang',low:'Rendah'};
+const prioLabel = {high:'High',med:'Medium',low:'Low'};
 const monthNamesID = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 // Router: kalau sedang search/filter global → tampilkan list biasa. Kalau tidak → tampilkan dashboard mingguan.
@@ -8986,12 +8986,12 @@ function renderTodoDashboard(all) {
   const monthLabel = monthNamesID[parseInt(ym.split('-')[1], 10) - 1] || '-';
 
   document.getElementById('todo-summary').innerHTML = `
-    <div class="todo-stat-card"><div class="todo-stat-label">BULAN</div><div class="todo-stat-value">${monthLabel}</div></div>
-    <div class="todo-stat-card"><div class="todo-stat-label">TOTAL TUGAS</div><div class="todo-stat-value">${total}</div></div>
-    <div class="todo-stat-card todo-stat-done"><div class="todo-stat-label">SELESAI</div><div class="todo-stat-value">${completed}</div></div>
-    <div class="todo-stat-card todo-stat-pending"><div class="todo-stat-label">BELUM SELESAI</div><div class="todo-stat-value">${notCompleted}</div></div>
+    <div class="todo-stat-card"><div class="todo-stat-label">MONTH</div><div class="todo-stat-value">${monthLabel}</div></div>
+    <div class="todo-stat-card"><div class="todo-stat-label">TOTAL TASKS</div><div class="todo-stat-value">${total}</div></div>
+    <div class="todo-stat-card todo-stat-done"><div class="todo-stat-label">COMPLETED</div><div class="todo-stat-value">${completed}</div></div>
+    <div class="todo-stat-card todo-stat-pending"><div class="todo-stat-label">NOT COMPLETED</div><div class="todo-stat-value">${notCompleted}</div></div>
     <div class="todo-stat-card todo-stat-rate">
-      <div class="todo-stat-label">TINGKAT PENYELESAIAN</div>
+      <div class="todo-stat-label">COMPLETION RATE</div>
       <div class="todo-rate-value">${rate}%</div>
       <div class="todo-rate-bar"><div class="todo-rate-fill" style="width:${rate}%"></div></div>
     </div>`;
@@ -9018,12 +9018,12 @@ function renderTodoDashboard(all) {
     const pct = arr.length ? Math.round((c / arr.length) * 100) : 0;
     return `
       <div class="todo-week-card">
-        <div class="todo-week-mini"><span>SELESAI</span><strong>${c}</strong></div>
-        <div class="todo-week-mini todo-week-mini-alt"><span>BELUM</span><strong>${nc}</strong></div>
+        <div class="todo-week-mini"><span>DONE</span><strong>${c}</strong></div>
+        <div class="todo-week-mini todo-week-mini-alt"><span>OPEN</span><strong>${nc}</strong></div>
         <div class="todo-donut" style="background:conic-gradient(var(--accent) 0% ${pct}%, #E4E1F0 ${pct}% 100%)">
           <div class="todo-donut-hole">${pct}%</div>
         </div>
-        <div class="todo-week-label">MINGGU ${w}</div>
+        <div class="todo-week-label">WEEK ${w}</div>
       </div>`;
   }).join('');
 
@@ -9089,12 +9089,12 @@ function renderTodoFlatList(all) {
   }
   document.getElementById('todo-search-list').innerHTML = all.map(t => `
     <div class="todo-item${t.is_done ? ' done-item' : ''}">
-      <button class="todo-check${t.is_done ? ' checked' : ''}" onclick="toggleTodo('${t.id}',${t.is_done})" aria-label="Tandai selesai">
+      <button class="todo-check${t.is_done ? ' checked' : ''}" onclick="toggleTodo('${t.id}',${t.is_done})" aria-label="Mark complete">
         ${t.is_done ? '<i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i>' : ''}
       </button>
       <div>
         <div class="todo-text">${t.text}</div>
-        ${t.assigned_to ? `<div style="font-size:10px;color:var(--color-text-tertiary)">Ditugaskan ke: ${t.assigned_to}</div>` : ''}
+        ${t.assigned_to ? `<div style="font-size:10px;color:var(--color-text-tertiary)">Assigned to: ${t.assigned_to}</div>` : ''}
       </div>
       <div class="todo-meta">
         <span class="${prioClass[t.priority]}">${prioLabel[t.priority]}</span>
@@ -9785,7 +9785,7 @@ async function renderResult() {
       const isToday = ds === todayFull2;
       const barH = cnt ? Math.max(8, Math.round(cnt/maxSchedPerDay*60)) : (isFuture ? 0 : 4);
       const barColor = isFuture ? 'var(--bg3)' : cnt > 0 ? '#2F6364' : '#E2E8F0';
-      const tip = isFuture ? ds : `${ds}\nJadwal: ${cnt}`;
+      const tip = isFuture ? ds : `${ds}\nSchedule: ${cnt}`;
       return `<div class="adc-day" title="${tip}">
         <div class="adc-bar" style="height:${barH}px;background:${barColor};${isToday?'outline:2px solid var(--accent2);':''}"></div>
         <div class="adc-lbl">${day}</div>
@@ -10233,35 +10233,35 @@ function localTaskCleanText(task) {
 
 function localTaskReason(task, today) {
   const due = task.due_date || '';
-  if (due && due < today) return 'Tugas ini sudah melewati tenggat dan masih terbuka.';
-  if (due === today) return 'Tugas ini jatuh tempo hari ini.';
-  if (focusIsFollowUp(task)) return 'Ini adalah follow-up aktif yang berisiko terlupakan bila tidak segera disentuh.';
-  if (focusIsWaiting(task)) return 'Kamu sedang menunggu balasan; cek statusnya agar tidak menggantung.';
-  if ((task.priority || '').toLowerCase() === 'high') return 'Tugas ini ditandai sebagai prioritas tinggi.';
-  return 'Ini berada di urutan teratas berdasarkan aturan fokus WorkBoard.';
+  if (due && due < today) return 'This task is overdue and still open.';
+  if (due === today) return 'This task is due today.';
+  if (focusIsFollowUp(task)) return 'This is an active follow-up that may be forgotten if it is not handled soon.';
+  if (focusIsWaiting(task)) return 'You are waiting for a reply; check the status so it does not stay unresolved.';
+  if ((task.priority || '').toLowerCase() === 'high') return 'This task is marked as high priority.';
+  return 'This is ranked first by WorkBoard focus rules.';
 }
 
 function localSmallestStep(task) {
   const text = localTaskCleanText(task).toLowerCase();
   if (focusIsFollowUp(task) || /follow\s*up|hubungi|chat|wa|whatsapp|email|balas|reply/.test(text)) {
-    return 'Buka kanal komunikasi terkait dan kirim satu pesan singkat untuk meminta update.';
+    return 'Open the relevant communication channel and send one short message asking for an update.';
   }
   if (focusIsWaiting(task) || /waiting|menunggu|belum dibalas|belum balas|approval|persetujuan/.test(text)) {
-    return 'Cek apakah ada balasan terbaru. Jika belum ada, tentukan waktu follow-up berikutnya.';
+    return 'Check for a new reply. If there is none, set the next follow-up time.';
   }
   if (/laporan|report|rekap|proposal|sph|quotation|penawaran/.test(text)) {
-    return 'Buka dokumennya dan tulis tiga poin utama yang harus masuk.';
+    return 'Open the document and write the three main points that must be included.';
   }
   if (/cek|check|review|periksa|verifikasi/.test(text)) {
-    return 'Buka sumber yang perlu diperiksa dan catat satu hasil pengecekan pertama.';
+    return 'Open the source that needs checking and record the first finding.';
   }
   if (/call|telepon|telp|meeting|rapat/.test(text)) {
-    return 'Tulis satu tujuan atau pertanyaan utama, lalu mulai kontak atau persiapannya.';
+    return 'Write one main objective or question, then start the contact or preparation.';
   }
   if (/buat|membuat|design|desain|artikel|video/.test(text)) {
-    return 'Buka alat atau dokumen kerjanya dan buat kerangka paling sederhana selama lima menit.';
+    return 'Open the working tool or document and create the simplest outline for five minutes.';
   }
-  return 'Buka tugas ini dan kerjakan langkah pertama yang terlihat selama lima menit saja.';
+  return 'Open this task and work on the first visible step for five minutes.';
 }
 
 // Local Smart Focus: no external AI, no access code, no balance, and no network request.
@@ -10664,7 +10664,7 @@ async function saveNpItem() {
   if (error) {
     if (error.message && error.message.includes('notepad_items')) {
       document.getElementById('notepad-list').innerHTML = `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;font-size:12px;color:#92400e">
-        ⚠️ <strong>Setup diperlukan:</strong> Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>:<br>
+        ⚠️ <strong>Setup required:</strong> Run this SQL in <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>:<br>
         <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:8px;margin-top:8px;font-size:11px;white-space:pre">CREATE TABLE IF NOT EXISTS notepad_items (
   id uuid primary key default uuid_generate_v4(),
   title text not null,
@@ -10674,7 +10674,7 @@ async function saveNpItem() {
   created_by text,
   created_at timestamptz default now()
 );</code>
-        Lalu refresh halaman.
+        Then refresh this page.
       </div>`;
     } else {
       alert('Failed: ' + error.message);
@@ -10863,7 +10863,7 @@ function selectLogItem(id) {
 let notesActiveId = null;
 function _renderNoteCards(data) {
   notesViewCache = Array.isArray(data) ? data : [];
-  const catLabel = {finance:'Keuangan',ops:'Operasional',hr:'SDM/HR',strat:'Strategi'};
+  const catLabel = {finance:'Finance',ops:'Operations',hr:'HR',strat:'Strategy'};
   const grid = document.getElementById('notes-grid');
   if (!data || !data.length) { grid.innerHTML = '<div class="empty-msg">No matching notes.</div>'; notesActiveId = null; return; }
   if (!notesActiveId || !data.some(n => n.id === notesActiveId)) notesActiveId = data[0].id;
@@ -10910,11 +10910,9 @@ function selectNoteItem(id) {
 
 // ── QUILL RICH TEXT EDITORS ──────────────────────────────────────
 // ── WORK TALK (CHAT) ───────────────────────────────────────────
-// Channel: 'umum' (1 ruang umum, auto dibuat), 'bagian' (channel per bagian/lembaga,
-// dibuat bebas oleh siapa saja), 'dm' (chat pribadi 2 orang, participants = [namaA, namaB]).
-// CATATAN PENTING: app ini belum pakai Supabase Auth, identitas cuma nama di localStorage
-// (lihat getUser()). Jadi privasi DM di sini bersifat "soft" sama seperti is_private di
-// panel lain — disaring di sisi client, BUKAN dijamin oleh server/RLS.
+// Channel storage values remain legacy-compatible: 'umum', 'bagian', and 'dm'.
+// WorkBoard uses Supabase Auth + workboard_profiles for identity/role. DM visibility is
+// enforced by database RLS using channel participants; client filtering is only a UI layer.
 
 // Cocokkan nama participant tanpa peduli besar-kecil huruf (orang bisa ngetik beda kapital)
 function isParticipant(participants, user) {
@@ -11054,7 +11052,7 @@ function renderChatChannelLists() {
   const bagian = chatChannels.filter(c => c.type === 'bagian' && notHidden(c));
   const dm = chatChannels.filter(c => c.type === 'dm' && isParticipant(c.participants, user) && notHidden(c));
 
-  document.getElementById('chat-list-umum').innerHTML = umum.map(renderChatChannelItem).join('') || '<div class="chat-empty-list">Tidak ada.</div>';
+  document.getElementById('chat-list-umum').innerHTML = umum.map(renderChatChannelItem).join('') || '<div class="chat-empty-list">No channels.</div>';
   document.getElementById('chat-list-bagian').innerHTML = bagian.length
     ? bagian.map(renderChatChannelItem).join('')
     : '<div class="chat-empty-list">No channels yet. Click + to create one.</div>';
@@ -11509,7 +11507,7 @@ function renderChatDMPickerList(names) {
       ? `<span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block;flex-shrink:0" title="Online now"></span>`
       : `<span style="width:8px;height:8px;border-radius:50%;background:#CBD5E1;display:inline-block;flex-shrink:0" title="${lastSeenStr ? 'Last online: ' + lastSeenStr : 'Never been online'}"></span>`;
     const subText = isOnline
-      ? `<span style="font-size:10px;color:#22C55E">● Sedang online</span>`
+      ? `<span style="font-size:10px;color:#22C55E">● Online now</span>`
       : lastSeenStr
         ? `<span style="font-size:10px;color:var(--text3)">Terakhir: ${lastSeenStr}</span>`
         : `<span style="font-size:10px;color:var(--text3)">Never been online</span>`;
@@ -13152,7 +13150,7 @@ async function _renderAdminLeaveInto(listEl, filterSelectEl, typeSelectEl) {
     if (error.message && (error.message.includes('status') || error.message.includes('column'))) {
       listEl.innerHTML = `<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:#92400E">
         ⚠️ <strong>Setup required:</strong> The <code>status</code> and <code>catatan_admin</code> columns don't exist yet in the <code>leave_requests</code> table.
-        Jalankan SQL ini di <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>:<br>
+        Run this SQL in <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>:<br>
         <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:8px;margin-top:8px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
 ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
       </div>`;
@@ -13293,12 +13291,12 @@ async function adminDeleteUser(targetName) {
   if (!confirm(
     `⚠️ WARNING: Delete user "${targetName}"?\n\n` +
     `This will delete ALL data belonging to this user:\n` +
-    `• Data absensi & izin\n• Jadwal & tracker\n• Logbook, Notes, To Do\n• Riwayat chat\n• Status online\n\n` +
-    `Tindakan ini TIDAK DAPAT DIBATALKAN. Lanjutkan?`
+    `• Attendance & leave data\n• Schedule & tracker\n• Logbook, Notes, To Do\n• Chat history\n• Online status\n\n` +
+    `This action CANNOT BE UNDONE. Continue?`
   )) return;
 
   const listEl = document.getElementById('admin-users-list');
-  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Menghapus data...</div>';
+  listEl.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Deleting data...</div>';
 
   const deletes = [
     sb.from('attendance').delete().eq('user_name', targetName),
@@ -13363,7 +13361,7 @@ async function renderLinks() {
   if (error) {
     if (error.message?.includes('app_links') || error.code === '42P01') {
       document.getElementById('links-setup-banner').style.display = 'block';
-      listEl.innerHTML = '<div class="empty-msg">Tabel belum ada — ikuti petunjuk setup di atas.</div>';
+      listEl.innerHTML = '<div class="empty-msg">The table is not available yet — follow the setup instructions above.</div>';
     } else {
       listEl.innerHTML = `<div class="empty-msg">Failed to load: ${error.message}</div>`;
     }
@@ -13644,7 +13642,7 @@ function renderFaq() {
     {
       section: '🚀 Getting Started with WorkBoard',
       items: [
-        { q: 'How do I log in?', a: 'WorkBoard uses your name as identity. The first time you open the app, you\'ll be asked to enter your name. There are two different buttons in the top-left corner: the <b>⇄ Switch</b> button to log in as another user on the same device (without changing anyone\'s data), and the <b>✎</b> (pencil) button to change your own name along with all your existing data.' },
+        { q: 'How do I log in?', a: 'Use your verified email and password, or choose <strong>Continue with Google</strong>. After sign-in, WorkBoard loads your active profile and role from <code>workboard_profiles</code>. Use <strong>Sign Out</strong> when you need to leave the account.' },
         { q: 'What are the WorkBoard roles?', a: '<strong>Owner</strong> is reserved for Ratu. New users can register as <strong>Staff</strong> or <strong>Management</strong>. Ratu can correct a role later in Users & Access.' },
         { q: 'Is data stored in the cloud?', a: 'Yes. All data is stored in Supabase (cloud database). It can be accessed from a phone, desktop, or any browser as long as you\'re connected to the internet.' },
       ]
@@ -13711,7 +13709,7 @@ function renderFaq() {
       items: [
         { q: 'How do I install WorkBoard on my phone?', a: 'Open WorkBoard in Chrome (Android) or Safari (iPhone). Tap the "Add to Home Screen" icon that appears in the browser. WorkBoard will install like a regular app.' },
         { q: 'How do I sign in?', a: 'Use your verified email and password, or choose <strong>Continue with Google</strong>. New users can self-register as Staff or Management; Owner is reserved for Ratu.' },
-        { q: 'Why does the phone view look different from desktop?', a: 'On phones, the sidebar is replaced with a bottom navigation bar. Swipe right to see all menus. It works exactly the same as on desktop.' },
+        { q: 'Why does the phone view look different from desktop?', a: 'On phones, the sidebar is replaced by a compact bottom navigation. Use <strong>Today</strong>, <strong>Daily</strong>, <strong>Projects</strong>, and <strong>More</strong>; <strong>Report</strong> appears only for roles that can access Management Report. Open <strong>More</strong> for Personal, Work, Help, and role-based controls.' },
         { q: 'Can it be used offline?', a: 'The interface can appear offline (PWA cache), but data requires an internet connection since it\'s stored in Supabase cloud.' },
       ]
     },
@@ -14493,7 +14491,7 @@ async function renderOnlineUsers() {
     list.innerHTML = data.map(u =>
       '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:6px">' +
       '<span style="width:6px;height:6px;border-radius:50%;background:#22C55E;display:inline-block"></span>' +
-      (u.user_name === currentUser ? '<strong>' + u.user_name + '</strong> (Kamu)' : u.user_name) +
+      (u.user_name === currentUser ? '<strong>' + u.user_name + '</strong> (You)' : u.user_name) +
       '</span>'
     ).join('<br>');
   } catch(e) {}
