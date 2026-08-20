@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `7fb8e4d94f81b43d79c8c359e77c2660163de4da48c0b6f88ae5d77367c21a27`
+**SHA-256 pasangan kode:** `a67d930049c621b15f4b1c0d387535c77dc3fb57f48f95b56c7b28ecd6444431`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v105 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v106 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -364,6 +364,8 @@ Catatan ketergantungan:
 - RLS aktif mulai v91: request tanpa sesi Auth tidak boleh memperoleh akses tabel WorkBoard yang dimigrasikan.
 - Staff tetap dapat melihat data Team / Company sesuai aturan panel sumber, tetapi tidak mendapat menu Management Report.
 - Management mendapat Management Report dan data reporting yang memang Team / Company; private personal data user lain tidak dibuka.
+- Pada tabel kerja Team / Company yang public, visibilitas baca dan hak ubah tidak disamakan: creator dapat mengubah row miliknya; Owner juga dapat mengelola row public user lain sesuai RLS; Staff/Management lain melihat row tersebut sebagai read-only.
+- UI Schedule, Logbook, Portfolio, Project Tracker/Kanban, dan Recurring Task wajib menyembunyikan/menonaktifkan action mutasi pada row yang tidak boleh diubah user aktif. Owner yang mengedit row public user lain harus mempertahankan `created_by` asli dan privacy tetap Public.
 - Management dan Owner dapat membuka `HR → Leave Management` serta Approve / Reject / Reset request Leave, Sick, dan Time Off. Delete request tetap hanya Owner. `Users & Access` tetap hanya Owner.
 - Owner (Ratu) mendapat seluruh kontrol WorkBoard/company yang dirancang untuk Owner, tetapi Password Manager dan data personal private user lain tetap mengikuti policy private masing-masing.
 
@@ -662,6 +664,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Binder Logbook menampilkan satu halaman per tanggal dan seluruh completed activities pada tanggal tersebut tanpa menggabungkan record database sumber.
 - [ ] Waiting dan Tomorrow tetap muncul kembali saat waktunya tiba.
 - [ ] Schedule tetap dapat Add/Edit/Delete dan aksi Done/Waiting/Tomorrow tidak menghapus data rencana.
+- [ ] Action mutasi pada Schedule/Logbook/Portfolio/Project Tracker/Kanban/Recurring hanya muncul untuk creator atau Owner pada row Public; user lain melihat Read only dan ownership tidak berpindah saat Owner mengedit.
 - [ ] Portfolio default Needs Action, sementara Waiting/Upcoming/All tetap dapat dibuka.
 - [ ] Ringkasan Portfolio menampilkan Total Entries bersama Needs Action, Waiting, Upcoming, Active, dan Won / Approved pada desktop dan mobile.
 - [ ] Kartu dan form Portfolio menyembunyikan detail sekunder sampai More Details dibuka.
@@ -727,6 +730,17 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v106 Shared Record Action Permission Fix
+
+- Menyamakan tombol/action UI dengan hak modifikasi RLS pada tabel kerja Team / Company: creator dapat mengubah row miliknya; Owner dapat mengelola row Public user lain; Staff/Management lain melihat row tersebut sebagai `Read only`.
+- Schedule: Edit/Delete/Done/Waiting/Tomorrow disembunyikan untuk row yang tidak dapat dimodifikasi, dan fungsi mutasi memiliki guard yang sama.
+- Logbook: Writing Assistant/Edit/Delete hanya muncul untuk row yang dapat dimodifikasi; guard dijalankan sebelum upload attachment agar request tidak sah tidak meninggalkan object Storage.
+- Portfolio: action utama, Edit Full Record, Delete, Follow Up/Waiting/Tomorrow/Done mengikuti helper permission yang sama.
+- Project Tracker dan Kanban: Start/Done/Waiting/Today/Edit/Delete/status dropdown mengikuti permission row. `Add Update` tetap tersedia pada project Public karena membuat Logbook milik user aktif dan tidak mengubah source project.
+- Recurring Task: toggle Active, Edit, Delete, serta generator otomatis hanya memproses template yang boleh dimodifikasi user aktif sehingga Staff/Management tidak mencoba menulis template public milik user lain.
+- Saat Owner mengedit row Public user lain pada Schedule, Logbook, atau Recurring Task, `created_by` asli dipertahankan; field Privacy dikunci tetap Public agar sesuai RLS dan ownership tidak berpindah diam-diam. Portfolio/Project Tracker juga mengunci perubahan privacy untuk row Public milik user lain.
+- Tidak mengubah role, Users & Access, Leave Management, Storage policy, atau database schema. Tidak membutuhkan SQL baru.
 
 ### 20 Agustus 2026 — v105 Private Rich Text Images
 

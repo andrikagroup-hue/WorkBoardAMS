@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v105 — Private Rich Text Images — 20 Aug 2026 -->
+<!-- WorkBoard AMS v106 — Shared Record Action Permission Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -4453,6 +4453,23 @@ function applyOwner(data) {
   return (data || []).filter(row => !row.created_by || row.created_by === user);
 }
 
+// Shared Team / Company rows can be read by more users than may modify them.
+// Match the final RLS rule in the UI: creator may modify own row; Owner may also
+// modify another user's PUBLIC row. Private rows never become cross-user editable.
+function canModifySharedRow(row) {
+  if (!row) return false;
+  const mine = String(row.created_by || '') === String(getUser() || '');
+  return mine || (isOwner() && !row.is_private);
+}
+function requireSharedRowModify(row) {
+  if (canModifySharedRow(row)) return true;
+  alert('This Team / Company item is read-only for your account. Only its creator or the WorkBoard Owner can change it.');
+  return false;
+}
+function editingAnotherUsersPublicRow(row) {
+  return !!row && isOwner() && !row.is_private && String(row.created_by || '') !== String(getUser() || '');
+}
+
 // Wrapper query dengan timeout 10 detik agar tidak loading abadi
 function withTimeout(promise, ms = 10000) {
   const timeout = new Promise((_, reject) =>
@@ -5722,6 +5739,8 @@ function resetPortfolioForm() {
     const el = document.getElementById(id);
     if (el) el.value = value;
   });
+  const privacyEl = document.getElementById('portfolio-privacy');
+  if (privacyEl) { privacyEl.disabled = false; privacyEl.title = ''; }
   const fileInput = document.getElementById('portfolio-files');
   if (fileInput) fileInput.value = '';
   const title = document.getElementById('portfolio-form-title');
@@ -5738,7 +5757,7 @@ function openPortfolioForm(id = '') {
   resetPortfolioForm();
   if (id) {
     const row = portfolioCache.find(x => x.id === id);
-    if (!row) return;
+    if (!row || !requireSharedRowModify(row)) return;
     editingPortfolioId = id;
     portfolioAttachments = Array.isArray(row.attachments) ? [...row.attachments] : [];
     const values = {
@@ -5768,6 +5787,11 @@ function openPortfolioForm(id = '') {
       const el = document.getElementById(fieldId);
       if (el) el.value = value;
     });
+    const privacyEl = document.getElementById('portfolio-privacy');
+    if (privacyEl) {
+      privacyEl.disabled = editingAnotherUsersPublicRow(row);
+      privacyEl.title = privacyEl.disabled ? 'Another user owns this Team / Company record; its privacy remains Public.' : '';
+    }
     const title = document.getElementById('portfolio-form-title');
     if (title) title.textContent = 'Edit Project / BOQ / Order';
   }
@@ -5938,6 +5962,7 @@ function displayPortfolio(rows = portfolioCache) {
     const nextDateText = row.next_action_date ? new Date(row.next_action_date + 'T00:00:00').toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'numeric'}) : '';
     const due = !!row.next_action_date && row.next_action_date <= todayStr();
     const waiting = portfolioIsWaitingState(row) && !portfolioIsClosed(row);
+    const canModify = canModifySharedRow(row);
     const picLine = [row.customer_pic, row.customer_contact].filter(Boolean).join(' · ');
     const displayName = row.customer_name || row.title || 'Untitled';
     const secondary = row.customer_name && row.title ? row.title : typeLabel;
@@ -5945,7 +5970,7 @@ function displayPortfolio(rows = portfolioCache) {
     let attentionText = row.next_action || 'No next action — set one so this opportunity cannot disappear.';
     if (waiting) attentionLabel = portfolioWaitingReviewDue(row) ? 'Waiting — review due' : 'Waiting';
     else if (due) attentionLabel = 'Action due';
-    const primaryButtons = portfolioIsClosed(row) ? '' : waiting ? `
+    const primaryButtons = !canModify ? '<span style="font-size:10px;color:var(--text3)"><i class="ti ti-lock"></i> Read only</span>' : portfolioIsClosed(row) ? '' : waiting ? `
       <button class="focus-mini-btn btn-primary" onclick="portfolioFollowUpNow('${row.id}')">Needs Action Today</button>
       <button class="focus-mini-btn today-action-wait" onclick="portfolioMarkWaiting('${row.id}')">Change Review Date</button>
       ${row.next_action ? `<button class="focus-mini-btn today-action-done" onclick="portfolioCompleteAction('${row.id}')">Done</button>` : `<button class="focus-mini-btn" onclick="portfolioSetNextAction('${row.id}')">Set Next Action</button>`}
@@ -5988,10 +6013,10 @@ function displayPortfolio(rows = portfolioCache) {
             ${row.notes ? `<div class="portfolio-notes">${escHtml(row.notes)}</div>` : ''}
             ${portfolioAttachmentHtml(row)}
             <div class="portfolio-card-sub" style="margin-top:9px">Added by ${escHtml(row.created_by || '—')}</div>
-            <div class="portfolio-actions">
+            ${canModify ? `<div class="portfolio-actions">
               <button class="btn-sm" type="button" onclick="openPortfolioForm('${row.id}')"><i class="ti ti-pencil"></i> Edit Full Record</button>
               <button class="btn-sm" type="button" style="color:var(--danger);border-color:var(--danger)" onclick="deletePortfolio('${row.id}')"><i class="ti ti-trash"></i> Delete</button>
-            </div>
+            </div>` : ''}
           </div>
         </details>
       </article>`;
@@ -6041,6 +6066,8 @@ async function renderPortfolio() {
 }
 
 async function savePortfolio() {
+  const existing = editingPortfolioId ? portfolioCache.find(x => x.id === editingPortfolioId) : null;
+  if (editingPortfolioId && !requireSharedRowModify(existing)) return;
   const title = document.getElementById('portfolio-title')?.value.trim() || '';
   if (!title) return alert('Project / Order Name is required.');
 
@@ -6115,23 +6142,32 @@ async function savePortfolio() {
 
 
 async function portfolioSetNextAction(id) {
+  const row = portfolioCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   openPortfolioForm(id);
   setTimeout(() => document.getElementById('portfolio-next-action')?.focus(), 80);
 }
 async function portfolioCompleteAction(id) {
+  const row = portfolioCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   await todayDone('portfolio', id);
   if (currentPanel === 'portfolio') await renderPortfolio();
 }
 async function portfolioMarkWaiting(id) {
+  const row = portfolioCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   await todayWaiting('portfolio', id);
   if (currentPanel === 'portfolio') await renderPortfolio();
 }
 async function portfolioTomorrow(id) {
+  const row = portfolioCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   await todayTomorrow('portfolio', id);
   if (currentPanel === 'portfolio') await renderPortfolio();
 }
 async function portfolioFollowUpNow(id) {
   const row=portfolioCache.find(x=>String(x.id)===String(id));
+  if (!requireSharedRowModify(row)) return;
   const patch={ next_action_date: todayStr(), updated_at:new Date().toISOString() };
   if (!row?.next_action) patch.next_action=`Review / follow up ${row?.customer_name||row?.title||'opportunity'}`;
   const { error } = await sb.from('project_portfolio').update(patch).eq('id', id);
@@ -6142,6 +6178,7 @@ async function portfolioFollowUpNow(id) {
 
 async function deletePortfolio(id) {
   const row = portfolioCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   if (!confirm(`Delete this portfolio entry${row?.title ? `: "${row.title}"` : ''}?\n\nThis permanently removes the record from the portfolio.`)) return;
   const { error } = await withTimeout(sb.from('project_portfolio').delete().eq('id', id), 15000);
   if (error) return alert('Failed to delete portfolio entry: ' + error.message);
@@ -6289,21 +6326,22 @@ function displaySchedule(data) {
     html += `<div class="time-label">${h}</div><div class="time-event">`;
     evs.forEach(e => {
       const completed = e.category === 'green';
+      const canModify = canModifySharedRow(e);
       html += `<div class="event-card ev-${e.category}" data-id="${e.id}">
         <div class="ev-title">${escHtml(e.title || '')}
-          <span>
+          ${canModify ? `<span>
             <button class="ev-del" onclick="editSchedule('${e.id}')" aria-label="Edit" title="Edit"><i class="ti ti-pencil" aria-hidden="true"></i></button>
             <button class="ev-del" onclick="delSchedule('${e.id}')" aria-label="Delete"><i class="ti ti-x" aria-hidden="true"></i></button>
-          </span>
+          </span>` : ''}
         </div>
         ${e.location ? `<div class="ev-meta"><i class="ti ti-map-pin" aria-hidden="true"></i> ${escHtml(e.location)}</div>` : ''}
         <div class="ev-meta">${e.is_private ? '🔒 ' : ''}<i class="ti ti-user" aria-hidden="true"></i> ${escHtml(e.created_by || '-')}</div>
-        ${completed ? '<div class="schedule-complete-pill"><i class="ti ti-check"></i> Completed</div>' : `
+        ${completed ? '<div class="schedule-complete-pill"><i class="ti ti-check"></i> Completed</div>' : canModify ? `
           <div class="schedule-event-actions">
             <button class="focus-mini-btn today-action-done" onclick="scheduleDone('${e.id}')">Done</button>
             <button class="focus-mini-btn today-action-wait" onclick="scheduleWaiting('${e.id}')">Waiting</button>
             <button class="focus-mini-btn today-action-tomorrow" onclick="scheduleTomorrow('${e.id}')">Tomorrow</button>
-          </div>`}
+          </div>` : '<div class="ev-meta"><i class="ti ti-lock"></i> Read only</div>'}
       </div>`;
     });
     html += '</div>';
@@ -6314,6 +6352,8 @@ function displaySchedule(data) {
 async function saveSchedule() {
   const title = document.getElementById('sched-title').value.trim();
   if (!title) return alert('Title is required!');
+  const existing = editingScheduleId ? scheduleEvents.find(x => x.id === editingScheduleId) : null;
+  if (editingScheduleId && !requireSharedRowModify(existing)) return;
   const payload = {
     event_date: document.getElementById('sched-date').value || todayStr(),
     time_start: document.getElementById('sched-time').value,
@@ -6321,7 +6361,7 @@ async function saveSchedule() {
     location: document.getElementById('sched-loc').value,
     category: document.getElementById('sched-cat').value,
     is_private: document.getElementById('sched-privacy').value === 'true',
-    created_by: getUser()
+    created_by: existing?.created_by || getUser()
   };
   let error;
   if (editingScheduleId) {
@@ -6339,13 +6379,16 @@ async function saveSchedule() {
 // Isi form dengan data jadwal yang dipilih untuk diedit
 function editSchedule(id) {
   const e = scheduleEvents.find(x => x.id === id);
-  if (!e) return;
+  if (!e || !requireSharedRowModify(e)) return;
   editingScheduleId = id;
   document.getElementById('sched-time').value = e.time_start ? e.time_start.substring(0,5) : '08:00';
   document.getElementById('sched-title').value = e.title || '';
   document.getElementById('sched-loc').value = e.location || '';
   document.getElementById('sched-cat').value = e.category || 'blue';
-  document.getElementById('sched-privacy').value = e.is_private ? 'true' : 'false';
+  const privacyEl = document.getElementById('sched-privacy');
+  privacyEl.value = e.is_private ? 'true' : 'false';
+  privacyEl.disabled = editingAnotherUsersPublicRow(e);
+  privacyEl.title = privacyEl.disabled ? 'Another user owns this Team / Company record; its privacy remains Public.' : '';
   document.getElementById('sched-save-btn').textContent = 'Update';
   document.getElementById('sched-form').style.display = 'block';
 }
@@ -6357,7 +6400,10 @@ function resetScheduleForm() {
   document.getElementById('sched-loc').value = '';
   document.getElementById('sched-time').value = '08:00';
   document.getElementById('sched-cat').value = 'blue';
-  document.getElementById('sched-privacy').value = 'false';
+  const privacyEl = document.getElementById('sched-privacy');
+  privacyEl.value = 'false';
+  privacyEl.disabled = false;
+  privacyEl.title = '';
   document.getElementById('sched-save-btn').textContent = 'Save Plan';
 }
 
@@ -6367,6 +6413,8 @@ function closeScheduleForm() {
 }
 
 async function delSchedule(id) {
+  const row = scheduleEvents.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   if (!confirm('Delete this schedule item?')) return;
   await sb.from('schedule_events').delete().eq('id', id);
   await renderSchedule();
@@ -6375,14 +6423,20 @@ async function delSchedule(id) {
 
 
 async function scheduleDone(id) {
+  const row = scheduleEvents.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   await todayDone('schedule', id);
   if (currentPanel === 'schedule') await renderSchedule();
 }
 async function scheduleWaiting(id) {
+  const row = scheduleEvents.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   await todayWaiting('schedule', id);
   if (currentPanel === 'schedule') await renderSchedule();
 }
 async function scheduleTomorrow(id) {
+  const row = scheduleEvents.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   await todayTomorrow('schedule', id);
   if (currentPanel === 'schedule') await renderSchedule();
 }
@@ -6594,9 +6648,9 @@ function displayKanban(data) {
           ${t.assignment ? `<span><i class="ti ti-user"></i> ${escHtml(t.assignment)}</span>` : ''}
           ${t.due_date ? `<span><i class="ti ti-calendar"></i> ${fmtDate(t.due_date)}</span>` : ''}
         </div>
-        <select class="kanban-card-move" onchange="kanbanChangeStatus('${t.id}', this.value)">
-          ${KANBAN_COLUMNS.map(c => `<option value="${c.key}" ${c.key === col.key ? 'selected' : ''}>${c.key === col.key ? '📍 ' + c.label + ' (sekarang)' : '→ Pindah ke ' + c.label}</option>`).join('')}
-        </select>
+        ${canModifySharedRow(t) ? `<select class="kanban-card-move" onchange="kanbanChangeStatus('${t.id}', this.value)">
+          ${KANBAN_COLUMNS.map(c => `<option value="${c.key}" ${c.key === col.key ? 'selected' : ''}>${c.key === col.key ? '📍 ' + c.label : '→ ' + c.label}</option>`).join('')}
+        </select>` : '<div class="kanban-card-meta"><span><i class="ti ti-lock"></i> Read only</span></div>'}
       </div>
     `).join('');
     return `<div class="kanban-col">
@@ -6609,6 +6663,8 @@ function displayKanban(data) {
 // Change status directly from the card dropdown — writes to the same time_plan_tracker table
 // dengan Time Plan Tracker, jadi otomatis sinkron di kedua tempat (termasuk badge di Logbook).
 async function kanbanChangeStatus(id, newStatus) {
+  const row = kanbanCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) { await renderKanban(); return; }
   const { error } = await sb.from('time_plan_tracker').update({ status: newStatus }).eq('id', id);
   if (error) return alert('Failed to change status: ' + error.message);
   await renderKanban();
@@ -6846,7 +6902,10 @@ function resetRecurringForm() {
   document.getElementById('rt-target').value = 'schedule';
   document.getElementById('rt-frequency').value = 'weekly';
   document.getElementById('rt-start-date').value = todayStr();
-  document.getElementById('rt-privacy').value = 'false';
+  const privacyEl = document.getElementById('rt-privacy');
+  privacyEl.value = 'false';
+  privacyEl.disabled = false;
+  privacyEl.title = '';
   document.getElementById('rt-sch-time').value = '08:00';
   document.getElementById('rt-sch-title').value = '';
   document.getElementById('rt-sch-loc').value = '';
@@ -6904,10 +6963,10 @@ function displayRecurringTemplates(data) {
       <td>${t.is_private ? '🔒 ' : ''}${escHtml(label)}</td>
       <td><span class="rt-freq-badge">${RT_FREQ_LABEL[t.frequency] || t.frequency}</span></td>
       <td style="font-size:12px">${fmtDate(t.next_run)}</td>
-      <td><input type="checkbox" class="rt-toggle" ${t.is_active ? 'checked' : ''} onchange="toggleRecurringActive('${t.id}', this.checked)" title="Enable/Disable"></td>
+      <td><input type="checkbox" class="rt-toggle" ${t.is_active ? 'checked' : ''} ${canModifySharedRow(t) ? `onchange="toggleRecurringActive('${t.id}', this.checked)" title="Enable/Disable"` : 'disabled title="Read only"'}></td>
       <td style="white-space:nowrap">
-        <button class="ev-del" onclick="editRecurringTemplate('${t.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
-        <button class="ev-del" onclick="delRecurringTemplate('${t.id}')" title="Delete"><i class="ti ti-x"></i></button>
+        ${canModifySharedRow(t) ? `<button class="ev-del" onclick="editRecurringTemplate('${t.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+        <button class="ev-del" onclick="delRecurringTemplate('${t.id}')" title="Delete"><i class="ti ti-x"></i></button>` : '<span style="font-size:10px;color:var(--text3)"><i class="ti ti-lock"></i> Read only</span>'}
       </td>
     </tr>`;
   }).join('');
@@ -6940,13 +6999,15 @@ async function saveRecurringTemplate() {
     };
   }
 
+  const existing = editingRecurringId ? recurringCache.find(x => x.id === editingRecurringId) : null;
+  if (editingRecurringId && !requireSharedRowModify(existing)) return;
   const payload = {
     target_table: target,
     frequency,
     start_date: startDate,
     is_private: isPrivate,
     template_data: templateData,
-    created_by: getUser()
+    created_by: existing?.created_by || getUser()
   };
 
   let error;
@@ -6970,13 +7031,16 @@ async function saveRecurringTemplate() {
 
 function editRecurringTemplate(id) {
   const t = recurringCache.find(x => x.id === id);
-  if (!t) return;
+  if (!t || !requireSharedRowModify(t)) return;
   editingRecurringId = id;
   const d = t.template_data || {};
   document.getElementById('rt-target').value = t.target_table;
   document.getElementById('rt-frequency').value = t.frequency;
   document.getElementById('rt-start-date').value = t.start_date;
-  document.getElementById('rt-privacy').value = t.is_private ? 'true' : 'false';
+  const privacyEl = document.getElementById('rt-privacy');
+  privacyEl.value = t.is_private ? 'true' : 'false';
+  privacyEl.disabled = editingAnotherUsersPublicRow(t);
+  privacyEl.title = privacyEl.disabled ? 'Another user owns this Team / Company record; its privacy remains Public.' : '';
   if (t.target_table === 'schedule') {
     document.getElementById('rt-sch-title').value = d.title || '';
     document.getElementById('rt-sch-time').value = d.time_start || '08:00';
@@ -6994,12 +7058,16 @@ function editRecurringTemplate(id) {
 }
 
 async function delRecurringTemplate(id) {
+  const row = recurringCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   if (!confirm('Delete this Recurring Task? Entries that have already been created will NOT be deleted, only the template will stop generating new entries.')) return;
   await sb.from('recurring_templates').delete().eq('id', id);
   await renderRecurring();
 }
 
 async function toggleRecurringActive(id, checked) {
+  const row = recurringCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) { await renderRecurring(); return; }
   await sb.from('recurring_templates').update({ is_active: checked }).eq('id', id);
 }
 
@@ -7084,7 +7152,8 @@ async function generateDueRecurringTasks() {
     const { data: templates, error } = await sb.from('recurring_templates')
       .select('*').eq('is_active', true).lte('next_run', todayKey);
     if (!error && templates && templates.length) {
-      for (const tpl of templates) {
+      const manageableTemplates = templates.filter(canModifySharedRow);
+      for (const tpl of manageableTemplates) {
         let nextRun = tpl.next_run;
         let guard = 0;
         while (nextRun <= todayKey && guard < 60) {
@@ -7213,11 +7282,12 @@ function ptStaleText(t) {
 
 function ptActionButtons(t, compact = false) {
   const eff = ptEffectiveStatus(t);
+  const updateBtn = eff === 'done' && compact ? '' : `<button class="pt-action-btn" onclick="ptAddUpdate('${t.id}')"><i class="ti ti-notes"></i> Add Update</button>`;
+  if (!canModifySharedRow(t)) return `${updateBtn}<span style="font-size:10px;color:var(--text3);display:inline-flex;align-items:center;gap:4px"><i class="ti ti-lock"></i> Read only</span>`;
   const startLabel = t.status === 'in_progress' ? '' : `<button class="pt-action-btn primary" onclick="ptQuickStatus('${t.id}','in_progress')"><i class="ti ti-player-play"></i> Start</button>`;
   const todayBtn = eff === 'done' ? '' : `<button class="pt-action-btn today" onclick="ptSetToday('${t.id}')"><i class="ti ti-calendar"></i> Today</button>`;
   const waitingBtn = eff === 'done' ? '' : `<button class="pt-action-btn waiting" onclick="ptQuickStatus('${t.id}','on_hold')"><i class="ti ti-hourglass"></i> Waiting</button>`;
   const doneBtn = eff === 'done' ? '' : `<button class="pt-action-btn done" onclick="ptQuickStatus('${t.id}','done')"><i class="ti ti-check"></i> Done</button>`;
-  const updateBtn = eff === 'done' && compact ? '' : `<button class="pt-action-btn" onclick="ptAddUpdate('${t.id}')"><i class="ti ti-notes"></i> Add Update</button>`;
   return `${startLabel}${doneBtn}${waitingBtn}${todayBtn}${updateBtn}<button class="pt-action-btn" onclick="ptOpenEdit('${t.id}')"><i class="ti ti-pencil"></i> Edit</button>`;
 }
 
@@ -7313,8 +7383,8 @@ function ptViewRow(t) {
     <td style="font-size:11px;color:var(--text2);max-width:200px;white-space:normal">${escHtml(t.notes || '')}</td>
     <td style="text-align:center;font-size:14px" title="${t.is_private ? 'Private' : 'Public'}">${t.is_private ? '🔒' : '🌐'}</td>
     <td style="white-space:nowrap">
-      <button class="ev-del" onclick="editProjectRow('${t.id}')" aria-label="Edit" title="Edit"><i class="ti ti-pencil" aria-hidden="true"></i></button>
-      <button class="ev-del" onclick="delProjectRow('${t.id}')" aria-label="Delete" title="Delete"><i class="ti ti-x" aria-hidden="true"></i></button>
+      ${canModifySharedRow(t) ? `<button class="ev-del" onclick="editProjectRow('${t.id}')" aria-label="Edit" title="Edit"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+      <button class="ev-del" onclick="delProjectRow('${t.id}')" aria-label="Delete" title="Delete"><i class="ti ti-x" aria-hidden="true"></i></button>` : '<span style="font-size:10px;color:var(--text3)"><i class="ti ti-lock"></i> Read only</span>'}
     </td>
   </tr>`;
 }
@@ -7341,7 +7411,7 @@ function ptEditRow(t) {
     <td><input id="pt-edit-start" type="date" value="${t.start_date || ''}" style="width:100%" /></td>
     <td><input id="pt-edit-due" type="date" value="${t.due_date || ''}" style="width:100%" /></td>
     <td><input id="pt-edit-notes" value="${escAttr(t.notes || '')}" style="width:100%" /></td>
-    <td><select id="pt-edit-privacy" style="width:100%">
+    <td><select id="pt-edit-privacy" style="width:100%" ${editingAnotherUsersPublicRow(t) ? 'disabled title="Another user owns this Team / Company record; its privacy remains Public."' : ''}>
       <option value="false" ${!t.is_private ? 'selected' : ''}>🌐 Public</option>
       <option value="true" ${t.is_private ? 'selected' : ''}>🔒 Private</option>
     </select></td>
@@ -7398,6 +7468,7 @@ async function ptRefreshAllViews() {
 
 async function ptQuickStatus(id, status) {
   const item = projectTrackerAllCache.find(t => t.id === id) || projectTrackerCache.find(t => t.id === id);
+  if (!requireSharedRowModify(item)) return;
   const payload = { status, updated_at: new Date().toISOString() };
   if (status === 'in_progress' && item && !item.start_date) payload.start_date = todayStr();
   const { error } = await sb.from('time_plan_tracker').update(payload).eq('id', id);
@@ -7406,6 +7477,8 @@ async function ptQuickStatus(id, status) {
 }
 
 async function ptSetToday(id) {
+  const item = projectTrackerAllCache.find(t => t.id === id) || projectTrackerCache.find(t => t.id === id);
+  if (!requireSharedRowModify(item)) return;
   const { error } = await sb.from('time_plan_tracker').update({ due_date: todayStr(), updated_at: new Date().toISOString() }).eq('id', id);
   if (error) return alert('Failed to move project to today: ' + error.message);
   await ptRefreshAllViews();
@@ -7426,6 +7499,8 @@ async function ptAddUpdate(id) {
 }
 
 function ptOpenEdit(id) {
+  const item = projectTrackerAllCache.find(t => t.id === id) || projectTrackerCache.find(t => t.id === id);
+  if (!requireSharedRowModify(item)) return;
   const details = document.getElementById('pt-all-details');
   if (details) details.open = true;
   editProjectRow(id);
@@ -7436,6 +7511,8 @@ function ptOpenEdit(id) {
 }
 
 function editProjectRow(id) {
+  const row = projectTrackerAllCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   editingProjectId = id;
   displayProjectTracker(projectTrackerCache);
 }
@@ -7447,6 +7524,8 @@ function cancelEditProjectRow() {
 
 // Inline edit — perubahan langsung di-query update() ke Supabase
 async function saveProjectRow(id) {
+  const row = projectTrackerAllCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   const subject = document.getElementById('pt-edit-subject').value.trim();
   if (!subject) return alert('Subject is required!');
   const payload = {
@@ -7469,6 +7548,8 @@ async function saveProjectRow(id) {
 }
 
 async function delProjectRow(id) {
+  const row = projectTrackerAllCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   if (!confirm('Delete this project tracker item?')) return;
   const { error } = await sb.from('time_plan_tracker').delete().eq('id', id);
   if (error) return alert('Failed to delete: ' + error.message);
@@ -7895,6 +7976,8 @@ async function saveLog() {
   const saveBtn = document.getElementById('log-save-btn');
   const originalBtnText = saveBtn.textContent;
 
+  const existing = editingLogId ? logbookCache.find(x => x.id === editingLogId) : null;
+  if (editingLogId && !requireSharedRowModify(existing)) return;
   const recordId = wbEditorRecordId(quillLog, 'logbook', editingLogId || '');
   let newFiles = [];
   if (logPendingFiles.length) {
@@ -7911,7 +7994,7 @@ async function saveLog() {
     body: getCleanEditorHtml(quillLog),
     tags,
     is_private: document.getElementById('log-privacy').value === 'true',
-    created_by: getUser(),
+    created_by: existing?.created_by || getUser(),
     attachments,
     tracker_item_id: document.getElementById('log-tracker-link').value || null,
     entry_date: document.getElementById('log-entry-date').value || todayStr()
@@ -7942,13 +8025,16 @@ async function saveLog() {
 // Isi form dengan data logbook yang dipilih untuk diedit
 async function editLog(id) {
   const l = logbookCache.find(x => x.id === id);
-  if (!l) return;
+  if (!l || !requireSharedRowModify(l)) return;
   editingLogId = id;
   quillLog.container.dataset.wbRecordId = id;
   document.getElementById('log-title').value = l.title || '';
   document.getElementById('log-type').value = l.type || 'meeting';
   syncLogTypeTabs();
-  document.getElementById('log-privacy').value = l.is_private ? 'true' : 'false';
+  const privacyEl = document.getElementById('log-privacy');
+  privacyEl.value = l.is_private ? 'true' : 'false';
+  privacyEl.disabled = editingAnotherUsersPublicRow(l);
+  privacyEl.title = privacyEl.disabled ? 'Another user owns this Team / Company record; its privacy remains Public.' : '';
   document.getElementById('log-entry-date').value = l.entry_date || todayStr();
   setEditorHtml(quillLog, l.body || '');
   document.getElementById('log-tags-in').value = (l.tags || []).join(', ');
@@ -7969,7 +8055,10 @@ function resetLogForm() {
   document.getElementById('log-title').value = '';
   document.getElementById('log-type').value = 'meeting';
   syncLogTypeTabs();
-  document.getElementById('log-privacy').value = 'false';
+  const privacyEl = document.getElementById('log-privacy');
+  privacyEl.value = 'false';
+  privacyEl.disabled = false;
+  privacyEl.title = '';
   document.getElementById('log-entry-date').value = todayStr();
   quillLog.setText('');
   document.getElementById('log-tags-in').value = '';
@@ -8069,6 +8158,8 @@ function closeLogForm() {
 }
 
 async function delLog(id) {
+  const row = logbookCache.find(x => x.id === id);
+  if (!requireSharedRowModify(row)) return;
   if (!confirm('Delete this logbook entry?')) return;
   await sb.from('logbook_entries').delete().eq('id', id);
   await renderLogbook();
@@ -10697,9 +10788,9 @@ function displayLogbook(data) {
           </div>
         </div>
         <div class="np-page-actions">
-          <button class="ev-del" onclick="openWritingAssistant('logbook','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
+          ${canModifySharedRow(active) ? `<button class="ev-del" onclick="openWritingAssistant('logbook','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
           <button class="ev-del" onclick="editLog('${active.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
-          <button class="ev-del" onclick="delLog('${active.id}')" title="Delete"><i class="ti ti-x"></i></button>
+          <button class="ev-del" onclick="delLog('${active.id}')" title="Delete"><i class="ti ti-x"></i></button>` : '<span style="font-size:10px;color:var(--text3)"><i class="ti ti-lock"></i> Read only</span>'}
         </div>
       </div>
       <div class="log-day-entry-body ql-editor" style="padding:0">${bodyHtml}</div>
