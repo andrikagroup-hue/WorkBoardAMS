@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `98b44f80d9d0ed0a32e72cb11dc323f0e025ec38f1e02777c78baef80893347b`
+**SHA-256 pasangan kode:** `816825f47653550c993d2eab2546a5dd69e78b20943927a701256e117a7ce32f`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v109 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v110 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -653,7 +653,7 @@ All Links saat ini memiliki:
 - Data Team / Company tetap dapat dibaca sesuai aturan lama; private personal tetap hanya pemilik. Management dapat membaca data reporting; Owner mendapat kontrol company yang diperlukan.
 - Password Vault E2EE tetap owner-of-vault only dan tidak pernah dibuka ke Management/Owner lain.
 - Work Talk DM tetap hanya participant; hide/unhide room tetap dipertahankan melalui izin update terbatas pada `hidden_by`.
-- Bucket legacy `attachments` tetap tidak diubah mode privacy agar URL historis tidak rusak. Mulai v103, file attachment baru Logbook/Portfolio/Work Talk memakai bucket private `workboard-private` + Storage RLS; mulai v105 rich-text image baru Logbook/Notes/Notepad juga memakai bucket private tersebut dengan signed URL sementara.
+- Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
@@ -725,7 +725,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Font, ukuran, heading, list, indent, alignment, warna, highlight, link, undo, redo, divider, table, image, dan full-screen editor tetap berfungsi.
 - [ ] Paste gambar dan upload gambar tetap menuju Supabase Storage private `workboard-private`, bukan disimpan sebagai base64 di database; signed URL private harus dapat di-refresh setelah expired.
 - [ ] Lampiran `.ppt` dan `.pptx` tetap terlihat di file picker Logbook dan Work Talk, maksimal 20 MB per file.
-- [ ] File attachment baru Logbook/Portfolio/Work Talk memakai `workboard-private` dan authenticated download; record legacy dengan `url` tetap dapat dibuka.
+- [ ] File attachment baru Logbook/Portfolio/Work Talk memakai `workboard-private` dan authenticated download; record legacy dengan `url` dibuka lewat privacy bridge bucket `attachments` tanpa public URL langsung.
 - [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
 - [ ] Numbering hasil paste tidak kembali ke angka 1 setelah bullet, paragraf kosong, atau blok daftar terpisah.
 - [ ] Search bebas pada setiap panel menemukan kata dari isi penuh, rich text, tag, tanggal, status, dan nama lampiran tanpa membuka data privat user lain.
@@ -735,6 +735,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v110 Legacy Attachment Privacy Bridge
+
+- Attachment dan rich-text image historis yang dibuat sebelum v103/v105 tidak perlu dipindahkan secara fisik. Object lama tetap memakai nama/path di bucket `attachments`.
+- UI mengenali URL Storage legacy `attachments` (public maupun signed) dan membukanya melalui authenticated `download()` atau signed URL, sehingga URL public lama tidak lagi diperlukan setelah bucket dibuat private.
+- `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` menambahkan helper `workboard_can_read_legacy_attachment(object_name)` yang memverifikasi bahwa object benar-benar direferensikan oleh parent record yang boleh user lihat.
+- Logbook/Portfolio mengikuti Team/Private visibility; Notes/Notepad hanya pemilik; Work Talk DM hanya participant channel.
+- Policy restrictive mencegah broad Storage policy lama membuka bucket legacy melalui authenticated API dan menjadikan bucket legacy read-only dari browser WorkBoard.
+- Rollout sengaja bertahap: aktifkan SQL bridge terlebih dahulu saat bucket masih public, deploy v110, baru ubah bucket `attachments` menjadi Private di Supabase Dashboard. Ini mencegah attachment lama putus selama transisi.
+- Tidak mengubah byte object, attachment JSON lama, role, Leave Management, Attendance, atau data aplikasi.
 
 ### 20 Agustus 2026 — v109 Decision Matrix Source Privacy Fix
 

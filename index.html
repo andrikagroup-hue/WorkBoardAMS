@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v109 — Decision Matrix Source Privacy Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v110 — Legacy Attachment Privacy Bridge — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -7743,6 +7743,7 @@ async function uploadFilesToStorage(fileList, folder) {
 }
 
 const WB_SECURE_ATTACHMENT_BUCKET = 'workboard-private';
+const WB_LEGACY_ATTACHMENT_BUCKET = 'attachments';
 
 function wbRandomFileToken() {
   try { return crypto.randomUUID().slice(0, 8); }
@@ -7794,24 +7795,38 @@ async function uploadSecureFilesToStorage(fileList, resource, recordId, options 
 
 const WB_PRIVATE_IMAGE_URL_TTL_SECONDS = 300;
 
-function wbPrivateStorageRefFromUrl(url) {
+function wbStorageRefFromUrl(url, allowedBuckets = []) {
   const raw = String(url || '').trim();
   if (!raw) return null;
   try {
     const parsed = new URL(raw, window.location.href);
-    const marker = '/storage/v1/object/sign/';
-    const idx = parsed.pathname.indexOf(marker);
-    if (idx < 0) return null;
-    const tail = parsed.pathname.slice(idx + marker.length);
+    const markers = ['/storage/v1/object/sign/', '/storage/v1/object/public/'];
+    let tail = '';
+    for (const marker of markers) {
+      const idx = parsed.pathname.indexOf(marker);
+      if (idx >= 0) {
+        tail = parsed.pathname.slice(idx + marker.length);
+        break;
+      }
+    }
+    if (!tail) return null;
     const slash = tail.indexOf('/');
     if (slash < 1) return null;
     const bucket = decodeURIComponent(tail.slice(0, slash));
     const path = tail.slice(slash + 1).split('/').map(part => decodeURIComponent(part)).join('/');
-    if (bucket !== WB_SECURE_ATTACHMENT_BUCKET || !path) return null;
+    if (!path || (allowedBuckets.length && !allowedBuckets.includes(bucket))) return null;
     return { bucket, path };
   } catch (_) {
     return null;
   }
+}
+
+function wbPrivateStorageRefFromUrl(url) {
+  return wbStorageRefFromUrl(url, [WB_SECURE_ATTACHMENT_BUCKET]);
+}
+
+function wbLegacyStorageRefFromUrl(url) {
+  return wbStorageRefFromUrl(url, [WB_LEGACY_ATTACHMENT_BUCKET]);
 }
 
 function wbSecureRecordIdFromEditorHtml(html, resource) {
@@ -7851,12 +7866,16 @@ function wbEditorContext(quill) {
   return null;
 }
 
-async function wbCreatePrivateImageUrl(path) {
-  const { data, error } = await sb.storage.from(WB_SECURE_ATTACHMENT_BUCKET)
+async function wbCreateStorageSignedUrl(bucket, path) {
+  const { data, error } = await sb.storage.from(bucket)
     .createSignedUrl(path, WB_PRIVATE_IMAGE_URL_TTL_SECONDS);
   if (error) throw error;
   if (!data?.signedUrl) throw new Error('Could not create a secure image link.');
   return data.signedUrl;
+}
+
+async function wbCreatePrivateImageUrl(path) {
+  return wbCreateStorageSignedUrl(WB_SECURE_ATTACHMENT_BUCKET, path);
 }
 
 async function wbUploadPrivateEditorImage(quill, file) {
@@ -7872,12 +7891,16 @@ async function wbRefreshPrivateImages(root) {
   if (!root) return;
   const images = Array.from(root.querySelectorAll('img[src]'));
   for (const img of images) {
-    const ref = wbPrivateStorageRefFromUrl(img.getAttribute('src'));
+    const src = img.getAttribute('src');
+    const ref = wbPrivateStorageRefFromUrl(src) || wbLegacyStorageRefFromUrl(src);
     if (!ref) continue;
     try {
-      img.setAttribute('src', await wbCreatePrivateImageUrl(ref.path));
+      img.setAttribute('src', await wbCreateStorageSignedUrl(ref.bucket, ref.path));
       img.setAttribute('data-wb-private-image', 'true');
+      img.setAttribute('data-wb-storage-bucket', ref.bucket);
     } catch (error) {
+      // Keep the original src in place. This preserves compatibility while the
+      // legacy bucket is still public during the staged v110 rollout.
       img.setAttribute('alt', 'Private image could not be loaded');
       img.setAttribute('title', error?.message || 'Private image could not be loaded');
     }
@@ -7899,6 +7922,10 @@ function storedAttachmentHtml(a, className = '', extraStyle = '') {
     return `<a href="#" role="button" class="${escAttr((className + ' wb-secure-attachment').trim())}" style="${escAttr(extraStyle)}" data-bucket="${escAttr(a.bucket)}" data-path="${escAttr(a.path)}" data-name="${escAttr(name)}" onclick="return downloadSecureAttachment(event,this)" title="Download ${escAttr(name)}">${inner}</a>`;
   }
   const url = a?.url || '#';
+  const legacyRef = wbLegacyStorageRefFromUrl(url);
+  if (legacyRef) {
+    return `<a href="#" role="button" class="${escAttr((className + ' wb-secure-attachment wb-legacy-attachment').trim())}" style="${escAttr(extraStyle)}" data-bucket="${escAttr(legacyRef.bucket)}" data-path="${escAttr(legacyRef.path)}" data-name="${escAttr(name)}" onclick="return downloadSecureAttachment(event,this)" title="Download ${escAttr(name)}">${inner}</a>`;
+  }
   return `<a class="${escAttr((className + ' wb-legacy-attachment').trim())}" style="${escAttr(extraStyle)}" href="${escAttr(url)}" target="_blank" rel="noopener" download="${escAttr(name)}" title="Download ${escAttr(name)}">${inner}</a>`;
 }
 
