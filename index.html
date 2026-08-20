@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v118 — Carry Completion Logbook Visibility Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v119 — After-Done Next-Step Privacy Sync — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -8723,6 +8723,17 @@ function askTodayDate(title, defaultDate) {
 function todayDateModalConfirm(){ const v=document.getElementById('today-date-input')?.value||''; const modal=document.getElementById('today-date-modal'); modal?.classList.remove('show'); modal?.setAttribute('aria-hidden','true'); const r=_todayDateResolver; _todayDateResolver=null; if(r)r(v||null); }
 function todayDateModalCancel(){ const modal=document.getElementById('today-date-modal'); modal?.classList.remove('show'); modal?.setAttribute('aria-hidden','true'); const r=_todayDateResolver; _todayDateResolver=null; if(r)r(null); }
 
+function todayNextStepIsPrivate(context={}) {
+  // Follow-up / Waiting created after Done must inherit the source work visibility.
+  // Brain Dump remains separately private; Done Now is a Team/Company activity, matching Quick Capture work states.
+  if (context?.row && Object.prototype.hasOwnProperty.call(context.row,'is_private')) return !!context.row.is_private;
+  if (context?.src==='todo' && context?.id) {
+    const row=(todoCache||[]).find(x=>String(x.id)===String(context.id));
+    if (row) return !!row.is_private;
+  }
+  return false;
+}
+
 function showAfterDonePrompt(title, context={}) {
   document.getElementById('today-next-step-box')?.remove();
   const box=document.createElement('div'); box.id='today-next-step-box'; box.className='today-next-step-box';
@@ -8736,7 +8747,7 @@ function showAfterDonePrompt(title, context={}) {
       const {error}=await sb.from('project_portfolio').update({stage:'awaiting_customer',next_action:`Follow up ${target}`,next_action_date:d,updated_at:new Date().toISOString()}).eq('id',context.id);
       if(error)return alert('Failed to save Portfolio next action: '+error.message);
     } else {
-      const {error}=await sb.from('todos').insert({text:'[Waiting] '+title,priority:'med',due_date:d,assigned_to:null,is_private:true,created_by:getUser()});
+      const {error}=await sb.from('todos').insert({text:'[Waiting] '+title,priority:'med',due_date:d,assigned_to:null,is_private:todayNextStepIsPrivate(context),created_by:getUser()});
       if(error)return alert('Failed: '+error.message);
     }
     box.remove(); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio();
@@ -8749,7 +8760,7 @@ function showAfterDonePrompt(title, context={}) {
       const {error}=await sb.from('project_portfolio').update({next_action:`Follow up ${target}`,next_action_date:d,updated_at:new Date().toISOString()}).eq('id',context.id);
       if(error)return alert('Failed to save Portfolio next action: '+error.message);
     } else {
-      const {error}=await sb.from('todos').insert({text:'[Follow Up] '+title,priority:'med',due_date:d,assigned_to:null,is_private:true,created_by:getUser()});
+      const {error}=await sb.from('todos').insert({text:'[Follow Up] '+title,priority:'med',due_date:d,assigned_to:null,is_private:todayNextStepIsPrivate(context),created_by:getUser()});
       if(error)return alert('Failed: '+error.message);
     }
     box.remove(); await renderTodayFocus(); if(currentPanel==='portfolio')await renderPortfolio();

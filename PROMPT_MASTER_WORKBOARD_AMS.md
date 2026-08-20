@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `2d0f75903cf1e5cdac6d1fa5329ce435d7c96bb388650c39577bee9c63a6617c`
+**SHA-256 pasangan kode:** `c53e8ccf4f25e58ecbc8b6238891acc7d27ecc55e87d8c30a59f87ebcd4d4e50`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v118 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v119 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -446,6 +446,7 @@ All Links saat ini memiliki:
 - `Done Now` mencatat pekerjaan mendadak langsung ke Logbook sebagai aktivitas unplanned tanpa harus membuat Schedule terlebih dahulu.
 - Brain Dump tetap private dan tidak menjadi aktivitas boss sampai user mengubahnya menjadi pekerjaan.
 - Setelah pekerjaan selesai, WorkBoard menawarkan langkah berikutnya: Nothing, Waiting Reply, atau Follow Up Again.
+- Setelah `Done`, opsi `Waiting Reply` / `Follow Up Again` mewarisi privacy source pekerjaan: source Private tetap private, sedangkan source Team/Company tetap public untuk reporting. `Done Now` mengikuti pola work-state Team/Company yang sama dengan Quick Capture Today/Follow Up/Waiting.
 - `Later 30m` hanya menyembunyikan sementara item dari Today pada perangkat/user aktif; data sumber tidak dihapus.
 - Reminder legacy yang berasal dari judul Logbook generik seperti `Daily Activity Report` tidak lagi bersaing dengan follow-up nyata di Today; data lama tidak dihapus dan tetap dapat direview melalui To Do.
 - Item yang sudah menjadi `One Thing Now` tidak diduplikasi lagi di `Up Next` atau `Follow-ups Due`.
@@ -745,6 +746,14 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v119 After-Done Next-Step Privacy Sync
+
+- Memperbaiki `Waiting Reply` dan `Follow Up Again` pada prompt setelah `Done` yang sebelumnya selalu membuat To Do baru sebagai `is_private = true`, walaupun source pekerjaan Team/Company.
+- Next step sekarang mewarisi `is_private` dari source row untuk To Do, Schedule, dan Project Tracker; source Private tetap private, source Public tetap dapat dibaca Management sesuai RLS.
+- Portfolio tetap menyimpan next action pada row Portfolio yang sama, sehingga privacy Portfolio tidak berubah.
+- `Done Now` tanpa source row menggunakan visibility Team/Company agar konsisten dengan Quick Capture Today / Follow Up / Waiting dan Logbook unplanned yang memang menjadi aktivitas kerja.
+- Brain Dump tetap private dan tidak berubah. Tidak ada perubahan SQL, RLS, role, Storage, Attendance, Leave Management, atau data lama.
 
 ### 20 Agustus 2026 — v118 Carry Completion Logbook Visibility Fix
 
