@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `6e59ac788f9b9da5fa6cc3ad8be708865a003458ed2191b0f87aa734c9fd8d2d`
+**SHA-256 pasangan kode:** `f7c0db8f89cc7079b965fe85530039a3a4f858c577f7a2cf2a1e95e5a48119ce`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v122 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v123 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -494,6 +494,7 @@ All Links saat ini memiliki:
 - `Completed Today` membaca Logbook aktual, sehingga pekerjaan planned maupun unplanned tetap terlihat sebagai hasil kerja.
 - Auto Logbook hanya dibuat untuk aktivitas yang benar-benar `Done` / `Done Now`. Auto entry memakai type `Report` dan source marker untuk mencegah satu source action ter-log dua kali karena double click / repeated render.
 - Logbook binder menyembunyikan legacy auto state-history (`waiting`, `carried-forward`, `cancelled`) dan mengkolaps exact duplicate auto entries pada layer tampilan tanpa menghapus data database lama. Legacy auto completed yang dulu tersimpan sebagai `Note` ditampilkan konsisten sebagai `Report`.
+- Smart next-step yang muncul setelah menyimpan Logbook mewarisi `is_private` Logbook sumber; saran dari Logbook Team/Public tidak boleh diam-diam berubah menjadi To Do Private, sedangkan saran dari Logbook Private tetap private.
 - Smart Next-Step Logbook lama tetap dipertahankan untuk kompatibilitas.
 - Tidak diperlukan SQL baru.
 
@@ -741,6 +742,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] File attachment baru Logbook/Portfolio/Work Talk memakai `workboard-private` dan authenticated download; record legacy dengan `url` dibuka lewat privacy bridge bucket `attachments` tanpa public URL langsung.
 - [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
 - [ ] Teks To Do dirender sebagai plain text/escaped output pada Week, No Date, dan hasil Search; input HTML-like tidak boleh menjadi markup aktif.
+- [ ] Smart next-step dari Logbook mewarisi privacy Logbook asal: Logbook Private membuat Waiting/Follow Up Private; Logbook Team/Public membuat work-state Team/Public untuk reporting.
 - [ ] Numbering hasil paste tidak kembali ke angka 1 setelah bullet, paragraf kosong, atau blok daftar terpisah.
 - [ ] Search bebas pada setiap panel menemukan kata dari isi penuh, rich text, tag, tanggal, status, dan nama lampiran tanpa membuka data privat user lain.
 - [ ] Kata yang cocok pada hasil search ditampilkan bold dengan highlight lembut, lalu kembali normal saat search dibersihkan.
@@ -749,6 +751,12 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v123 Logbook Smart Next-Step Privacy Sync
+
+- Memperbaiki Smart next-step setelah menyimpan Logbook yang sebelumnya selalu membuat To Do `Waiting` / `Follow Up` dengan `is_private = true`, walaupun Logbook sumber adalah Team/Public.
+- Handler suggestion sekarang meneruskan privacy Logbook sumber ke `createTaskFromLogSuggestion()`; Logbook Private tetap menghasilkan next-step Private, sedangkan Logbook Team/Public tetap menjadi work-state Team/Public agar dapat masuk reporting sesuai RLS.
+- Tidak mengubah isi Logbook, ownership, Today, Management Report, RLS, role, Storage, Attendance, Leave Management, atau database schema. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v122 To Do Output Escaping Fix
 

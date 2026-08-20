@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v122 — To Do Output Escaping Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v123 — Logbook Smart Next-Step Privacy Sync — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -8489,14 +8489,14 @@ function showLogActionSuggestion(payload) {
   const sub=document.createElement('div'); sub.className='log-smart-suggestion-sub'; sub.innerHTML=`This Logbook entry may belong in <strong>${label}</strong>. Add it so it will not be buried in the Logbook.`;
   const actions=document.createElement('div'); actions.className='log-smart-suggestion-actions';
   const add=document.createElement('button'); add.className='btn-sm btn-primary'; add.textContent='Add '+label;
-  add.addEventListener('click', async()=>{ await createTaskFromLogSuggestion(kind,payload.title); box.remove(); });
+  add.addEventListener('click', async()=>{ await createTaskFromLogSuggestion(kind,payload.title,!!payload.is_private); box.remove(); });
   const later=document.createElement('button'); later.className='btn-sm'; later.textContent='Not now'; later.addEventListener('click',()=>box.remove());
   actions.append(add,later); box.append(title,sub,actions); document.body.appendChild(box);
 }
-async function createTaskFromLogSuggestion(kind,title) {
+async function createTaskFromLogSuggestion(kind,title,isPrivate=false) {
   const text=(kind==='waiting'?'[Waiting] ':'[Follow Up] ')+title;
   const due=kind==='waiting'?null:todayStr();
-  const {error}=await sb.from('todos').insert({text,priority:'med',due_date:due,assigned_to:null,is_private:true,created_by:getUser()});
+  const {error}=await sb.from('todos').insert({text,priority:'med',due_date:due,assigned_to:null,is_private:!!isPrivate,created_by:getUser()});
   if(error) return alert('Failed: '+error.message);
   if(currentPanel==='focus') await renderTodayFocus();
 }
