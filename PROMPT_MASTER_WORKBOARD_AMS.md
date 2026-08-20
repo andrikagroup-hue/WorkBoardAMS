@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `f7c0db8f89cc7079b965fe85530039a3a4f858c577f7a2cf2a1e95e5a48119ce`
+**SHA-256 pasangan kode:** `659e2fddd890fda9182d3e5d15df4e47aa12cfa8f696d98894e2437ca8a9d992`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v123 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v124 Stable Release yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -369,7 +369,7 @@ Catatan ketergantungan:
 - Pada tabel kerja Team / Company yang public, visibilitas baca dan hak ubah tidak disamakan: creator dapat mengubah row miliknya; Owner juga dapat mengelola row public user lain sesuai RLS; Staff/Management lain melihat row tersebut sebagai read-only.
 - UI Schedule, Logbook, Portfolio, Project Tracker/Kanban, dan Recurring Task wajib menyembunyikan/menonaktifkan action mutasi pada row yang tidak boleh diubah user aktif. Owner yang mengedit row public user lain harus mempertahankan `created_by` asli dan privacy tetap Public.
 - Management dan Owner dapat membuka `HR → Leave Management` serta Approve / Reject / Reset request Leave, Sick, dan Time Off. Delete request tetap hanya Owner. `Users & Access` tetap hanya Owner.
-- Attendance update memakai defense-in-depth mulai v107: Staff/Management hanya boleh menyelesaikan Clock Out pada row attendance miliknya sendiri; identity, tanggal, Clock In, status, keterlambatan, GPS/foto masuk, keterangan, dan created_at tidak boleh ditulis ulang. Official Clock Out timestamp ditetapkan oleh database. Owner tetap memiliki capability administratif yang sudah ada.
+- Attendance update memakai defense-in-depth mulai v107: Staff/Management hanya boleh menyelesaikan Clock Out pada row attendance miliknya sendiri; identity, tanggal, Clock In, status, keterlambatan, GPS/foto masuk, keterangan, dan created_at tidak boleh ditulis ulang. Official Clock Out timestamp ditetapkan oleh database. Mulai v124, browser juga tidak lagi memiliki hak INSERT langsung ke `attendance`; Clock In normal wajib melalui RPC `workboard_clock_in()` yang menentukan tanggal, waktu, status, dan keterlambatan dari waktu database WIB serta mencegah double Clock In user/tanggal. Owner tetap memiliki capability administratif yang sudah ada pada operasi yang memang diizinkan policy.
 - Approved leave untuk Today Attendance dan panel Attendance mengambil maksimal satu record terbaru (`created_at` descending + `limit(1)`) agar overlapping approved leave tidak menyebabkan `.maybeSingle()` gagal. Alasan dan tanggal leave pada panel Attendance di-escape sebelum masuk `innerHTML`.
 - Owner (Ratu) mendapat seluruh kontrol WorkBoard/company yang dirancang untuk Owner, tetapi Password Manager dan data personal private user lain tetap mengikuti policy private masing-masing.
 
@@ -386,7 +386,7 @@ All Links saat ini memiliki:
 - Header yang dikenali mencakup:
   - `Perusahaan` / `Company` / `Company Name` / `Name` / `Label`
   - `Website Resmi` / `Official Website` / `Website` / `URL` / `Link`
-- Import hanya menerima URL `http://` atau `https://`.
+- Import dan form manual hanya menerima URL valid berprotokol `http://` atau `https://` melalui parser URL; membuka kartu memakai `openStoredLink()` dan tidak menanam URL database langsung ke inline JavaScript.
 - Batas ukuran CSV adalah 1 MB.
 - Link duplikat dilewati menggunakan URL yang sudah dinormalisasi.
 - Hasil import website perusahaan otomatis menggunakan:
@@ -661,11 +661,11 @@ All Links saat ini memiliki:
 - Akun inactive tidak dapat memakai WorkBoard; RLS juga menolak akses data walau sesi lama masih tersimpan.
 - `Switch User` lama menjadi Sign Out. Rename profile dari UI dinonaktifkan karena data legacy masih memakai nama pada `created_by` / `user_name`.
 - RLS diaktifkan pada tabel WorkBoard yang dimigrasikan. Anon tidak diberi akses tabel tersebut; role `authenticated` mendapat hak yang dibatasi policy.
-- Attendance memiliki trigger integrity v107 di atas RLS: non-Owner hanya dapat mengisi field Clock Out pada row miliknya yang masih terbuka, sedangkan field Clock In/identity/history immutable; timestamp Clock Out resmi memakai waktu database.
+- Attendance memiliki trigger integrity v107 di atas RLS untuk Clock Out, dan v124 menutup INSERT attendance langsung dari browser. Clock In dilakukan melalui `workboard_clock_in()` SECURITY DEFINER yang memvalidasi user aktif, memakai waktu resmi `Asia/Jakarta`, menghitung status/keterlambatan di server, mewajibkan alasan jika terlambat, serta menolak Clock In kedua pada user/tanggal yang sama.
 - Data Team / Company tetap dapat dibaca sesuai aturan lama; private personal tetap hanya pemilik. Management dapat membaca data reporting; Owner mendapat kontrol company yang diperlukan.
 - Password Vault E2EE tetap owner-of-vault only dan tidak pernah dibuka ke Management/Owner lain.
 - Work Talk DM tetap hanya participant; hide/unhide room tetap dipertahankan melalui izin update terbatas pada `hidden_by`. Permanent delete channel hanya ditampilkan/diizinkan untuk creator channel atau Owner; edit/delete message hanya untuk sender pesan itu sendiri.
-- Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105.
+- Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105. Mulai v124, helper upload public legacy dipertahankan hanya sebagai fail-closed guard dan tidak lagi dapat menghasilkan `getPublicUrl()`.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
@@ -686,12 +686,14 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Ringkasan Portfolio menampilkan Total Entries bersama Needs Action, Waiting, Upcoming, Active, dan Won / Approved pada desktop dan mobile.
 - [ ] Kartu dan form Portfolio menyembunyikan detail sekunder sampai More Details dibuka.
 - [ ] Attendance ringkas tampil di Today dan Clock In/Out tetap meminta selfie/GPS lewat alur Attendance.
+- [ ] Clock In normal berhasil melalui RPC `workboard_clock_in()` setelah SQL v124 terpasang; direct INSERT attendance dari browser tetap tidak tersedia.
 - [ ] Work Alarm tidak mereset fase hanya karena refresh dan statusnya tampil di Today.
 - [ ] Result bagian atas membedakan Planned, Completed, Unplanned, Waiting, dan Carry Forward.
 - [ ] Tidak ada array/function bulk import kredensial plaintext di source.
 - [ ] Tidak ada tombol Add global yang muncul kembali.
 - [ ] Empat tombol Add lokal masih membuka form yang benar.
 - [ ] All Links masih dapat menambah, mengedit, menghapus, memfilter, dan mengimpor CSV.
+- [ ] All Links menolak URL selain HTTP/HTTPS dan membuka URL tersimpan melalui `openStoredLink()`, bukan inline URL dari database.
 - [ ] Pencegahan duplikat CSV masih aktif.
 - [ ] Kategori All Links tetap tegas, berwarna, memiliki jumlah link, dan memakai grid responsif.
 - [ ] Data publik tetap terlihat oleh tim.
@@ -751,6 +753,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v124 Stable Release — Final Stabilization
+
+- Final Stabilization Audit dibatasi pada Critical/High dan bug fungsi nyata; temuan medium/cosmetic setelah release ini dicatat dan tidak otomatis memicu versi baru.
+- Menutup direct browser INSERT ke `attendance`. Clock In normal sekarang memakai RPC `workboard_clock_in()` dengan waktu resmi database `Asia/Jakarta`, server-side status/late minutes, validasi user aktif/GPS range, alasan wajib untuk late Clock In, advisory lock, dan penolakan duplicate user/tanggal. Clock Out tetap memakai integrity trigger v107.
+- Query Attendance hari ini mengambil row terbaru dan Management Report menduplikasi row attendance legacy per user/tanggal pada reading layer agar data historis dari era direct insert tidak menggandakan rekap.
+- Memperketat output Team/Public yang masuk `innerHTML`: Schedule category memakai safe-list; Tracker/Recurring/Logbook/Notes/Attendance/Leave labels dan atribut terkait di-escape/safe-list agar nilai database yang dimanipulasi tidak berubah menjadi markup aktif.
+- All Links memvalidasi URL manual/import dengan parser `URL` dan hanya menerima HTTP/HTTPS. Kartu membuka URL melalui `openStoredLink()` berdasarkan ID cache, bukan menyisipkan URL database ke inline `onclick`.
+- Helper upload public legacy dibuat fail-closed; tidak ada lagi pemanggilan `getPublicUrl()` di `index.html`. Upload normal tetap memakai storage private yang sudah aktif sejak v103/v105/v110.
+- Embedded Attendance recovery SQL disinkronkan dengan guard v124. SQL deployment terpisah: `WORKBOARD_V124_FINAL_STABILIZATION.sql`. Tidak ada fitur panel, role, privacy rule, Work Talk, Storage data, atau data user yang dihapus.
 
 ### 20 Agustus 2026 — v123 Logbook Smart Next-Step Privacy Sync
 

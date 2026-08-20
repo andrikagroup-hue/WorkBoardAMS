@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v123 — Logbook Smart Next-Step Privacy Sync — 20 Aug 2026 -->
+<!-- WorkBoard AMS v124 — Stable Release — Attendance & Output Security — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -6229,7 +6229,7 @@ async function populateTrackerLinkOptions(selectedId) {
     if (error) throw error;
     const items = data || [];
     sel.innerHTML = '<option value="" data-status="">— Not linked to Tracker —</option>' +
-      items.map(t => `<option value="${t.id}" data-status="${t.status}">${escHtml(t.subject)} — ${PT_STATUS_LABEL[t.status] || t.status}</option>`).join('');
+      items.map(t => `<option value="${escAttr(t.id)}" data-status="${escAttr(t.status || '')}">${escHtml(t.subject)} — ${escHtml(PT_STATUS_LABEL[t.status] || t.status || 'Not Started')}</option>`).join('');
     sel.value = selectedId || '';
   } catch (e) {
     sel.innerHTML = '<option value="">— Failed to load Tracker list —</option>';
@@ -6360,7 +6360,8 @@ function displaySchedule(data) {
     evs.forEach(e => {
       const completed = e.category === 'green';
       const canModify = canModifySharedRow(e);
-      html += `<div class="event-card ev-${e.category}" data-id="${e.id}">
+      const safeCategory = ['blue','amber','purple','red','green'].includes(e.category) ? e.category : 'blue';
+      html += `<div class="event-card ev-${safeCategory}" data-id="${escAttr(e.id)}">
         <div class="ev-title">${escHtml(e.title || '')}
           ${canModify ? `<span>
             <button class="ev-del" onclick="editSchedule('${e.id}')" aria-label="Edit" title="Edit"><i class="ti ti-pencil" aria-hidden="true"></i></button>
@@ -6894,7 +6895,7 @@ function displayGantt(allData) {
       return `<div class="gantt-row">
         <div class="gantt-label-cell">
           <div class="gantt-label-title" title="${escAttr(t.subject)}">${escHtml(t.subject)}</div>
-          <div class="gantt-label-meta">${t.assignment ? escHtml(t.assignment) + ' · ' : ''}${PT_STATUS_LABEL[t.status] || 'Not Started'}</div>
+          <div class="gantt-label-meta">${t.assignment ? escHtml(t.assignment) + ' · ' : ''}${escHtml(PT_STATUS_LABEL[t.status] || t.status || 'Not Started')}</div>
         </div>
         <div class="gantt-bar-track">
           <div class="gantt-days" style="grid-template-columns:repeat(${daysInMonth},26px);position:absolute;inset:0">${dayCells}</div>
@@ -6914,7 +6915,7 @@ function displayGantt(allData) {
     nodateList.innerHTML = noDateItems.map(t => `
       <div class="gantt-nodate-item">
         <span>${t.is_private ? '🔒 ' : ''}${escHtml(t.subject)}${t.assignment ? ' — ' + escHtml(t.assignment) : ''}</span>
-        <span class="status-pill ${PT_STATUS_CLASS[t.status] || 's-not-started'}">${PT_STATUS_LABEL[t.status] || t.status}</span>
+        <span class="status-pill ${PT_STATUS_CLASS[t.status] || 's-not-started'}">${escHtml(PT_STATUS_LABEL[t.status] || t.status || 'Not Started')}</span>
       </div>`).join('');
   } else {
     nodateBox.style.display = 'none';
@@ -7003,7 +7004,7 @@ function displayRecurringTemplates(data) {
     return `<tr>
       <td>${icon} ${t.target_table === 'schedule' ? 'Schedule' : 'Tracker'}</td>
       <td>${t.is_private ? '🔒 ' : ''}${escHtml(label)}</td>
-      <td><span class="rt-freq-badge">${RT_FREQ_LABEL[t.frequency] || t.frequency}</span></td>
+      <td><span class="rt-freq-badge">${escHtml(RT_FREQ_LABEL[t.frequency] || t.frequency || 'Unknown')}</span></td>
       <td style="font-size:12px">${fmtDate(t.next_run)}</td>
       <td><input type="checkbox" class="rt-toggle" ${t.is_active ? 'checked' : ''} ${canModifySharedRow(t) ? `onchange="toggleRecurringActive('${t.id}', this.checked)" title="Enable/Disable"` : 'disabled title="Read only"'}></td>
       <td style="white-space:nowrap">
@@ -7339,7 +7340,7 @@ function ptProjectCardHtml(t, kind = '') {
   return `<article class="pt-project-card ${kind}">
     <div class="pt-project-title">${t.is_private ? '🔒 ' : ''}${escHtml(t.subject || 'Untitled project')}</div>
     <div class="pt-project-meta">
-      <span class="status-pill ${PT_STATUS_CLASS[eff] || 's-prog'}">${PT_STATUS_LABEL[eff] || eff}</span>
+      <span class="status-pill ${PT_STATUS_CLASS[eff] || 's-prog'}">${escHtml(PT_STATUS_LABEL[eff] || eff || 'Not Started')}</span>
       <span class="status-pill ${PT_PRIORITY_CLASS[t.priority] || 's-prio-medium'}">${PT_PRIORITY_LABEL[t.priority] || '🟡 Medium'}</span>
       ${t.category ? `<span class="tracker-meta-chip">${escHtml(t.category)}</span>` : ''}
       <span class="tracker-meta-chip">${escHtml(ptDueText(t))}</span>
@@ -7367,7 +7368,7 @@ function renderProjectFocus(items) {
           <div class="tracker-focus-eyebrow">🎯 One Project Now</div>
           <div class="tracker-focus-title">${focus.is_private ? '🔒 ' : ''}${escHtml(focus.subject)}</div>
           <div class="tracker-focus-meta">
-            <span class="status-pill ${PT_STATUS_CLASS[eff] || 's-prog'}">${PT_STATUS_LABEL[eff] || eff}</span>
+            <span class="status-pill ${PT_STATUS_CLASS[eff] || 's-prog'}">${escHtml(PT_STATUS_LABEL[eff] || eff || 'Not Started')}</span>
             <span class="status-pill ${PT_PRIORITY_CLASS[focus.priority] || 's-prio-medium'}">${PT_PRIORITY_LABEL[focus.priority] || '🟡 Medium'}</span>
             <span class="tracker-meta-chip">${escHtml(ptDueText(focus))}</span>
             ${focus.assignment ? `<span class="tracker-meta-chip">PIC: ${escHtml(focus.assignment)}</span>` : ''}
@@ -7418,7 +7419,7 @@ function ptViewRow(t) {
     <td>${escHtml(t.assignment || '-')}</td>
     <td><span class="status-pill ${PT_PRIORITY_CLASS[t.priority] || 's-prog'}">${PT_PRIORITY_LABEL[t.priority] || '-'}</span></td>
     <td style="font-size:12px">${escHtml(t.category || '-')}</td>
-    <td><span class="status-pill ${PT_STATUS_CLASS[effStatus] || 's-prog'}">${PT_STATUS_LABEL[effStatus] || effStatus}</span></td>
+    <td><span class="status-pill ${PT_STATUS_CLASS[effStatus] || 's-prog'}">${escHtml(PT_STATUS_LABEL[effStatus] || effStatus || 'Not Started')}</span></td>
     <td style="font-size:12px">${escHtml(t.schedule_duration || '-')}</td>
     <td style="font-size:12px">${t.start_date ? fmtDate(t.start_date) : '-'}</td>
     <td style="font-size:12px">${t.due_date ? fmtDate(t.due_date) : '-'}</td>
@@ -7760,19 +7761,11 @@ function filterSupportedAttachments(files) {
   return valid;
 }
 
-// Legacy public upload helper is retained only for historical migration tooling.
-// Live WorkBoard UI no longer calls this helper for new attachments or rich-text images.
-async function uploadFilesToStorage(fileList, folder) {
-  const uploaded = [];
-  for (const file of fileList) {
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const path = `${folder}/${Date.now()}-${safeName}`;
-    const { error } = await sb.storage.from('attachments').upload(path, file);
-    if (error) { alert('Failed to upload "' + file.name + '": ' + error.message); continue; }
-    const { data: pub } = sb.storage.from('attachments').getPublicUrl(path);
-    uploaded.push({ name: file.name, url: pub.publicUrl, size: file.size, type: file.type });
-  }
-  return uploaded;
+// Legacy public upload entry point is intentionally fail-closed.
+// New files must use uploadSecureFilesToStorage() so an accidental future call
+// cannot re-introduce public attachment URLs.
+async function uploadFilesToStorage() {
+  throw new Error('Legacy public attachment uploads are disabled. Use secure WorkBoard storage.');
 }
 
 const WB_SECURE_ATTACHMENT_BUCKET = 'workboard-private';
@@ -8773,7 +8766,7 @@ async function renderTodayAttendanceSummary(){
   const user=getUser(), today=todayStr();
   try{
     const [{data,error},{data:leaveData}]=await Promise.all([
-      withTimeout(sb.from('attendance').select('*').eq('user_name',user).eq('tanggal',today).maybeSingle()),
+      withTimeout(sb.from('attendance').select('*').eq('user_name',user).eq('tanggal',today).order('created_at',{ascending:false}).limit(1).maybeSingle()),
       withTimeout(sb.from('leave_requests').select('*').eq('user_name',user).eq('status','approved').lte('dari_tanggal',today).gte('sampai_tanggal',today).order('created_at',{ascending:false}).limit(1).maybeSingle()).catch(()=>({data:null}))
     ]);
     if(error && (error.code==='42P01'||String(error.message||'').includes('does not exist'))){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Setup required</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; return; }
@@ -9408,8 +9401,20 @@ function resultReportToday() {
   renderManagementReport();
 }
 function managementAttendanceWithApprovedLeave(attendanceRows, leaveRows, range) {
-  const combined = [...(attendanceRows || [])];
-  const occupied = new Set(combined.map(r => `${managementNormalizeText(r.user_name)}|${String(r.tanggal || '').slice(0,10)}`));
+  // Legacy versions allowed direct attendance INSERT, so duplicate user/date rows
+  // may exist historically. Keep the most complete/newest real row for reporting.
+  const rankedAttendance = [...(attendanceRows || [])].sort((a,b) => {
+    const score = r => (r?.clock_out ? 2 : r?.clock_in ? 1 : 0);
+    return score(b) - score(a)
+      || String(b?.created_at || '').localeCompare(String(a?.created_at || ''))
+      || String(b?.id || '').localeCompare(String(a?.id || ''));
+  });
+  const combined = [];
+  const occupied = new Set();
+  rankedAttendance.forEach(r => {
+    const key = `${managementNormalizeText(r.user_name)}|${String(r.tanggal || '').slice(0,10)}`;
+    if (!occupied.has(key)) { combined.push(r); occupied.add(key); }
+  });
   const validTypes = new Set(['izin','sakit','cuti']);
   // Newest approved request wins if legacy/duplicate leave rows overlap the same user/date.
   const orderedLeaveRows = [...(leaveRows || [])].sort((a,b) =>
@@ -10855,15 +10860,17 @@ function displayLogbook(data) {
         </div>
       </div>` : '';
     const tItem = active.tracker_item_id ? trackerStatusMap[active.tracker_item_id] : null;
-    const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px" title="Linked to Tracker: ${escHtml(tItem.subject)}">${PT_STATUS_LABEL[tItem.status] || tItem.status}</span>` : '';
+    const trackerBadge = tItem ? `<span class="status-pill ${PT_STATUS_CLASS[tItem.status] || 's-prog'}" style="font-size:9px" title="Linked to Tracker: ${escAttr(tItem.subject)}">${escHtml(PT_STATUS_LABEL[tItem.status] || tItem.status || 'Unknown')}</span>` : '';
     const bodyHtml = String(active.body || '').trim() ? renderBody(active.body) : logbookAutoSummary(active);
     const timeLabel = active.created_at ? new Date(active.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '';
+    const safeLogType = ['report','note','meeting','issue'].includes(active.type) ? active.type : 'note';
+    const safeLogTypeLabel = typeLabel[active.type] || active.type || 'Note';
     return `<section class="log-day-entry">
       <div class="log-day-entry-head">
         <div>
           <div class="log-day-entry-title">${active.is_private?'🔒 ':''}${escHtml(active.title)}</div>
           <div class="log-day-entry-meta">
-            <span class="log-type lt-${active.type}">${typeLabel[active.type]||active.type}</span>
+            <span class="log-type lt-${safeLogType}">${escHtml(safeLogTypeLabel)}</span>
             ${timeLabel ? `<span>${escHtml(timeLabel)}</span>` : ''}
             ${trackerBadge}
           </div>
@@ -10933,7 +10940,7 @@ function _renderNoteCards(data) {
       <div class="np-page-header">
         <div>
           <div class="np-page-title">${active.is_pinned?'📌 ':''}${escHtml(active.title)}</div>
-          <div class="np-page-date">${d} · <span class="note-cat nc-${active.category||'ops'}">${catLabel[active.category]||active.category||''}</span></div>
+          <div class="np-page-date">${d} · <span class="note-cat nc-${['finance','ops','hr','strat'].includes(active.category) ? active.category : 'ops'}">${escHtml(catLabel[active.category] || active.category || 'Operations')}</span></div>
         </div>
         <div class="np-page-actions">
           <button class="ev-del" onclick="openWritingAssistant('note','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
@@ -12511,7 +12518,8 @@ ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leave_requests ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.attendance FROM anon;
 REVOKE ALL ON public.leave_requests FROM anon;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.attendance TO authenticated;
+GRANT SELECT, UPDATE, DELETE ON public.attendance TO authenticated;
+REVOKE INSERT ON public.attendance FROM authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.leave_requests TO authenticated;
 
 -- Remove only known legacy/current Attendance and Leave policies before recreating the safe set.
@@ -12526,10 +12534,6 @@ DROP POLICY IF EXISTS wb_attendance_delete ON public.attendance;
 CREATE POLICY wb_attendance_select ON public.attendance
 FOR SELECT TO authenticated
 USING (public.workboard_is_active() AND (user_name = public.workboard_my_name() OR public.workboard_can_manage()));
-
-CREATE POLICY wb_attendance_insert ON public.attendance
-FOR INSERT TO authenticated
-WITH CHECK (public.workboard_is_active() AND user_name = public.workboard_my_name());
 
 CREATE POLICY wb_attendance_update ON public.attendance
 FOR UPDATE TO authenticated
@@ -12598,6 +12602,60 @@ BEFORE UPDATE ON public.attendance
 FOR EACH ROW
 EXECUTE FUNCTION public.workboard_guard_attendance_update();
 
+-- Official Clock In is server-controlled. Browser clients cannot INSERT attendance directly.
+CREATE OR REPLACE FUNCTION public.workboard_clock_in(
+  p_lat double precision DEFAULT NULL,
+  p_lng double precision DEFAULT NULL,
+  p_foto text DEFAULT NULL,
+  p_keterangan text DEFAULT NULL
+)
+RETURNS TABLE(id uuid, tanggal date, clock_in timestamptz, status text, terlambat_menit int)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_name text;
+  v_now timestamptz := clock_timestamp();
+  v_local timestamp;
+  v_date date;
+  v_late int;
+  v_status text;
+  v_id uuid;
+BEGIN
+  IF NOT coalesce(public.workboard_is_active(), false) THEN
+    RAISE EXCEPTION 'Inactive WorkBoard account.';
+  END IF;
+  v_name := public.workboard_my_name();
+  IF coalesce(trim(v_name), '') = '' THEN
+    RAISE EXCEPTION 'WorkBoard profile name is unavailable.';
+  END IF;
+  IF p_lat IS NOT NULL AND (p_lat < -90 OR p_lat > 90) THEN RAISE EXCEPTION 'Invalid latitude.'; END IF;
+  IF p_lng IS NOT NULL AND (p_lng < -180 OR p_lng > 180) THEN RAISE EXCEPTION 'Invalid longitude.'; END IF;
+
+  v_local := v_now AT TIME ZONE 'Asia/Jakarta';
+  v_date := v_local::date;
+  v_late := greatest(0, floor(extract(epoch FROM (v_local - (v_date::timestamp + interval '8 hours'))) / 60)::int);
+  v_status := CASE WHEN v_late > 0 THEN 'terlambat' ELSE 'hadir' END;
+  IF v_late > 0 AND coalesce(trim(p_keterangan), '') = '' THEN
+    RAISE EXCEPTION 'Late Clock In requires a reason.';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended(v_name || '|' || v_date::text, 0));
+  IF EXISTS (SELECT 1 FROM public.attendance a WHERE a.user_name = v_name AND a.tanggal = v_date) THEN
+    RAISE EXCEPTION 'Attendance already exists for today.';
+  END IF;
+
+  INSERT INTO public.attendance AS a(user_name,tanggal,clock_in,clock_out,status,terlambat_menit,lat_in,lng_in,foto_in,keterangan)
+  VALUES(v_name,v_date,v_now,NULL,v_status,v_late,p_lat,p_lng,p_foto,NULLIF(trim(p_keterangan),''))
+  RETURNING a.id INTO v_id;
+
+  RETURN QUERY SELECT v_id, v_date, v_now, v_status, v_late;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.workboard_clock_in(double precision,double precision,text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.workboard_clock_in(double precision,double precision,text,text) TO authenticated;
+
 CREATE POLICY wb_attendance_delete ON public.attendance
 FOR DELETE TO authenticated
 USING (public.workboard_is_owner());
@@ -12618,7 +12676,7 @@ FOR INSERT TO authenticated
 WITH CHECK (
   public.workboard_is_active()
   AND user_name = public.workboard_my_name()
-  AND coalesce(status, 'pending') = 'pending'
+  AND status = 'pending'
   AND catatan_admin IS NULL
   AND tipe IN ('izin', 'sakit', 'cuti')
   AND dari_tanggal IS NOT NULL
@@ -12739,7 +12797,7 @@ async function renderAbsenToday() {
   try {
     // Cek tabel ada atau tidak
     const { data, error } = await withTimeout(
-      sb.from('attendance').select('*').eq('user_name', user).eq('tanggal', today).maybeSingle()
+      sb.from('attendance').select('*').eq('user_name', user).eq('tanggal', today).order('created_at', { ascending: false }).limit(1).maybeSingle()
     );
 
     if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
@@ -12760,7 +12818,7 @@ async function renderAbsenToday() {
     if (leaveData) {
       infoEl.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:4px">
-          <span style="font-size:16px;font-weight:700;color:${absenStatusColor(leaveData.tipe)}">${absenStatusLabel(leaveData.tipe)}</span>
+          <span style="font-size:16px;font-weight:700;color:${absenStatusColor(leaveData.tipe)}">${escHtml(absenStatusLabel(leaveData.tipe))}</span>
           <span style="color:var(--text2)">Reason: ${focusEscape(leaveData.alasan || '—')}</span>
           <span style="color:var(--text3);font-size:11px">Period: ${focusEscape(leaveData.dari_tanggal || '—')} to ${focusEscape(leaveData.sampai_tanggal || '—')}</span>
         </div>`;
@@ -12778,11 +12836,11 @@ async function renderAbsenToday() {
       const late = data.terlambat_menit > 0 ? ` <span style="color:#F59E0B">(${data.terlambat_menit} min late)</span>` : '';
       infoEl.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:4px">
-          <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${absenStatusLabel(data.status)}</span>
+          <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${escHtml(absenStatusLabel(data.status))}</span>
           <span>🕐 Clock In: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
           ${data.keterangan ? `<span style="font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:3px 8px">📝 Reason: ${escHtml(data.keterangan)}</span>` : ''}
           ${data.lat_in ? `<span style="color:var(--text3);font-size:11px">📍 GPS: ${data.lat_in.toFixed(5)}, ${data.lng_in.toFixed(5)}</span>` : ''}
-          ${data.foto_in ? `<img src="${data.foto_in}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;margin-top:4px" />` : ''}
+          ${data.foto_in ? `<img src="${escAttr(data.foto_in)}" style="width:60px;height:60px;border-radius:8px;object-fit:cover;margin-top:4px" />` : ''}
         </div>`;
       btnEl.innerHTML = `<button class="btn-sm btn-primary" onclick="doClockOut('${data.id}')"><i class="ti ti-logout"></i> Clock Out</button>`;
     } else if (data.clock_in && data.clock_out) {
@@ -12791,7 +12849,7 @@ async function renderAbsenToday() {
       const dur = Math.round((new Date(data.clock_out) - new Date(data.clock_in)) / 60000);
       infoEl.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:4px">
-          <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${absenStatusLabel(data.status)}</span>
+          <span style="font-size:16px;font-weight:700;color:${absenStatusColor(data.status)}">${escHtml(absenStatusLabel(data.status))}</span>
           <span>🕐 Clock In: <strong>${absenTimeStr(data.clock_in)}</strong>${late}</span>
           ${data.keterangan ? `<span style="font-size:11px;color:#92400E;background:#FEF3C7;border-radius:4px;padding:3px 8px">📝 Reason: ${escHtml(data.keterangan)}</span>` : ''}
           <span>🕔 Clock Out: <strong>${absenTimeStr(data.clock_out)}</strong></span>
@@ -12799,14 +12857,14 @@ async function renderAbsenToday() {
           ${data.lat_in ? `<span style="color:var(--text3);font-size:11px">📍 Clock In: <a href="https://maps.google.com/?q=${data.lat_in},${data.lng_in}" target="_blank" style="color:var(--accent)">${data.lat_in.toFixed(5)}, ${data.lng_in.toFixed(5)}</a></span>` : ''}
           ${data.lat_out ? `<span style="color:var(--text3);font-size:11px">📍 Clock Out: <a href="https://maps.google.com/?q=${data.lat_out},${data.lng_out}" target="_blank" style="color:var(--accent)">${data.lat_out.toFixed(5)}, ${data.lng_out.toFixed(5)}</a></span>` : ''}
           <div style="display:flex;gap:6px;margin-top:4px">
-            ${data.foto_in ? `<img src="${data.foto_in}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Clock-in photo" />` : ''}
-            ${data.foto_out ? `<img src="${data.foto_out}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Clock-out photo" />` : ''}
+            ${data.foto_in ? `<img src="${escAttr(data.foto_in)}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Clock-in photo" />` : ''}
+            ${data.foto_out ? `<img src="${escAttr(data.foto_out)}" style="width:60px;height:60px;border-radius:8px;object-fit:cover" title="Clock-out photo" />` : ''}
           </div>
         </div>`;
       btnEl.innerHTML = `<span style="font-size:12px;color:var(--success)">✅ Today's attendance is complete</span>`;
     }
   } catch (e) {
-    infoEl.innerHTML = `<span style="color:var(--danger)">Error: ${e.message}</span>`;
+    infoEl.innerHTML = `<span style="color:var(--danger)">Error: ${escHtml(e.message)}</span>`;
   }
 }
 
@@ -12866,26 +12924,34 @@ async function proceedClockIn(terlambatMenit, status, today) {
 
 async function _doClockInProcess(user, now, today, terlambatMenit, status, keterangan) {
   const btnEl = document.getElementById('absen-action-btns');
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Ambil foto selfie...</span>';
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Taking selfie...</span>';
   const foto = await takeSelfie();
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Mengambil lokasi GPS...</span>';
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Getting GPS location...</span>';
   const gps = await getGPS();
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Menyimpan...</span>';
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Saving...</span>';
 
-  const { error } = await withTimeout(sb.from('attendance').insert({
-    user_name: user,
-    tanggal: today,
-    clock_in: now.toISOString(),
-    status,
-    terlambat_menit: terlambatMenit,
-    lat_in: gps.lat,
-    lng_in: gps.lng,
-    foto_in: foto,
-    keterangan: keterangan || null
+  let note = keterangan || null;
+  let result = await withTimeout(sb.rpc('workboard_clock_in', {
+    p_lat: gps.lat,
+    p_lng: gps.lng,
+    p_foto: foto,
+    p_keterangan: note
   }));
 
+  // Edge case: the browser started the flow before 08:00 but the official
+  // database clock crossed 08:00 while the selfie/GPS step was in progress.
+  if (result.error && /late clock in requires a reason/i.test(String(result.error.message || ''))) {
+    note = (prompt('Clock In is now considered late by the official server time. Please provide a reason:') || '').trim();
+    if (!note) { cancelClockIn(); return; }
+    result = await withTimeout(sb.rpc('workboard_clock_in', {
+      p_lat: gps.lat, p_lng: gps.lng, p_foto: foto, p_keterangan: note
+    }));
+  }
+
+  const error = result.error;
   if (error) {
-    alert('Failed to clock in: ' + error.message);
+    const missingRpc = String(error.code || '') === 'PGRST202' || /workboard_clock_in/i.test(String(error.message || ''));
+    alert(missingRpc ? 'Attendance security setup is not installed yet. Run WORKBOARD_V124_FINAL_STABILIZATION.sql in Supabase, then try again.' : 'Failed to clock in: ' + error.message);
     cancelClockIn();
   } else {
     await renderAbsen();
@@ -12897,12 +12963,12 @@ async function _doClockInProcess(user, now, today, terlambatMenit, status, keter
 async function doClockOut(recordId) {
   const now = new Date();
   const btnEl = document.getElementById('absen-action-btns');
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Ambil foto selfie...</span>';
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Taking selfie...</span>';
 
   const foto = await takeSelfie();
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Mengambil lokasi GPS...</span>';
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Getting GPS location...</span>';
   const gps = await getGPS();
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Menyimpan...</span>';
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Saving...</span>';
 
   const { data: updatedRow, error } = await withTimeout(sb.from('attendance').update({
     clock_out: now.toISOString(),
@@ -13034,7 +13100,7 @@ async function renderAbsenRekap() {
       const isLeaveRow = !!row._isLeave;
       html += `<tr${isLeaveRow ? ' style="background:var(--bg2)"' : ''}>
         <td style="font-weight:500">${escHtml(row.user_name)}</td>
-        <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${absenStatusColor(row.status)}22;color:${absenStatusColor(row.status)};font-weight:600">${absenStatusLabel(row.status)}</span></td>
+        <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${absenStatusColor(row.status)}22;color:${absenStatusColor(row.status)};font-weight:600">${escHtml(absenStatusLabel(row.status))}</span></td>
         <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : absenTimeStr(row.clock_in)}</td>
         <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : (absenTimeStr(row.clock_out) + (dur ? `<br><span style="font-size:10px;color:var(--text3)">${Math.floor(dur/60)}h ${dur%60}m</span>` : ''))}</td>
         <td>${row.terlambat_menit > 0 ? `<span style="color:#F59E0B">${row.terlambat_menit} min</span>` : '—'}</td>
@@ -13043,8 +13109,8 @@ async function renderAbsenRekap() {
           ${row.lat_out ? `<br><a href="https://maps.google.com/?q=${row.lat_out},${row.lng_out}" target="_blank" style="color:var(--accent)">📍 Clock Out</a>` : ''}
         </td>
         <td>
-          ${row.foto_in ? `<img src="${row.foto_in}" style="width:36px;height:36px;border-radius:6px;object-fit:cover" title="Clock-in photo" />` : ''}
-          ${row.foto_out ? `<img src="${row.foto_out}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;margin-left:2px" title="Clock-out photo" />` : ''}
+          ${row.foto_in ? `<img src="${escAttr(row.foto_in)}" style="width:36px;height:36px;border-radius:6px;object-fit:cover" title="Clock-in photo" />` : ''}
+          ${row.foto_out ? `<img src="${escAttr(row.foto_out)}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;margin-left:2px" title="Clock-out photo" />` : ''}
         </td>
         <td style="font-size:11px;color:var(--text2)">
           ${row.keterangan ? (row.terlambat_menit > 0 ? `<span style="color:#92400E">⚠️ ${escHtml(row.keterangan)}</span>` : escHtml(row.keterangan)) : '—'}
@@ -13057,7 +13123,7 @@ async function renderAbsenRekap() {
     html += '</tbody></table>';
     container.innerHTML = html;
   } catch (e) {
-    container.innerHTML = `<span style="color:var(--danger);font-size:12px">Error: ${e.message}</span>`;
+    container.innerHTML = `<span style="color:var(--danger);font-size:12px">Error: ${escHtml(e.message)}</span>`;
   }
 }
 
@@ -13222,8 +13288,10 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
   const tipeLabel   = { izin: 'Leave', sakit: 'Sick', cuti: 'Time Off' };
   const statusLabel = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
   listEl.innerHTML = data.map(lv => {
-    const st = lv.status || 'pending';
-    const tipe = lv.tipe || 'izin';
+    const st = ['pending','approved','rejected'].includes(lv.status) ? lv.status : 'pending';
+    const tipe = ['izin','sakit','cuti'].includes(lv.tipe) ? lv.tipe : 'izin';
+    const tipeText = tipeLabel[lv.tipe] || lv.tipe || 'Leave';
+    const statusText = statusLabel[lv.status] || lv.status || 'Pending';
     const dari = lv.dari_tanggal || '—';
     const sampai = lv.sampai_tanggal || '—';
     const selisih = dari && sampai ? Math.round((new Date(sampai) - new Date(dari)) / 86400000) + 1 : null;
@@ -13233,7 +13301,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
       <div class="admin-leave-info">
         <div class="admin-leave-name">${escHtml(lv.user_name || '—')}</div>
         <div class="admin-leave-meta">
-          <span class="admin-leave-badge alb-${tipe}">${tipeIcon[tipe]||''} ${tipeLabel[tipe] || tipe}</span>
+          <span class="admin-leave-badge alb-${tipe}">${tipeIcon[tipe]||''} ${escHtml(tipeText)}</span>
           &nbsp;${dari} to ${sampai}${durStr ? ' <span style="color:var(--text3)">('+durStr+')</span>' : ''}
           &nbsp;·&nbsp;Submitted: ${diajukan}
         </div>
@@ -13241,7 +13309,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS catatan_admin TEXT;</code>
         ${lv.catatan_admin ? `<div style="font-size:11px;margin-top:4px;color:#1F4443"><i class="ti ti-message"></i> Management note: ${escHtml(lv.catatan_admin)}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;min-width:110px">
-        <span class="admin-leave-badge alb-${st}">${statusLabel[st] || st}</span>
+        <span class="admin-leave-badge alb-${st}">${escHtml(statusText)}</span>
         ${st !== 'approved' ? `<button class="btn-sm" style="color:var(--success);border-color:var(--success)" onclick="adminUpdateLeaveStatus('${lv.id}','approved')"><i class="ti ti-check"></i> Approve</button>` : ''}
         ${st !== 'rejected' ? `<button class="btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="adminUpdateLeaveStatus('${lv.id}','rejected')"><i class="ti ti-x"></i> Reject</button>` : ''}
         ${st !== 'pending' ? `<button class="btn-sm" onclick="adminUpdateLeaveStatus('${lv.id}','pending')" title="Reset to pending"><i class="ti ti-refresh"></i> Reset</button>` : ''}
@@ -13418,7 +13486,7 @@ async function renderLinks() {
       document.getElementById('links-setup-banner').style.display = 'block';
       listEl.innerHTML = '<div class="empty-msg">The table is not available yet — follow the setup instructions above.</div>';
     } else {
-      listEl.innerHTML = `<div class="empty-msg">Failed to load: ${error.message}</div>`;
+      listEl.innerHTML = `<div class="empty-msg">Failed to load: ${escHtml(error.message)}</div>`;
     }
     return;
   }
@@ -13434,7 +13502,7 @@ async function renderLinks() {
     const cats = [...new Set(linksCache.map(l => l.kategori || 'Lainnya'))].sort();
     const current = filterEl.value;
     filterEl.innerHTML = '<option value="all">All Categories</option>'
-      + cats.map(c => `<option value="${escHtml(c)}" ${current===c?'selected':''}>${escHtml(c)}</option>`).join('');
+      + cats.map(c => `<option value="${escAttr(c)}" ${current===c?'selected':''}>${escHtml(c)}</option>`).join('');
   }
 
   const filterVal = filterEl?.value || 'all';
@@ -13466,8 +13534,8 @@ async function renderLinks() {
         </div>
         <div class="link-grid">
           ${items.map(l => `
-            <div class="link-card" onclick="window.open('${escHtml(l.url)}','_blank')">
-              <div class="link-emoji">${l.emoji || '🔗'}</div>
+            <div class="link-card" onclick="openStoredLink('${escAttr(l.id)}')">
+              <div class="link-emoji">${escHtml(l.emoji || '🔗')}</div>
               <div class="link-info">
                 <div class="link-label">${escHtml(l.label)}</div>
                 <div class="link-url-text">${escHtml(l.url)}</div>
@@ -13483,6 +13551,14 @@ async function renderLinks() {
       </section>
     `;
   }).join('');
+}
+
+function openStoredLink(id) {
+  const link = linksCache.find(item => String(item.id) === String(id));
+  const safeUrl = cleanImportedLinkUrl(link?.url);
+  if (!safeUrl) return alert('This link has an invalid or unsupported URL. Edit it before opening.');
+  const opened = window.open(safeUrl, '_blank', 'noopener,noreferrer');
+  if (opened) opened.opener = null;
 }
 
 function showLinksImportStatus(message, type = '') {
@@ -13897,9 +13973,10 @@ async function saveLink() {
 
   if (!label) return alert('Link name is required!');
   if (!url)   return alert('URL is required!');
-  if (!url.startsWith('http')) return alert('URL must start with http:// or https://');
+  const safeUrl = cleanImportedLinkUrl(url);
+  if (!safeUrl) return alert('URL must be a valid http:// or https:// address.');
 
-  const payload = { label, url, kategori: kat, emoji, deskripsi: desc || null };
+  const payload = { label, url: safeUrl, kategori: kat, emoji, deskripsi: desc || null };
 
   let error;
   if (editId) {
@@ -14151,7 +14228,7 @@ async function loadVaultEntries() {
     if (error.message?.includes('password_vault_v2') || error.code === '42P01') {
       document.getElementById('passvault-setup-banner').style.display = 'block';
     }
-    listEl.innerHTML = `<div class="empty-msg">Failed to load: ${error.message}</div>`;
+    listEl.innerHTML = `<div class="empty-msg">Failed to load: ${escHtml(error.message)}</div>`;
     return;
   }
 
