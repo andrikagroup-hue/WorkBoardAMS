@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v115 — Work Talk Action Permission Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v116 — Planned Progress Accuracy Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -9875,13 +9875,13 @@ function exportResultAbsenExcel() {
 async function updateDailyProgress() {
   try {
     const today=todayStr(), user=getUser();
-    const [s,l]=await Promise.all([
-      sb.from('schedule_events').select('id,category,created_by,is_private').eq('event_date',today),
-      sb.from('logbook_entries').select('id,tags,created_by,is_private').eq('entry_date',today)
-    ]);
-    const planned=applyPrivacy(s.data||[]).filter(x=>String(x.created_by||'')===String(user||''));
-    const logs=applyPrivacy(l.data||[]).filter(x=>String(x.created_by||'')===String(user||'') && !(x.tags||[]).includes('waiting') && !(x.tags||[]).includes('cancelled') && !(x.tags||[]).includes('carried-forward'));
-    const prog=planned.length?Math.min(100,Math.round(logs.length/planned.length*100)):(logs.length?100:0);
+    const { data, error } = await sb.from('schedule_events')
+      .select('id,category,created_by,is_private')
+      .eq('event_date',today);
+    if (error) throw error;
+    const planned=applyPrivacy(data||[]).filter(x=>String(x.created_by||'')===String(user||''));
+    const plannedDone=planned.filter(x=>x.category==='green').length;
+    const prog=planned.length?Math.min(100,Math.round(plannedDone/planned.length*100)):0;
     document.getElementById('daily-prog').style.width=prog+'%';
     document.getElementById('daily-prog-val').textContent=prog+'%';
   } catch(e) { console.warn('Daily progress update failed',e); }

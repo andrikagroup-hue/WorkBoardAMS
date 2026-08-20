@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `a33876e92d3909719fd357aa05b37caf8be1f4085a7c5f88eda7f34b892b87b0`
+**SHA-256 pasangan kode:** `f0a6aad81e7fa4f9c71bf4931a55fb7fb43ac7f7699fcc926736fa6fa89c569b`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v115 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v116 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -453,6 +453,7 @@ All Links saat ini memiliki:
 - Setelah `Done`, Today memakai status source **dan** source marker Auto Logbook hari ini sebagai guard. Action source yang sama tidak boleh muncul kembali akibat stale/racing refresh; Portfolio yang baru saja selesai juga tidak langsung berubah menjadi reminder `Set Next Action` pada hari yang sama.
 - Exact duplicate yang benar-benar identik pada antrean aktif dari source type yang sama dikolaps hanya pada layer tampilan. Schedule dengan waktu berbeda tetap dianggap aktivitas berbeda.
 - Planned count membaca seluruh Schedule hari ini, termasuk Schedule yang sudah Done, sehingga angka Planned tidak turun ketika pekerjaan selesai.
+- Sidebar `Today's Planned Progress` menghitung Schedule hari ini yang sudah Done (`category = green`) dibanding seluruh Schedule hari ini; Logbook/unplanned activity tidak boleh menaikkan persentase planned progress.
 - Tidak membutuhkan SQL atau migrasi database baru.
 
 ### 15.10 Projects Workspace
@@ -738,6 +739,13 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v116 Planned Progress Accuracy Fix
+
+- Memperbaiki indikator sidebar `Today's Planned Progress` agar benar-benar menghitung Schedule hari ini yang sudah Done dibanding seluruh Schedule hari ini.
+- Logbook, termasuk aktivitas unplanned, tidak lagi dapat menaikkan persentase planned progress ketika Schedule belum selesai.
+- Mengurangi query yang tidak perlu ke `logbook_entries` dari `updateDailyProgress()`; fungsi sekarang hanya membaca Schedule hari ini milik user aktif sesuai privacy filter.
+- Tidak mengubah Today overview donut, Logbook, Schedule data, RLS, role, Storage, atau database. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v115 Work Talk Action Permission Fix
 
