@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `8c0aa2a70f18359a752651cf10bc7fe8c4915c6445d7a11a1fec760301f3daa7`
+**SHA-256 pasangan kode:** `3a589657d61e8e1a87c5b4bf4c90bfb174533f9df6ff8a1a6230b181b513414e`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v125 Today Repeat Loop Fix yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v126 Work Talk Core UX yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -669,6 +669,24 @@ All Links saat ini memiliki:
 - Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105. Mulai v124, helper upload public legacy dipertahankan hanya sebagai fail-closed guard dan tidak lagi dapat menghasilkan `getPublicUrl()`.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
+### 15.20 Work Talk — WhatsApp-style Core UX — v126
+
+- Work Talk tetap memakai tabel `chat_channels` dan `chat_messages`; tidak ada tabel atau kolom baru pada fase ini.
+- Daftar conversation desktop/mobile disatukan sebagai `Recent conversations` dan diurutkan berdasarkan timestamp pesan terakhir. Channel General, Department/Team, dan DM tetap memakai tipe data lama (`umum`, `bagian`, `dm`) agar kompatibilitas data tidak berubah.
+- Setiap conversation menampilkan avatar/icon, nama, last-message preview, waktu pesan terakhir, unread badge, serta indikator online untuk DM bila presence tersedia.
+- Read marker unread tetap lokal di browser, tetapi mulai v126 dipisahkan per akun Auth agar akun berbeda pada browser yang sama tidak berbagi status baca. Tidak ada perubahan policy database untuk unread.
+- Search conversation lokal tersedia pada panel Work Talk; Global Search Work Talk tetap dapat mencari channel dan pesan yang sedang dimuat.
+- Thread mempertahankan bubble pesan sendiri di kanan dan pesan user lain di kiri, sender/avatar pada pesan orang lain, timestamp ringkas, label `edited`, serta date separator `Today` / `Yesterday` / tanggal.
+- Header conversation menampilkan identitas chat yang lebih jelas dan status Online / Last seen pada DM menggunakan `online_presence`.
+- Pada mobile, list chat menjadi layar awal. Saat conversation dibuka, thread menjadi full-screen dan tombol Back mengembalikan user ke daftar chat; composer memakai safe-area bawah agar nyaman pada layar kecil.
+- Attachment file lama tetap tersedia. Image attachment sekarang mempunyai inline preview dan lightbox. Image dari bucket private/legacy privacy bridge hanya dibuatkan signed URL sementara; download tetap melalui alur authenticated Storage. Work Talk tidak membuat public Storage URL.
+- File yang baru dipilih dapat dipreview lokal sebelum dikirim; file tetap baru diunggah setelah Send melalui helper private attachment yang sudah ada. Draft pesan tidak menyimpan file attachment.
+- Realtime dan polling tetap dipertahankan; metadata recent conversation, unread, dan presence ikut diperbarui ketika pesan berubah.
+- DM tetap participant-only berdasarkan RLS; client filtering bukan pengganti RLS. Hide/unhide tetap memakai `hidden_by`. Permanent delete channel tetap creator channel atau Owner. Edit/delete message tetap hanya sender pesan.
+- Fase v126 tidak menambahkan Reply, Sticker, GIF, Favorite, Recent Sticker, custom sticker upload, atau sticker pack. Fitur tersebut tetap ditunda sampai core chat stabil.
+- Tidak mengubah Today v125, Schedule, Logbook, Portfolio, Attendance, Leave, Management Report, role, Users & Access, Password Manager, atau data personal/private lain.
+- Tidak memerlukan SQL baru.
+
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
 Selain checklist pada Bagian 11, periksa:
@@ -723,6 +741,12 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] UI baru menggunakan English.
 - [ ] Help / FAQ login mengikuti Supabase Auth (email/password/Google), bukan login nama lama; panduan mobile memakai bottom navigation + More, bukan swipe sidebar lama.
 - [ ] Draft Logbook, Notes, To Do, Notepad, dan Work Talk tetap pulih setelah berpindah panel.
+- [ ] Work Talk menampilkan satu daftar `Recent conversations` yang terurut berdasarkan pesan terakhir, dengan last-message preview, timestamp, dan unread badge.
+- [ ] Work Talk DM tetap hanya terlihat bagi participant sesuai RLS; Management/Owner tidak memperoleh akses DM hanya karena role.
+- [ ] Permanent delete Work Talk tetap hanya creator channel atau Owner; Edit/Delete message tetap hanya sender sendiri.
+- [ ] Work Talk mobile membuka list chat terlebih dahulu, conversation tampil full-screen setelah dipilih, dan Back kembali ke list tanpa merusak draft.
+- [ ] Image attachment Work Talk menggunakan preview private/signed URL atau legacy privacy bridge; file download tetap authenticated dan tidak ada `getPublicUrl()`.
+- [ ] Reply dan Sticker belum aktif pada v126; jangan menambahkannya sebelum core Work Talk stabil.
 - [ ] Password Manager dan field sensitif tidak masuk ke penyimpanan draft.
 - [ ] Prompt Master ikut diperbarui jika kondisi implementasi berubah.
 - [ ] Login nama bebas tidak muncul kembali; app hanya terbuka setelah Supabase Auth + profile valid.
@@ -754,6 +778,19 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v126 Work Talk Core UX
+
+- Mengubah Work Talk menjadi alur chat yang lebih familiar tanpa menjadi clone visual WhatsApp: conversation list di kiri pada desktop dan list-first → full-screen thread pada mobile.
+- Conversation sekarang diurutkan berdasarkan pesan terbaru dan menampilkan last-message preview, waktu terakhir, unread badge, avatar/icon, serta online presence DM.
+- Unread read marker lokal dipisahkan per akun Auth untuk mencegah status baca browser tercampur antar user.
+- Bubble diperjelas kanan/kiri, header conversation dirapikan, timestamp dibuat ringkas, dan thread mendapat pemisah tanggal.
+- Image attachment baru maupun legacy yang diizinkan dapat dipreview inline/lightbox dengan signed URL sementara untuk Storage private; authenticated download lama tetap dipertahankan. Preview file lokal tersedia sebelum Send.
+- Realtime dan polling tetap aktif dan sekarang ikut menyegarkan recent order, preview, unread, dan presence.
+- Regression hardening Work Talk: pemilihan nama DM tidak lagi menanam nama user mentah ke inline handler, dan klik browser notification kembali membuka panel `Work Talk` melalui nav ID yang benar.
+- DM participant-only, hide/unhide, creator/Owner permanent delete, sender-only edit/delete, private Storage, dan legacy attachment RLS bridge tidak diubah.
+- Reply dan Sticker belum dibuat pada fase ini. Today v125 dan fitur lain di luar Work Talk tidak diubah.
+- Tidak membutuhkan SQL baru.
 
 ### 20 Agustus 2026 — v125 Today Repeat Loop Fix
 
