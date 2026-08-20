@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `e977d56b617a1cf5d48072dd121cd1d2cfbaf70fba516d59f47cc0b264012018`
+**SHA-256 pasangan kode:** `98b92967cfd2be5c0ffac2060c2414e6e050cdd26f0a6729383adb4f7198ed60`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v127 Work Talk Mobile Composer Visibility Fix yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v128 Work Talk Mobile Composer Bottom Nav Fix yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -669,7 +669,7 @@ All Links saat ini memiliki:
 - Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105. Mulai v124, helper upload public legacy dipertahankan hanya sebagai fail-closed guard dan tidak lagi dapat menghasilkan `getPublicUrl()`.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
-### 15.20 Work Talk — WhatsApp-style Core UX — v126–v127
+### 15.20 Work Talk — WhatsApp-style Core UX — v126–v128
 
 - Work Talk tetap memakai tabel `chat_channels` dan `chat_messages`; tidak ada tabel atau kolom baru pada fase ini.
 - Daftar conversation desktop/mobile disatukan sebagai `Recent conversations` dan diurutkan berdasarkan timestamp pesan terakhir. Channel General, Department/Team, dan DM tetap memakai tipe data lama (`umum`, `bagian`, `dm`) agar kompatibilitas data tidak berubah.
@@ -680,6 +680,7 @@ All Links saat ini memiliki:
 - Header conversation menampilkan identitas chat yang lebih jelas dan status Online / Last seen pada DM menggunakan `online_presence`.
 - Pada mobile, list chat menjadi layar awal. Saat conversation dibuka, thread menjadi full-screen dan tombol Back mengembalikan user ke daftar chat; composer memakai safe-area bawah agar nyaman pada layar kecil.
 - Mulai v127, container thread mobile memakai flex shrink yang eksplisit (`min-height: 0`) dan overflow internal sehingga riwayat pesan panjang tidak dapat mendorong composer keluar viewport; composer tetap berada di bagian bawah thread.
+- Mulai v128, ketika mobile conversation dibuka WorkBoard bottom navigation disembunyikan sementara agar tidak menutup composer; row Draft Protection yang kosong tidak mengambil tinggi. Tombol Back mengembalikan chat list sekaligus menampilkan bottom navigation kembali.
 - Attachment file lama tetap tersedia. Image attachment sekarang mempunyai inline preview dan lightbox. Image dari bucket private/legacy privacy bridge hanya dibuatkan signed URL sementara; download tetap melalui alur authenticated Storage. Work Talk tidak membuat public Storage URL.
 - File yang baru dipilih dapat dipreview lokal sebelum dikirim; file tetap baru diunggah setelah Send melalui helper private attachment yang sudah ada. Draft pesan tidak menyimpan file attachment.
 - Realtime dan polling tetap dipertahankan; metadata recent conversation, unread, dan presence ikut diperbarui ketika pesan berubah.
@@ -779,6 +780,15 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v128 Work Talk Mobile Composer Bottom Nav Fix
+
+- Memperbaiki bug mobile yang masih terlihat setelah v127: area composer ada, tetapi tombol attachment/emoji, textarea `Write a message...`, dan Send jatuh di belakang WorkBoard bottom navigation.
+- Saat conversation mobile dibuka, body mendapat state `work-talk-thread-open`; bottom navigation WorkBoard disembunyikan sementara dan padding bawah main dilepas sehingga composer mendapatkan viewport penuh.
+- Row Draft Protection pada composer tidak lagi mengambil ruang ketika kosong.
+- Tombol Back menghapus state mobile thread dan menampilkan bottom navigation kembali; cleanup defensif juga dilakukan ketika conversation dihapus/reset atau user berpindah panel.
+- Perubahan hanya pada layout/navigation state Work Talk mobile. Desktop chat, message data, recent ordering, unread, realtime/polling, attachment, image preview, draft content, DM participant-only, sender-only edit/delete, creator/Owner permanent delete, RLS, Storage policy, role, Today, Attendance, dan Management Report tidak diubah.
+- Tidak membutuhkan SQL baru.
 
 ### 20 Agustus 2026 — v127 Work Talk Mobile Composer Visibility Fix
 

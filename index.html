@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v127 — Work Talk Mobile Composer Visibility Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v128 — Work Talk Mobile Composer Bottom Nav Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -1774,6 +1774,7 @@ body.mobile-hub-open { overflow:hidden; }
 .chat-image-lightbox img { max-width:min(1100px,96vw); max-height:90vh; object-fit:contain; border-radius:8px; box-shadow:0 16px 60px rgba(0,0,0,.45); }
 .chat-image-lightbox-close { position:absolute; top:14px; right:16px; width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.32); background:rgba(0,0,0,.3); color:#fff; cursor:pointer; font-size:20px; }
 .chat-compose-wrap { border-top:0.5px solid var(--border); flex:0 0 auto; position:relative; z-index:3; background:rgba(250,248,244,.97); }
+.chat-compose .draft-status:empty { display:none; }
 .chat-attach-preview { display:flex; flex-wrap:wrap; gap:6px; padding:8px 10px 0; }
 .chat-compose-file-preview { display:flex; align-items:center; gap:5px; background:var(--bg2); border:1px solid var(--border2); border-radius:8px; padding:5px 7px; font-size:10.5px; max-width:220px; }
 .chat-compose-file-preview img { width:42px; height:42px; border-radius:6px; object-fit:cover; flex-shrink:0; }
@@ -1825,6 +1826,8 @@ body.mobile-hub-open { overflow:hidden; }
   .chat-wrap { height:calc(100dvh - 185px); min-height:400px; }
 }
 @media (max-width:560px) {
+  body.work-talk-thread-open .bottom-nav { display:none !important; }
+  body.work-talk-thread-open .main { padding-bottom:0 !important; }
   .chat-wrap { height:calc(100dvh - 172px); min-height:360px; border-radius:var(--radius); position:relative; }
   .chat-sidebar { position:absolute; inset:0; width:100%; z-index:2; }
   .chat-main { position:absolute; inset:0; z-index:1; display:none; }
@@ -4840,6 +4843,10 @@ function startChatPolling() {
 
 // ── Panel switching ────────────────────────
 async function switchPanel(id, el) {
+  if (id !== 'chat') {
+    document.body.classList.remove('work-talk-thread-open');
+    document.getElementById('chat-wrap')?.classList.remove('mobile-show-thread');
+  }
   if (id === 'result' && !hasManagementAccess()) { alert('Management Report is available only to Management and Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
   if (id === 'adminusers' && !isOwner()) { alert('Users & Access is available only to Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
   if (id === 'adminleave' && !hasManagementAccess()) { alert('Leave Management is available only to Management and Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
@@ -11372,6 +11379,7 @@ async function openChatChannel(channelId, isUserClick) {
   if (isUserClick) {
     renderChatChannelLists();
     document.getElementById('chat-wrap').classList.add('mobile-show-thread');
+    document.body.classList.add('work-talk-thread-open');
   }
   const c = chatChannels.find(x => x.id === channelId);
   if (!c) return;
@@ -11413,6 +11421,7 @@ async function openChatChannel(channelId, isUserClick) {
 
 function closeChatThreadMobile() {
   document.getElementById('chat-wrap').classList.remove('mobile-show-thread');
+  document.body.classList.remove('work-talk-thread-open');
   closeChatImageLightbox();
 }
 
@@ -11818,6 +11827,7 @@ async function deleteChatChannel(id) {
     activeChatChannelId = null;
     document.getElementById('chat-main').innerHTML = '<div class="chat-no-channel"><div><i class="ti ti-message-circle-2" style="font-size:30px;display:block;margin-bottom:8px"></i>Select a conversation to start messaging.</div></div>';
     document.getElementById('chat-wrap')?.classList.remove('mobile-show-thread');
+    document.body.classList.remove('work-talk-thread-open');
   }
   renderChatChannelLists();
 }
@@ -11842,6 +11852,7 @@ async function hideChatChannelForMe(id, e) {
     activeChatChannelId = null;
     document.getElementById('chat-main').innerHTML = '<div class="chat-no-channel"><div><i class="ti ti-message-circle-2" style="font-size:30px;display:block;margin-bottom:8px"></i>Select a conversation to start messaging.</div></div>';
     document.getElementById('chat-wrap')?.classList.remove('mobile-show-thread');
+    document.body.classList.remove('work-talk-thread-open');
   }
   renderChatChannelLists();
 }
