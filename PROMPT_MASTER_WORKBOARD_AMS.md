@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `75afedc07f26e91ab7c559e0ec7ce814dfd70af01d82972de6a286ccc2d9d083`
+**SHA-256 pasangan kode:** `5adb3035421ca9edf6c59ad2be23a7208d3feb3109f5a7dc7b1eb840fad8d5ca`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v111 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v112 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -614,7 +614,7 @@ All Links saat ini memiliki:
 - Untuk periode yang mencakup hari ini, Waiting membaca **current state** dari To Do/Portfolio/Tracker dan tidak lagi mencampur history waiting Logbook. Untuk periode lampau, history waiting Logbook tetap dapat dipakai sebagai jejak periode tersebut.
 - Portfolio berstatus Waiting ditampilkan sebagai attention item dan tidak diulang lagi di `Project / Opportunity Status`; bagian Project Status hanya menampilkan opportunity aktif non-waiting.
 - Planned yang judulnya sama tetap boleh tampil lebih dari sekali jika waktu/lokasi berbeda; hanya record Schedule yang benar-benar identik yang dikolaps.
-- Monthly Analytics & Attendance lama tetap tersedia dalam bagian expandable supaya layar utama lebih mudah dibaca.
+- Monthly Analytics & Attendance lama tetap tersedia dalam bagian expandable supaya layar utama lebih mudah dibaca. Mulai v112, rekap bulanan memakai helper gabungan attendance + approved leave yang sama: real attendance menang pada user/tanggal yang sama, overlapping approved leave hanya dihitung sekali, dan request approved terbaru menang jika ada overlap legacy.
 - Desktop memakai tombol utama `Management Report`; mobile memakai tombol `Report` yang hanya terlihat untuk Owner/Management.
 
 ### 15.18 Logbook Actual-Work + Daily Binder — v95
@@ -736,6 +736,15 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v112 Management Monthly Leave Deduplication
+
+- Menyamakan Monthly Analytics & Attendance legacy di Management Report dengan helper `managementAttendanceWithApprovedLeave()` yang sudah dipakai report utama.
+- Approved Leave / Sick / Time Off yang overlap pada user + tanggal yang sama sekarang hanya dihitung satu kali; real attendance row selalu menang dan tidak ditimpa virtual leave.
+- Jika ada approved leave legacy yang overlap dengan tipe berbeda, request dengan `created_at` terbaru diprioritaskan secara deterministik.
+- Rekap total dan tabel per employee memakai data gabungan yang sama; total jam kerja dan rata-rata keterlambatan tetap dihitung hanya dari Clock In/Clock Out nyata.
+- Grafik kehadiran harian tetap membaca attendance nyata sehingga hari leave-only tidak salah digambar sebagai Present.
+- Tidak mengubah database, RLS, role, Leave Management, Attendance clock-in/out, Storage, atau data lama. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v111 English UI & Help Accuracy
 

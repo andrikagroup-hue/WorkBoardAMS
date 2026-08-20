@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v111 — English UI & Help Accuracy — 20 Aug 2026 -->
+<!-- WorkBoard AMS v112 — Management Monthly Leave Deduplication — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -9349,7 +9349,12 @@ function managementAttendanceWithApprovedLeave(attendanceRows, leaveRows, range)
   const combined = [...(attendanceRows || [])];
   const occupied = new Set(combined.map(r => `${managementNormalizeText(r.user_name)}|${String(r.tanggal || '').slice(0,10)}`));
   const validTypes = new Set(['izin','sakit','cuti']);
-  (leaveRows || []).forEach(lv => {
+  // Newest approved request wins if legacy/duplicate leave rows overlap the same user/date.
+  const orderedLeaveRows = [...(leaveRows || [])].sort((a,b) =>
+    String(b.created_at || '').localeCompare(String(a.created_at || '')) ||
+    String(b.id || '').localeCompare(String(a.id || ''))
+  );
+  orderedLeaveRows.forEach(lv => {
     const user = String(lv.user_name || '').trim();
     const type = String(lv.tipe || '').trim();
     if (!user || !validTypes.has(type) || !lv.dari_tanggal || !lv.sampai_tanggal) return;
@@ -9633,6 +9638,7 @@ async function renderResult() {
   const ld = applyPrivacy(_lr.data), nd = applyPrivacy(_nr.data), td = applyPrivacy(_tdr.data);
   const absenData = _absenRes.data || [];
   const leaveData = _leaveRes.data || [];
+  const monthlyAttendance = managementAttendanceWithApprovedLeave(absenData, leaveData, { start:firstDay, end:lastDay });
 
   const doneTodo = td.filter(t => t.is_done).length;
 
@@ -9650,25 +9656,11 @@ async function renderResult() {
     <div class="res-card rc-purple"><div class="res-label">Waiting / Carry Forward</div><div class="res-val">${waitingTodos + waitingProjects} / ${carried}</div><div class="res-trend">waiting / carried forward</div></div>
   `;
 
-  // ── Hitung ringkasan absensi bulan ──
+  // ── Monthly attendance summary (real attendance + de-duplicated approved leave) ──
   const absenBulan = { hadir: 0, terlambat: 0, izin: 0, sakit: 0, cuti: 0 };
-  absenData.forEach(r => {
+  monthlyAttendance.forEach(r => {
     const st = r.status || 'hadir';
     if (absenBulan[st] !== undefined) absenBulan[st]++;
-  });
-  // Tambahkan dari leave_requests yang ada di rentang bulan
-  leaveData.forEach(lv => {
-    const tipe = lv.tipe;
-    if (!tipe) return;
-    // Hitung berapa hari dalam bulan ini yang tercover leave ini
-    const lvFrom = new Date(Math.max(new Date(lv.dari_tanggal), new Date(firstDay)));
-    const lvTo = new Date(Math.min(new Date(lv.sampai_tanggal), new Date(lastDay)));
-    for (let d = new Date(lvFrom); d <= lvTo; d.setDate(d.getDate() + 1)) {
-      const ds = d.toISOString().split('T')[0];
-      // Jangan double-count jika sudah ada di attendance
-      const alreadyCounted = absenData.some(a => a.user_name === lv.user_name && a.tanggal === ds);
-      if (!alreadyCounted && absenBulan[tipe] !== undefined) absenBulan[tipe]++;
-    }
   });
 
   ['hadir','terlambat','izin','sakit','cuti'].forEach(st => {
@@ -9704,12 +9696,8 @@ async function renderResult() {
     }).join('');
   }
 
-  // ── Tabel rekap per karyawan ──
-  // Kumpulkan semua nama unik
-  const allNames = [...new Set([
-    ...absenData.map(r => r.user_name),
-    ...leaveData.map(r => r.user_name)
-  ])].sort();
+  // ── Per-employee recap ──
+  const allNames = [...new Set(monthlyAttendance.map(r => r.user_name).filter(Boolean))].sort();
 
   resultAbsenCache = []; // reset for export
 
@@ -9718,26 +9706,14 @@ async function renderResult() {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3)">No attendance data for this period.</td></tr>';
   } else {
     tbody.innerHTML = allNames.map(name => {
-      const recs = absenData.filter(r => r.user_name === name);
+      const recs = monthlyAttendance.filter(r => r.user_name === name);
+      const realRecs = recs.filter(r => !r._virtualLeave);
       const cnt = { hadir: 0, terlambat: 0, izin: 0, sakit: 0, cuti: 0 };
       recs.forEach(r => { if (cnt[r.status] !== undefined) cnt[r.status]++; });
 
-      // Hitung leave tambahan yang tidak tercatat di attendance
-      leaveData.filter(lv => lv.user_name === name).forEach(lv => {
-        const tipe = lv.tipe;
-        if (!tipe || !cnt[tipe] === undefined) return;
-        const lvFrom = new Date(Math.max(new Date(lv.dari_tanggal), new Date(firstDay)));
-        const lvTo = new Date(Math.min(new Date(lv.sampai_tanggal), new Date(lastDay)));
-        for (let d = new Date(lvFrom); d <= lvTo; d.setDate(d.getDate() + 1)) {
-          const ds = d.toISOString().split('T')[0];
-          const alreadyCounted = recs.some(a => a.tanggal === ds);
-          if (!alreadyCounted && cnt[tipe] !== undefined) cnt[tipe]++;
-        }
-      });
-
-      // Total jam kerja
+      // Total work time comes only from real Clock In/Clock Out records.
       let totalMenit = 0;
-      recs.forEach(r => {
+      realRecs.forEach(r => {
         if (r.clock_in && r.clock_out) {
           const diff = (new Date(r.clock_out) - new Date(r.clock_in)) / 60000;
           if (diff > 0) totalMenit += diff;
@@ -9747,10 +9723,9 @@ async function renderResult() {
         ? Math.floor(totalMenit / 60) + 'h ' + Math.round(totalMenit % 60) + 'm'
         : '—';
 
-      // Rata-rata keterlambatan
-      const terlambatRecs = recs.filter(r => r.terlambat_menit > 0);
+      const terlambatRecs = realRecs.filter(r => r.terlambat_menit > 0);
       const avgTerlambat = terlambatRecs.length
-        ? Math.round(terlambatRecs.reduce((s, r) => s + (r.terlambat_menit || 0), 0) / terlambatRecs.length)
+        ? Math.round(terlambatRecs.reduce((sum, r) => sum + (r.terlambat_menit || 0), 0) / terlambatRecs.length)
         : 0;
       const avgTerlambatStr = avgTerlambat ? avgTerlambat + ' min' : '—';
 
