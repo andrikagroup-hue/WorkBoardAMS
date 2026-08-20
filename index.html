@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v113 — Management Personal Data Exclusion — 20 Aug 2026 -->
+<!-- WorkBoard AMS v114 — Quick Links Recovery RLS Hardening — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -3954,9 +3954,39 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
   urutan int DEFAULT 0,
   created_at timestamptz DEFAULT now()
 );
-ALTER TABLE app_links ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "read_links" ON app_links FOR SELECT USING (true);
-CREATE POLICY "manage_links" ON app_links FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.app_links ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.app_links FROM anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.app_links TO authenticated;
+
+DO $$ BEGIN
+  IF to_regprocedure('public.workboard_is_active()') IS NULL THEN
+    RAISE EXCEPTION 'WorkBoard Auth helpers are missing. Run the WorkBoard Auth/RLS setup first.';
+  END IF;
+END $$;
+
+DROP POLICY IF EXISTS "read_links" ON public.app_links;
+DROP POLICY IF EXISTS "manage_links" ON public.app_links;
+DROP POLICY IF EXISTS wb_links_select ON public.app_links;
+DROP POLICY IF EXISTS wb_links_insert ON public.app_links;
+DROP POLICY IF EXISTS wb_links_update ON public.app_links;
+DROP POLICY IF EXISTS wb_links_delete ON public.app_links;
+
+CREATE POLICY wb_links_select ON public.app_links
+FOR SELECT TO authenticated
+USING (public.workboard_is_active());
+
+CREATE POLICY wb_links_insert ON public.app_links
+FOR INSERT TO authenticated
+WITH CHECK (public.workboard_is_active());
+
+CREATE POLICY wb_links_update ON public.app_links
+FOR UPDATE TO authenticated
+USING (public.workboard_is_active())
+WITH CHECK (public.workboard_is_active());
+
+CREATE POLICY wb_links_delete ON public.app_links
+FOR DELETE TO authenticated
+USING (public.workboard_is_active());
 
 -- Link awal: SiAkun
 INSERT INTO app_links (label, url, kategori, deskripsi, emoji, urutan)

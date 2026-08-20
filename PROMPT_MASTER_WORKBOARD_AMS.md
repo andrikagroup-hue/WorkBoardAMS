@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `3c835f3512d0130474e04d6de22b080b5cf4378c8e087db541d25de457d524ae`
+**SHA-256 pasangan kode:** `e4a7c8879e7f9798a3a19524d4bcf177273bbd65239cdd409e9362cf5899e236`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v113 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v114 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -373,6 +373,8 @@ Catatan ketergantungan:
 - Owner (Ratu) mendapat seluruh kontrol WorkBoard/company yang dirancang untuk Owner, tetapi Password Manager dan data personal private user lain tetap mengikuti policy private masing-masing.
 
 ### 15.5 All Links — kondisi terbaru
+
+SQL recovery `app_links` yang tertanam di banner setup memakai Auth/RLS: anon direvoke dan hanya user `authenticated` dengan `workboard_is_active()` yang mendapat akses.
 
 All Links saat ini memiliki:
 
@@ -736,6 +738,13 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v114 Quick Links Recovery RLS Hardening
+
+- Memperbaiki SQL recovery/setup yang tertanam pada banner `Quick Links` / `app_links` agar tidak lagi membuat policy `USING (true)` / `WITH CHECK (true)`.
+- Recovery setup sekarang menutup akses `anon`, memberi hak tabel hanya kepada `authenticated`, memverifikasi helper Auth `workboard_is_active()`, lalu membangun policy SELECT/INSERT/UPDATE/DELETE untuk user WorkBoard aktif.
+- Policy aktif database yang sudah dipasang lewat setup Auth/RLS sebelumnya tidak diubah oleh file ini; perubahan hanya mencegah setup baru atau recovery di masa depan kembali memakai policy permissive lama.
+- Fungsi Quick Links, import CSV, filter, kategori, add/edit/delete, role, privacy, Storage, dan tabel lain tidak berubah. Tidak memerlukan SQL baru pada instalasi yang sudah aktif.
 
 ### 20 Agustus 2026 — v113 Management Personal Data Exclusion
 
