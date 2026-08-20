@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v128 — Work Talk Mobile Composer Bottom Nav Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v129 — Work Talk Reply — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -1775,6 +1775,34 @@ body.mobile-hub-open { overflow:hidden; }
 .chat-image-lightbox-close { position:absolute; top:14px; right:16px; width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.32); background:rgba(0,0,0,.3); color:#fff; cursor:pointer; font-size:20px; }
 .chat-compose-wrap { border-top:0.5px solid var(--border); flex:0 0 auto; position:relative; z-index:3; background:rgba(250,248,244,.97); }
 .chat-compose .draft-status:empty { display:none; }
+.chat-reply-indicator {
+  margin:7px 10px 0; min-height:44px; display:flex; align-items:center; gap:8px;
+  background:#EEF4F2; border-left:3px solid var(--accent); border-radius:8px; padding:7px 8px 7px 10px;
+}
+.chat-reply-indicator[hidden] { display:none !important; }
+.chat-reply-indicator-copy { min-width:0; flex:1; }
+.chat-reply-indicator-sender { font-size:10px; font-weight:800; color:var(--accent); line-height:1.25; }
+.chat-reply-indicator-text { margin-top:2px; font-size:10.5px; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chat-reply-indicator-close { border:none; background:none; color:var(--text3); cursor:pointer; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.chat-reply-indicator-close:hover { background:rgba(47,99,100,.09); color:var(--text1); }
+.chat-reply-quote {
+  width:100%; max-width:100%; border:none; text-align:left; cursor:pointer;
+  background:rgba(47,99,100,.075); border-left:3px solid var(--accent); border-radius:7px;
+  padding:6px 8px; margin-bottom:5px; color:inherit;
+}
+.chat-reply-quote.unavailable { cursor:default; opacity:.72; }
+.chat-reply-quote-sender { font-size:9.5px; font-weight:800; color:var(--accent); line-height:1.25; }
+.chat-reply-quote-text { margin-top:2px; font-size:10.5px; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chat-bubble-row.own .chat-reply-quote { background:rgba(255,255,255,.48); }
+.chat-msg-row.reply-highlight .chat-bubble,
+.chat-msg-row.reply-highlight .chat-image-attachment,
+.chat-msg-row.reply-highlight .chat-attach-chip {
+  animation:chatReplyFlash 1.35s ease;
+}
+@keyframes chatReplyFlash {
+  0%,100% { box-shadow:0 1px 2px rgba(0,0,0,.06); }
+  30% { box-shadow:0 0 0 3px rgba(47,99,100,.26), 0 3px 12px rgba(47,99,100,.16); }
+}
 .chat-attach-preview { display:flex; flex-wrap:wrap; gap:6px; padding:8px 10px 0; }
 .chat-compose-file-preview { display:flex; align-items:center; gap:5px; background:var(--bg2); border:1px solid var(--border2); border-radius:8px; padding:5px 7px; font-size:10.5px; max-width:220px; }
 .chat-compose-file-preview img { width:42px; height:42px; border-radius:6px; object-fit:cover; flex-shrink:0; }
@@ -1817,6 +1845,7 @@ body.mobile-hub-open { overflow:hidden; }
 @media (pointer:coarse) {
   .cci-hide { font-size:14px !important; padding:6px; opacity:.5; }
   .chat-msg-actions i { font-size:14px; padding:7px; opacity:.64; }
+  .chat-reply-indicator { margin-left:8px; margin-right:8px; }
 }
 @media (max-width:900px) {
   .chat-sidebar { width:280px; }
@@ -3623,6 +3652,8 @@ create table if not exists chat_messages (
   sender text not null,
   body text,
   attachments jsonb default '[]'::jsonb,
+  reply_to uuid,
+  reply_snapshot jsonb,
   created_at timestamptz default now()
 );
 create index if not exists idx_chat_messages_channel on chat_messages(channel_id, created_at);
@@ -3630,8 +3661,11 @@ alter publication supabase_realtime add table chat_channels, chat_messages;</cod
           <button onclick="document.getElementById('chat-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
         <div id="chat-col-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Additional setup required:</strong> The columns for message editing and hiding chats are not available yet. Run this SQL in <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh this page:<br>
+          ⚠️ <strong>Additional setup required:</strong> The columns for message editing, hiding chats, or Reply are not available yet. Run this SQL in <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh this page:<br>
           <code style="display:block;background:#fffbeb;border:1px solid #fcd34d;border-radius:4px;padding:6px 8px;margin-top:6px;font-size:11px;user-select:all;white-space:pre-wrap">ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_edited boolean DEFAULT false;
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reply_to uuid;
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reply_snapshot jsonb;
+CREATE INDEX IF NOT EXISTS idx_chat_messages_reply_to ON chat_messages(reply_to);
 ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]'::jsonb;</code>
           <button onclick="document.getElementById('chat-col-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
@@ -4675,6 +4709,8 @@ let activeChatChannelId = null;
 let chatMessagesCache = [];
 let chatAttachments = [];
 let editingChatMessageId = null;
+let replyingToChatMessageId = null;
+let chatReplyColumnReady = null;
 let chatLastRead = {};
 let chatChannelsLoaded = false;
 let chatChannelMeta = {};
@@ -11397,6 +11433,13 @@ async function openChatChannel(channelId, isUserClick) {
     </div>
     <div class="chat-thread" id="chat-thread"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading messages...</div></div>
     <div class="chat-compose-wrap">
+      <div id="chat-reply-indicator" class="chat-reply-indicator" hidden>
+        <div class="chat-reply-indicator-copy">
+          <div id="chat-reply-indicator-sender" class="chat-reply-indicator-sender"></div>
+          <div id="chat-reply-indicator-text" class="chat-reply-indicator-text"></div>
+        </div>
+        <button type="button" class="chat-reply-indicator-close" onclick="cancelChatReply()" title="Cancel reply" aria-label="Cancel reply"><i class="ti ti-x"></i></button>
+      </div>
       <div class="chat-attach-preview" id="chat-attach-preview"></div>
       <div id="chat-edit-indicator" style="display:none;font-size:11px;color:var(--accent);padding:5px 12px 0;align-items:center;gap:6px">
         <i class="ti ti-pencil"></i> Editing message — <a href="javascript:void(0)" onclick="cancelChatEdit()" style="color:var(--accent)">Cancel</a>
@@ -11414,6 +11457,8 @@ async function openChatChannel(channelId, isUserClick) {
   chatAttachments = [];
   clearChatLocalPreviewUrls();
   editingChatMessageId = null;
+  replyingToChatMessageId = null;
+  renderChatReplyIndicator();
   restoreChatDraft();
   await new Promise(r => requestAnimationFrame(() => setTimeout(r, 30)));
   await loadChatMessages(channelId);
@@ -11550,6 +11595,123 @@ function chatDayLabel(value) {
   return d.toLocaleDateString('en-US', { weekday:'short', day:'2-digit', month:'short', year:d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
 }
 
+function chatBodyPreviewPlainText(value) {
+  const raw = String(value || '');
+  if (!/<[a-z][\s\S]*>/i.test(raw)) return raw;
+  const safe = sanitizeRichHtml(raw, true);
+  const tmp = document.createElement('div');
+  tmp.innerHTML = safe;
+  return tmp.textContent || tmp.innerText || '';
+}
+
+function chatMessagePreviewText(message, maxLen=110) {
+  if (!message) return 'Original message unavailable';
+  let text = chatBodyPreviewPlainText(message.body || '').replace(/\s+/g, ' ').trim();
+  if (!text) {
+    const files = Array.isArray(message.attachments) ? message.attachments : [];
+    if (files.length) {
+      const first = files[0]?.name || (isChatImageAttachment(files[0]) ? 'Image' : 'Attachment');
+      text = files.length > 1 ? `📎 ${first} +${files.length - 1}` : `📎 ${first}`;
+    }
+  }
+  if (!text) text = 'Message';
+  return text.length > maxLen ? text.slice(0, Math.max(1, maxLen - 1)).trimEnd() + '…' : text;
+}
+
+function chatReplySource(messageId) {
+  return chatMessagesCache.find(m => String(m.id || '') === String(messageId || '')) || null;
+}
+
+async function ensureChatReplySchema() {
+  if (chatReplyColumnReady === true) return true;
+  try {
+    const { error } = await sb.from('chat_messages').select('reply_to,reply_snapshot').limit(1);
+    if (error) throw error;
+    chatReplyColumnReady = true;
+    return true;
+  } catch (error) {
+    const msg = String(error?.message || '').toLowerCase();
+    if (msg.includes('reply_to') || msg.includes('reply_snapshot') || msg.includes('column')) {
+      chatReplyColumnReady = false;
+      showChatColumnMigrationBanner();
+      alert('Reply needs the Work Talk v129 SQL setup first.');
+    } else {
+      alert('Could not verify Reply setup: ' + (error?.message || error));
+    }
+    return false;
+  }
+}
+
+function renderChatReplyIndicator() {
+  const wrap = document.getElementById('chat-reply-indicator');
+  if (!wrap) return;
+  if (!replyingToChatMessageId) {
+    wrap.hidden = true;
+    return;
+  }
+  const source = chatReplySource(replyingToChatMessageId);
+  if (!source) {
+    replyingToChatMessageId = null;
+    wrap.hidden = true;
+    return;
+  }
+  const sender = document.getElementById('chat-reply-indicator-sender');
+  const text = document.getElementById('chat-reply-indicator-text');
+  if (sender) sender.textContent = `Replying to ${source.sender || 'User'}`;
+  if (text) text.textContent = chatMessagePreviewText(source, 120);
+  wrap.hidden = false;
+}
+
+async function startChatReply(messageId) {
+  const source = chatReplySource(messageId);
+  if (!source) return;
+  if (!(await ensureChatReplySchema())) return;
+  if (editingChatMessageId) cancelChatEdit();
+  replyingToChatMessageId = messageId;
+  renderChatReplyIndicator();
+  const input = document.getElementById('chat-input');
+  if (input) {
+    input.focus();
+    autoGrowChatInput(input);
+  }
+}
+
+function cancelChatReply() {
+  replyingToChatMessageId = null;
+  renderChatReplyIndicator();
+}
+
+function chatReplySnapshotFor(source) {
+  if (!source) return null;
+  return {
+    sender: String(source.sender || 'User').slice(0, 120),
+    text: chatMessagePreviewText(source, 180)
+  };
+}
+
+function chatReplyQuoteHtml(message) {
+  if (!message?.reply_to) return '';
+  const source = chatReplySource(message.reply_to);
+  const snap = (message.reply_snapshot && typeof message.reply_snapshot === 'object') ? message.reply_snapshot : null;
+  const sender = snap?.sender || source?.sender || 'Original message';
+  const preview = snap?.text || (source ? chatMessagePreviewText(source, 180) : 'Original message unavailable');
+  const canJump = !!source;
+  return `<button type="button" class="chat-reply-quote${canJump ? '' : ' unavailable'}"${canJump ? ` onclick="jumpToChatMessage('${message.reply_to}')"` : ''} aria-label="${canJump ? 'Jump to original message' : 'Original message unavailable'}">
+    <div class="chat-reply-quote-sender">${escHtml(sender)}</div>
+    <div class="chat-reply-quote-text">${escHtml(preview)}</div>
+  </button>`;
+}
+
+function jumpToChatMessage(messageId) {
+  const target = document.querySelector(`[data-chat-message-id="${String(messageId || '').replace(/"/g, '\\"')}"]`);
+  if (!target) return;
+  target.scrollIntoView({ behavior:'smooth', block:'center' });
+  target.classList.remove('reply-highlight');
+  void target.offsetWidth;
+  target.classList.add('reply-highlight');
+  setTimeout(() => target.classList.remove('reply-highlight'), 1500);
+}
+
 function renderChatThread(messages) {
   const wrap = document.getElementById('chat-thread');
   if (!wrap) return;
@@ -11569,9 +11731,13 @@ function renderChatThread(messages) {
     const own = String(m.sender || '') === String(user || '');
     const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) : '';
     const attachHtml = (m.attachments && m.attachments.length) ? `<div class="chat-attach-list">${m.attachments.map(chatAttachmentHtml).join('')}</div>` : '';
-    const actionsHtml = own ? `<span class="chat-msg-actions"><i class="ti ti-pencil" title="Edit" role="button" tabindex="0" onclick="editChatMessage('${m.id}')"></i><i class="ti ti-trash" title="Delete" role="button" tabindex="0" onclick="deleteChatMessage('${m.id}')"></i></span>` : '';
+    const replyAction = `<i class="ti ti-arrow-back-up" title="Reply" aria-label="Reply to message" role="button" tabindex="0" onclick="startChatReply('${m.id}')"></i>`;
+    const ownerActions = own ? `<i class="ti ti-pencil" title="Edit" aria-label="Edit message" role="button" tabindex="0" onclick="editChatMessage('${m.id}')"></i><i class="ti ti-trash" title="Delete" aria-label="Delete message" role="button" tabindex="0" onclick="deleteChatMessage('${m.id}')"></i>` : '';
+    const actionsHtml = `<span class="chat-msg-actions">${replyAction}${ownerActions}</span>`;
     const avatarHtml = `<div class="chat-avatar" style="background:${avatarColorFor(m.sender)}">${avatarInitials(m.sender)}</div>`;
-    const bodyHtml = m.body ? `<div class="chat-bubble"><div class="chat-message-text ql-editor">${renderBody(m.body)}</div></div>` : '';
+    const quoteHtml = chatReplyQuoteHtml(m);
+    const bubbleNeeded = !!(m.body || quoteHtml);
+    const bodyHtml = bubbleNeeded ? `<div class="chat-bubble">${quoteHtml}${m.body ? `<div class="chat-message-text ql-editor">${renderBody(m.body)}</div>` : ''}</div>` : '';
     html.push(`<div class="chat-msg-row ${own ? 'own' : 'other'}" data-chat-message-id="${escAttr(m.id || '')}">
       ${avatarHtml}
       <div class="chat-bubble-row ${own ? 'own' : 'other'}">
@@ -11681,6 +11847,12 @@ async function sendChatMessage() {
 
   // ── Send new message ──
   if (!text && !chatAttachments.length) return;
+  const replySource = replyingToChatMessageId ? chatReplySource(replyingToChatMessageId) : null;
+  if (replyingToChatMessageId && !replySource) {
+    cancelChatReply();
+    return alert('The original message is no longer available.');
+  }
+  if (replyingToChatMessageId && !(await ensureChatReplySchema())) return;
   const messageId = wbNewRecordId();
   let uploaded = [];
   if (chatAttachments.length) {
@@ -11693,18 +11865,29 @@ async function sendChatMessage() {
     body: text,
     attachments: uploaded
   };
+  if (replyingToChatMessageId && replySource) {
+    payload.reply_to = replyingToChatMessageId;
+    payload.reply_snapshot = chatReplySnapshotFor(replySource);
+  }
   input.value = '';
   autoGrowChatInput(input);
   chatAttachments = [];
   renderChatAttachPreview();
   const { error } = await sb.from('chat_messages').insert(payload);
   if (error) {
-    if ((error.message || '').toLowerCase().includes('does not exist')) showChatMigrationBanner();
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('reply_to') || msg.includes('reply_snapshot')) {
+      chatReplyColumnReady = false;
+      showChatColumnMigrationBanner();
+    } else if (msg.includes('does not exist')) {
+      showChatMigrationBanner();
+    }
     alert('Failed to send message: ' + error.message);
     input.value = text;
     return;
   }
   clearDraft(currentChatDraftScope(), 'chat');
+  cancelChatReply();
   markChatChannelRead(activeChatChannelId);
   await loadChatMessages(activeChatChannelId);
   await refreshChatChannelUnreadMap();
@@ -11718,6 +11901,7 @@ function editChatMessage(id) {
   const m = chatMessagesCache.find(x => x.id === id);
   if (!m) return;
   if (String(m.sender || '') !== String(getUser() || '')) return alert('You can only edit your own messages.');
+  cancelChatReply();
   editingChatMessageId = id;
   const input = document.getElementById('chat-input');
   if (input) { input.value = m.body || ''; input.focus(); autoGrowChatInput(input); }
@@ -11740,6 +11924,7 @@ async function deleteChatMessage(id) {
   const { error } = await sb.from('chat_messages').delete().eq('id', id);
   if (error) return alert('Failed to delete message: ' + error.message);
   if (editingChatMessageId === id) cancelChatEdit();
+  if (String(replyingToChatMessageId || '') === String(id || '')) cancelChatReply();
   await loadChatMessages(activeChatChannelId);
   await refreshChatChannelUnreadMap();
   delete chatMessagesCacheUnread[activeChatChannelId];
