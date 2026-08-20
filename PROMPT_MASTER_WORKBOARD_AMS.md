@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `64c5ecfc51526134cd7df9d9cdbc146ff1deccc6b9bd58e6c03af6398204581b`
+**SHA-256 pasangan kode:** `56ab3de21d811807f3a981ae77df35e8e7c6f5672d60d19eb8a8d7b74c5b1949`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v120 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v121 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -446,6 +446,7 @@ All Links saat ini memiliki:
 - Quick Capture menerima satu kalimat dengan mode `Today`, `Follow Up`, `Waiting Reply`, `Project`, dan `Brain Dump`.
 - `Done Now` mencatat pekerjaan mendadak langsung ke Logbook sebagai aktivitas unplanned tanpa harus membuat Schedule terlebih dahulu.
 - Brain Dump tetap private dan tidak menjadi aktivitas boss sampai user mengubahnya menjadi pekerjaan.
+- Saat Brain Dump dipromosikan melalui `Today`, `Follow Up`, atau `Waiting`, row yang sama berubah menjadi work-state Team/Company (`is_private = false`); sebelum dipromosikan tetap private. Tombol promosi di Today dan panel Brain Dump memakai `organizeBrainItem()` yang sama.
 - Setelah pekerjaan selesai, WorkBoard menawarkan langkah berikutnya: Nothing, Waiting Reply, atau Follow Up Again.
 - Setelah `Done`, opsi `Waiting Reply` / `Follow Up Again` mewarisi privacy source pekerjaan: source Private tetap private, sedangkan source Team/Company tetap public untuk reporting. `Done Now` mengikuti pola work-state Team/Company yang sama dengan Quick Capture Today/Follow Up/Waiting.
 - `Later 30m` hanya menyembunyikan sementara item dari Today pada perangkat/user aktif; data sumber tidak dihapus.
@@ -747,6 +748,13 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v121 Brain Dump Promotion Fix
+
+- Memperbaiki tombol `Today` dan `Follow Up` pada Brain Dump di panel Today yang sebelumnya memanggil fungsi `brainMoveToToday()` / `brainMoveToFollowUp()` yang tidak tersedia. Keduanya sekarang memakai `organizeBrainItem()` yang memang menjadi handler Brain Dump.
+- Saat thought Brain Dump dipromosikan menjadi `Today`, `Follow Up`, atau `Waiting`, row `todos` yang sama sekarang mengubah `is_private` menjadi `false` agar benar-benar menjadi work-state Team/Company dan dapat masuk reporting sesuai RLS.
+- Brain Dump yang belum dipromosikan tetap `is_private = true`; ownership `created_by` tidak berubah.
+- Tidak mengubah To Do manual personal, Management Report, RLS, role, Storage, Attendance, Leave Management, atau database schema. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v120 To Do Edit Privacy Preservation
 

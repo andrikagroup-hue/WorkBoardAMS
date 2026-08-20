@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v120 — To Do Edit Privacy Preservation — 20 Aug 2026 -->
+<!-- WorkBoard AMS v121 — Brain Dump Promotion Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -8424,13 +8424,13 @@ async function quickBrainDump() {
   setTimeout(()=>{ if(status.textContent==='Captured ✓') status.textContent=''; },2200);
 }
 async function organizeBrainItem(id, mode) {
-  const {data,error} = await sb.from('todos').select('text').eq('id',id).single();
+  const {data,error} = await sb.from('todos').select('text,is_private').eq('id',id).single();
   if (error || !data) return alert('Could not organize this item.');
   const raw = String(data.text || '').replace(/^\[(Inbox|Today|Follow Up|Waiting)\]\s*/i,'');
   let text='[Today] '+raw, due=todayStr();
   if (mode==='followup') text='[Follow Up] '+raw;
   if (mode==='waiting') { text='[Waiting] '+raw; due=null; }
-  const {error:updateError}=await sb.from('todos').update({text,due_date:due}).eq('id',id);
+  const {error:updateError}=await sb.from('todos').update({text,due_date:due,is_private:false}).eq('id',id);
   if (updateError) return alert('Failed: '+updateError.message);
   await renderBrainDump();
   await renderTodayFocus();
@@ -8899,7 +8899,7 @@ async function renderTodayFocus() {
     document.getElementById('focus-followups').innerHTML=(followups.length?followups.map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">No follow-ups are due.</div>')+legacyReminderNote;
     document.getElementById('focus-waiting').innerHTML=waiting.length?waiting.slice(0,12).map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">Nothing is waiting for a reply.</div>';
     const inbox=allTodos.filter(t=>!t.is_done&&focusIsInbox(t));
-    document.getElementById('focus-inbox').innerHTML=inbox.length?inbox.slice(0,12).map(t=>`<div class="brain-item"><div class="brain-item-text">${focusEscape(stripTodoInternalMarkers(t.text))}</div><div class="brain-item-actions"><button class="brain-action" onclick="brainMoveToToday('${t.id}')">Today</button><button class="brain-action" onclick="brainMoveToFollowUp('${t.id}')">Follow Up</button><button class="brain-action" onclick="focusOpenTodo('${t.id}')">Open</button><button class="brain-action" onclick="focusDone('${t.id}')">Archive</button></div></div>`).join(''):'<div class="focus-empty">Brain Dump is empty.</div>';
+    document.getElementById('focus-inbox').innerHTML=inbox.length?inbox.slice(0,12).map(t=>`<div class="brain-item"><div class="brain-item-text">${focusEscape(stripTodoInternalMarkers(t.text))}</div><div class="brain-item-actions"><button class="brain-action" onclick="organizeBrainItem('${t.id}','today')">Today</button><button class="brain-action" onclick="organizeBrainItem('${t.id}','followup')">Follow Up</button><button class="brain-action" onclick="focusOpenTodo('${t.id}')">Open</button><button class="brain-action" onclick="focusDone('${t.id}')">Archive</button></div></div>`).join(''):'<div class="focus-empty">Brain Dump is empty.</div>';
     const completedTodayRows=todayLogCache.filter(l=>!(l.tags||[]).includes('waiting')&&!(l.tags||[]).includes('cancelled')&&!(l.tags||[]).includes('carried-forward'));
     const completedList=document.getElementById('today-completed-list');
     if(completedList) completedList.innerHTML=completedTodayRows.length?completedTodayRows.slice(0,20).map(l=>`<div class="today-completed-item"><span>✅</span><div><strong>${focusEscape(l.title||'Activity')}</strong>${l.tags?.includes('unplanned')?'<span class="today-task-source carry">Unplanned</span>':''}</div><span class="today-completed-time">${l.created_at?new Date(l.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):''}</span></div>`).join(''):'<div class="focus-empty">No completed activity yet.</div>';
