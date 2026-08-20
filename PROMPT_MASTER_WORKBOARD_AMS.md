@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `48410bbe5cc7b140f62109cfd8e294cc7383cba39a2b01460b4ea5b5683dd68c`
+**SHA-256 pasangan kode:** `98b44f80d9d0ed0a32e72cb11dc323f0e025ec38f1e02777c78baef80893347b`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v108 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v109 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -360,6 +360,7 @@ Catatan ketergantungan:
 - All Links adalah data bersama tim.
 - Portfolio bersifat Team / Company secara default; entri yang ditandai Private hanya boleh terlihat oleh pembuatnya melalui `applyPrivacy()`.
 - Visualisasi turunan seperti Kanban, Gantt, Decision Matrix, Result, dan badge harus mengikuti aturan privasi sumber data.
+- Decision Matrix memakai dua aturan sumber sekaligus: To Do tetap owner-only/personal melalui `applyOwner()`, sedangkan Time Plan Tracker mengikuti Team / Company visibility melalui `applyPrivacy()`. Tracker public milik user lain boleh terlihat di Matrix tetapi harus `Read only` kecuali user aktif adalah creator atau Owner; tracker private user lain tidak boleh masuk Matrix.
 - Jangan mengubah data bersama menjadi owner-only hanya karena aplikasi digunakan banyak orang.
 - RLS aktif mulai v91: request tanpa sesi Auth tidak boleh memperoleh akses tabel WorkBoard yang dimigrasikan.
 - Staff tetap dapat melihat data Team / Company sesuai aturan panel sumber, tetapi tidak mendapat menu Management Report.
@@ -700,6 +701,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Satu input Capture dapat menyimpan Today, Follow Up, Waiting Reply, atau Brain Dump tanpa membuat tabel baru.
 - [ ] Follow Up eksplisit tidak tampil ganda sebagai Waiting Reply.
 - [ ] Kanban, Gantt, Decision Matrix, Recurring Task, dan Logbook tetap sinkron dengan `time_plan_tracker`.
+- [ ] Decision Matrix menampilkan To Do milik user aktif + Tracker Team/Public yang boleh dibaca; Tracker public milik user lain tampil read-only dan Tracker private user lain tidak tampil.
 - [ ] `tracker_items` tidak dihapus tanpa audit Result dan semua referensinya.
 - [ ] `Users & Access` / Owner Controls hanya terlihat untuk Owner pada desktop dan mobile; `Management Report` hanya Owner/Management.
 - [ ] UI baru menggunakan English.
@@ -733,6 +735,15 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v109 Decision Matrix Source Privacy Fix
+
+- Decision Matrix tidak lagi memfilter `time_plan_tracker` dengan `applyOwner()`; sumber Tracker sekarang memakai `applyPrivacy()` agar item Team / Company public yang memang terlihat di Tracker/Kanban/Gantt juga terlihat konsisten di Matrix.
+- To Do di Matrix tetap memakai `applyOwner()`, sehingga To Do tetap personal dan tidak membuka To Do user lain.
+- Tracker private user lain tetap disembunyikan oleh `applyPrivacy()`.
+- Tracker public milik user lain tampil sebagai `Read only`; tombol Urgent/Important tidak dirender untuk row yang tidak boleh dimodifikasi. Creator dan Owner tetap mendapat kontrol sesuai helper permission/RLS v106.
+- `toggleMatrixFlag()` sekarang memverifikasi row dari `matrixCache` dan menjalankan guard permission sebelum update Tracker, sehingga manipulasi tombol/client UI tidak melewati aturan mutasi.
+- Tidak ada perubahan database, RLS, role, Storage, Leave Management, atau data lama. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v108 Approved Leave Display Hardening
 

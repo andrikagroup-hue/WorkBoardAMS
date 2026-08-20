@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v108 — Approved Leave Display Hardening — 20 Aug 2026 -->
+<!-- WorkBoard AMS v109 — Decision Matrix Source Privacy Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -4446,8 +4446,8 @@ function applyPrivacy(data) {
   );
 }
 
-// Filter ketat: HANYA tampilkan data milik pengguna saat ini
-// Dipakai untuk Notes, To Do, Notepad, Tracker — supaya tiap orang hanya lihat milik sendiri
+// Strict owner filter: only data owned by the active user.
+// Used for personal sources such as Notes, To Do, and Notepad.
 function applyOwner(data) {
   const user = getUser();
   return (data || []).filter(row => !row.created_by || row.created_by === user);
@@ -6698,7 +6698,9 @@ async function renderMatrix() {
   }
   const combined = [
     ...applyOwner(rTodo.data || []).map(t => ({ ...t, _src: 'todos', _title: t.text })),
-    ...applyOwner(rTrack.data || []).map(t => ({ ...t, _src: 'tracker', _title: t.subject }))
+    // Tracker is a Team / Company source: public rows remain visible, while
+    // another user's private rows stay hidden. Mutation rights are handled separately.
+    ...applyPrivacy(rTrack.data || []).map(t => ({ ...t, _src: 'tracker', _title: t.subject }))
   ];
   matrixCache = combined;
   displayMatrix(combined);
@@ -6709,19 +6711,23 @@ function displayMatrix(data) {
   const grid = document.getElementById('matrix-grid');
   grid.innerHTML = MATRIX_QUADRANTS.map(q => {
     const items = (data || []).filter(t => !!t.is_urgent === q.urgent && !!t.is_important === q.important);
-    const cards = items.map(t => `
+    const cards = items.map(t => {
+      const canEdit = t._src === 'todos' || canModifySharedRow(t);
+      return `
       <div class="matrix-card">
         <div class="matrix-card-title">${t.is_private ? '🔒 ' : ''}${escHtml(t._title || '')}</div>
         <div class="matrix-card-meta">
           <span>${t._src === 'todos' ? '📋 To Do' : '📅 Tracker'}</span>
           ${t.due_date ? `<span><i class="ti ti-calendar"></i> ${fmtDate(t.due_date)}</span>` : ''}
+          ${!canEdit ? '<span>🔒 Read only</span>' : ''}
         </div>
-        <div class="matrix-card-toggles">
+        ${canEdit ? `<div class="matrix-card-toggles">
           <button class="matrix-toggle ${t.is_urgent ? 'on' : ''}" onclick="toggleMatrixFlag('${t._src}','${t.id}','is_urgent',${!!t.is_urgent})">🔥 Urgent</button>
           <button class="matrix-toggle ${t.is_important ? 'on' : ''}" onclick="toggleMatrixFlag('${t._src}','${t.id}','is_important',${!!t.is_important})">⭐ Important</button>
-        </div>
+        </div>` : ''}
       </div>
-    `).join('');
+    `;
+    }).join('');
     return `<div class="matrix-quad" style="border-top-color:${q.color}">
       <div class="matrix-quad-header"><span>${q.label}</span><span class="matrix-quad-count">${items.length}</span></div>
       <div class="matrix-quad-sub">${q.sub}</div>
@@ -6732,6 +6738,9 @@ function displayMatrix(data) {
 
 // Toggle Urgent/Penting langsung dari kartu — nulis ke tabel asal (todos atau time_plan_tracker)
 async function toggleMatrixFlag(src, id, field, current) {
+  const row = matrixCache.find(item => String(item.id) === String(id) && item._src === src);
+  if (!row) return alert('This Matrix item is no longer available. Refresh and try again.');
+  if (src === 'tracker' && !requireSharedRowModify(row)) return;
   const table = src === 'todos' ? 'todos' : 'time_plan_tracker';
   const { error } = await sb.from(table).update({ [field]: !current }).eq('id', id);
   if (error) return alert('Failed to update: ' + error.message);
