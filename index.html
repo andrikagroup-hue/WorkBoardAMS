@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v104 — Attachment Display & Open Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v105 — Private Rich Text Images — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -7637,9 +7637,8 @@ function filterSupportedAttachments(files) {
   return valid;
 }
 
-// Legacy public upload helper is kept only for rich-text embedded images until their
-// dedicated private-image migration is completed. File attachments use the authenticated
-// private bucket helper below and never receive a public URL.
+// Legacy public upload helper is retained only for historical migration tooling.
+// Live WorkBoard UI no longer calls this helper for new attachments or rich-text images.
 async function uploadFilesToStorage(fileList, folder) {
   const uploaded = [];
   for (const file of fileList) {
@@ -7701,6 +7700,102 @@ async function uploadSecureFilesToStorage(fileList, resource, recordId, options 
     });
   }
   return uploaded;
+}
+
+const WB_PRIVATE_IMAGE_URL_TTL_SECONDS = 300;
+
+function wbPrivateStorageRefFromUrl(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw, window.location.href);
+    const marker = '/storage/v1/object/sign/';
+    const idx = parsed.pathname.indexOf(marker);
+    if (idx < 0) return null;
+    const tail = parsed.pathname.slice(idx + marker.length);
+    const slash = tail.indexOf('/');
+    if (slash < 1) return null;
+    const bucket = decodeURIComponent(tail.slice(0, slash));
+    const path = tail.slice(slash + 1).split('/').map(part => decodeURIComponent(part)).join('/');
+    if (bucket !== WB_SECURE_ATTACHMENT_BUCKET || !path) return null;
+    return { bucket, path };
+  } catch (_) {
+    return null;
+  }
+}
+
+function wbSecureRecordIdFromEditorHtml(html, resource) {
+  if (!html || !resource) return '';
+  const doc = new DOMParser().parseFromString(String(html), 'text/html');
+  for (const img of Array.from(doc.querySelectorAll('img[src]'))) {
+    const ref = wbPrivateStorageRefFromUrl(img.getAttribute('src'));
+    if (!ref) continue;
+    const parts = ref.path.split('/');
+    if (parts[0] === resource && parts[1]) return parts[1];
+  }
+  return '';
+}
+
+function wbEditorRecordId(quill, resource, editingId = '') {
+  if (!quill?.container) return editingId || wbNewRecordId();
+  if (editingId) {
+    quill.container.dataset.wbRecordId = editingId;
+    return editingId;
+  }
+  let id = quill.container.dataset.wbRecordId || '';
+  if (!id) {
+    id = wbNewRecordId();
+    quill.container.dataset.wbRecordId = id;
+  }
+  return id;
+}
+
+function wbResetEditorRecordId(quill) {
+  if (quill?.container?.dataset) delete quill.container.dataset.wbRecordId;
+}
+
+function wbEditorContext(quill) {
+  if (quill === quillLog) return { resource:'logbook', recordId:wbEditorRecordId(quill, 'logbook', editingLogId || '') };
+  if (quill === quillNote) return { resource:'notes', recordId:wbEditorRecordId(quill, 'notes', editingNoteId || '') };
+  if (quill === quillNp) return { resource:'notepad', recordId:wbEditorRecordId(quill, 'notepad', editingNpId || '') };
+  return null;
+}
+
+async function wbCreatePrivateImageUrl(path) {
+  const { data, error } = await sb.storage.from(WB_SECURE_ATTACHMENT_BUCKET)
+    .createSignedUrl(path, WB_PRIVATE_IMAGE_URL_TTL_SECONDS);
+  if (error) throw error;
+  if (!data?.signedUrl) throw new Error('Could not create a secure image link.');
+  return data.signedUrl;
+}
+
+async function wbUploadPrivateEditorImage(quill, file) {
+  const context = wbEditorContext(quill);
+  if (!context) throw new Error('Editor storage context is unavailable.');
+  const uploaded = await uploadSecureFilesToStorage([file], context.resource, context.recordId);
+  const image = uploaded[0];
+  if (!image?.path) throw new Error('Image upload failed.');
+  return { ...image, url: await wbCreatePrivateImageUrl(image.path) };
+}
+
+async function wbRefreshPrivateImages(root) {
+  if (!root) return;
+  const images = Array.from(root.querySelectorAll('img[src]'));
+  for (const img of images) {
+    const ref = wbPrivateStorageRefFromUrl(img.getAttribute('src'));
+    if (!ref) continue;
+    try {
+      img.setAttribute('src', await wbCreatePrivateImageUrl(ref.path));
+      img.setAttribute('data-wb-private-image', 'true');
+    } catch (error) {
+      img.setAttribute('alt', 'Private image could not be loaded');
+      img.setAttribute('title', error?.message || 'Private image could not be loaded');
+    }
+  }
+}
+
+function wbRefreshPrivateImagesSoon(root) {
+  requestAnimationFrame(() => { wbRefreshPrivateImages(root).catch(() => {}); });
 }
 
 function isSecureAttachment(a) {
@@ -7800,7 +7895,7 @@ async function saveLog() {
   const saveBtn = document.getElementById('log-save-btn');
   const originalBtnText = saveBtn.textContent;
 
-  const recordId = editingLogId || wbNewRecordId();
+  const recordId = wbEditorRecordId(quillLog, 'logbook', editingLogId || '');
   let newFiles = [];
   if (logPendingFiles.length) {
     saveBtn.textContent = 'Uploading attachments...';
@@ -7849,6 +7944,7 @@ async function editLog(id) {
   const l = logbookCache.find(x => x.id === id);
   if (!l) return;
   editingLogId = id;
+  quillLog.container.dataset.wbRecordId = id;
   document.getElementById('log-title').value = l.title || '';
   document.getElementById('log-type').value = l.type || 'meeting';
   syncLogTypeTabs();
@@ -7869,6 +7965,7 @@ async function editLog(id) {
 // Kembalikan form ke mode "tambah baru"
 function resetLogForm() {
   editingLogId = null;
+  wbResetEditorRecordId(quillLog);
   document.getElementById('log-title').value = '';
   document.getElementById('log-type').value = 'meeting';
   syncLogTypeTabs();
@@ -7902,7 +7999,8 @@ function setDraftStatus(panel, text = 'Draft saved ✓', saved = true) {
   el.classList.toggle('saved', saved);
 }
 function saveDraftSnapshot(scope, snapshot, panel, delay = 450) {
-  const meaningful = Object.values(snapshot || {}).some(v => {
+  const meaningful = Object.entries(snapshot || {}).some(([key, v]) => {
+    if (key === 'recordId') return false;
     const x = String(v ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
     return x.length > 0;
   });
@@ -7939,7 +8037,8 @@ function autosaveLogDraft() {
     entryDate: document.getElementById('log-entry-date').value,
     tags: document.getElementById('log-tags-in').value,
     trackerLink: document.getElementById('log-tracker-link').value,
-    body: quillLog ? getCleanEditorHtml(quillLog) : ''
+    body: quillLog ? getCleanEditorHtml(quillLog) : '',
+    recordId: editingLogId || (quillLog ? wbEditorRecordId(quillLog, 'logbook', '') : '')
   };
   saveDraftSnapshot(currentLogDraftScope(), snapshot, 'logbook');
 }
@@ -7953,6 +8052,7 @@ function maybeRestoreLogDraft() {
   document.getElementById('log-privacy').value = draft.privacy || 'false';
   document.getElementById('log-entry-date').value = draft.entryDate || todayStr();
   document.getElementById('log-tags-in').value = draft.tags || '';
+  if (quillLog && draft.recordId && !editingLogId) quillLog.container.dataset.wbRecordId = draft.recordId;
   if (quillLog) setEditorHtml(quillLog, draft.body || '');
   const trackerSel = document.getElementById('log-tracker-link');
   if (trackerSel && draft.trackerLink) trackerSel.value = draft.trackerLink;
@@ -8008,7 +8108,8 @@ function autosaveNoteDraft() {
   saveDraftSnapshot(currentNoteDraftScope(), {
     title: document.getElementById('note-title-in').value,
     category: document.getElementById('note-cat-in').value,
-    body: quillNote ? getCleanEditorHtml(quillNote) : ''
+    body: quillNote ? getCleanEditorHtml(quillNote) : '',
+    recordId: editingNoteId || (quillNote ? wbEditorRecordId(quillNote, 'notes', '') : '')
   }, 'notes');
 }
 function restoreNoteDraft() {
@@ -8016,6 +8117,7 @@ function restoreNoteDraft() {
   if (!d) { setDraftStatus('notes', ''); return; }
   document.getElementById('note-title-in').value = d.title || '';
   document.getElementById('note-cat-in').value = d.category || 'finance';
+  if (quillNote && d.recordId && !editingNoteId) quillNote.container.dataset.wbRecordId = d.recordId;
   if (quillNote) setEditorHtml(quillNote, d.body || '');
   setDraftStatus('notes', 'Draft restored ✓');
 }
@@ -8023,6 +8125,7 @@ function restoreNoteDraft() {
 async function saveNote() {
   const title = document.getElementById('note-title-in').value.trim();
   if (!title) return alert('Title is required!');
+  const recordId = wbEditorRecordId(quillNote, 'notes', editingNoteId || '');
   const payload = {
     title,
     category: document.getElementById('note-cat-in').value,
@@ -8034,6 +8137,7 @@ async function saveNote() {
   if (editingNoteId) {
     ({ error } = await sb.from('notes').update(payload).eq('id', editingNoteId));
   } else {
+    payload.id = recordId;
     ({ error } = await sb.from('notes').insert(payload));
   }
   if (error) return alert('Failed: ' + error.message);
@@ -8048,6 +8152,7 @@ function editNote(id) {
   const n = notesCache.find(x => x.id === id);
   if (!n) return;
   editingNoteId = id;
+  quillNote.container.dataset.wbRecordId = id;
   document.getElementById('note-title-in').value = n.title || '';
   document.getElementById('note-cat-in').value = n.category || 'finance';
   document.getElementById('note-privacy').value = n.is_private ? 'true' : 'false';
@@ -8060,6 +8165,7 @@ function editNote(id) {
 // Kembalikan form ke mode "tambah baru"
 function resetNoteForm() {
   editingNoteId = null;
+  wbResetEditorRecordId(quillNote);
   document.getElementById('note-title-in').value = '';
   document.getElementById('note-cat-in').value = 'finance';
   document.getElementById('note-privacy').value = 'true';
@@ -10355,6 +10461,7 @@ function displayNotepad(items) {
       </div>
       <div class="np-page-body ql-editor" style="padding:0">${renderBody(active.body) || logbookAutoSummary(active)}</div>
     </div>`;
+  wbRefreshPrivateImagesSoon(wrap);
   applyPanelSearchHighlights('notepad', document.getElementById('np-search')?.value || '');
 }
 
@@ -10379,19 +10486,22 @@ function currentNotepadDraftScope() { return draftScope('notepad', editingNpId |
 function autosaveNotepadDraft() {
   saveDraftSnapshot(currentNotepadDraftScope(), {
     title: document.getElementById('np-title').value,
-    body: quillNp ? getCleanEditorHtml(quillNp) : ''
+    body: quillNp ? getCleanEditorHtml(quillNp) : '',
+    recordId: editingNpId || (quillNp ? wbEditorRecordId(quillNp, 'notepad', '') : '')
   }, 'notepad');
 }
 function restoreNotepadDraft() {
   const d = loadDraft(currentNotepadDraftScope());
   if (!d) { setDraftStatus('notepad', ''); return; }
   document.getElementById('np-title').value = d.title || '';
+  if (quillNp && d.recordId && !editingNpId) quillNp.container.dataset.wbRecordId = d.recordId;
   if (quillNp) setEditorHtml(quillNp, d.body || '');
   setDraftStatus('notepad', 'Draft restored ✓');
 }
 
 function openNpForm(title='', body='') {
   editingNpId = null;
+  wbResetEditorRecordId(quillNp);
   document.getElementById('np-title').value = title;
   if (typeof quillNp !== 'undefined') setEditorHtml(quillNp, body || '');
   document.getElementById('np-save-btn').textContent = 'Save';
@@ -10405,6 +10515,7 @@ function closeNpForm() {
   if (!confirmDiscardDraft(scope)) return;
   clearDraft(scope, 'notepad');
   editingNpId = null;
+  wbResetEditorRecordId(quillNp);
   document.getElementById('np-title').value = '';
   if (typeof quillNp !== 'undefined') quillNp.setText('');
   document.getElementById('np-form').classList.remove('open');
@@ -10414,11 +10525,13 @@ async function saveNpItem() {
   const title = document.getElementById('np-title').value.trim();
   const body = getCleanEditorHtml(quillNp);
   if (!title) return alert('Title is required!');
+  const recordId = wbEditorRecordId(quillNp, 'notepad', editingNpId || '');
   const payload = { title, body, created_by: getUser(), is_pinned: false, is_private: true };
   let error;
   if (editingNpId) {
     ({ error } = await sb.from('notepad_items').update({ title, body }).eq('id', editingNpId));
   } else {
+    payload.id = recordId;
     ({ error } = await sb.from('notepad_items').insert(payload));
   }
   if (error) {
@@ -10443,6 +10556,7 @@ async function saveNpItem() {
   }
   clearDraft(currentNotepadDraftScope(), 'notepad');
   editingNpId = null;
+  wbResetEditorRecordId(quillNp);
   document.getElementById('np-title').value = '';
   if (typeof quillNp !== 'undefined') quillNp.setText('');
   document.getElementById('np-form').classList.remove('open');
@@ -10453,6 +10567,7 @@ function editNpItem(id) {
   const n = notepadCache.find(x => x.id === id);
   if (!n) return;
   editingNpId = id;
+  quillNp.container.dataset.wbRecordId = id;
   document.getElementById('np-title').value = n.title || '';
   setEditorHtml(quillNp, n.body || '');
   document.getElementById('np-save-btn').textContent = 'Update';
@@ -10604,6 +10719,7 @@ function displayLogbook(data) {
       </div>
       <div class="log-day-entries">${entriesHtml}</div>
     </div>`;
+  wbRefreshPrivateImagesSoon(list);
 }
 
 function selectLogDay(dayKey) {
@@ -10657,6 +10773,7 @@ function _renderNoteCards(data) {
       <div class="np-page-body ql-editor" style="padding:0">${renderBody(active.body)}</div>
       <div style="margin-top:18px;font-size:11px;opacity:0.55">${active.is_private?'🔒 ':''}${active.created_by||''}</div>
     </div>`;
+  wbRefreshPrivateImagesSoon(grid);
 }
 
 function selectNoteItem(id) {
@@ -11711,7 +11828,6 @@ async function replacePastedDataImages(html, quill) {
   const images = Array.from(doc.querySelectorAll('img[src^="data:image/"]')).slice(0, 6);
   if (!images.length) return html;
   setEditorFooterMessage(quill, `Uploading ${images.length} pasted image${images.length === 1 ? '' : 's'}…`);
-  const userFolder = String(getUser() || 'user').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60) || 'user';
   for (let index = 0; index < images.length; index++) {
     const img = images[index];
     try {
@@ -11720,8 +11836,8 @@ async function replacePastedDataImages(html, quill) {
       if (!blob.type.startsWith('image/') || blob.size > 8 * 1024 * 1024) { img.remove(); continue; }
       const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg').replace(/[^a-z0-9]/gi, '') || 'png';
       const file = new File([blob], `pasted-image-${Date.now()}-${index + 1}.${ext}`, { type: blob.type });
-      const uploaded = await uploadFilesToStorage([file], `editor-images/${userFolder}`);
-      if (uploaded[0]?.url) img.setAttribute('src', uploaded[0].url);
+      const uploaded = await wbUploadPrivateEditorImage(quill, file);
+      if (uploaded?.url) img.setAttribute('src', uploaded.url);
       else img.remove();
     } catch (error) {
       img.remove();
@@ -11787,6 +11903,7 @@ function setEditorHtml(quill, html) {
   quill.clipboard.dangerouslyPasteHTML(0, clean, 'silent');
   quill.setSelection(0, 0, 'silent');
   updateEditorCount(quill);
+  wbRefreshPrivateImagesSoon(quill.root);
 }
 
 async function insertEditorImageFile(quill, file) {
@@ -11796,9 +11913,13 @@ async function insertEditorImageFile(quill, file) {
     return;
   }
   setEditorFooterMessage(quill, 'Uploading image…');
-  const userFolder = String(getUser() || 'user').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60) || 'user';
-  const uploaded = await uploadFilesToStorage([file], `editor-images/${userFolder}`);
-  const image = uploaded[0];
+  let image;
+  try {
+    image = await wbUploadPrivateEditorImage(quill, file);
+  } catch (error) {
+    setEditorFooterMessage(quill, error?.message || 'Image upload failed', true);
+    return;
+  }
   if (!image || !image.url) {
     setEditorFooterMessage(quill, 'Image upload failed', true);
     return;

@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `6cb532f30cfd5694e3ffb8aa9a65944cc0e3fc5b17b7534198cff08a1b3dd46c`
+**SHA-256 pasangan kode:** `7fb8e4d94f81b43d79c8c359e77c2660163de4da48c0b6f88ae5d77367c21a27`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v104 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v105 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -417,6 +417,7 @@ All Links saat ini memiliki:
 - Draft Protection menggunakan `localStorage` dan dipisahkan berdasarkan user aktif, panel, serta ID data yang sedang diedit.
 - Draft aktif pada Logbook, Notes, To Do, Notepad, dan pesan baru Work Talk.
 - Draft baru maupun perubahan saat mengedit data lama disimpan otomatis.
+- Mulai v105, draft Logbook/Notes/Notepad juga menyimpan record UUID internal untuk menjaga private rich-text image tetap terikat ke parent record yang sama setelah refresh; UUID ini bukan isi user dan tidak ditampilkan di UI.
 - Draft dipulihkan ketika form atau chat terkait dibuka kembali.
 - Draft dihapus setelah penyimpanan ke Supabase berhasil atau setelah user mengonfirmasi pembuangan draft.
 - Berpindah panel tidak boleh menghapus draft.
@@ -519,14 +520,14 @@ All Links saat ini memiliki:
 - Paste dari ChatGPT, Word, email, atau halaman web dibersihkan menjadi HTML yang stabil tanpa script, event berbahaya, atau style layout asing.
 - Penomoran list yang dimulai di atas angka 1 tetap dipertahankan saat paste.
 - Tabel dari clipboard dipertahankan sebagai table embed; user juga dapat membuat tabel baru dan mengedit isi sel secara langsung.
-- Gambar dapat ditambahkan melalui toolbar, paste screenshot, atau drag-and-drop. File gambar diunggah ke bucket Storage `attachments` pada folder `editor-images/<user>`.
-- Gambar dibatasi maksimal 8 MB dan disimpan sebagai URL Storage, bukan data base64 di field database.
+- Gambar dapat ditambahkan melalui toolbar, paste screenshot, atau drag-and-drop. Mulai v105, gambar baru diunggah ke bucket private `workboard-private` dan dikaitkan ke record Logbook / Notes / Notepad melalui path record UUID + Auth UID.
+- Gambar dibatasi maksimal 8 MB dan tetap disimpan sebagai object Storage, bukan data base64 di field database. HTML body menyimpan signed URL jangka pendek yang dapat dipetakan kembali ke object path dan diperbarui saat record dibuka.
 - Rich HTML disanitasi sebelum disimpan dan sebelum ditampilkan untuk mengurangi risiko script atau atribut berbahaya.
 - Footer editor menampilkan word count dan character count.
 - Mode full-screen dapat ditutup menggunakan tombol toolbar atau tombol Escape.
 - Draft Protection, ownership/private filter, Gemini Writing Assistant, tabel database, dan struktur penyimpanan lama tetap dipertahankan.
-- Fitur rich-text image masih memakai bucket legacy `attachments` dan public URL sampai migrasi private-image khusus selesai; jangan menganggap gambar embedded sudah ikut hardening attachment v103.
-- Perubahan private file attachment v103 tidak mengubah mekanisme gambar embedded pada editor.
+- Mulai v105, rich-text image baru tidak lagi memakai public URL permanen. WorkBoard membuat signed URL singkat dari bucket private dan me-refresh URL saat Logbook, Notes, Notepad, atau editor dibuka kembali.
+- Gambar rich-text legacy yang sudah tersimpan sebagai public URL pada bucket `attachments` tetap kompatibel dan belum dipindahkan otomatis; migrasi object historis dilakukan sebagai tugas terpisah agar body lama tidak rusak.
 
 ### 15.14 Lampiran PowerPoint
 
@@ -540,8 +541,8 @@ All Links saat ini memiliki:
 - Pada Logbook, attachment tampil di dalam activity card pada bagian `Attachments`, bukan sebagai chip terlepas di bawah halaman binder.
 - PowerPoint dibuka/diunduh melalui authenticated download; WorkBoard tidak menjalankan preview slide di dalam aplikasi.
 - File attachment legacy yang sudah lebih dulu memiliki `url` publik tetap kompatibel dan belum dipindahkan otomatis pada v103.
-- Embedded image dari Rich Text Editor masih memakai mekanisme legacy `attachments` sampai migrasi khusus image selesai.
-- v103 membutuhkan bucket private `workboard-private` serta policy dari `WORKBOARD_STORAGE_V103_PRIVATE_ATTACHMENTS.sql`; tidak menambah tabel aplikasi baru.
+- Mulai v105, embedded image baru Logbook / Notes / Notepad memakai bucket private yang sama dengan attachment dan signed URL jangka pendek; gambar legacy public tetap kompatibel.
+- v103 membutuhkan bucket private `workboard-private`; v105 memperluas policy Storage melalui `WORKBOARD_STORAGE_V105_PRIVATE_EDITOR_IMAGES.sql` untuk Notes/Notepad serta signed-image access. Tidak menambah tabel aplikasi baru.
 
 ### 15.15 Project / BOQ / Order Portfolio
 
@@ -646,7 +647,7 @@ All Links saat ini memiliki:
 - Data Team / Company tetap dapat dibaca sesuai aturan lama; private personal tetap hanya pemilik. Management dapat membaca data reporting; Owner mendapat kontrol company yang diperlukan.
 - Password Vault E2EE tetap owner-of-vault only dan tidak pernah dibuka ke Management/Owner lain.
 - Work Talk DM tetap hanya participant; hide/unhide room tetap dipertahankan melalui izin update terbatas pada `hidden_by`.
-- Bucket legacy `attachments` tetap tidak diubah mode privacy agar URL historis tidak rusak. Mulai v103, file attachment baru Logbook/Portfolio/Work Talk memakai bucket private `workboard-private` + Storage RLS; embedded rich-text images masih legacy sampai migrasi image khusus.
+- Bucket legacy `attachments` tetap tidak diubah mode privacy agar URL historis tidak rusak. Mulai v103, file attachment baru Logbook/Portfolio/Work Talk memakai bucket private `workboard-private` + Storage RLS; mulai v105 rich-text image baru Logbook/Notes/Notepad juga memakai bucket private tersebut dengan signed URL sementara.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
@@ -714,7 +715,7 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Logbook, Notes, dan Notepad memiliki lima tindakan Gemini tanpa mengirim panel atau database lain.
 - [ ] Logbook, Notes, dan Notepad memakai toolbar, tinggi editor, paste cleaner, dan footer penghitung yang sama.
 - [ ] Font, ukuran, heading, list, indent, alignment, warna, highlight, link, undo, redo, divider, table, image, dan full-screen editor tetap berfungsi.
-- [ ] Paste gambar dan upload gambar tetap menuju Supabase Storage, bukan disimpan sebagai base64 di database.
+- [ ] Paste gambar dan upload gambar tetap menuju Supabase Storage private `workboard-private`, bukan disimpan sebagai base64 di database; signed URL private harus dapat di-refresh setelah expired.
 - [ ] Lampiran `.ppt` dan `.pptx` tetap terlihat di file picker Logbook dan Work Talk, maksimal 20 MB per file.
 - [ ] File attachment baru Logbook/Portfolio/Work Talk memakai `workboard-private` dan authenticated download; record legacy dengan `url` tetap dapat dibuka.
 - [ ] Rich HTML tetap disanitasi tanpa menghapus isi tulisan user yang valid.
@@ -726,6 +727,16 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v105 Private Rich Text Images
+
+- Gambar baru yang diinsert melalui toolbar, paste screenshot, atau drag-and-drop pada Logbook, Notes, dan Notepad tidak lagi diunggah ke bucket public `attachments`.
+- Rich-text image baru memakai bucket private `workboard-private` dengan path yang mengandung resource, record UUID, dan Auth UID: `logbook/<record>/<uid>/...`, `notes/<record>/<uid>/...`, atau `notepad/<record>/<uid>/...`.
+- Record UUID untuk form baru dibuat di browser sebelum upload, disimpan bersama draft lokal, dan dipakai kembali saat row pertama kali disimpan, sehingga refresh/draft recovery tetap mengikat object ke parent record yang benar.
+- Preview gambar memakai signed URL 5 menit. Saat Logbook / Notes / Notepad / editor dibuka kembali, WorkBoard membaca path dari signed URL lama dan membuat signed URL baru sehingga gambar tidak hilang hanya karena token lama expired.
+- Storage policy v105 menambahkan Notes dan Notepad, serta memberi uploader akses ke object miliknya sendiri sebelum parent row pertama kali tersimpan. Setelah tersimpan, akses user lain tetap mengikuti visibility record/channel.
+- Gambar rich-text legacy yang sudah terlanjur memakai public URL tetap ditampilkan seperti sebelumnya dan belum dimigrasikan atau dihapus otomatis.
+- Membutuhkan SQL `WORKBOARD_STORAGE_V105_PRIVATE_EDITOR_IMAGES.sql`. Role, Users & Access, Leave Management, tabel aplikasi, attachment v104, dan data lama tidak diubah.
 
 ### 20 Agustus 2026 — v104 Attachment Display & Open Fix
 
