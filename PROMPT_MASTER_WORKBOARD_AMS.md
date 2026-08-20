@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `e4a7c8879e7f9798a3a19524d4bcf177273bbd65239cdd409e9362cf5899e236`
+**SHA-256 pasangan kode:** `a33876e92d3909719fd357aa05b37caf8be1f4085a7c5f88eda7f34b892b87b0`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v114 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v115 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -654,7 +654,7 @@ All Links saat ini memiliki:
 - Attendance memiliki trigger integrity v107 di atas RLS: non-Owner hanya dapat mengisi field Clock Out pada row miliknya yang masih terbuka, sedangkan field Clock In/identity/history immutable; timestamp Clock Out resmi memakai waktu database.
 - Data Team / Company tetap dapat dibaca sesuai aturan lama; private personal tetap hanya pemilik. Management dapat membaca data reporting; Owner mendapat kontrol company yang diperlukan.
 - Password Vault E2EE tetap owner-of-vault only dan tidak pernah dibuka ke Management/Owner lain.
-- Work Talk DM tetap hanya participant; hide/unhide room tetap dipertahankan melalui izin update terbatas pada `hidden_by`.
+- Work Talk DM tetap hanya participant; hide/unhide room tetap dipertahankan melalui izin update terbatas pada `hidden_by`. Permanent delete channel hanya ditampilkan/diizinkan untuk creator channel atau Owner; edit/delete message hanya untuk sender pesan itu sendiri.
 - Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
@@ -738,6 +738,14 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v115 Work Talk Action Permission Fix
+
+- Menyamakan kontrol aksi Work Talk dengan RLS: tombol `Delete permanently` untuk Department/DM channel hanya tampil bagi creator channel atau Owner.
+- Menambahkan client guard pada permanent channel delete sehingga pemanggilan fungsi langsung oleh viewer lain tetap ditolak sebelum request database.
+- Menambahkan defensive guard pada Edit/Delete message: user hanya dapat mengubah atau menghapus pesan yang `sender`-nya sama dengan user aktif; tampilan aksi pesan tetap owner-of-message only.
+- Menerjemahkan sisa teks UI Work Talk yang masih Indonesia pada tombol Back, placeholder compose, dan tombol Start menjadi English.
+- Tidak mengubah policy database, struktur tabel, DM participant visibility, hide/unhide `hidden_by`, attachment, realtime, role, atau data. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v114 Quick Links Recovery RLS Hardening
 

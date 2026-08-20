@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v114 — Quick Links Recovery RLS Hardening — 20 Aug 2026 -->
+<!-- WorkBoard AMS v115 — Work Talk Action Permission Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -11063,6 +11063,10 @@ function chatChannelIcon(c) {
   if (c.type === 'dm') return 'ti-user';
   return 'ti-users';
 }
+function canDeleteChatChannel(c) {
+  if (!c) return false;
+  return String(c.created_by || '') === String(getUser() || '') || isOwner();
+}
 
 function renderChatChannelItem(c) {
   const unread = chatMessagesCacheUnread[c.id] || 0;
@@ -11093,9 +11097,9 @@ async function openChatChannel(channelId, isUserClick) {
 
   document.getElementById('chat-main').innerHTML = `
     <div class="chat-thread-header">
-      <button class="chat-back" onclick="closeChatThreadMobile()" title="Kembali"><i class="ti ti-chevron-left"></i></button>
+      <button class="chat-back" onclick="closeChatThreadMobile()" title="Back"><i class="ti ti-chevron-left"></i></button>
       <i class="ti ${chatChannelIcon(c)}"></i> ${escHtml(chatChannelDisplayName(c))}
-      ${c.type !== 'umum' ? `<button class="chat-icon-btn" style="width:28px;height:28px;margin-left:auto" title="Delete permanently" onclick="deleteChatChannel('${c.id}')"><i class="ti ti-trash" style="font-size:13px"></i></button>` : ''}
+      ${c.type !== 'umum' && canDeleteChatChannel(c) ? `<button class="chat-icon-btn" style="width:28px;height:28px;margin-left:auto" title="Delete permanently" onclick="deleteChatChannel('${c.id}')"><i class="ti ti-trash" style="font-size:13px"></i></button>` : ''}
     </div>
     <div class="chat-thread" id="chat-thread"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading messages...</div></div>
     <div class="chat-compose-wrap">
@@ -11108,7 +11112,7 @@ async function openChatChannel(channelId, isUserClick) {
         <input type="file" id="chat-file-input" multiple style="display:none" onchange="onChatFilesPicked(event)" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation">
         <button class="chat-icon-btn" title="Attach file, including PowerPoint (maximum 20 MB)" onclick="document.getElementById('chat-file-input').click()"><i class="ti ti-paperclip"></i></button>
         <button class="chat-icon-btn" title="Emoji" id="chat-emoji-btn" onclick="toggleChatEmojiPicker(event)"><i class="ti ti-mood-smile"></i></button>
-        <textarea id="chat-input" rows="2" placeholder="${window.matchMedia('(pointer: coarse)').matches ? 'Tulis pesan... (ketuk tombol kirim →)' : 'Tulis pesan... (Enter kirim, Shift+Enter baris baru)'}" onkeydown="onChatInputKeydown(event)" oninput="autoGrowChatInput(this);autosaveChatDraft()"></textarea>
+        <textarea id="chat-input" rows="2" placeholder="${window.matchMedia('(pointer: coarse)').matches ? 'Write a message... (tap Send →)' : 'Write a message... (Enter to send, Shift+Enter for new line)'}" onkeydown="onChatInputKeydown(event)" oninput="autoGrowChatInput(this);autosaveChatDraft()"></textarea>
         <button class="chat-icon-btn chat-send" title="Send" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
       </div>
     </div>
@@ -11302,6 +11306,7 @@ async function sendChatMessage() {
 function editChatMessage(id) {
   const m = chatMessagesCache.find(x => x.id === id);
   if (!m) return;
+  if (String(m.sender || '') !== String(getUser() || '')) return alert('You can only edit your own messages.');
   editingChatMessageId = id;
   const input = document.getElementById('chat-input');
   if (input) { input.value = m.body || ''; input.focus(); autoGrowChatInput(input); }
@@ -11317,6 +11322,9 @@ function cancelChatEdit() {
 }
 
 async function deleteChatMessage(id) {
+  const m = chatMessagesCache.find(x => x.id === id);
+  if (!m) return;
+  if (String(m.sender || '') !== String(getUser() || '')) return alert('You can only delete your own messages.');
   if (!confirm('Delete this message? This action cannot be undone.')) return;
   const { error } = await sb.from('chat_messages').delete().eq('id', id);
   if (error) return alert('Failed to delete message: ' + error.message);
@@ -11376,7 +11384,9 @@ async function createChatChannel() {
 // Permanent delete — for Department channels (everyone) or DM (disappears for both parties)
 async function deleteChatChannel(id) {
   const c = chatChannels.find(x => x.id === id);
-  const msg = c && c.type === 'dm'
+  if (!c) return;
+  if (!canDeleteChatChannel(c)) return alert('You do not have permission to permanently delete this chat room.');
+  const msg = c.type === 'dm'
     ? 'Delete this private chat along with its entire history? This will delete it for BOTH parties and cannot be undone.'
     : 'Delete this channel along with all its messages? This action cannot be undone.';
   if (!confirm(msg)) return;
@@ -11469,7 +11479,7 @@ async function openChatDMPicker() {
     <div id="chat-dm-picker-list" style="max-height:180px;overflow-y:auto;padding:0 4px"><div class="chat-empty-list">Loading names...</div></div>
     <div style="display:flex;gap:6px;padding:8px 10px;border-top:0.5px solid var(--border)">
       <input id="chat-dm-manual" placeholder="...or type a new name" style="flex:1">
-      <button class="btn-sm btn-primary" onclick="startChatDM(document.getElementById('chat-dm-manual').value)">Mulai</button>
+      <button class="btn-sm btn-primary" onclick="startChatDM(document.getElementById('chat-dm-manual').value)">Start</button>
     </div>`;
   document.body.appendChild(pop);
   const r = btn.getBoundingClientRect();
