@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `490e5ea92ec3a09628e6d49df8c903765fc87d4ed2faf6006d2cef8f8a7b252a`
+**SHA-256 pasangan kode:** `2d0f75903cf1e5cdac6d1fa5329ce435d7c96bb388650c39577bee9c63a6617c`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v117 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v118 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -485,6 +485,7 @@ All Links saat ini memiliki:
   - Portfolio Next Action → hapus Next Action yang selesai.
 - `Waiting` menyimpan tanggal review/follow-up dan tidak terus menjadi fokus utama sebelum tanggalnya tiba. **Waiting adalah state kerja, bukan hasil selesai, sehingga tidak membuat Logbook baru.**
 - `Tomorrow` membuat carry-forward tanpa mengetik ulang. Untuk Schedule, marker internal di `todos` dipakai agar tidak membutuhkan kolom database baru. **Carry Forward tidak membuat Logbook baru.**
+- Saat item Carry kemudian benar-benar `Done`, Auto Logbook memakai tag `carry-resolved` (bukan `carried-forward`) agar hasil selesai tetap tampil di Logbook/Completed Today; tag `carried-forward` tetap khusus riwayat pemindahan legacy yang disembunyikan.
 - `Cancelled` keluar dari daftar aktif dan dicatat pada source status/history, tetapi **tidak dibuat sebagai Logbook completed activity**. Untuk Schedule, state Waiting/Carry/Cancelled disimpan pada linked marker `todos` yang privacy-nya harus sama dengan Schedule sumber.
 - Menyelesaikan linked Schedule marker dari Today/Follow Up/To Do menyinkronkan Schedule sumber menjadi Done; private/public Logbook mengikuti `is_private` marker/source, bukan ditebak dari nama marker.
 - `Completed Today` membaca Logbook aktual, sehingga pekerjaan planned maupun unplanned tetap terlihat sebagai hasil kerja.
@@ -744,6 +745,13 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v118 Carry Completion Logbook Visibility Fix
+
+- Memperbaiki completion item `Carry`/Tomorrow yang sebelumnya diberi tag Auto Logbook `carried-forward`; tag tersebut memang disembunyikan oleh Logbook binder sebagai legacy state-history sehingga pekerjaan yang benar-benar selesai dapat tidak terlihat.
+- Completion Carry sekarang memakai tag `carry-resolved`, sehingga hasil kerja muncul normal di Logbook, `Completed Today`, dan reporting sebagai completed activity.
+- Aksi `Tomorrow`/Carry Forward itu sendiri tetap tidak membuat Logbook; hanya saat item kemudian ditekan `Done` hasil aktual dicatat.
+- Tidak mengubah data legacy, Schedule state, role, RLS, Storage, Attendance, Leave Management, atau database. Tidak memerlukan SQL.
 
 ### 20 Agustus 2026 — v117 Schedule State Reporting Sync
 

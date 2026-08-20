@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v117 — Schedule State Reporting Sync — 20 Aug 2026 -->
+<!-- WorkBoard AMS v118 — Carry Completion Logbook Visibility Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -8937,7 +8937,7 @@ async function todayDone(src,id){
   if(item._kind==='portfolio-noaction'){return todayOpen(src,id);}
   let title=item.title, isPrivate=false, tags=[];
   if(src==='todo'){
-    const t=item.raw; const linkedId=linkedScheduleId(t.text); isPrivate=todayLogPrivacyForTodo(t); tags=[item._kind==='followup'?'follow-up':item._kind==='carry'?'carried-forward':item._kind==='waiting'?'waiting-resolved':'planned-task']; const {error}=await sb.from('todos').update({is_done:true,done_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); if(linkedId && !todoMarker(t.text,'Cancelled')) await completeLinkedScheduleFromTodo(t); if(linkedId) item._linkedScheduleId=linkedId;
+    const t=item.raw; const linkedId=linkedScheduleId(t.text); isPrivate=todayLogPrivacyForTodo(t); tags=[item._kind==='followup'?'follow-up':item._kind==='carry'?'carry-resolved':item._kind==='waiting'?'waiting-resolved':'planned-task']; const {error}=await sb.from('todos').update({is_done:true,done_at:new Date().toISOString()}).eq('id',id); if(error)return alert('Failed: '+error.message); if(linkedId && !todoMarker(t.text,'Cancelled')) await completeLinkedScheduleFromTodo(t); if(linkedId) item._linkedScheduleId=linkedId;
   }else if(src==='schedule'){
     const r=item.raw; isPrivate=!!r.is_private; tags=['planned','schedule']; const {error}=await sb.from('schedule_events').update({category:'green'}).eq('id',id); if(error)return alert('Failed: '+error.message);
   }else if(src==='tracker'){
