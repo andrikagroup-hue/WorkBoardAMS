@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `a67d930049c621b15f4b1c0d387535c77dc3fb57f48f95b56c7b28ecd6444431`
+**SHA-256 pasangan kode:** `66aed68a7fae3be842ac3c9683d3c0b2194405744d196a6e75d761ba3d7d4395`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v106 yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v107 yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -367,6 +367,7 @@ Catatan ketergantungan:
 - Pada tabel kerja Team / Company yang public, visibilitas baca dan hak ubah tidak disamakan: creator dapat mengubah row miliknya; Owner juga dapat mengelola row public user lain sesuai RLS; Staff/Management lain melihat row tersebut sebagai read-only.
 - UI Schedule, Logbook, Portfolio, Project Tracker/Kanban, dan Recurring Task wajib menyembunyikan/menonaktifkan action mutasi pada row yang tidak boleh diubah user aktif. Owner yang mengedit row public user lain harus mempertahankan `created_by` asli dan privacy tetap Public.
 - Management dan Owner dapat membuka `HR → Leave Management` serta Approve / Reject / Reset request Leave, Sick, dan Time Off. Delete request tetap hanya Owner. `Users & Access` tetap hanya Owner.
+- Attendance update memakai defense-in-depth mulai v107: Staff/Management hanya boleh menyelesaikan Clock Out pada row attendance miliknya sendiri; identity, tanggal, Clock In, status, keterlambatan, GPS/foto masuk, keterangan, dan created_at tidak boleh ditulis ulang. Official Clock Out timestamp ditetapkan oleh database. Owner tetap memiliki capability administratif yang sudah ada.
 - Owner (Ratu) mendapat seluruh kontrol WorkBoard/company yang dirancang untuk Owner, tetapi Password Manager dan data personal private user lain tetap mengikuti policy private masing-masing.
 
 ### 15.5 All Links — kondisi terbaru
@@ -646,6 +647,7 @@ All Links saat ini memiliki:
 - Akun inactive tidak dapat memakai WorkBoard; RLS juga menolak akses data walau sesi lama masih tersimpan.
 - `Switch User` lama menjadi Sign Out. Rename profile dari UI dinonaktifkan karena data legacy masih memakai nama pada `created_by` / `user_name`.
 - RLS diaktifkan pada tabel WorkBoard yang dimigrasikan. Anon tidak diberi akses tabel tersebut; role `authenticated` mendapat hak yang dibatasi policy.
+- Attendance memiliki trigger integrity v107 di atas RLS: non-Owner hanya dapat mengisi field Clock Out pada row miliknya yang masih terbuka, sedangkan field Clock In/identity/history immutable; timestamp Clock Out resmi memakai waktu database.
 - Data Team / Company tetap dapat dibaca sesuai aturan lama; private personal tetap hanya pemilik. Management dapat membaca data reporting; Owner mendapat kontrol company yang diperlukan.
 - Password Vault E2EE tetap owner-of-vault only dan tidak pernah dibuka ke Management/Owner lain.
 - Work Talk DM tetap hanya participant; hide/unhide room tetap dipertahankan melalui izin update terbatas pada `hidden_by`.
@@ -730,6 +732,17 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v107 Attendance Clock-Out Integrity Guard
+
+- Menambahkan trigger database `workboard_guard_attendance_update()` sebagai defense-in-depth untuk tabel `attendance`.
+- Staff/Management non-Owner hanya dapat menyelesaikan Clock Out pada row miliknya sendiri yang belum memiliki `clock_out`; field `user_name`, tanggal, Clock In, status, menit terlambat, GPS/foto masuk, keterangan, dan `created_at` tidak boleh ditulis ulang melalui direct client call.
+- Timestamp Clock Out resmi ditetapkan dengan `clock_timestamp()` dari database; browser tidak menjadi sumber waktu resmi.
+- Latitude/longitude Clock Out divalidasi dalam rentang koordinat yang valid.
+- Owner tetap melewati guard ini agar capability administratif/rename legacy yang sudah ada tidak rusak; policy RLS lama tetap dipertahankan.
+- UI Clock Out diperketat dengan filter `id + user_name + clock_out IS NULL` dan memverifikasi bahwa benar-benar ada row yang berhasil diperbarui.
+- Embedded Attendance setup SQL di `index.html` ikut membawa trigger v107 agar recovery/setup baru tidak kembali ke policy tanpa integrity guard.
+- Membutuhkan SQL `WORKBOARD_AUTH_V107_ATTENDANCE_UPDATE_INTEGRITY.sql`. Tidak mengubah Leave Management, Users & Access, role, Storage, atau data attendance lama.
 
 ### 20 Agustus 2026 — v106 Shared Record Action Permission Fix
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v106 — Shared Record Action Permission Fix — 20 Aug 2026 -->
+<!-- WorkBoard AMS v107 — Attendance Clock-Out Integrity Guard — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -12447,6 +12447,68 @@ FOR UPDATE TO authenticated
 USING (public.workboard_is_active() AND (user_name = public.workboard_my_name() OR public.workboard_is_owner()))
 WITH CHECK (public.workboard_is_active() AND (user_name = public.workboard_my_name() OR public.workboard_is_owner()));
 
+-- Defense-in-depth: non-Owner users may only complete their own open attendance row.
+-- Protected clock-in / identity / status fields cannot be rewritten through direct client calls.
+CREATE OR REPLACE FUNCTION public.workboard_guard_attendance_update()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF coalesce(public.workboard_is_owner(), false) THEN
+    RETURN NEW;
+  END IF;
+
+  IF NOT coalesce(public.workboard_is_active(), false) THEN
+    RAISE EXCEPTION 'Inactive WorkBoard account.';
+  END IF;
+
+  IF OLD.user_name IS DISTINCT FROM public.workboard_my_name() THEN
+    RAISE EXCEPTION 'You can only update your own attendance.';
+  END IF;
+
+  IF NEW.user_name IS DISTINCT FROM OLD.user_name
+     OR NEW.tanggal IS DISTINCT FROM OLD.tanggal
+     OR NEW.clock_in IS DISTINCT FROM OLD.clock_in
+     OR NEW.status IS DISTINCT FROM OLD.status
+     OR NEW.terlambat_menit IS DISTINCT FROM OLD.terlambat_menit
+     OR NEW.lat_in IS DISTINCT FROM OLD.lat_in
+     OR NEW.lng_in IS DISTINCT FROM OLD.lng_in
+     OR NEW.foto_in IS DISTINCT FROM OLD.foto_in
+     OR NEW.keterangan IS DISTINCT FROM OLD.keterangan
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'Only clock-out fields can be updated after Clock In.';
+  END IF;
+
+  IF OLD.clock_out IS NOT NULL THEN
+    RAISE EXCEPTION 'Attendance is already clocked out.';
+  END IF;
+
+  IF OLD.clock_in IS NULL OR NEW.clock_out IS NULL THEN
+    RAISE EXCEPTION 'A valid Clock In and Clock Out are required.';
+  END IF;
+
+  IF NEW.lat_out IS NOT NULL AND (NEW.lat_out < -90 OR NEW.lat_out > 90) THEN
+    RAISE EXCEPTION 'Invalid clock-out latitude.';
+  END IF;
+  IF NEW.lng_out IS NOT NULL AND (NEW.lng_out < -180 OR NEW.lng_out > 180) THEN
+    RAISE EXCEPTION 'Invalid clock-out longitude.';
+  END IF;
+
+  -- Use database time so a browser cannot rewrite the official Clock Out timestamp.
+  NEW.clock_out := clock_timestamp();
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.workboard_guard_attendance_update() FROM PUBLIC;
+DROP TRIGGER IF EXISTS wb_attendance_update_guard ON public.attendance;
+CREATE TRIGGER wb_attendance_update_guard
+BEFORE UPDATE ON public.attendance
+FOR EACH ROW
+EXECUTE FUNCTION public.workboard_guard_attendance_update();
+
 CREATE POLICY wb_attendance_delete ON public.attendance
 FOR DELETE TO authenticated
 USING (public.workboard_is_owner());
@@ -12753,15 +12815,23 @@ async function doClockOut(recordId) {
   const gps = await getGPS();
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Menyimpan...</span>';
 
-  const { error } = await withTimeout(sb.from('attendance').update({
+  const { data: updatedRow, error } = await withTimeout(sb.from('attendance').update({
     clock_out: now.toISOString(),
     lat_out: gps.lat,
     lng_out: gps.lng,
     foto_out: foto
-  }).eq('id', recordId));
+  })
+    .eq('id', recordId)
+    .eq('user_name', getUser())
+    .is('clock_out', null)
+    .select('id')
+    .maybeSingle());
 
   if (error) {
     alert('Failed to clock out: ' + error.message);
+  } else if (!updatedRow) {
+    alert('Clock Out was not saved. This attendance may already be completed or does not belong to your account.');
+    await renderAbsen();
   } else {
     await renderAbsen();
     if (window._returnToTodayAfterAttendance) { window._returnToTodayAfterAttendance = false; await switchPanel('focus', document.getElementById('nsub-focus')); }
