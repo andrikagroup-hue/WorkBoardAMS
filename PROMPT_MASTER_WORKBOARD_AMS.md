@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `3a589657d61e8e1a87c5b4bf4c90bfb174533f9df6ff8a1a6230b181b513414e`
+**SHA-256 pasangan kode:** `e977d56b617a1cf5d48072dd121cd1d2cfbaf70fba516d59f47cc0b264012018`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v126 Work Talk Core UX yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v127 Work Talk Mobile Composer Visibility Fix yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -669,7 +669,7 @@ All Links saat ini memiliki:
 - Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105. Mulai v124, helper upload public legacy dipertahankan hanya sebagai fail-closed guard dan tidak lagi dapat menghasilkan `getPublicUrl()`.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
-### 15.20 Work Talk — WhatsApp-style Core UX — v126
+### 15.20 Work Talk — WhatsApp-style Core UX — v126–v127
 
 - Work Talk tetap memakai tabel `chat_channels` dan `chat_messages`; tidak ada tabel atau kolom baru pada fase ini.
 - Daftar conversation desktop/mobile disatukan sebagai `Recent conversations` dan diurutkan berdasarkan timestamp pesan terakhir. Channel General, Department/Team, dan DM tetap memakai tipe data lama (`umum`, `bagian`, `dm`) agar kompatibilitas data tidak berubah.
@@ -679,6 +679,7 @@ All Links saat ini memiliki:
 - Thread mempertahankan bubble pesan sendiri di kanan dan pesan user lain di kiri, sender/avatar pada pesan orang lain, timestamp ringkas, label `edited`, serta date separator `Today` / `Yesterday` / tanggal.
 - Header conversation menampilkan identitas chat yang lebih jelas dan status Online / Last seen pada DM menggunakan `online_presence`.
 - Pada mobile, list chat menjadi layar awal. Saat conversation dibuka, thread menjadi full-screen dan tombol Back mengembalikan user ke daftar chat; composer memakai safe-area bawah agar nyaman pada layar kecil.
+- Mulai v127, container thread mobile memakai flex shrink yang eksplisit (`min-height: 0`) dan overflow internal sehingga riwayat pesan panjang tidak dapat mendorong composer keluar viewport; composer tetap berada di bagian bawah thread.
 - Attachment file lama tetap tersedia. Image attachment sekarang mempunyai inline preview dan lightbox. Image dari bucket private/legacy privacy bridge hanya dibuatkan signed URL sementara; download tetap melalui alur authenticated Storage. Work Talk tidak membuat public Storage URL.
 - File yang baru dipilih dapat dipreview lokal sebelum dikirim; file tetap baru diunggah setelah Send melalui helper private attachment yang sudah ada. Draft pesan tidak menyimpan file attachment.
 - Realtime dan polling tetap dipertahankan; metadata recent conversation, unread, dan presence ikut diperbarui ketika pesan berubah.
@@ -778,6 +779,15 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v127 Work Talk Mobile Composer Visibility Fix
+
+- Memperbaiki bug mobile ketika kotak `Write a message...` dapat terdorong keluar viewport pada conversation dengan riwayat pesan panjang.
+- Root cause berada pada layout flex Work Talk: area `chat-thread` belum diizinkan mengecil (`min-height: 0`), sehingga tinggi konten pesan dapat mendorong `chat-compose-wrap` ke bawah layar.
+- `chat-main` sekarang menahan overflow internal, `chat-thread` menjadi area scroll yang benar, dan composer tetap `flex: 0 0 auto` di bagian bawah thread.
+- Mobile full-screen thread tetap memakai safe-area, Back navigation, image preview, realtime/polling, draft, unread, recent ordering, dan attachment private yang sudah ada.
+- Tidak mengubah DM participant-only, sender-only edit/delete, creator/Owner permanent delete, RLS, Storage policy, role, Today v125, Attendance, Management Report, atau database.
+- Tidak membutuhkan SQL baru.
 
 ### 20 Agustus 2026 — v126 Work Talk Core UX
 
