@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v124 — Stable Release — Attendance & Output Security — 20 Aug 2026 -->
+<!-- WorkBoard AMS v125 — Today Repeat Loop Fix — 20 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -8814,25 +8814,33 @@ async function renderTodayFocus() {
     // A completed source action must disappear from Today immediately after Done.
     // Today's Auto Logbook source markers provide a second guard if source data is stale or races a refresh.
     const completedSourceTitles=new Map();
+    const completedScheduleTitles=new Set();
+    const todayTitleKey=value=>String(value||'').trim().toLowerCase().replace(/\s+/g,' ');
     todayLogCache.forEach(l=>{
       const tags=Array.isArray(l?.tags)?l.tags:[];
       const sourceTag=tags.find(t=>String(t).startsWith('source:'));
       if(!sourceTag)return;
       const sourceKey=String(sourceTag).slice(7);
       if(!sourceKey)return;
-      const titleKey=String(l.title||'').trim().toLowerCase().replace(/\s+/g,' ');
+      const titleKey=todayTitleKey(l.title);
       if(!completedSourceTitles.has(sourceKey))completedSourceTitles.set(sourceKey,new Set());
       completedSourceTitles.get(sourceKey).add(titleKey);
+      // A repeated/legacy Schedule title is one daily action in Today. Once any occurrence
+      // of that Schedule title is completed today, do not rotate older copies back into focus.
+      if(sourceKey.startsWith('schedule:') && titleKey) completedScheduleTitles.add(titleKey);
     });
     const wasCompletedToday=(item)=>{
       if(!item?._src || item?.id==null)return false;
-      const sourceKey=`${item._src}:${item.id}`;
+      const titleKey=todayTitleKey(item.title);
+      const linkedSchedule=item._src==='todo' ? linkedScheduleId(item?.raw?.text) : null;
+      // Carry/Waiting markers created from Schedule inherit the same daily completion guard.
+      if((item._src==='schedule' || linkedSchedule) && titleKey && completedScheduleTitles.has(titleKey)) return true;
+      const sourceKey=linkedSchedule ? `schedule:${linkedSchedule}` : `${item._src}:${item.id}`;
       const doneTitles=completedSourceTitles.get(sourceKey);
       if(!doneTitles?.size)return false;
       // Do not immediately replace a completed Portfolio action with a same-day "Set Next Action" reminder.
       // If no next action is set, the reminder may surface again tomorrow.
       if(item._kind==='portfolio-noaction')return true;
-      const titleKey=String(item.title||'').trim().toLowerCase().replace(/\s+/g,' ');
       return doneTitles.has(titleKey);
     };
     const activeSeen=new Set();

@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `659e2fddd890fda9182d3e5d15df4e47aa12cfa8f696d98894e2437ca8a9d992`
+**SHA-256 pasangan kode:** `8c0aa2a70f18359a752651cf10bc7fe8c4915c6445d7a11a1fec760301f3daa7`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v124 Stable Release yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v125 Today Repeat Loop Fix yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -454,6 +454,7 @@ All Links saat ini memiliki:
 - Item yang sudah menjadi `One Thing Now` tidak diduplikasi lagi di `Up Next` atau `Follow-ups Due`.
 - `Up Next` dibatasi maksimal **2 item** agar Today tetap ringan dibaca; antrean aktif lainnya tetap tersedia dan akan naik setelah item di atasnya selesai/dipindahkan.
 - Setelah `Done`, Today memakai status source **dan** source marker Auto Logbook hari ini sebagai guard. Action source yang sama tidak boleh muncul kembali akibat stale/racing refresh; Portfolio yang baru saja selesai juga tidak langsung berubah menjadi reminder `Set Next Action` pada hari yang sama.
+- Mulai v125, Schedule/carry legacy dengan **judul Schedule yang sama** tidak boleh berputar kembali di `One Thing Now` pada hari yang sama setelah salah satu occurrence judul tersebut sudah `Done`. Guard ini hanya berlaku pada layer Today untuk source Schedule/linked Schedule berdasarkan Auto Logbook hari ini; record Schedule historis tidak dihapus atau ditulis ulang.
 - Exact duplicate yang benar-benar identik pada antrean aktif dari source type yang sama dikolaps hanya pada layer tampilan. Schedule dengan waktu berbeda tetap dianggap aktivitas berbeda.
 - Planned count membaca seluruh Schedule hari ini, termasuk Schedule yang sudah Done, sehingga angka Planned tidak turun ketika pekerjaan selesai.
 - Sidebar `Today's Planned Progress` menghitung Schedule hari ini yang sudah Done (`category = green`) dibanding seluruh Schedule hari ini; Logbook/unplanned activity tidak boleh menaikkan persentase planned progress.
@@ -753,6 +754,14 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v125 Today Repeat Loop Fix
+
+- Memperbaiki loop `One Thing Now` ketika beberapa Schedule historis/overdue memiliki judul yang sama pada tanggal atau jam berbeda.
+- Setelah salah satu occurrence Schedule dengan judul tersebut selesai dan Auto Logbook hari ini memiliki source marker `schedule:<id>`, Today menahan occurrence Schedule/linked carry lain dengan judul normalized yang sama sampai hari berganti.
+- Exact source guard lama tetap dipertahankan; v125 menambahkan family guard khusus Schedule title agar copy legacy tidak bergiliran naik kembali setelah `Done`.
+- Data Schedule historis tidak dihapus, tidak diubah status massal, dan tetap tersedia di Daily Schedule/Logbook history.
+- Tidak mengubah role, RLS, Storage, Attendance, Leave Management, Management Report, atau database. Tidak membutuhkan SQL.
 
 ### 20 Agustus 2026 — v124 Stable Release — Final Stabilization
 
