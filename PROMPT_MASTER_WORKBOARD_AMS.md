@@ -4,7 +4,7 @@
 
 **Status sinkronisasi:** 20 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `64ce4384509c776179a31d9150f5a5949e44e6e485893eb382bdc3b596e625e0`
+**SHA-256 pasangan kode:** `098db604e1ac49bd2ef642afe94924cf548244f4e4a25f536f10aa79589225f0`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v129 Work Talk Reply yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v130 Work Talk Basic Sticker yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -669,7 +669,7 @@ All Links saat ini memiliki:
 - Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105. Mulai v124, helper upload public legacy dipertahankan hanya sebagai fail-closed guard dan tidak lagi dapat menghasilkan `getPublicUrl()`.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
-### 15.20 Work Talk — WhatsApp-style Core UX & Reply — v126–v129
+### 15.20 Work Talk — WhatsApp-style Core UX, Reply & Basic Sticker — v126–v130
 
 - Work Talk tetap memakai tabel `chat_channels` dan `chat_messages`; v129 tidak membuat tabel baru, tetapi menambahkan kolom metadata `reply_to` dan `reply_snapshot` pada `chat_messages` untuk fitur Reply.
 - Daftar conversation desktop/mobile disatukan sebagai `Recent conversations` dan diurutkan berdasarkan timestamp pesan terakhir. Channel General, Department/Team, dan DM tetap memakai tipe data lama (`umum`, `bagian`, `dm`) agar kompatibilitas data tidak berubah.
@@ -688,9 +688,12 @@ All Links saat ini memiliki:
 - Mulai v129, setiap pesan dapat di-Reply. Composer menampilkan quoted preview sebelum Send; bubble reply menampilkan sender + excerpt pesan asal; quote dapat diklik untuk scroll/highlight ke pesan asal bila pesan tersebut masih berada dalam history yang dimuat.
 - Reply memakai dua kolom tambahan pada `chat_messages`: `reply_to` untuk UUID pesan asal dan `reply_snapshot` untuk snapshot sender/excerpt. Snapshot berada pada row pesan reply yang sama sehingga tetap mengikuti visibility channel/DM RLS; tidak ada query yang membuka pesan dari channel lain.
 - Reply tersedia untuk pesan sendiri maupun pesan user lain. Mode Reply dan Edit tidak dapat aktif bersamaan. Menghapus pesan asal tidak menghapus pesan reply; quote snapshot tetap dapat ditampilkan, sedangkan jump dinonaktifkan bila sumber tidak lagi tersedia.
-- Sticker, GIF, Favorite, Recent Sticker, custom sticker upload, dan sticker pack belum dibuat pada v129 dan tetap ditunda sampai Reply stabil.
+- Mulai v130, Basic Sticker aktif sebagai built-in pack di Work Talk tanpa layanan eksternal dan tanpa upload file. Kategori awal: `AMS`, `Greeting`, `Office`, `Follow Up`, dan `Safety`, masing-masing empat sticker.
+- Sticker disimpan sebagai token internal yang hanya dirender jika ID cocok dengan whitelist sticker bawaan. Recent conversation dan Reply preview menampilkan label `Sticker · ...`, bukan token mentah.
+- Tap sticker langsung mengirim pesan; sticker dapat menjadi Reply, dapat di-Reply, dan dapat dihapus oleh sender. Sticker tidak dapat diedit sebagai teks. Draft teks/attachment yang sedang ada tidak dihapus ketika user mengirim sticker.
+- GIF, Favorite, Recent Sticker, custom sticker upload, dan sticker pack eksternal belum dibuat pada v130.
 - Tidak mengubah Today v125, Schedule, Logbook, Portfolio, Attendance, Leave, Management Report, role, Users & Access, Password Manager, atau data personal/private lain.
-- v129 membutuhkan one-time SQL `WORKBOARD_V129_WORK_TALK_REPLY.sql`; SQL hanya menambah metadata Reply + index dan tidak mengubah RLS/Storage policy.
+- SQL v129 untuk Reply tetap diperlukan. v130 Basic Sticker tidak membutuhkan SQL atau policy Storage baru.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
@@ -751,7 +754,8 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Permanent delete Work Talk tetap hanya creator channel atau Owner; Edit/Delete message tetap hanya sender sendiri.
 - [ ] Work Talk mobile membuka list chat terlebih dahulu, conversation tampil full-screen setelah dipilih, dan Back kembali ke list tanpa merusak draft.
 - [ ] Image attachment Work Talk menggunakan preview private/signed URL atau legacy privacy bridge; file download tetap authenticated dan tidak ada `getPublicUrl()`.
-- [ ] Work Talk Reply aktif setelah SQL v129: quoted preview tampil di composer/bubble, Reply tersedia pada pesan sendiri/orang lain, dan tap quote menuju pesan asal bila masih dimuat. Sticker tetap belum aktif.
+- [ ] Work Talk Reply aktif setelah SQL v129: quoted preview tampil di composer/bubble, Reply tersedia pada pesan sendiri/orang lain, dan tap quote menuju pesan asal bila masih dimuat.
+- [ ] Basic Sticker v130 tersedia di desktop/mobile dengan kategori AMS, Greeting, Office, Follow Up, dan Safety; tap sticker langsung kirim, recent preview tidak menampilkan token internal, sticker dapat Reply/Delete, dan sticker tidak menawarkan Edit.
 - [ ] Password Manager dan field sensitif tidak masuk ke penyimpanan draft.
 - [ ] Prompt Master ikut diperbarui jika kondisi implementasi berubah.
 - [ ] Login nama bebas tidak muncul kembali; app hanya terbuka setelah Supabase Auth + profile valid.
@@ -783,6 +787,18 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 20 Agustus 2026 — v130 Work Talk Basic Sticker
+
+- Menambahkan Basic Sticker picker bawaan Work Talk untuk desktop dan mobile.
+- Kategori awal: AMS, Greeting, Office, Follow Up, dan Safety; total 20 sticker. Semua sticker dibuat dari aset built-in aplikasi, tanpa layanan eksternal, API, GIF provider, atau upload custom.
+- Sticker disimpan sebagai token internal whitelist di `chat_messages.body`; renderer hanya mengenali ID sticker bawaan yang valid. Token tidak ditampilkan sebagai isi chat atau recent preview.
+- Tap sticker langsung mengirim. Sticker dapat dikirim sebagai Reply dan pesan sticker sendiri tetap dapat Reply/Delete; Edit sengaja tidak tersedia karena sticker bukan pesan teks.
+- Reply snapshot memahami sticker dan menampilkan `Sticker · <label>`. Recent conversation juga menampilkan label yang sama.
+- Mengirim sticker tidak menghapus draft teks atau attachment yang sedang dipilih. Emoji picker dan Sticker picker dibuat mutually exclusive agar tidak menumpuk.
+- Mobile picker menggunakan panel di atas composer/safe-area dan tidak mengembalikan bug bottom navigation v128.
+- DM participant-only, sender-only Delete/Edit untuk pesan yang relevan, creator/Owner permanent delete channel, private attachment, realtime/polling, unread, presence, Reply v129, dan RLS tidak diubah.
+- Tidak membutuhkan SQL baru. GIF, Favorite, Recent Sticker, custom sticker upload, dan external sticker pack masih ditunda.
 
 ### 20 Agustus 2026 — v129 Work Talk Reply
 
