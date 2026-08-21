@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v131 — Stability & Regression Fix — 21 Aug 2026 -->
+<!-- WorkBoard AMS v132 — Desktop Visual Refresh — 21 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -2247,6 +2247,501 @@ body.authenticated .auth-gate { display:none !important; }
 }
 
   </style>
+
+<style id="v132-desktop-visual-refresh">
+/* ============================================================
+   v132 — DESKTOP VISUAL REFRESH
+   Desktop-only presentation layer. Mobile <=760px is preserved.
+   No data, handlers, IDs, role logic, RLS, or navigation flow changes.
+   ============================================================ */
+@media (min-width: 761px) {
+  :root {
+    --v132-card-radius: 16px;
+    --v132-soft-shadow: 0 8px 26px rgba(52, 67, 63, .075);
+    --v132-hover-shadow: 0 12px 30px rgba(52, 67, 63, .115);
+    --v132-outline: rgba(47, 99, 100, .13);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 82% 7%, rgba(216,232,229,.46), transparent 27%),
+      radial-gradient(circle at 24% 94%, rgba(243,229,213,.38), transparent 24%),
+      #F4F1EC;
+  }
+
+  .app { background:transparent; }
+
+  /* ── Desktop shell / top bar ── */
+  .main {
+    background:linear-gradient(180deg, rgba(249,247,243,.96) 0%, rgba(244,241,236,.94) 100%);
+  }
+  .top-bar {
+    min-height:58px;
+    padding:12px 24px;
+    background:rgba(250,248,244,.90);
+    border-bottom:1px solid rgba(47,99,100,.10);
+    box-shadow:0 5px 18px rgba(45,57,54,.035);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+  .top-title {
+    font-size:16px;
+    font-weight:800;
+    letter-spacing:-.025em;
+    color:#292D2C;
+  }
+  .content { padding:22px 26px 34px; }
+  #panel-focus { max-width:1480px; margin:0 auto; }
+
+  /* ── Sidebar: calmer, richer, more intentional ── */
+  .sidebar {
+    background:
+      radial-gradient(circle at 16% 10%, rgba(255,255,255,.085), transparent 22%),
+      linear-gradient(180deg,#316E6D 0%,#2B6261 46%,#275A59 100%);
+    border-right:1px solid rgba(255,255,255,.06);
+    box-shadow:10px 0 30px rgba(32,62,61,.10);
+  }
+  .sb-header {
+    padding:19px 16px 15px;
+    border-bottom:1px solid rgba(255,255,255,.09);
+  }
+  .sb-logo {
+    font-size:16px;
+    font-weight:800;
+    letter-spacing:-.025em;
+    gap:9px;
+  }
+  .sb-logo img {
+    width:35px !important;
+    height:35px !important;
+    border-radius:10px;
+    padding:3px;
+    background:rgba(255,255,255,.95);
+    box-shadow:0 5px 14px rgba(17,46,45,.18);
+  }
+  .sb-sub {
+    margin-top:5px;
+    line-height:1.35;
+    font-size:10.5px;
+    opacity:.94;
+  }
+  .sb-date {
+    margin-top:10px;
+    padding:5px 9px;
+    border-radius:999px;
+    background:rgba(255,255,255,.11);
+    border:1px solid rgba(255,255,255,.08);
+    font-weight:700;
+  }
+  .sb-user {
+    margin-top:11px;
+    padding:9px 10px;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    background:linear-gradient(135deg,rgba(255,255,255,.13),rgba(255,255,255,.075));
+    box-shadow:inset 0 1px rgba(255,255,255,.06);
+  }
+  .sb-user-dot {
+    width:9px;
+    height:9px;
+    box-shadow:0 0 0 4px rgba(34,197,94,.12);
+  }
+  .sb-user-name { font-size:12px; }
+  .online-presence {
+    margin:7px 8px 5px !important;
+    border-radius:12px !important;
+    background:rgba(255,255,255,.09) !important;
+    border:1px solid rgba(255,255,255,.07) !important;
+  }
+
+  .nav-section { padding:4px 9px; }
+  .nav-item {
+    min-height:43px;
+    padding:7px 10px;
+    gap:10px;
+    border-radius:12px;
+    margin:1px 0;
+    font-weight:650;
+  }
+  .nav-item .nav-label-text { font-size:12.5px; font-weight:650; }
+  .nav-item i.nav-icon {
+    width:31px;
+    height:31px;
+    font-size:16px;
+    border-radius:10px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .nav-item:hover {
+    background:rgba(255,255,255,.105);
+    transform:translateX(1px);
+  }
+  .nav-item.active {
+    background:linear-gradient(135deg,#F56A23 0%,#EA580C 100%);
+    box-shadow:0 6px 16px rgba(190,76,14,.24);
+  }
+  .nav-item.group-active {
+    background:rgba(255,255,255,.14);
+    box-shadow:inset 3px 0 0 rgba(255,255,255,.65);
+  }
+  .nav-sub-item {
+    min-height:34px;
+    margin:2px 0;
+    border-radius:10px;
+    padding-left:42px;
+  }
+  .nav-sub-item.active {
+    background:rgba(245,106,35,.96);
+    box-shadow:0 4px 12px rgba(190,76,14,.16);
+  }
+  .nav-badge {
+    min-width:22px;
+    padding:2px 7px;
+    font-weight:800;
+    box-shadow:0 2px 7px rgba(0,0,0,.08);
+  }
+  .sb-progress {
+    margin:4px 10px 10px;
+    padding:12px 8px 4px;
+    border-top:1px solid rgba(255,255,255,.09);
+  }
+  .prog-bar {
+    height:7px;
+    background:rgba(255,255,255,.20);
+    border-radius:999px;
+  }
+  .prog-fill {
+    background:linear-gradient(90deg,#F3B45D,#F4D69F);
+    border-radius:999px;
+  }
+
+  /* ── Shared desktop controls ── */
+  .btn-sm {
+    min-height:31px;
+    padding:6px 11px;
+    border-radius:9px;
+    border-color:rgba(47,99,100,.20);
+    font-weight:650;
+    transition:transform .14s ease, box-shadow .14s ease, background .14s ease;
+  }
+  .btn-sm:hover {
+    transform:translateY(-1px);
+    box-shadow:0 5px 13px rgba(47,99,100,.10);
+  }
+  .btn-primary {
+    background:linear-gradient(135deg,#397977,#2F6364);
+    border-color:#2F6364;
+    box-shadow:0 5px 12px rgba(47,99,100,.16);
+  }
+  .next-action-btn {
+    min-height:34px;
+    border-radius:10px;
+    padding:8px 13px;
+    background:linear-gradient(135deg,#F56A23,#EA580C);
+    box-shadow:0 7px 16px rgba(211,84,13,.18);
+  }
+  .next-action-btn:hover { transform:translateY(-1px); box-shadow:0 9px 20px rgba(211,84,13,.23); }
+
+  /* ── Today header: make the page feel like a dashboard ── */
+  #panel-focus > .today-focus-head {
+    position:relative;
+    overflow:hidden;
+    margin-bottom:14px !important;
+    padding:18px 20px;
+    border:1px solid rgba(47,99,100,.13);
+    border-radius:var(--v132-card-radius);
+    background:
+      radial-gradient(circle at 86% 20%, rgba(255,255,255,.80), transparent 24%),
+      linear-gradient(115deg,#EDF5F2 0%,#F7F1E8 58%,#F6ECE8 100%);
+    box-shadow:var(--v132-soft-shadow);
+  }
+  #panel-focus > .today-focus-head::after {
+    content:'';
+    position:absolute;
+    right:-28px;
+    top:-42px;
+    width:150px;
+    height:150px;
+    border-radius:50%;
+    border:28px solid rgba(47,99,100,.045);
+    pointer-events:none;
+  }
+  .today-focus-greeting {
+    font-size:11.5px;
+    letter-spacing:.01em;
+    color:#2F6364;
+  }
+  .today-focus-title {
+    margin-top:1px;
+    font-size:30px;
+    line-height:1.05;
+    letter-spacing:-.045em;
+    color:#272A29;
+  }
+  .today-focus-title::after {
+    content:'✦';
+    display:inline-flex;
+    margin-left:9px;
+    font-size:18px;
+    color:#E68B3A;
+    transform:translateY(-2px);
+  }
+  .today-focus-sub {
+    max-width:760px;
+    margin-top:7px;
+    font-size:11.5px;
+    line-height:1.5;
+    color:#756D65;
+  }
+
+  /* ── Workday status cards ── */
+  .today-workday-strip { gap:12px; margin-bottom:14px; }
+  .today-mini-status {
+    min-height:74px;
+    padding:13px 15px;
+    border-radius:14px;
+    box-shadow:0 5px 16px rgba(70,80,75,.055);
+    transition:transform .16s ease, box-shadow .16s ease;
+  }
+  .today-mini-status:hover { transform:translateY(-1px); box-shadow:0 9px 21px rgba(70,80,75,.085); }
+  .today-mini-status.attendance {
+    background:linear-gradient(135deg,#E9F5F0,#F5FAF8);
+    border-color:#BFD8CF;
+  }
+  .today-mini-status.alarm {
+    background:linear-gradient(135deg,#FBF1DF,#FCF8F0);
+    border-color:#E5D0AD;
+  }
+  .today-mini-label {
+    font-size:9.5px;
+    letter-spacing:.11em;
+    color:#8B8178;
+  }
+  .today-mini-value {
+    margin-top:5px;
+    font-size:14px;
+    font-weight:800;
+  }
+  .today-mini-sub { margin-top:3px; font-size:10.5px; }
+
+  /* ── Quick Capture: prominent but calm ── */
+  .today-focus-hero.today-quick-shell {
+    padding:15px;
+    border-radius:var(--v132-card-radius);
+    border:1px solid #D8CBD2;
+    background:
+      radial-gradient(circle at 93% 12%, rgba(255,255,255,.82), transparent 24%),
+      linear-gradient(125deg,#F6EEF3,#F5F0F6 52%,#F2F5F1);
+    box-shadow:var(--v132-soft-shadow);
+  }
+  .today-quick-shell .quick-capture { gap:9px; }
+  .today-quick-shell .quick-capture input {
+    height:44px;
+    padding:10px 14px;
+    border:1px solid rgba(115,91,105,.22);
+    border-radius:12px;
+    background:rgba(255,255,255,.92);
+    font-size:13.5px;
+    box-shadow:inset 0 1px 2px rgba(74,58,67,.035);
+  }
+  .today-quick-shell .quick-capture input:focus {
+    border-color:#8FAF9F;
+    box-shadow:0 0 0 3px rgba(47,99,100,.08);
+  }
+  .today-quick-shell .quick-capture .btn-sm { min-height:40px; padding-inline:13px; }
+  .focus-capture-actions { margin-top:10px; gap:7px; }
+  .focus-mode-btn {
+    padding:6px 10px;
+    border-radius:999px;
+    font-size:10.5px;
+    font-weight:700;
+    box-shadow:0 2px 6px rgba(60,55,50,.035);
+  }
+
+  /* ── Section titles + icon emphasis ── */
+  .focus-title-label {
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    min-width:0;
+  }
+  .today-section-icon {
+    width:34px;
+    height:34px;
+    flex:0 0 34px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:11px;
+    font-size:18px;
+    line-height:1;
+    background:rgba(255,255,255,.77);
+    border:1px solid rgba(47,99,100,.10);
+    box-shadow:0 4px 10px rgba(50,61,58,.07);
+  }
+  .focus-card-title {
+    min-height:38px;
+    margin-bottom:11px;
+    font-size:11.5px;
+    letter-spacing:.045em;
+    color:#514A45;
+  }
+  .focus-badge-count {
+    min-width:25px;
+    min-height:25px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:2px 8px;
+    background:rgba(255,255,255,.75);
+    border:1px solid rgba(47,99,100,.10);
+    box-shadow:0 3px 8px rgba(53,64,60,.05);
+    color:#5C554F;
+    font-weight:850;
+  }
+
+  /* ── Primary Today cards ── */
+  .today-primary-grid { gap:14px; margin-bottom:14px; }
+  .focus-card {
+    border-radius:var(--v132-card-radius);
+    border-color:var(--v132-outline);
+    padding:16px;
+    box-shadow:var(--v132-soft-shadow);
+    transition:transform .16s ease, box-shadow .16s ease;
+  }
+  .focus-card:hover { box-shadow:var(--v132-hover-shadow); }
+  .focus-card-now {
+    background:
+      radial-gradient(circle at 94% 8%, rgba(255,255,255,.80), transparent 24%),
+      linear-gradient(145deg,#EAF4E8,#F5F8F1);
+    border-color:#BCD2B9;
+  }
+  .focus-card-now .today-section-icon { background:#E1EFDE; border-color:#BFD2BB; }
+  .focus-card-overview {
+    background:
+      radial-gradient(circle at 90% 10%, rgba(255,255,255,.75), transparent 25%),
+      linear-gradient(145deg,#FBF2E4,#FAF7F0);
+    border-color:#E2CCAA;
+  }
+  .focus-card-overview .today-section-icon { background:#FFF1D9; border-color:#E8D2AE; }
+  .focus-card-today {
+    margin-bottom:12px;
+    border-left:0;
+    background:linear-gradient(145deg,#F0F7EF,#F8FAF6);
+    border-color:#C4D7C1;
+  }
+  .focus-card-today .today-section-icon { background:#E5F1E2; border-color:#C6D8C2; }
+
+  /* One Thing Now — unmistakable hero task */
+  .focus-one-now .focus-task {
+    border:1px solid rgba(47,99,100,.32);
+    border-left:5px solid #2F6364;
+    border-radius:13px;
+    padding:13px 14px;
+    background:rgba(255,255,255,.86) !important;
+    box-shadow:0 7px 17px rgba(47,99,100,.085);
+  }
+  .focus-one-now .focus-rank {
+    width:30px;
+    height:30px;
+    font-size:12px;
+    box-shadow:0 5px 11px rgba(47,99,100,.18);
+  }
+  .focus-one-now .focus-task-text { font-size:14px; }
+  .focus-task {
+    border-radius:12px;
+    padding:11px 12px;
+    border-color:rgba(47,99,100,.12);
+  }
+  .focus-task-text { font-size:13.2px; letter-spacing:-.01em; }
+  .focus-task-meta { margin-top:4px; font-size:10.5px; }
+  .focus-task-actions, .today-task-actions { gap:6px; margin-top:10px; }
+  .focus-task-actions .btn-sm,
+  .today-task-actions .btn-sm,
+  .focus-mini-btn {
+    border-radius:8px;
+    min-height:28px;
+  }
+  .today-task-source {
+    padding:3px 7px;
+    border:1px solid rgba(0,0,0,.035);
+    font-weight:800;
+  }
+
+  /* ── At-a-glance visualization ── */
+  .today-overview-wrap { grid-template-columns:100px 1fr; gap:14px; }
+  .today-donut {
+    width:94px;
+    height:94px;
+    background:conic-gradient(#3E8581 0 var(--done-pct,0%), #E6E0D7 var(--done-pct,0%) 100%);
+    box-shadow:0 5px 16px rgba(75,82,77,.08);
+  }
+  .today-donut::after { inset:12px; background:#FBF8F1; }
+  .today-donut-center strong { font-size:20px; letter-spacing:-.04em; }
+  .today-donut-center span { font-size:8.8px; }
+  .today-stat-grid { gap:8px; }
+  .today-stat-chip {
+    min-height:55px;
+    padding:9px 10px;
+    border-radius:11px;
+    background:rgba(255,255,255,.76);
+    box-shadow:0 3px 9px rgba(70,70,60,.035);
+  }
+  .today-stat-chip span { font-size:9.5px; font-weight:650; }
+  .today-stat-chip strong { margin-top:3px; font-size:17px; }
+
+  /* ── Collapsible sections: distinct personality ── */
+  .today-collapsible {
+    border-radius:14px;
+    margin-bottom:10px;
+    border-color:rgba(47,99,100,.12);
+    box-shadow:0 5px 16px rgba(57,65,62,.045);
+    background:rgba(250,248,244,.92);
+  }
+  .today-collapsible > summary {
+    min-height:56px;
+    padding:10px 13px;
+    font-size:11.5px;
+    color:#514B46;
+  }
+  .today-collapsible > summary::after {
+    width:26px;
+    height:26px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:rgba(255,255,255,.70);
+    border:1px solid rgba(47,99,100,.10);
+    font-size:16px;
+  }
+  .today-collapsible-body { padding:2px 14px 14px; }
+  #focus-card-followups { border-left:4px solid #D9A6B3; }
+  #focus-card-followups .today-section-icon { background:#F8E9ED; border-color:#E3C2CB; }
+  #focus-card-waiting { border-left:4px solid #9DBBCB; }
+  #focus-card-waiting .today-section-icon { background:#E7F0F5; border-color:#C3D7E2; }
+  #focus-card-inbox { border-left:4px solid #B8A3C6; }
+  #focus-card-inbox .today-section-icon { background:#EEE6F3; border-color:#D5C7DE; }
+  #today-completed-details { border-left:4px solid #99BB93; }
+  #today-completed-details .today-section-icon { background:#E8F2E5; border-color:#C7DCC3; }
+
+  /* ── Hover/interaction polish without changing behavior ── */
+  .today-collapsible:hover,
+  .today-mini-status:hover,
+  .focus-card:hover { transform:translateY(-1px); }
+  .today-collapsible[open] { box-shadow:0 9px 24px rgba(57,65,62,.07); }
+
+  /* Desktop widths that are narrower than a full monitor:
+     keep the desktop navigation, but protect readable content space. */
+  @media (max-width: 1120px) {
+    .content { padding:18px 18px 28px; }
+    .today-primary-grid { grid-template-columns:1.18fr .82fr; }
+    .today-overview-wrap { grid-template-columns:82px 1fr; gap:10px; }
+    .today-donut { width:78px; height:78px; }
+    .today-focus-title { font-size:27px; }
+  }
+}
+</style>
+
 </head>
 <body class="auth-pending">
 
@@ -2666,37 +3161,37 @@ body.authenticated .auth-gate { display:none !important; }
 
         <div class="focus-grid today-primary-grid">
           <div class="focus-card focus-card-now">
-            <div class="focus-card-title"><span>🎯 One Thing Now</span><span class="focus-badge-count" id="today-active-count">0</span></div>
+            <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon">🎯</span><span>One Thing Now</span></span><span class="focus-badge-count" id="today-active-count">0</span></div>
             <div id="focus-top3"><div class="loading-msg">Choosing one thing...</div></div>
           </div>
           <div class="focus-card focus-card-overview">
-            <div class="focus-card-title">Today at a Glance</div>
+            <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon">✨</span><span>Today at a Glance</span></span></div>
             <div id="focus-overview"><div class="loading-msg">Loading...</div></div>
           </div>
         </div>
 
         <div class="focus-card focus-card-today today-list-card" id="focus-card-captured">
-          <div class="focus-card-title"><span>Up Next</span><span class="focus-badge-count" id="focus-today-count">0</span></div>
+          <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon">⚡</span><span>Up Next</span></span><span class="focus-badge-count" id="focus-today-count">0</span></div>
           <div id="focus-captured-today"></div>
         </div>
 
         <details class="today-collapsible" id="focus-card-followups">
-          <summary><span>📞 Follow-ups Due</span><span class="focus-badge-count" id="focus-follow-count">0</span></summary>
+          <summary><span class="focus-title-label"><span class="today-section-icon">📞</span><span>Follow-ups Due</span></span><span class="focus-badge-count" id="focus-follow-count">0</span></summary>
           <div class="today-collapsible-body" id="focus-followups"></div>
         </details>
 
         <details class="today-collapsible" id="focus-card-waiting">
-          <summary><span>⏳ Waiting</span><span class="focus-badge-count" id="focus-wait-count">0</span></summary>
+          <summary><span class="focus-title-label"><span class="today-section-icon">⏳</span><span>Waiting</span></span><span class="focus-badge-count" id="focus-wait-count">0</span></summary>
           <div class="today-collapsible-body" id="focus-waiting"></div>
         </details>
 
         <details class="today-collapsible" id="focus-card-inbox">
-          <summary><span>🧠 Brain Dump</span><span class="focus-badge-count" id="focus-inbox-count">0</span></summary>
+          <summary><span class="focus-title-label"><span class="today-section-icon">🧠</span><span>Brain Dump</span></span><span class="focus-badge-count" id="focus-inbox-count">0</span></summary>
           <div class="today-collapsible-body" id="focus-inbox"></div>
         </details>
 
         <details class="today-collapsible" id="today-completed-details">
-          <summary><span>✅ Completed Today</span><span class="focus-badge-count" id="today-completed-count">0</span></summary>
+          <summary><span class="focus-title-label"><span class="today-section-icon">✅</span><span>Completed Today</span></span><span class="focus-badge-count" id="today-completed-count">0</span></summary>
           <div class="today-collapsible-body" id="today-completed-list"></div>
         </details>
 
