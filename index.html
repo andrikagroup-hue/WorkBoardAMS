@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v133 — Premium UI Refresh — 21 Aug 2026 -->
+<!-- WorkBoard AMS v134 — Premium UI System — 21 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -3070,6 +3070,585 @@ body {
   .panel,
   .card {
     border-radius: 16px;
+  }
+}
+</style>
+
+
+<style id="v134-premium-ui-system">
+/* ============================================================
+   v134 — PREMIUM UI SYSTEM
+   Shared presentation system across WorkBoard.
+   No data/logic/router/RLS/database changes.
+   ============================================================ */
+
+:root {
+  --ui-surface: rgba(255,255,255,.78);
+  --ui-surface-strong: rgba(255,255,255,.92);
+  --ui-surface-soft: rgba(250,248,244,.82);
+  --ui-line: rgba(47,99,100,.11);
+  --ui-line-strong: rgba(47,99,100,.18);
+  --ui-shadow-xs: 0 3px 10px rgba(45,58,54,.045);
+  --ui-shadow-sm: 0 7px 18px rgba(45,58,54,.06);
+  --ui-shadow-md: 0 13px 30px rgba(45,58,54,.085);
+  --ui-shadow-lg: 0 22px 54px rgba(38,52,49,.13);
+  --ui-radius-sm: 10px;
+  --ui-radius-md: 14px;
+  --ui-radius-lg: 18px;
+  --ui-radius-xl: 22px;
+  --ui-focus: 0 0 0 3px rgba(47,99,100,.10);
+  --ui-muted: #817970;
+}
+
+/* ---------- Shared content hierarchy ---------- */
+.panel > .section-title,
+.section-title {
+  font-family: var(--wb-font-heading, 'Plus Jakarta Sans', 'Inter', sans-serif);
+  font-weight: 800;
+  letter-spacing: .09em;
+  color: #756E67;
+}
+.panel-add-toolbar {
+  gap: 8px;
+}
+.panel-add-toolbar::before {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(47,99,100,.08));
+}
+
+/* ---------- Forms ---------- */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select {
+  min-height: 38px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius-sm);
+  background: rgba(255,255,255,.86);
+  color: var(--text1);
+  box-shadow: inset 0 1px 2px rgba(48,58,55,.025);
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease, transform .16s ease;
+}
+textarea { min-height: 74px; line-height: 1.55; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):hover,
+textarea:hover,
+select:hover {
+  border-color: rgba(47,99,100,.25);
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(47,99,100,.54);
+  background: rgba(255,255,255,.97);
+  box-shadow: var(--ui-focus);
+}
+input::placeholder, textarea::placeholder { color:#AAA298; }
+
+.form-box,
+.writing-form,
+.portfolio-form,
+.editor-form-block {
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-lg);
+  background:
+    radial-gradient(circle at 94% 7%, rgba(255,255,255,.75), transparent 20%),
+    linear-gradient(145deg, rgba(255,255,255,.82), rgba(250,247,242,.72));
+  box-shadow: var(--ui-shadow-sm);
+}
+.form-box { padding: 16px; }
+.form-actions {
+  gap: 8px;
+  padding-top: 4px;
+}
+.draft-status {
+  font-weight: 650;
+  letter-spacing: -.005em;
+}
+
+/* ---------- Buttons ---------- */
+.btn-sm,
+.brain-action,
+.focus-mini-btn,
+.matrix-toggle,
+.project-tab,
+.portfolio-view-tab,
+.binder-tab,
+.admin-tab,
+.auth-tab {
+  font-family: var(--wb-font-heading, 'Plus Jakarta Sans', 'Inter', sans-serif);
+}
+.btn-sm {
+  border: 1px solid rgba(47,99,100,.18);
+  background: rgba(255,255,255,.70);
+  box-shadow: 0 3px 8px rgba(47,99,100,.035);
+}
+.btn-sm:hover {
+  background: rgba(255,255,255,.96);
+  border-color: rgba(47,99,100,.27);
+}
+.btn-primary {
+  background: linear-gradient(135deg,#3B7B78,#2F6364);
+  border-color: transparent;
+  color:#fff;
+  box-shadow: 0 8px 18px rgba(47,99,100,.16);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg,#34716E,#285857);
+  box-shadow: 0 10px 22px rgba(47,99,100,.20);
+}
+.ev-del {
+  width: 29px;
+  height: 29px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:9px;
+}
+.ev-del:hover { transform: translateY(-1px); }
+
+/* ---------- Universal cards ---------- */
+.stat-card,
+.res-card,
+.pass-card,
+.link-card,
+.portfolio-card,
+.kanban-card,
+.matrix-card,
+.adhd-card,
+.sched-side-card,
+.sched-daybig,
+.tchart-card,
+.asc-card,
+.pt-empty-card,
+.event-card,
+.owner-access-card {
+  border-radius: var(--ui-radius-md);
+}
+.stat-card,
+.res-card,
+.pass-card,
+.link-card,
+.portfolio-card,
+.kanban-card,
+.matrix-card,
+.adhd-card,
+.sched-side-card,
+.sched-daybig,
+.tchart-card,
+.asc-card,
+.pt-empty-card,
+.owner-access-card {
+  border: 1px solid var(--ui-line);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.88), rgba(252,250,247,.74));
+  box-shadow: var(--ui-shadow-xs);
+}
+.pass-card:hover,
+.link-card:hover,
+.portfolio-card:hover,
+.kanban-card:hover,
+.matrix-card:hover,
+.adhd-card:hover {
+  border-color: rgba(47,99,100,.18);
+  box-shadow: var(--ui-shadow-sm);
+  transform: translateY(-1px);
+}
+.stat-card,
+.res-card {
+  position: relative;
+  overflow:hidden;
+}
+.stat-card::after,
+.res-card::after {
+  content:'';
+  position:absolute;
+  width:74px; height:74px;
+  right:-30px; top:-34px;
+  border-radius:50%;
+  border:16px solid rgba(47,99,100,.035);
+  pointer-events:none;
+}
+.stat-label,
+.res-label {
+  font-weight:700;
+  letter-spacing:.035em;
+  text-transform:uppercase;
+}
+.stat-val,
+.res-val {
+  font-family: var(--wb-font-heading, 'Plus Jakarta Sans', 'Inter', sans-serif);
+  font-weight:800;
+  letter-spacing:-.035em;
+}
+
+/* Schedule */
+.sched-daybig {
+  background:
+    radial-gradient(circle at 84% 12%, rgba(255,255,255,.9), transparent 28%),
+    linear-gradient(145deg,#F7F1E8,#FBF9F5);
+}
+.sched-daynum {
+  font-family: var(--wb-font-heading, 'Plus Jakarta Sans', sans-serif);
+  color:#BE8440;
+  letter-spacing:-.06em;
+}
+.sched-side-header,
+.sched-grid-header {
+  font-family: var(--wb-font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-weight:800;
+  letter-spacing:-.015em;
+}
+
+/* ---------- Tabs & segmented controls ---------- */
+.project-workspace-tabs,
+.portfolio-view-tabs,
+.auth-tabs,
+.admin-tabs,
+.binder-tabs-row {
+  border-radius: var(--ui-radius-md);
+}
+.project-workspace-tabs {
+  background: rgba(255,255,255,.78);
+  border:1px solid var(--ui-line);
+  box-shadow: var(--ui-shadow-xs);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.project-tab,
+.portfolio-view-tab {
+  border-color: rgba(47,99,100,.14);
+  background: rgba(255,255,255,.72);
+  box-shadow: 0 2px 7px rgba(47,99,100,.025);
+  font-weight:700;
+}
+.project-tab:hover,
+.portfolio-view-tab:hover { background:#fff; }
+.project-tab.active,
+.portfolio-view-tab.active {
+  background: linear-gradient(135deg,#3A7775,#2F6364);
+  border-color: transparent;
+  box-shadow:0 7px 16px rgba(47,99,100,.18);
+}
+.binder-tab {
+  border-radius: 11px 11px 0 0;
+  box-shadow: 0 3px 9px rgba(45,58,54,.055);
+}
+.admin-tab {
+  font-weight:700;
+}
+.auth-tabs {
+  background: rgba(47,99,100,.07);
+  border:1px solid rgba(47,99,100,.07);
+}
+
+/* ---------- Filters / toolbars ---------- */
+.search-filter-wrap,
+.result-filter-bar,
+.pt-filter-row,
+.portfolio-filter-row,
+.mr-filter-grid,
+.gantt-toolbar,
+.todo-toolbar,
+.notepad-toolbar {
+  border-radius: var(--ui-radius-md);
+}
+.result-filter-bar,
+.pt-filter-row,
+.portfolio-filter-row,
+.gantt-toolbar {
+  background: rgba(255,255,255,.65);
+  border:1px solid var(--ui-line);
+  box-shadow:var(--ui-shadow-xs);
+  padding:10px;
+}
+
+/* ---------- Tables ---------- */
+.task-table,
+.rt-table,
+.todo-week-table,
+.result-absen-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width:100%;
+  overflow:hidden;
+}
+.task-table th,
+.rt-table th,
+.todo-week-table th,
+.result-absen-table th {
+  font-family: var(--wb-font-heading, 'Plus Jakarta Sans', 'Inter', sans-serif);
+  font-size: 9.5px;
+  font-weight:800;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  color:#756D66;
+  background: rgba(47,99,100,.045);
+  border-bottom:1px solid rgba(47,99,100,.11);
+}
+.task-table td,
+.rt-table td,
+.todo-week-table td,
+.result-absen-table td {
+  border-bottom:1px solid rgba(47,99,100,.075);
+  background: rgba(255,255,255,.52);
+}
+.task-table tbody tr:hover td,
+.rt-table tbody tr:hover td,
+.todo-week-table tbody tr:hover td,
+.result-absen-table tbody tr:hover td {
+  background: rgba(233,242,239,.66);
+}
+
+/* ---------- Badges / chips ---------- */
+.status-pill,
+.todo-status-badge,
+.portfolio-badge,
+.rt-freq-badge,
+.owner-active-badge,
+.admin-leave-badge,
+.pass-type-badge,
+.user-role-chip,
+.tracker-meta-chip {
+  border-radius:999px !important;
+  font-family: var(--wb-font-heading, 'Plus Jakarta Sans', 'Inter', sans-serif);
+  font-weight:750;
+  letter-spacing:.005em;
+}
+.nav-badge,
+.bn-badge {
+  font-family: var(--wb-font-heading, 'Plus Jakarta Sans', 'Inter', sans-serif);
+  font-weight:800;
+}
+
+/* ---------- Empty / loading / setup states ---------- */
+.empty-msg,
+.loading-msg {
+  border-radius: var(--ui-radius-md);
+}
+.empty-msg {
+  border: 1px dashed rgba(47,99,100,.16);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.58), rgba(248,246,241,.55));
+  color:#958D84;
+}
+.loading-msg {
+  color:#8A837B;
+}
+
+/* ---------- Rich text editor ---------- */
+.quill-editor-wrap {
+  border-radius: var(--ui-radius-md);
+  border-color: rgba(47,99,100,.15);
+  background: rgba(255,255,255,.76);
+  box-shadow: inset 0 1px 2px rgba(45,55,52,.025), var(--ui-shadow-xs);
+}
+.quill-editor-wrap:focus-within {
+  border-color: rgba(47,99,100,.45);
+  box-shadow: var(--ui-focus), var(--ui-shadow-xs);
+}
+.quill-editor-wrap .ql-toolbar {
+  background: linear-gradient(180deg,#F7F5F1,#F0ECE5);
+  border-bottom-color: rgba(47,99,100,.09);
+}
+.quill-editor-wrap .ql-container {
+  background: rgba(255,255,255,.76);
+}
+.ql-editor {
+  line-height:1.65;
+}
+
+/* ---------- AI modal + standard overlays ---------- */
+.ai-modal-overlay {
+  background: rgba(29,39,37,.28);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+.ai-modal-box,
+.auth-card {
+  border-radius: var(--ui-radius-xl);
+  border:1px solid rgba(47,99,100,.12);
+  box-shadow: var(--ui-shadow-lg);
+  background:
+    radial-gradient(circle at 92% 5%, rgba(255,255,255,.86), transparent 22%),
+    rgba(251,249,245,.96);
+}
+.ai-modal-head {
+  min-height:58px;
+  font-family:var(--wb-font-heading, 'Plus Jakarta Sans', sans-serif);
+  border-bottom-color:rgba(47,99,100,.09);
+}
+.ai-modal-foot {
+  border-top-color:rgba(47,99,100,.09);
+}
+
+/* ---------- Portfolio / Project workspace ---------- */
+.portfolio-summary,
+.todo-summary,
+.mr-summary,
+.absen-summary-cards {
+  gap:10px;
+}
+.portfolio-card {
+  padding:14px;
+}
+.portfolio-card-title,
+.matrix-card-title,
+.kanban-card-title {
+  font-family:var(--wb-font-heading, 'Plus Jakarta Sans', sans-serif);
+  font-weight:800;
+  letter-spacing:-.015em;
+}
+.kanban-col,
+.matrix-quadrant {
+  border-radius:var(--ui-radius-lg);
+}
+
+/* ---------- Resources / Password / Owner controls ---------- */
+.link-card,
+.pass-card,
+.owner-access-card {
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.pass-value-box {
+  border-radius:var(--ui-radius-sm);
+  background:rgba(47,99,100,.045);
+}
+.owner-access-email {
+  color:#827A72;
+}
+
+/* ---------- Mobile hub ---------- */
+.mobile-hub-sheet {
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -18px 50px rgba(38,52,49,.16);
+}
+.mobile-hub-item {
+  border-radius: 14px;
+  min-height: 54px;
+  background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(250,248,244,.82));
+  box-shadow:var(--ui-shadow-xs);
+  font-family:var(--wb-font-heading, 'Plus Jakarta Sans', 'Inter', sans-serif);
+}
+.mobile-hub-item i {
+  width:32px;
+  height:32px;
+  border-radius:11px;
+}
+
+/* ---------- Desktop refinements ---------- */
+@media (min-width: 761px) {
+  .content { padding-bottom: 38px; }
+  .panel:not(#panel-focus):not(#panel-chat) {
+    animation: v134PanelIn .18s ease both;
+  }
+  @keyframes v134PanelIn {
+    from { opacity:.88; transform:translateY(2px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
+  /* A subtle premium canvas behind non-Today panels */
+  .panel:not(#panel-focus):not(#panel-chat) > .form-box,
+  .panel:not(#panel-focus):not(#panel-chat) > .writing-form,
+  .panel:not(#panel-focus):not(#panel-chat) > .panel-add-toolbar,
+  .panel:not(#panel-focus):not(#panel-chat) > .search-filter-wrap,
+  .panel:not(#panel-focus):not(#panel-chat) > .portfolio-summary,
+  .panel:not(#panel-focus):not(#panel-chat) > .todo-summary {
+    position:relative;
+  }
+
+  .task-table,
+  .rt-table,
+  .todo-week-table,
+  .result-absen-table {
+    border:1px solid var(--ui-line);
+    border-radius:var(--ui-radius-md);
+    box-shadow:var(--ui-shadow-xs);
+  }
+}
+
+/* ---------- Mobile system ---------- */
+@media (max-width: 760px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    min-height: 42px;
+    font-size: 13px;
+    border-radius: 12px;
+  }
+  textarea { min-height: 86px; }
+
+  .form-box,
+  .writing-form,
+  .portfolio-form,
+  .editor-form-block {
+    border-radius: 17px;
+    padding: 13px;
+    box-shadow: var(--ui-shadow-sm);
+  }
+
+  .btn-sm {
+    min-height: 34px;
+    border-radius: 10px;
+  }
+  .btn-primary {
+    min-height: 36px;
+  }
+
+  .project-workspace-tabs {
+    gap:5px;
+    padding:7px;
+    border-radius:15px;
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    scrollbar-width:none;
+  }
+  .project-workspace-tabs::-webkit-scrollbar { display:none; }
+  .project-tab {
+    flex:0 0 auto;
+    min-height:34px;
+    padding:7px 10px;
+  }
+
+  .portfolio-view-tabs,
+  .binder-tabs-row {
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    scrollbar-width:none;
+  }
+  .portfolio-view-tabs::-webkit-scrollbar,
+  .binder-tabs-row::-webkit-scrollbar { display:none; }
+
+  .stat-card,
+  .res-card,
+  .pass-card,
+  .link-card,
+  .portfolio-card,
+  .kanban-card,
+  .matrix-card,
+  .adhd-card,
+  .sched-side-card,
+  .sched-daybig,
+  .tchart-card,
+  .asc-card,
+  .pt-empty-card {
+    border-radius: 15px;
+  }
+
+  .task-table,
+  .rt-table,
+  .todo-week-table,
+  .result-absen-table {
+    font-size:11px;
+  }
+
+  .empty-msg { padding:17px 13px; }
+  .quill-editor-wrap { border-radius:14px; }
+
+  .ai-modal-box {
+    width: calc(100vw - 20px);
+    max-height: 88dvh;
+    border-radius: 20px;
   }
 }
 </style>
