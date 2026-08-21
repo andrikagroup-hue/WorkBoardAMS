@@ -2,9 +2,9 @@
 
 *Gunakan file ini bersama `index.html` terbaru setiap memulai chat coding.*
 
-**Status sinkronisasi:** 20 Agustus 2026
+**Status sinkronisasi:** 21 Agustus 2026
 **Pasangan kode terbaru:** `index.html`
-**SHA-256 pasangan kode:** `098db604e1ac49bd2ef642afe94924cf548244f4e4a25f536f10aa79589225f0`
+**SHA-256 pasangan kode:** `ab2d21ab84889140794a0552492143a5ae7d4aff28b9bc2db9ce8086683ea238`
 
 ---
 
@@ -281,7 +281,7 @@ Tujuan protokol ini adalah menjaga prompt tetap lengkap tanpa membuat dua dokume
 
 ## 15. SNAPSHOT IMPLEMENTASI AKTUAL
 
-Snapshot ini dibuat dari `index.html` v130 Work Talk Basic Sticker yang dipasangkan dengan prompt ini.
+Snapshot ini dibuat dari `index.html` v131 Stability & Regression Fix yang dipasangkan dengan prompt ini.
 
 ### 15.1 Arsitektur dan komponen utama
 
@@ -370,7 +370,7 @@ Catatan ketergantungan:
 - UI Schedule, Logbook, Portfolio, Project Tracker/Kanban, dan Recurring Task wajib menyembunyikan/menonaktifkan action mutasi pada row yang tidak boleh diubah user aktif. Owner yang mengedit row public user lain harus mempertahankan `created_by` asli dan privacy tetap Public.
 - Management dan Owner dapat membuka `HR → Leave Management` serta Approve / Reject / Reset request Leave, Sick, dan Time Off. Delete request tetap hanya Owner. `Users & Access` tetap hanya Owner.
 - Attendance update memakai defense-in-depth mulai v107: Staff/Management hanya boleh menyelesaikan Clock Out pada row attendance miliknya sendiri; identity, tanggal, Clock In, status, keterlambatan, GPS/foto masuk, keterangan, dan created_at tidak boleh ditulis ulang. Official Clock Out timestamp ditetapkan oleh database. Mulai v124, browser juga tidak lagi memiliki hak INSERT langsung ke `attendance`; Clock In normal wajib melalui RPC `workboard_clock_in()` yang menentukan tanggal, waktu, status, dan keterlambatan dari waktu database WIB serta mencegah double Clock In user/tanggal. Owner tetap memiliki capability administratif yang sudah ada pada operasi yang memang diizinkan policy.
-- Approved leave untuk Today Attendance dan panel Attendance mengambil maksimal satu record terbaru (`created_at` descending + `limit(1)`) agar overlapping approved leave tidak menyebabkan `.maybeSingle()` gagal. Alasan dan tanggal leave pada panel Attendance di-escape sebelum masuk `innerHTML`.
+- Approved leave untuk Today Attendance dan panel Attendance mengambil maksimal satu record terbaru (`created_at` descending + `limit(1)`) agar overlapping approved leave tidak menyebabkan `.maybeSingle()` gagal. Alasan dan tanggal leave pada panel Attendance di-escape sebelum masuk `innerHTML`. Mulai v131, jika pada user/tanggal yang sama sudah ada row Attendance nyata, Clock In/Out nyata selalu menjadi sumber utama di Today dan panel Attendance; approved leave hanya menjadi fallback ketika tidak ada attendance row.
 - Owner (Ratu) mendapat seluruh kontrol WorkBoard/company yang dirancang untuk Owner, tetapi Password Manager dan data personal private user lain tetap mengikuti policy private masing-masing.
 
 ### 15.5 All Links — kondisi terbaru
@@ -602,7 +602,7 @@ All Links saat ini memiliki:
 
 ### 15.16 Integrasi Attendance, Work Alarm, Portfolio Action-First, dan Management Result
 
-- Today menampilkan status Attendance ringkas: Not Clocked In, Clocked In, atau Completed. Clock In/Out tetap memakai panel Attendance untuk selfie dan GPS, lalu kembali ke Today jika proses dimulai dari Today.
+- Today menampilkan status Attendance ringkas: Not Clocked In, Clocked In, atau Completed. Clock In/Out tetap memakai panel Attendance untuk selfie dan GPS, lalu kembali ke Today jika proses dimulai dari Today. Jika approved Leave/Sick/Time Off overlap dengan attendance nyata pada tanggal yang sama, status Clock In/Out nyata tetap ditampilkan agar tombol Clock Out tidak tersembunyi.
 - Detail Attendance, Leave/Sick/Time Off, rekap, GPS, dan foto tetap berada di panel HR; tidak dipindahkan ke Quick Capture.
 - Work Alarm tampil sebagai status ringkas di Today. Fase focus/break, cycle start, dan snooze disimpan agar refresh/minimized tab tidak selalu mereset timer.
 - Work Alarm melakukan tick lebih rapat dan mengecek ulang saat tab kembali visible/focus. Periodic reminder setelah browser/app benar-benar ditutup tetap tidak dijamin karena push/background notification masih ditunda.
@@ -669,7 +669,7 @@ All Links saat ini memiliki:
 - Mulai v110, bucket legacy `attachments` ditutup dari public access setelah bridge policy `WORKBOARD_STORAGE_V110_LEGACY_ATTACHMENT_PRIVACY.sql` aktif. File historis tidak dipindah atau dihapus; WorkBoard mengubah URL legacy menjadi authenticated download/signed image dan Storage RLS memeriksa parent Logbook/Portfolio/Notes/Notepad/Work Talk sebelum memberi akses. File baru tetap memakai bucket private `workboard-private` dari v103/v105. Mulai v124, helper upload public legacy dipertahankan hanya sebagai fail-closed guard dan tidak lagi dapat menghasilkan `getPublicUrl()`.
 - Migrasi dijalankan bertahap: `WORKBOARD_AUTH_V91_STEP1_SETUP.sql` membuat Auth/profile tanpa memutus akses versi lama; setelah index v91 dan akun Ratu/Owner teruji, `WORKBOARD_AUTH_V91_STEP3_RLS.sql` mencabut anon dan mengaktifkan policy final. Google provider/redirect dikonfigurasi terpisah di Supabase.
 
-### 15.20 Work Talk — WhatsApp-style Core UX, Reply & Basic Sticker — v126–v130
+### 15.20 Work Talk — WhatsApp-style Core UX, Reply, Basic Sticker & Stability — v126–v131
 
 - Work Talk tetap memakai tabel `chat_channels` dan `chat_messages`; v129 tidak membuat tabel baru, tetapi menambahkan kolom metadata `reply_to` dan `reply_snapshot` pada `chat_messages` untuk fitur Reply.
 - Daftar conversation desktop/mobile disatukan sebagai `Recent conversations` dan diurutkan berdasarkan timestamp pesan terakhir. Channel General, Department/Team, dan DM tetap memakai tipe data lama (`umum`, `bagian`, `dm`) agar kompatibilitas data tidak berubah.
@@ -693,7 +693,12 @@ All Links saat ini memiliki:
 - Tap sticker langsung mengirim pesan; sticker dapat menjadi Reply, dapat di-Reply, dan dapat dihapus oleh sender. Sticker tidak dapat diedit sebagai teks. Draft teks/attachment yang sedang ada tidak dihapus ketika user mengirim sticker.
 - GIF, Favorite, Recent Sticker, custom sticker upload, dan sticker pack eksternal belum dibuat pada v130.
 - Tidak mengubah Today v125, Schedule, Logbook, Portfolio, Attendance, Leave, Management Report, role, Users & Access, Password Manager, atau data personal/private lain.
-- SQL v129 untuk Reply tetap diperlukan. v130 Basic Sticker tidak membutuhkan SQL atau policy Storage baru.
+- Mulai v131, initial thread mengambil maksimal 300 pesan **terbaru** lalu mengurutkannya kembali secara kronologis untuk tampilan. Jika masih ada history lebih lama, tombol `Load older messages` muncul di bagian atas thread dan memuat batch sebelumnya tanpa menghilangkan pesan yang sudah tampil.
+- Polling 15 detik tidak lagi membuang history lama yang sudah dimuat; batch terbaru digabung berdasarkan message ID. Scroll tidak dipaksa ke bawah ketika user sedang membaca bagian lama.
+- Unread tidak lagi mengunduh seluruh row `chat_messages` ke browser. Count unread dilakukan server-side per channel, sedangkan metadata Recent conversations hanya mengambil satu pesan terbaru per channel.
+- Browser notification dan in-app toast memakai helper preview yang sama dengan Work Talk sehingga sticker tampil sebagai `Sticker · <label>` dan rich text tidak bocor sebagai HTML/token mentah.
+- Daftar `Online Now` meng-escape nama user sebelum masuk `innerHTML`.
+- SQL v129 untuk Reply tetap diperlukan. v131 tidak membutuhkan SQL atau policy Storage baru.
 
 ## 16. CHECKLIST KHUSUS SEBELUM MENYERAHKAN VERSI BERIKUTNYA
 
@@ -756,6 +761,11 @@ Selain checklist pada Bagian 11, periksa:
 - [ ] Image attachment Work Talk menggunakan preview private/signed URL atau legacy privacy bridge; file download tetap authenticated dan tidak ada `getPublicUrl()`.
 - [ ] Work Talk Reply aktif setelah SQL v129: quoted preview tampil di composer/bubble, Reply tersedia pada pesan sendiri/orang lain, dan tap quote menuju pesan asal bila masih dimuat.
 - [ ] Basic Sticker v130 tersedia di desktop/mobile dengan kategori AMS, Greeting, Office, Follow Up, dan Safety; tap sticker langsung kirim, recent preview tidak menampilkan token internal, sticker dapat Reply/Delete, dan sticker tidak menawarkan Edit.
+- [ ] Work Talk v131 initial load menampilkan 300 pesan terbaru, `Load older messages` menambah history tanpa menghapus batch terbaru, dan polling/realtime tidak memaksa scroll ke bawah saat user membaca pesan lama.
+- [ ] Unread Work Talk dihitung tanpa mengunduh seluruh history; Recent conversations tetap menampilkan latest preview/time yang benar.
+- [ ] Sticker pada browser notification dan in-app toast tampil sebagai label manusia, bukan token `[[WB_STICKER:...]]`.
+- [ ] Nama pada `Online Now` di-escape sebelum dirender.
+- [ ] Today Attendance dan panel Attendance memprioritaskan attendance nyata dibanding approved leave yang overlap; jika Clock In masih aktif, tombol Clock Out tetap tersedia.
 - [ ] Password Manager dan field sensitif tidak masuk ke penyimpanan draft.
 - [ ] Prompt Master ikut diperbarui jika kondisi implementasi berubah.
 - [ ] Login nama bebas tidak muncul kembali; app hanya terbuka setelah Supabase Auth + profile valid.
@@ -787,6 +797,18 @@ Selain checklist pada Bagian 11, periksa:
 ---
 
 ## 17. CATATAN PERUBAHAN TERBARU
+
+### 21 Agustus 2026 — v131 Stability & Regression Fix
+
+- Memperbaiki Work Talk long-history bug: query awal kini mengambil 300 pesan terbaru (`created_at` descending di query lalu dibalik untuk render chronological), bukan 300 pesan paling lama.
+- Menambahkan `Load older messages` untuk mengambil batch history sebelumnya sambil mempertahankan posisi baca. Polling menggabungkan latest batch ke cache yang sudah ada sehingga history lama yang telah dimuat tidak hilang setiap 15 detik.
+- Mengurangi transfer data unread: browser tidak lagi menarik seluruh pesan semua channel untuk menghitung badge. Unread menggunakan server-side `count` per channel dan Recent conversations mengambil satu row terbaru per channel.
+- Browser notification dan in-app toast memakai preview message yang sama dengan thread; sticker tampil sebagai label `Sticker · ...` dan rich text dipadatkan menjadi plain text preview.
+- Menutup jalur markup pada sidebar `Online Now` dengan meng-escape `user_name` sebelum dimasukkan ke HTML.
+- Today Attendance dan panel HR Attendance sekarang memakai prinsip yang sama dengan Management Report: jika ada attendance nyata dan approved leave pada user/tanggal yang sama, attendance nyata menang. Approved leave hanya ditampilkan sebagai fallback ketika tidak ada attendance row.
+- Deteksi setup Clock In diperketat: alert `Attendance security setup is not installed` hanya dipakai untuk error yang benar-benar menunjukkan RPC `workboard_clock_in` tidak ditemukan, bukan setiap error yang sekadar menyebut nama RPC.
+- Tidak mengubah DM participant-only, sender-only Edit/Delete, creator/Owner permanent delete channel, Reply v129, Basic Sticker v130, private Storage, role, Leave Management workflow, Today task flow, atau Management Report logic.
+- Tidak membutuhkan SQL baru. Existing Attendance security v124 (`workboard_clock_in`, update guard, REVOKE direct INSERT) tetap wajib terpasang.
 
 ### 20 Agustus 2026 — v130 Work Talk Basic Sticker
 
