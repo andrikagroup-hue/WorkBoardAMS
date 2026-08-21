@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v132 — Desktop Visual Refresh — 21 Aug 2026 -->
+<!-- WorkBoard AMS v133 — Premium UI Refresh — 21 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -2742,6 +2742,338 @@ body.authenticated .auth-gate { display:none !important; }
 }
 </style>
 
+
+<style id="v133-premium-ui-refresh">
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+:root {
+  --wb-font-body: 'Inter', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --wb-font-heading: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  --v133-premium-shadow: 0 14px 34px rgba(40, 54, 51, .08);
+  --v133-soft-card: rgba(255,255,255,.74);
+  --v133-line: rgba(47,99,100,.11);
+  --v133-gold: #D29A4D;
+  --v133-ink: #252A2A;
+}
+
+html, body, button, input, textarea, select { font-family: var(--wb-font-body); }
+h1, h2, h3, h4, h5, h6,
+.top-title, .today-focus-title, .sb-logo, .focus-card-title, .nav-item .nav-label-text,
+.nav-sub-item, .today-mini-value, .focus-task-text, .today-stat-chip strong, .btn-sm {
+  font-family: var(--wb-font-heading);
+}
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background:
+    radial-gradient(circle at 84% 10%, rgba(218,229,226,.36), transparent 23%),
+    radial-gradient(circle at 14% 100%, rgba(245,231,213,.32), transparent 22%),
+    #F5F1EB;
+}
+.top-title { letter-spacing: -.03em; }
+.today-focus-title, .page-title, .section-title { letter-spacing: -.04em; color: var(--v133-ink); }
+.today-focus-sub, .focus-task-meta, .today-mini-sub, .sb-sub { line-height: 1.55; }
+.today-section-icon i { font-size: 17px; line-height: 1; }
+
+/* ===== Desktop premium layer ===== */
+@media (min-width: 761px) {
+  .sidebar {
+    background:
+      radial-gradient(circle at 18% 10%, rgba(255,255,255,.10), transparent 24%),
+      linear-gradient(180deg,#2F706E 0%,#285E5D 46%,#234E4D 100%);
+  }
+  .sb-header {
+    margin: 12px 12px 8px;
+    padding: 18px 14px 15px;
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.07));
+    border: 1px solid rgba(255,255,255,.09);
+    box-shadow: 0 10px 24px rgba(18,45,44,.14);
+    position: relative;
+    overflow: hidden;
+  }
+  .sb-header::after {
+    content:'';
+    position:absolute;
+    right:-30px; top:-36px;
+    width:118px; height:118px; border-radius:50%;
+    border: 22px solid rgba(255,255,255,.07);
+    pointer-events:none;
+  }
+  .sb-logo {
+    align-items:flex-start !important;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -.035em;
+    color:#fff;
+  }
+  .sb-logo img {
+    width: 40px !important; height: 40px !important;
+    padding: 4px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(245,247,246,.93));
+    box-shadow: 0 10px 20px rgba(17,44,43,.22);
+  }
+  .sb-sub {
+    margin-top: 8px;
+    font-size: 11px;
+    opacity: .98;
+    max-width: 190px;
+  }
+  .sb-date {
+    margin-top: 11px;
+    background: rgba(255,255,255,.14);
+    border-color: rgba(255,255,255,.10);
+    box-shadow: inset 0 1px rgba(255,255,255,.08);
+  }
+  .sb-user, .online-presence {
+    background: linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.08));
+    border-color: rgba(255,255,255,.09);
+    box-shadow: inset 0 1px rgba(255,255,255,.06);
+  }
+  .nav-item i.nav-icon {
+    background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.09));
+    box-shadow: 0 4px 12px rgba(17,44,43,.12);
+  }
+  .nav-item.active i.nav-icon,
+  .nav-sub-item.active i.nav-icon { background: rgba(255,255,255,.19); }
+
+  .top-bar {
+    background: rgba(250,248,244,.92);
+    border-bottom: 1px solid rgba(47,99,100,.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .top-title {
+    font-size: 17px; font-weight: 800;
+  }
+  .content { padding-top: 24px; }
+
+  #panel-focus > .today-focus-head {
+    border-radius: 22px;
+    padding: 20px 22px;
+    background:
+      radial-gradient(circle at 88% 14%, rgba(255,255,255,.82), transparent 23%),
+      linear-gradient(122deg,#EEF6F2 0%,#F8F4EC 61%,#F8EEEA 100%);
+    border: 1px solid rgba(47,99,100,.12);
+    box-shadow: var(--v133-premium-shadow);
+  }
+  .today-focus-title { font-size: 34px; }
+  .today-focus-title::after {
+    font-size: 19px;
+    color: var(--v133-gold);
+    text-shadow: 0 3px 8px rgba(210,154,77,.18);
+  }
+
+  .today-mini-status,
+  .today-quick-shell,
+  .focus-card,
+  .today-collapsible {
+    border-radius: 18px;
+    box-shadow: var(--v133-premium-shadow);
+  }
+  .today-mini-status {
+    background: linear-gradient(145deg, rgba(255,255,255,.72), rgba(255,255,255,.60));
+  }
+  .today-mini-status.attendance {
+    background: linear-gradient(145deg,#EDF8F3,#F8FBFA);
+  }
+  .today-mini-status.alarm {
+    background: linear-gradient(145deg,#FCF3E4,#FBF8F1);
+  }
+  .today-quick-shell {
+    border-color: rgba(153,121,140,.14);
+    background:
+      radial-gradient(circle at 92% 14%, rgba(255,255,255,.80), transparent 25%),
+      linear-gradient(125deg,#F8F0F5,#F6F3F8 60%,#F2F6F2);
+  }
+  .today-quick-shell .quick-capture input {
+    height: 48px;
+    font-size: 14px;
+    border-radius: 14px;
+    border-color: rgba(83,96,92,.15);
+    box-shadow: inset 0 1px 2px rgba(48,58,55,.04), 0 6px 14px rgba(245,245,245,.2);
+  }
+
+  .today-section-icon {
+    width: 38px; height: 38px; flex-basis: 38px;
+    border-radius: 13px;
+    background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(249,246,240,.82));
+    border: 1px solid rgba(47,99,100,.10);
+    box-shadow: 0 8px 16px rgba(49,63,59,.08);
+    color: #2F6364;
+  }
+  .focus-card-title {
+    font-size: 12px;
+    letter-spacing: .08em;
+    color: #5B534D;
+  }
+  .focus-badge-count {
+    min-width: 28px; min-height: 28px;
+    background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(248,244,238,.82));
+  }
+  .focus-one-now .focus-task,
+  .focus-task {
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,.97), rgba(254,254,253,.93));
+  }
+  .focus-one-now .focus-task {
+    box-shadow: 0 10px 24px rgba(47,99,100,.09);
+  }
+  .today-stat-chip {
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(252,250,247,.74));
+  }
+  .today-donut::after { background: #FCFAF6; }
+  .btn-sm {
+    font-weight: 700;
+    letter-spacing: -.01em;
+  }
+  .btn-primary,
+  .quick-capture .btn-primary,
+  .next-action-btn,
+  #work-alarm-btn {
+    box-shadow: 0 8px 18px rgba(47,99,100,.16);
+  }
+  .today-collapsible > summary {
+    min-height: 58px;
+  }
+}
+
+/* ===== Mobile polish only: keep flow simple, make it prettier + easier ===== */
+@media (max-width: 760px) {
+  body {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(231,241,238,.36), transparent 26%),
+      #F6F2EC;
+  }
+  .top-bar {
+    min-height: 54px;
+    padding: 10px 14px;
+    background: rgba(250,248,244,.94);
+    border-bottom: 1px solid rgba(47,99,100,.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .top-title { font-size: 16px; font-weight: 800; }
+  .content { padding: 14px 12px 92px; }
+  #panel-focus > .today-focus-head {
+    margin-bottom: 12px !important;
+    padding: 15px 15px 14px;
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 92% 14%, rgba(255,255,255,.82), transparent 26%),
+      linear-gradient(126deg,#EEF6F2 0%,#FAF4EC 60%,#F8EEEA 100%);
+    box-shadow: 0 8px 20px rgba(49,59,56,.07);
+    border: 1px solid rgba(47,99,100,.10);
+  }
+  .today-focus-greeting { font-size: 11px; }
+  .today-focus-title { font-size: 30px; letter-spacing: -.05em; }
+  .today-focus-sub { font-size: 11px; line-height: 1.5; }
+  .today-workday-strip { gap: 10px; }
+  .today-mini-status {
+    border-radius: 15px;
+    box-shadow: 0 7px 16px rgba(52,58,54,.06);
+  }
+  .today-quick-shell {
+    border-radius: 18px;
+    background: linear-gradient(125deg,#F8F0F5,#F5F3F8 60%,#F2F6F2);
+    box-shadow: 0 8px 20px rgba(55,61,58,.06);
+  }
+  .today-quick-shell .quick-capture input {
+    min-height: 46px;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+  .focus-mode-btn {
+    min-height: 30px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+  .today-primary-grid { gap: 12px; }
+  .focus-card,
+  .today-collapsible {
+    border-radius: 18px;
+    box-shadow: 0 8px 18px rgba(53,60,56,.06);
+  }
+  .focus-card-title,
+  .today-collapsible > summary {
+    font-size: 11px;
+    letter-spacing: .05em;
+  }
+  .today-section-icon {
+    width: 34px; height: 34px; flex-basis: 34px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,245,239,.86));
+    box-shadow: 0 6px 12px rgba(49,62,58,.07);
+  }
+  .today-section-icon i { font-size: 16px; }
+  .focus-one-now .focus-task,
+  .focus-task { border-radius: 14px; }
+  .focus-task-text { font-size: 13px; }
+  .focus-task-actions, .today-task-actions { gap: 6px; }
+  .focus-task-actions .btn-sm,
+  .today-task-actions .btn-sm {
+    min-height: 31px;
+    padding: 6px 10px;
+    font-size: 10.5px;
+    border-radius: 9px;
+  }
+  .today-overview-wrap { gap: 12px; }
+  .today-donut { width: 86px; height: 86px; }
+  .today-donut::after { inset: 11px; }
+  .today-donut-center strong { font-size: 19px; }
+  .today-stat-chip {
+    min-height: 52px;
+    border-radius: 11px;
+    background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(252,249,246,.74));
+  }
+  .bottom-nav {
+    background: rgba(252,250,246,.96);
+    border-top: 1px solid rgba(47,99,100,.10);
+    box-shadow: 0 -10px 28px rgba(39,55,52,.09);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bottom-nav-inner {
+    height: 68px;
+    padding: 0 2px;
+  }
+  .bn-item {
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 650;
+    color: #7A7C80;
+  }
+  .bn-item i {
+    width: 32px; height: 32px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(47,99,100,.11), rgba(47,99,100,.06));
+    box-shadow: inset 0 1px rgba(255,255,255,.45);
+  }
+  .bn-item.active { color: #245655; }
+  .bn-item.active i {
+    background: linear-gradient(180deg,#2F6364,#3A7D79);
+    color: #fff;
+    box-shadow: 0 8px 16px rgba(47,99,100,.24);
+  }
+  .bn-badge {
+    box-shadow: 0 4px 10px rgba(245,106,35,.16);
+  }
+  .chat-wrap,
+  .chat-thread,
+  .panel,
+  .card {
+    border-radius: 16px;
+  }
+}
+</style>
+
 </head>
 <body class="auth-pending">
 
@@ -3161,37 +3493,37 @@ body.authenticated .auth-gate { display:none !important; }
 
         <div class="focus-grid today-primary-grid">
           <div class="focus-card focus-card-now">
-            <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon">🎯</span><span>One Thing Now</span></span><span class="focus-badge-count" id="today-active-count">0</span></div>
+            <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-target-arrow"></i></span><span>One Thing Now</span></span><span class="focus-badge-count" id="today-active-count">0</span></div>
             <div id="focus-top3"><div class="loading-msg">Choosing one thing...</div></div>
           </div>
           <div class="focus-card focus-card-overview">
-            <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon">✨</span><span>Today at a Glance</span></span></div>
+            <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-sparkles"></i></span><span>Today at a Glance</span></span></div>
             <div id="focus-overview"><div class="loading-msg">Loading...</div></div>
           </div>
         </div>
 
         <div class="focus-card focus-card-today today-list-card" id="focus-card-captured">
-          <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon">⚡</span><span>Up Next</span></span><span class="focus-badge-count" id="focus-today-count">0</span></div>
+          <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-bolt"></i></span><span>Up Next</span></span><span class="focus-badge-count" id="focus-today-count">0</span></div>
           <div id="focus-captured-today"></div>
         </div>
 
         <details class="today-collapsible" id="focus-card-followups">
-          <summary><span class="focus-title-label"><span class="today-section-icon">📞</span><span>Follow-ups Due</span></span><span class="focus-badge-count" id="focus-follow-count">0</span></summary>
+          <summary><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-phone-call"></i></span><span>Follow-ups Due</span></span><span class="focus-badge-count" id="focus-follow-count">0</span></summary>
           <div class="today-collapsible-body" id="focus-followups"></div>
         </details>
 
         <details class="today-collapsible" id="focus-card-waiting">
-          <summary><span class="focus-title-label"><span class="today-section-icon">⏳</span><span>Waiting</span></span><span class="focus-badge-count" id="focus-wait-count">0</span></summary>
+          <summary><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-hourglass"></i></span><span>Waiting</span></span><span class="focus-badge-count" id="focus-wait-count">0</span></summary>
           <div class="today-collapsible-body" id="focus-waiting"></div>
         </details>
 
         <details class="today-collapsible" id="focus-card-inbox">
-          <summary><span class="focus-title-label"><span class="today-section-icon">🧠</span><span>Brain Dump</span></span><span class="focus-badge-count" id="focus-inbox-count">0</span></summary>
+          <summary><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-bulb"></i></span><span>Brain Dump</span></span><span class="focus-badge-count" id="focus-inbox-count">0</span></summary>
           <div class="today-collapsible-body" id="focus-inbox"></div>
         </details>
 
         <details class="today-collapsible" id="today-completed-details">
-          <summary><span class="focus-title-label"><span class="today-section-icon">✅</span><span>Completed Today</span></span><span class="focus-badge-count" id="today-completed-count">0</span></summary>
+          <summary><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-circle-check"></i></span><span>Completed Today</span></span><span class="focus-badge-count" id="today-completed-count">0</span></summary>
           <div class="today-collapsible-body" id="today-completed-list"></div>
         </details>
 
