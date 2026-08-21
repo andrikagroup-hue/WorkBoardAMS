@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v130 — Work Talk Basic Sticker — 20 Aug 2026 -->
+<!-- WorkBoard AMS v131 — Stability & Regression Fix — 21 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -1734,6 +1734,10 @@ body.mobile-hub-open { overflow:hidden; }
 .chat-back:hover { background:var(--bg2); }
 .chat-thread { flex:1 1 auto; min-height:0; overflow-y:auto; padding:14px clamp(10px,2.2vw,24px); display:flex; flex-direction:column; gap:5px; scroll-behavior:smooth; }
 .chat-day-separator { align-self:center; margin:7px 0 6px; font-size:9.5px; font-weight:700; color:var(--text2); background:rgba(250,248,244,.9); border:0.5px solid var(--border); border-radius:999px; padding:4px 9px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.chat-load-older-wrap { align-self:center; margin:2px 0 8px; }
+.chat-load-older-btn { border:0.5px solid var(--border2); background:rgba(250,248,244,.94); color:var(--text2); border-radius:999px; padding:5px 10px; font-size:10px; font-weight:700; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.chat-load-older-btn:hover { background:var(--bg2); color:var(--accent); }
+.chat-load-older-btn:disabled { opacity:.6; cursor:default; }
 .chat-msg-row { display:flex; gap:7px; max-width:min(78%,720px); align-items:flex-end; }
 .chat-msg-row.own { align-self:flex-end; flex-direction:row-reverse; }
 .chat-msg-row.other { align-self:flex-start; }
@@ -4766,6 +4770,9 @@ let chatChannelMeta = {};
 let chatPresenceMap = {};
 let chatConversationSearchQuery = '';
 let chatLocalPreviewUrls = [];
+const CHAT_MESSAGE_PAGE_SIZE = 300;
+let chatHasOlderMessages = false;
+let chatLoadingOlderMessages = false;
 
 // Helper: muat ulang data panel yang sedang aktif (dipakai setelah ganti nama pengguna,
 // supaya filter privat/publik langsung ter-update sesuai pengguna yang baru)
@@ -4921,7 +4928,7 @@ function startChatPolling() {
       }
       renderChatChannelLists();
       updateChatTotalBadgeFromMap();
-      if (activeChatChannelId) await loadChatMessages(activeChatChannelId);
+      if (activeChatChannelId && !chatLoadingOlderMessages) await loadChatMessages(activeChatChannelId, { preserveExisting:true });
     } catch (e) { /* diamkan, coba lagi di polling berikutnya */ }
   }, 15000);
 }
@@ -8934,8 +8941,9 @@ async function renderTodayAttendanceSummary(){
     ]);
     if(error && (error.code==='42P01'||String(error.message||'').includes('does not exist'))){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Setup required</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; return; }
     if(error)throw error;
-    if(leaveData){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">${focusEscape(absenStatusLabel(leaveData.tipe))}</div><div class="today-mini-sub">${focusEscape(leaveData.alasan||'Leave recorded')}</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Details</button></div>`; return; }
-    if(!data){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Not clocked in yet</div><div class="today-mini-sub">Start your workday first.</div></div><div class="today-mini-actions"><button class="btn-sm btn-primary" onclick="todayAttendanceAction('in')">Clock In</button></div>`; return; }
+    const hasRealAttendance=!!data?.clock_in;
+    if(!hasRealAttendance && leaveData){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">${focusEscape(absenStatusLabel(leaveData.tipe))}</div><div class="today-mini-sub">${focusEscape(leaveData.alasan||'Leave recorded')}</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Details</button></div>`; return; }
+    if(!hasRealAttendance){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Not clocked in yet</div><div class="today-mini-sub">Start your workday first.</div></div><div class="today-mini-actions"><button class="btn-sm btn-primary" onclick="todayAttendanceAction('in')">Clock In</button></div>`; return; }
     if(data.clock_in && !data.clock_out){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">🟢 Clocked in ${focusEscape(absenTimeStr(data.clock_in))}</div><div class="today-mini-sub">${data.terlambat_menit>0?data.terlambat_menit+' min late':'Workday active'}</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="todayAttendanceAction('out','${data.id}')">Clock Out</button></div>`; return; }
     const dur=Math.max(0,Math.round((new Date(data.clock_out)-new Date(data.clock_in))/60000));
     card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">✅ Workday complete</div><div class="today-mini-sub">${focusEscape(absenTimeStr(data.clock_in))}–${focusEscape(absenTimeStr(data.clock_out))} · ${Math.floor(dur/60)}h ${dur%60}m</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Details</button></div>`;
@@ -11221,6 +11229,16 @@ async function loadChatChannels() {
   return chatChannels;
 }
 
+// Hitung unread tanpa mengunduh seluruh history chat ke browser.
+async function chatUnreadCountForChannel(channelId, user) {
+  let q = sb.from('chat_messages').select('id', { count:'exact', head:true }).eq('channel_id', channelId).neq('sender', user);
+  const last = chatLastRead[channelId];
+  if (last) q = q.gt('created_at', last);
+  const { count, error } = await withTimeout(q, 8000);
+  if (error) throw error;
+  return Number(count || 0);
+}
+
 // Hitung badge unread total (dipanggil saat awal load app & tiap ada pesan baru via realtime)
 async function refreshChatUnreadBadge() {
   try {
@@ -11233,17 +11251,8 @@ async function refreshChatUnreadBadge() {
     const user = getUser();
     const relevant = channels.filter(c => c.type !== 'dm' || isParticipant(c.participants, user));
     if (!relevant.length) { setChatBadgeCount(0); return; }
-    const ids = relevant.map(c => c.id);
-    const { data: msgs, error: msgErr } = await sb.from('chat_messages')
-      .select('channel_id,created_at,sender').in('channel_id', ids);
-    if (msgErr) throw msgErr;
-    let unread = 0;
-    (msgs || []).forEach(m => {
-      if (m.sender === user) return; // your own messages don't count as unread
-      const last = chatLastRead[m.channel_id];
-      if (!last || new Date(m.created_at) > new Date(last)) unread++;
-    });
-    setChatBadgeCount(unread);
+    const counts = await Promise.all(relevant.map(c => chatUnreadCountForChannel(c.id, user)));
+    setChatBadgeCount(counts.reduce((sum, n) => sum + Number(n || 0), 0));
   } catch (e) {
     // Tabel mungkin belum dibuat — diamkan saja saat startup, banner akan tampil
     // begitu user benar-benar membuka panel Work Talk.
@@ -11255,7 +11264,8 @@ function setChatBadgeCount(n) {
   if (el) el.textContent = String(n);
 }
 
-// Cache jumlah unread per channel, diisi ulang oleh refreshChatChannelUnreadMap()
+// Cache jumlah unread per channel, diisi ulang oleh refreshChatChannelUnreadMap().
+// Metadata conversation hanya mengambil satu pesan terbaru per channel.
 let chatMessagesCacheUnread = {};
 async function refreshChatChannelUnreadMap() {
   const user = getUser();
@@ -11265,22 +11275,27 @@ async function refreshChatChannelUnreadMap() {
     chatChannelMeta = {};
     return;
   }
-  const ids = relevant.map(c => c.id);
-  const { data: msgs, error } = await sb.from('chat_messages')
-    .select('channel_id,created_at,sender,body,attachments').in('channel_id', ids);
-  if (error) throw error;
+  const results = await Promise.all(relevant.map(async c => {
+    const [latestRes, unread] = await Promise.all([
+      withTimeout(
+        sb.from('chat_messages')
+          .select('channel_id,created_at,sender,body,attachments')
+          .eq('channel_id', c.id)
+          .order('created_at', { ascending:false })
+          .limit(1)
+          .maybeSingle(),
+        8000
+      ),
+      chatUnreadCountForChannel(c.id, user)
+    ]);
+    if (latestRes.error) throw latestRes.error;
+    return { channelId:c.id, latest:latestRes.data || null, unread };
+  }));
   const unreadMap = {};
   const metaMap = {};
-  (msgs || []).forEach(m => {
-    const previous = metaMap[m.channel_id];
-    if (!previous || new Date(m.created_at || 0) > new Date(previous.created_at || 0)) {
-      metaMap[m.channel_id] = m;
-    }
-    if (m.sender === user) return;
-    const last = chatLastRead[m.channel_id];
-    if (!last || new Date(m.created_at) > new Date(last)) {
-      unreadMap[m.channel_id] = (unreadMap[m.channel_id] || 0) + 1;
-    }
+  results.forEach(r => {
+    if (r.latest) metaMap[r.channelId] = r.latest;
+    if (r.unread > 0) unreadMap[r.channelId] = r.unread;
   });
   chatMessagesCacheUnread = unreadMap;
   chatChannelMeta = metaMap;
@@ -11507,6 +11522,8 @@ async function openChatChannel(channelId, isUserClick) {
   `;
   chatAttachments = [];
   clearChatLocalPreviewUrls();
+  chatHasOlderMessages = false;
+  chatLoadingOlderMessages = false;
   editingChatMessageId = null;
   replyingToChatMessageId = null;
   renderChatReplyIndicator();
@@ -11522,24 +11539,80 @@ function closeChatThreadMobile() {
   closeChatImageLightbox();
 }
 
-async function loadChatMessages(channelId) {
+function mergeChatMessageLists(...groups) {
+  const byId = new Map();
+  groups.flat().forEach(m => { if (m?.id) byId.set(String(m.id), m); });
+  return Array.from(byId.values()).sort((a,b) => {
+    const ta = new Date(a.created_at || 0).getTime();
+    const tb = new Date(b.created_at || 0).getTime();
+    if (ta !== tb) return ta - tb;
+    return String(a.id || '').localeCompare(String(b.id || ''));
+  });
+}
+
+async function loadChatMessages(channelId, options={}) {
+  const preserveExisting = !!options.preserveExisting;
+  const wrap = document.getElementById('chat-thread');
+  const previousScrollTop = wrap?.scrollTop || 0;
+  const wasNearBottom = wrap ? (wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight) < 120 : true;
   let data, error;
   try {
     ({ data, error } = await withTimeout(
       sb.from('chat_messages').select('*').eq('channel_id', channelId)
-        .order('created_at', { ascending: true }).limit(300)
+        .order('created_at', { ascending:false }).limit(CHAT_MESSAGE_PAGE_SIZE)
     ));
   } catch (e) {
-    document.getElementById('chat-thread').innerHTML = '<div class="empty-msg" style="color:#e53e3e">⚠️ ' + e.message + '</div>';
+    if (!preserveExisting && document.getElementById('chat-thread')) document.getElementById('chat-thread').innerHTML = '<div class="empty-msg" style="color:#e53e3e">⚠️ ' + escHtml(e.message) + '</div>';
     return;
   }
   if (error) {
     if ((error.message || '').toLowerCase().includes('does not exist')) showChatMigrationBanner();
-    document.getElementById('chat-thread').innerHTML = '<div class="empty-msg" style="color:#e53e3e">⚠️ Failed to load: ' + error.message + '</div>';
+    if (!preserveExisting && document.getElementById('chat-thread')) document.getElementById('chat-thread').innerHTML = '<div class="empty-msg" style="color:#e53e3e">⚠️ Failed to load: ' + escHtml(error.message) + '</div>';
     return;
   }
-  chatMessagesCache = data || [];
-  renderChatThread(chatMessagesCache);
+  if (channelId !== activeChatChannelId) return;
+  const latestPage = (data || []).slice().reverse();
+  if (preserveExisting) {
+    chatMessagesCache = mergeChatMessageLists(chatMessagesCache, latestPage);
+    renderChatThread(chatMessagesCache, wasNearBottom ? { forceBottom:true } : { preserveScrollTop: previousScrollTop });
+  } else {
+    chatMessagesCache = latestPage;
+    chatHasOlderMessages = (data || []).length === CHAT_MESSAGE_PAGE_SIZE;
+    renderChatThread(chatMessagesCache, { forceBottom:true });
+  }
+}
+
+async function loadOlderChatMessages() {
+  if (chatLoadingOlderMessages || !chatHasOlderMessages || !activeChatChannelId || !chatMessagesCache.length) return;
+  const oldest = chatMessagesCache[0];
+  if (!oldest?.created_at) { chatHasOlderMessages = false; renderChatThread(chatMessagesCache); return; }
+  const wrap = document.getElementById('chat-thread');
+  const anchor = { scrollHeight:wrap?.scrollHeight || 0, scrollTop:wrap?.scrollTop || 0 };
+  chatLoadingOlderMessages = true;
+  const btn = document.getElementById('chat-load-older-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading older messages...'; }
+  try {
+    const { data, error } = await withTimeout(
+      sb.from('chat_messages').select('*').eq('channel_id', activeChatChannelId)
+        .lt('created_at', oldest.created_at)
+        .order('created_at', { ascending:false })
+        .limit(CHAT_MESSAGE_PAGE_SIZE),
+      12000
+    );
+    if (error) throw error;
+    const olderDesc = data || [];
+    const olderAsc = olderDesc.slice().reverse();
+    chatMessagesCache = mergeChatMessageLists(olderAsc, chatMessagesCache);
+    chatHasOlderMessages = olderDesc.length === CHAT_MESSAGE_PAGE_SIZE;
+    renderChatThread(chatMessagesCache, { prependAnchor:anchor });
+  } catch (e) {
+    alert('Failed to load older messages: ' + (e.message || e));
+    renderChatThread(chatMessagesCache, { preserveScrollTop:anchor.scrollTop });
+  } finally {
+    chatLoadingOlderMessages = false;
+    const btnAfter = document.getElementById('chat-load-older-btn');
+    if (btnAfter) { btnAfter.disabled = false; btnAfter.textContent = 'Load older messages'; }
+  }
 }
 
 const AVATAR_PALETTE = ['#2F6364','#F77E2D','#7C3AED','#059669','#DB2777','#D97706','#2563EB','#DC2626'];
@@ -11830,16 +11903,21 @@ function jumpToChatMessage(messageId) {
   setTimeout(() => target.classList.remove('reply-highlight'), 1500);
 }
 
-function renderChatThread(messages) {
+function renderChatThread(messages, options={}) {
   const wrap = document.getElementById('chat-thread');
   if (!wrap) return;
   const user = getUser();
+  const previousScrollTop = wrap.scrollTop;
+  const wasNearBottom = (wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight) < 120;
   if (!messages.length) {
     wrap.innerHTML = '<div class="empty-msg">No messages yet. Start the conversation below.</div>';
     return;
   }
   let lastDay = '';
   const html = [];
+  if (chatHasOlderMessages) {
+    html.push(`<div class="chat-load-older-wrap"><button id="chat-load-older-btn" class="chat-load-older-btn" onclick="loadOlderChatMessages()" ${chatLoadingOlderMessages?'disabled':''}>${chatLoadingOlderMessages?'Loading older messages...':'Load older messages'}</button></div>`);
+  }
   messages.forEach(m => {
     const day = chatMessageDayKey(m.created_at);
     if (day && day !== lastDay) {
@@ -11871,7 +11949,16 @@ function renderChatThread(messages) {
   });
   wrap.innerHTML = html.join('');
   hydrateChatImagePreviews(wrap).catch(() => {});
-  wrap.scrollTop = wrap.scrollHeight;
+  if (options.prependAnchor) {
+    const delta = Math.max(0, wrap.scrollHeight - Number(options.prependAnchor.scrollHeight || 0));
+    wrap.scrollTop = Number(options.prependAnchor.scrollTop || 0) + delta;
+  } else if (Number.isFinite(options.preserveScrollTop)) {
+    wrap.scrollTop = options.preserveScrollTop;
+  } else if (options.forceBottom || wasNearBottom) {
+    wrap.scrollTop = wrap.scrollHeight;
+  } else {
+    wrap.scrollTop = previousScrollTop;
+  }
 }
 
 function autoGrowChatInput(el) {
@@ -11958,9 +12045,10 @@ async function sendChatMessage() {
       alert('Failed to save edit: ' + error.message);
       return;
     }
+    chatMessagesCache = chatMessagesCache.map(m => m.id === editingChatMessageId ? { ...m, body:text, is_edited:true } : m);
     input.value = '';
     cancelChatEdit();
-    await loadChatMessages(activeChatChannelId);
+    await loadChatMessages(activeChatChannelId, { preserveExisting:true });
     await refreshChatChannelUnreadMap();
     renderChatChannelLists();
     return;
@@ -12010,7 +12098,7 @@ async function sendChatMessage() {
   clearDraft(currentChatDraftScope(), 'chat');
   cancelChatReply();
   markChatChannelRead(activeChatChannelId);
-  await loadChatMessages(activeChatChannelId);
+  await loadChatMessages(activeChatChannelId, { preserveExisting:true });
   await refreshChatChannelUnreadMap();
   delete chatMessagesCacheUnread[activeChatChannelId];
   renderChatChannelLists();
@@ -12045,9 +12133,10 @@ async function deleteChatMessage(id) {
   if (!confirm('Delete this message? This action cannot be undone.')) return;
   const { error } = await sb.from('chat_messages').delete().eq('id', id);
   if (error) return alert('Failed to delete message: ' + error.message);
+  chatMessagesCache = chatMessagesCache.filter(x => x.id !== id);
   if (editingChatMessageId === id) cancelChatEdit();
   if (String(replyingToChatMessageId || '') === String(id || '')) cancelChatReply();
-  await loadChatMessages(activeChatChannelId);
+  await loadChatMessages(activeChatChannelId, { preserveExisting:true });
   await refreshChatChannelUnreadMap();
   delete chatMessagesCacheUnread[activeChatChannelId];
   renderChatChannelLists();
@@ -12146,7 +12235,7 @@ async function sendChatSticker(stickerId) {
   closeChatStickerPicker();
   cancelChatReply();
   markChatChannelRead(activeChatChannelId);
-  await loadChatMessages(activeChatChannelId);
+  await loadChatMessages(activeChatChannelId, { preserveExisting:true });
   await refreshChatChannelUnreadMap();
   delete chatMessagesCacheUnread[activeChatChannelId];
   renderChatChannelLists();
@@ -13601,7 +13690,9 @@ async function renderAbsenToday() {
       sb.from('leave_requests').select('*').eq('user_name', user).eq('status', 'approved').lte('dari_tanggal', today).gte('sampai_tanggal', today).order('created_at', { ascending: false }).limit(1).maybeSingle()
     );
 
-    if (leaveData) {
+    // Real Clock In/Out always wins if an approved leave overlaps the same date.
+    const hasRealAttendance = !!data?.clock_in;
+    if (!hasRealAttendance && leaveData) {
       infoEl.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:16px;font-weight:700;color:${absenStatusColor(leaveData.tipe)}">${escHtml(absenStatusLabel(leaveData.tipe))}</span>
@@ -13611,7 +13702,7 @@ async function renderAbsenToday() {
       return;
     }
 
-    if (!data) {
+    if (!hasRealAttendance) {
       // Hasn't clocked in at all today
       infoEl.innerHTML = `<span style="color:var(--text3)">Haven't clocked in today.</span>`;
       btnEl.innerHTML = `
@@ -13736,8 +13827,11 @@ async function _doClockInProcess(user, now, today, terlambatMenit, status, keter
 
   const error = result.error;
   if (error) {
-    const missingRpc = String(error.code || '') === 'PGRST202' || /workboard_clock_in/i.test(String(error.message || ''));
-    alert(missingRpc ? 'Attendance security setup is not installed yet. Run WORKBOARD_V124_FINAL_STABILIZATION.sql in Supabase, then try again.' : 'Failed to clock in: ' + error.message);
+    const errMsg = String(error.message || '');
+    const missingRpc = String(error.code || '') === 'PGRST202'
+      || /could not find the function\s+public\.workboard_clock_in/i.test(errMsg)
+      || /function\s+public\.workboard_clock_in\([^)]*\)\s+does not exist/i.test(errMsg);
+    alert(missingRpc ? 'Attendance security setup is not installed yet. Run WORKBOARD_V124_FINAL_STABILIZATION.sql in Supabase, then try again.' : 'Failed to clock in: ' + errMsg);
     cancelClockIn();
   } else {
     await renderAbsen();
@@ -15406,12 +15500,13 @@ async function renderOnlineUsers() {
     if (!data || !data.length) { wrap.style.display = 'none'; return; }
     wrap.style.display = 'block';
     const currentUser = getUser();
-    list.innerHTML = data.map(u =>
-      '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:6px">' +
-      '<span style="width:6px;height:6px;border-radius:50%;background:#22C55E;display:inline-block"></span>' +
-      (u.user_name === currentUser ? '<strong>' + u.user_name + '</strong> (You)' : u.user_name) +
-      '</span>'
-    ).join('<br>');
+    list.innerHTML = data.map(u => {
+      const safeName = escHtml(String(u.user_name || 'User'));
+      return '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:6px">' +
+        '<span style="width:6px;height:6px;border-radius:50%;background:#22C55E;display:inline-block"></span>' +
+        (u.user_name === currentUser ? '<strong>' + safeName + '</strong> (You)' : safeName) +
+        '</span>';
+    }).join('<br>');
   } catch(e) {}
 }
 
@@ -15434,7 +15529,7 @@ async function checkNewChatMessages() {
   if (currentPanel === 'chat') return; // sedang buka chat, tidak perlu notif
   try {
     const { data } = await sb.from('chat_messages')
-      .select('id,sender,body,created_at')
+      .select('id,sender,body,attachments,created_at')
       .order('created_at', { ascending: false })
       .limit(1);
     if (!data || !data.length) return;
@@ -15445,10 +15540,12 @@ async function checkNewChatMessages() {
 
     lastNotifChatMsgId = latest.id;
 
+    const preview = chatMessagePreviewText(latest, 80);
+
     // Browser notification
     if ('Notification' in window && Notification.permission === 'granted') {
       const n = new Notification('💬 WorkBoard — New Message', {
-        body: latest.sender + ': ' + (latest.body || '').substring(0, 80),
+        body: latest.sender + ': ' + preview,
         icon: 'apple-touch-icon.png',
         badge: 'apple-touch-icon.png',
         tag: 'worktalk'
@@ -15462,7 +15559,7 @@ async function checkNewChatMessages() {
     }
 
     // In-app toast popup
-    showChatToast(latest.sender, latest.body);
+    showChatToast(latest.sender, preview);
   } catch(e) {}
 }
 
@@ -15503,12 +15600,13 @@ function _hideChatToast() {
   _chatToastTimer = null;
 }
 
-function showChatToast(sender, body) {
+function showChatToast(sender, previewText) {
   const toast = _getChatToastEl();
+  const preview = String(previewText || 'Message');
   toast.innerHTML = '<div style="font-weight:700;font-size:12px;opacity:0.8;margin-bottom:2px">💬 Work Talk</div>'
     + '<strong>' + escHtml(sender) + '</strong>: '
-    + escHtml((body || '').substring(0, 60))
-    + (body && body.length > 60 ? '…' : '');
+    + escHtml(preview.substring(0, 60))
+    + (preview.length > 60 ? '…' : '');
   // Force reflow agar transition opacity 0→1 selalu berjalan (bahkan jika toast sudah visible)
   toast.style.opacity = '0';
   toast.style.pointerEvents = 'auto';
