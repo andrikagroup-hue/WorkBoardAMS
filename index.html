@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v135 — Full Premium Modules — 21 Aug 2026 -->
+<!-- WorkBoard AMS v136 — Resources UX Premium — 21 Aug 2026 -->
 
 <html lang="en">
 <head>
@@ -3945,6 +3945,382 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
 }
 </style>
 
+
+<style id="v136-resources-ux-premium">
+/* ============================================================
+   v136 — RESOURCES UX PREMIUM
+   Header brand fit + Password Manager + All Links UX redesign.
+   ============================================================ */
+
+/* Sidebar brand: company owns a full-width row so it never truncates. */
+.sb-header .sb-logo { align-items:center !important; }
+.sb-header .sb-logo .sb-brand-copy { min-width:0; flex:1; }
+.sb-brand-title { font-size:20px; line-height:1.05; }
+.sb-brand-tagline {
+  margin-top:3px;
+  font-size:8.5px;
+  line-height:1.2;
+  font-weight:600;
+  letter-spacing:.015em;
+  white-space:nowrap;
+  color:rgba(255,255,255,.76);
+}
+.sb-brand-company {
+  display:block;
+  width:100%;
+  margin-top:10px;
+  padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.09);
+  font-family:var(--wb-font-heading,'Plus Jakarta Sans','Inter',sans-serif);
+  font-size:11.5px;
+  line-height:1.15;
+  font-weight:800;
+  letter-spacing:.035em;
+  color:#FFF7E8;
+  text-transform:uppercase;
+  white-space:normal;
+  overflow-wrap:normal;
+}
+
+/* Shared category chips */
+.resource-chip-row {
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.resource-filter-chip {
+  appearance:none;
+  border:1px solid rgba(47,99,100,.12);
+  background:rgba(255,255,255,.72);
+  color:#625C56;
+  min-height:32px;
+  padding:6px 10px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:var(--wb-font-heading,'Plus Jakarta Sans','Inter',sans-serif);
+  font-size:10px;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:0 3px 9px rgba(45,58,54,.035);
+  transition:all .15s ease;
+}
+.resource-filter-chip:hover {
+  transform:translateY(-1px);
+  border-color:rgba(47,99,100,.25);
+  background:#fff;
+  box-shadow:0 7px 14px rgba(45,58,54,.07);
+}
+.resource-filter-chip.active {
+  color:#fff;
+  border-color:transparent;
+  background:linear-gradient(135deg,#3C7B78,#2F6364);
+  box-shadow:0 7px 16px rgba(47,99,100,.18);
+}
+.resource-filter-chip b {
+  min-width:19px;
+  height:19px;
+  padding:0 5px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(47,99,100,.07);
+  color:#716B64;
+  font-size:9px;
+  font-weight:800;
+}
+.resource-filter-chip.active b { background:rgba(255,255,255,.18); color:#fff; }
+.resource-chip-emoji { font-size:13px; line-height:1; }
+
+/* All Links becomes a compact resource launcher. */
+#panel-links .resource-launcher-toolbar {
+  margin-bottom:14px;
+  padding:14px 15px;
+  border:1px solid rgba(47,99,100,.10);
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 93% 8%,rgba(255,255,255,.84),transparent 22%),
+    linear-gradient(135deg,#F0F6F7,#F8F5EF 58%,#F7F1E9);
+  box-shadow:0 10px 24px rgba(45,58,54,.06);
+}
+#panel-links .resource-launcher-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:11px;
+}
+.resource-launcher-sub,
+.vault-finder-sub {
+  margin-top:4px;
+  color:#8B837B;
+  font-size:10.5px;
+  line-height:1.45;
+}
+.resource-launcher-actions { display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+#panel-links .link-group {
+  margin-bottom:13px;
+  padding:11px;
+  border-radius:18px;
+  border-color:color-mix(in srgb, var(--link-border) 70%, #fff 30%);
+  background:linear-gradient(180deg,rgba(255,255,255,.76),rgba(250,248,244,.67));
+  box-shadow:0 8px 21px rgba(45,58,54,.045);
+}
+#panel-links .link-group-header {
+  margin-bottom:9px;
+  padding:8px 10px;
+  border-left-width:4px;
+  border-radius:11px;
+  background:color-mix(in srgb,var(--link-soft) 76%,#fff 24%);
+}
+#panel-links .link-group-title { font-size:11px; letter-spacing:.055em; }
+#panel-links .link-group-icon { font-size:14px; }
+#panel-links .link-grid {
+  grid-template-columns:repeat(auto-fill,minmax(255px,1fr));
+  gap:9px;
+}
+#panel-links .link-card {
+  min-height:92px;
+  padding:12px;
+  border-radius:15px;
+  border-color:rgba(47,99,100,.10);
+  background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(252,250,247,.82));
+  box-shadow:0 6px 16px rgba(45,58,54,.045);
+}
+#panel-links .link-card:hover {
+  transform:translateY(-2px);
+  box-shadow:0 13px 25px rgba(47,99,100,.10);
+}
+#panel-links .link-emoji {
+  width:42px;
+  height:42px;
+  border-radius:13px;
+  font-size:21px;
+  background:linear-gradient(180deg,var(--link-soft),rgba(255,255,255,.80));
+  border:1px solid color-mix(in srgb,var(--link-border) 70%,#fff 30%);
+}
+#panel-links .link-label {
+  font-family:var(--wb-font-heading,'Plus Jakarta Sans','Inter',sans-serif);
+  font-size:12.5px;
+  line-height:1.25;
+  font-weight:800;
+  letter-spacing:-.015em;
+}
+#panel-links .link-url-text {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  margin-top:4px;
+  color:#397573;
+  font-size:10px;
+  font-weight:650;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#panel-links .link-desc {
+  margin-top:4px;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  font-size:10px;
+  line-height:1.35;
+}
+#panel-links .link-actions {
+  opacity:.45;
+  transition:opacity .15s ease;
+}
+#panel-links .link-card:hover .link-actions { opacity:1; }
+
+/* Password Manager: single finder + chip navigation + readable cards. */
+#panel-passvault .vault-finder-card {
+  margin-bottom:14px;
+  padding:15px;
+  border:1px solid rgba(129,99,146,.13);
+  border-radius:19px;
+  background:
+    radial-gradient(circle at 94% 7%,rgba(255,255,255,.84),transparent 22%),
+    linear-gradient(135deg,#F5F0F7,#FAF7F2 62%,#F3F7F5);
+  box-shadow:0 11px 26px rgba(62,51,69,.06);
+}
+.vault-finder-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:11px;
+}
+.vault-result-count {
+  flex:0 0 auto;
+  padding:5px 9px;
+  border-radius:999px;
+  border:1px solid rgba(129,99,146,.12);
+  background:rgba(255,255,255,.74);
+  color:#735E7E;
+  font-family:var(--wb-font-heading,'Plus Jakarta Sans','Inter',sans-serif);
+  font-size:9.5px;
+  font-weight:800;
+}
+.vault-search-box {
+  height:46px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 8px 0 13px;
+  border:1px solid rgba(129,99,146,.17);
+  border-radius:14px;
+  background:rgba(255,255,255,.91);
+  box-shadow:inset 0 1px 2px rgba(65,53,70,.025),0 5px 13px rgba(65,53,70,.035);
+}
+.vault-search-box > i { color:#826D8E; font-size:17px; }
+.vault-search-box input {
+  flex:1;
+  min-width:0;
+  height:42px !important;
+  min-height:42px !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  font-size:12.5px !important;
+}
+.vault-search-clear {
+  width:30px;
+  height:30px;
+  border:0;
+  border-radius:9px;
+  background:rgba(129,99,146,.07);
+  color:#816392;
+  cursor:pointer;
+}
+.vault-search-clear:hover { background:rgba(129,99,146,.13); }
+.vault-chip-row { margin-top:10px; }
+#panel-passvault .vault-group {
+  margin-bottom:13px;
+  padding:11px;
+  border:1px solid color-mix(in srgb,var(--vault-accent) 58%,#fff 42%);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(251,249,246,.69));
+  box-shadow:0 8px 20px rgba(45,58,54,.045);
+}
+.vault-group-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:9px;
+  margin-bottom:9px;
+  padding:8px 9px;
+  border-radius:11px;
+  background:color-mix(in srgb,var(--vault-soft) 70%,#fff 30%);
+  border-left:4px solid var(--vault-accent);
+}
+.vault-group-title {
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-family:var(--wb-font-heading,'Plus Jakarta Sans','Inter',sans-serif);
+  font-size:10.5px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--vault-fg);
+}
+.vault-group-icon {
+  width:27px;
+  height:27px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  background:rgba(255,255,255,.68);
+  font-size:14px;
+}
+.vault-group-count {
+  flex:0 0 auto;
+  padding:4px 8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.72);
+  color:var(--vault-fg);
+  font-size:9px;
+  font-weight:800;
+}
+#panel-passvault .pass-grid {
+  grid-template-columns:repeat(auto-fill,minmax(285px,1fr));
+  gap:9px;
+}
+#panel-passvault .pass-card {
+  min-height:148px;
+  padding:13px;
+  border-radius:15px;
+  border-color:rgba(47,99,100,.10);
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(252,250,247,.84));
+  box-shadow:0 6px 16px rgba(45,58,54,.045);
+}
+#panel-passvault .pass-label {
+  font-size:12.5px;
+  line-height:1.3;
+  flex-wrap:wrap;
+}
+#panel-passvault .pass-icon {
+  width:28px;
+  height:28px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:9px;
+  background:var(--vault-soft,rgba(129,99,146,.08));
+  color:var(--vault-fg,#735E7E);
+  font-size:14px;
+}
+#panel-passvault .pass-type-badge { padding:3px 7px; font-size:8.5px; }
+#panel-passvault .pass-info { gap:5px; }
+#panel-passvault .pass-akun { font-size:10.5px; line-height:1.35; }
+#panel-passvault .pass-value-row { margin-top:auto; padding-top:5px; }
+#panel-passvault .pass-value-box {
+  min-height:29px;
+  display:flex;
+  align-items:center;
+  padding:5px 8px;
+  border-radius:9px;
+  background:rgba(47,99,100,.045);
+}
+#panel-passvault .pass-note {
+  white-space:normal;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  line-height:1.35;
+}
+#panel-passvault .pass-actions { opacity:.48; transition:opacity .15s ease; }
+#panel-passvault .pass-card:hover .pass-actions { opacity:1; }
+
+@media (max-width: 760px) {
+  .sb-brand-company { font-size:10.5px; }
+  .resource-launcher-head,
+  .vault-finder-head { flex-direction:column; align-items:stretch; }
+  .resource-launcher-actions { justify-content:stretch; }
+  .resource-launcher-actions .btn-sm { flex:1; justify-content:center; }
+  .resource-chip-row {
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    padding-bottom:3px;
+    scrollbar-width:none;
+  }
+  .resource-chip-row::-webkit-scrollbar { display:none; }
+  .resource-filter-chip { flex:0 0 auto; min-height:34px; }
+  #panel-links .link-grid,
+  #panel-passvault .pass-grid { grid-template-columns:1fr; }
+  #panel-links .link-card { min-height:88px; }
+  #panel-passvault .pass-card { min-height:0; }
+  .vault-result-count { align-self:flex-start; }
+}
+</style>
+
 </head>
 <body class="auth-pending">
 
@@ -4022,9 +4398,9 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
         <div class="sb-brand-copy">
           <div class="sb-brand-title">WorkBoard</div>
           <div class="sb-brand-tagline">Daily Company Management</div>
-          <div class="sb-brand-company">PT. ANDRIKA MITRA SOLUSI</div>
         </div>
       </div>
+      <div class="sb-brand-company">PT. ANDRIKA MITRA SOLUSI</div>
       <div class="sb-date" id="sidebar-date">—</div>
       <div class="sb-user">
         <div class="sb-user-dot"></div>
@@ -5977,19 +6353,25 @@ ON CONFLICT DO NOTHING;</code>
           <button onclick="document.getElementById('links-setup-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
 
-        <!-- Header + tombol tambah -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-          <div class="premium-section-heading"><span class="premium-section-icon"><i class="ti ti-world"></i></span><span>All Links & Tools</span></div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <select id="links-filter-kat" class="global-filter" style="font-size:12px" onchange="renderLinks()">
-              <option value="all">All Categories</option>
-            </select>
-            <input type="file" id="links-csv-input" accept=".csv,text/csv" style="display:none" onchange="importLinksCsv(event)">
-            <button type="button" class="btn-sm" id="links-import-btn" onclick="document.getElementById('links-csv-input').click()">
-              <i class="ti ti-upload"></i> Import CSV
-            </button>
-            <button class="btn-sm btn-primary" onclick="openLinkForm()"><i class="ti ti-plus"></i> Add Link</button>
+        <!-- Premium resource launcher controls -->
+        <div class="resource-launcher-toolbar">
+          <div class="resource-launcher-head">
+            <div>
+              <div class="premium-section-heading"><span class="premium-section-icon"><i class="ti ti-apps"></i></span><span>Resource Launcher</span></div>
+              <div class="resource-launcher-sub" id="links-filter-summary">Browse every saved AMS resource by category.</div>
+            </div>
+            <div class="resource-launcher-actions">
+              <input type="file" id="links-csv-input" accept=".csv,text/csv" style="display:none" onchange="importLinksCsv(event)">
+              <button type="button" class="btn-sm" id="links-import-btn" onclick="document.getElementById('links-csv-input').click()">
+                <i class="ti ti-upload"></i> Import CSV
+              </button>
+              <button class="btn-sm btn-primary" onclick="openLinkForm()"><i class="ti ti-plus"></i> Add Link</button>
+            </div>
           </div>
+          <select id="links-filter-kat" class="global-filter" style="display:none" onchange="renderLinks()">
+            <option value="all">All Categories</option>
+          </select>
+          <div class="resource-chip-row" id="links-category-chips" aria-label="Resource categories"></div>
         </div>
         <div id="links-import-status" class="links-import-status" role="status" aria-live="polite"></div>
 
@@ -6129,16 +6511,25 @@ ON CONFLICT DO NOTHING;</code>
             <button class="btn-sm" onclick="lockVaultManual()"><i class="ti ti-lock"></i> Lock Vault</button>
           </div>
 
-          <!-- Password Finder -->
-          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px">
-            <div class="premium-section-heading"><span class="premium-section-icon"><i class="ti ti-search"></i></span><span>Password Finder</span></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-              <input type="text" id="vault-search-account" class="form-input" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" name="wb_vault_finder_query" placeholder="Search account, company, category, username, website, or note" style="font-size:12px;width:100%" oninput="renderVaultList()">
-              <select id="vault-search-category" class="form-input" style="font-size:12px;width:100%" onchange="renderVaultList()">
-                <option value="all">All Categories</option>
-              </select>
-              <input type="text" id="vault-search-company" class="form-input" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" name="wb_vault_finder_company" placeholder="Company" style="font-size:12px;width:100%" oninput="renderVaultList()">
+          <!-- Premium Password Finder -->
+          <div class="vault-finder-card">
+            <div class="vault-finder-head">
+              <div>
+                <div class="premium-section-heading"><span class="premium-section-icon"><i class="ti ti-search"></i></span><span>Password Finder</span></div>
+                <div class="vault-finder-sub">One search field covers account, company, category, username, website, and notes.</div>
+              </div>
+              <div class="vault-result-count" id="vault-results-count">0 credentials</div>
             </div>
+            <div class="vault-search-box">
+              <i class="ti ti-search"></i>
+              <input type="text" id="vault-search-account" class="form-input" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" name="wb_vault_finder_query" placeholder="Search passwords, account, company, username, website, or note..." oninput="renderVaultList()" onkeydown="if(event.key==='Escape')clearVaultFinder()">
+              <button type="button" class="vault-search-clear" title="Clear search" onclick="clearVaultFinder()"><i class="ti ti-x"></i></button>
+            </div>
+            <select id="vault-search-category" class="form-input" style="display:none" onchange="renderVaultList()">
+              <option value="all">All Categories</option>
+            </select>
+            <input type="hidden" id="vault-search-company" name="wb_vault_finder_company" value="">
+            <div class="resource-chip-row vault-chip-row" id="vault-category-chips" aria-label="Password categories"></div>
           </div>
 
           <!-- Header + add button -->
@@ -16187,6 +16578,43 @@ function getLinkCategoryVisual(category) {
   return { theme: Math.abs(hash) % 6, icon: '📁' };
 }
 
+function compactResourceUrl(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  try {
+    const normalized = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+    const parsed = new URL(normalized);
+    return parsed.hostname.replace(/^www\./i, '') || raw;
+  } catch (_) {
+    return raw.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0];
+  }
+}
+
+function setLinksCategoryFilter(category) {
+  const filterEl = document.getElementById('links-filter-kat');
+  if (!filterEl) return;
+  filterEl.value = category || 'all';
+  renderLinks();
+}
+
+function renderLinksCategoryChips() {
+  const wrap = document.getElementById('links-category-chips');
+  const filterEl = document.getElementById('links-filter-kat');
+  if (!wrap || !filterEl) return;
+  const active = filterEl.value || 'all';
+  const counts = {};
+  linksCache.forEach(item => {
+    const cat = item.kategori || 'Lainnya';
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+  const categories = Object.keys(counts).sort((a,b) => a.localeCompare(b, undefined, { sensitivity:'base' }));
+  const allChip = `<button type="button" class="resource-filter-chip ${active === 'all' ? 'active' : ''}" data-category="all" onclick="setLinksCategoryFilter(this.dataset.category)"><i class="ti ti-apps"></i><span>All</span><b>${linksCache.length}</b></button>`;
+  wrap.innerHTML = allChip + categories.map(cat => {
+    const visual = getLinkCategoryVisual(cat);
+    return `<button type="button" class="resource-filter-chip ${active === cat ? 'active' : ''}" data-category="${escAttr(cat)}" onclick="setLinksCategoryFilter(this.dataset.category)"><span class="resource-chip-emoji">${escHtml(visual.icon)}</span><span>${escHtml(cat)}</span><b>${counts[cat]}</b></button>`;
+  }).join('');
+}
+
 async function renderLinks() {
   const listEl = document.getElementById('links-list');
   const filterEl = document.getElementById('links-filter-kat');
@@ -16223,6 +16651,11 @@ async function renderLinks() {
 
   const filterVal = filterEl?.value || 'all';
   const filtered = filterVal === 'all' ? linksCache : linksCache.filter(l => (l.kategori||'Lainnya') === filterVal);
+  renderLinksCategoryChips();
+  const summaryEl = document.getElementById('links-filter-summary');
+  if (summaryEl) summaryEl.textContent = filterVal === 'all'
+    ? `${linksCache.length} saved resources · choose a category or use Search above.`
+    : `${filtered.length} ${filtered.length === 1 ? 'resource' : 'resources'} in ${filterVal}.`;
 
   if (!filtered.length) {
     listEl.innerHTML = '<div class="empty-msg">No links yet. Click "+ Add Link" to get started.</div>';
@@ -16254,7 +16687,7 @@ async function renderLinks() {
               <div class="link-emoji">${escHtml(l.emoji || '🔗')}</div>
               <div class="link-info">
                 <div class="link-label">${escHtml(l.label)}</div>
-                <div class="link-url-text">${escHtml(l.url)}</div>
+                <div class="link-url-text"><i class="ti ti-world-www"></i> ${escHtml(compactResourceUrl(l.url))}</div>
                 ${l.deskripsi ? `<div class="link-desc">${escHtml(l.deskripsi)}</div>` : ''}
               </div>
               <div class="link-actions" onclick="event.stopPropagation()">
@@ -17000,6 +17433,39 @@ function vaultCatStyle(category) {
   return VAULT_CAT_PALETTE[hash % VAULT_CAT_PALETTE.length];
 }
 
+function setVaultCategoryFilter(category) {
+  const categoryEl = document.getElementById('vault-search-category');
+  if (!categoryEl) return;
+  categoryEl.value = category || 'all';
+  renderVaultList();
+}
+
+function clearVaultFinder() {
+  const searchEl = document.getElementById('vault-search-account');
+  const companyEl = document.getElementById('vault-search-company');
+  const categoryEl = document.getElementById('vault-search-category');
+  if (searchEl) searchEl.value = '';
+  if (companyEl) companyEl.value = '';
+  if (categoryEl) categoryEl.value = 'all';
+  renderVaultList();
+  searchEl?.focus();
+}
+
+function renderVaultCategoryChips() {
+  const wrap = document.getElementById('vault-category-chips');
+  const categoryEl = document.getElementById('vault-search-category');
+  if (!wrap || !categoryEl) return;
+  const active = categoryEl.value || 'all';
+  const counts = {};
+  passVaultCache.forEach(item => {
+    const cat = item.category || 'Other';
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+  const categories = Object.keys(counts).sort((a,b) => a.localeCompare(b, undefined, { sensitivity:'base' }));
+  wrap.innerHTML = `<button type="button" class="resource-filter-chip ${active === 'all' ? 'active' : ''}" data-category="all" onclick="setVaultCategoryFilter(this.dataset.category)"><i class="ti ti-key"></i><span>All</span><b>${passVaultCache.length}</b></button>`
+    + categories.map(cat => `<button type="button" class="resource-filter-chip ${active === cat ? 'active' : ''}" data-category="${escAttr(cat)}" onclick="setVaultCategoryFilter(this.dataset.category)"><i class="ti ti-folder"></i><span>${escHtml(cat)}</span><b>${counts[cat]}</b></button>`).join('');
+}
+
 function renderVaultList() {
   const listEl = document.getElementById('passvault-list');
   if (!listEl) return;
@@ -17026,6 +17492,9 @@ function renderVaultList() {
   });
 
   const vaultHighlightQuery = [qAccount, qCompany].filter(Boolean).join(' ');
+  renderVaultCategoryChips();
+  const resultCount = document.getElementById('vault-results-count');
+  if (resultCount) resultCount.textContent = `${filtered.length} ${filtered.length === 1 ? 'credential' : 'credentials'}${filtered.length !== passVaultCache.length ? ` of ${passVaultCache.length}` : ''}`;
   if (!filtered.length) {
     listEl.innerHTML = '<div class="empty-msg">No matching passwords yet. Click "+ Add New Password" to get started.</div>';
     applyPanelSearchHighlights('passvault', vaultHighlightQuery);
@@ -17044,8 +17513,11 @@ function renderVaultList() {
     .map(([kat, items]) => {
     const style = vaultCatStyle(kat);
     return `
-    <div class="link-group">
-      <div class="link-group-title" style="display:inline-block;padding:4px 12px;border-radius:6px;background:${style.bg};color:${style.fg};border-bottom:none;font-size:11px">${escHtml(kat)}</div>
+    <section class="vault-group" style="--vault-accent:${style.border};--vault-soft:${style.bg};--vault-fg:${style.fg}">
+      <div class="vault-group-header">
+        <div class="vault-group-title"><span class="vault-group-icon"><i class="ti ti-folder-lock"></i></span><span>${escHtml(kat)}</span></div>
+        <span class="vault-group-count">${items.length} ${items.length === 1 ? 'credential' : 'credentials'}</span>
+      </div>
       <div class="pass-grid">
       ${items.map(p => {
         const revealed = !!passVaultRevealed[p.id];
@@ -17054,7 +17526,7 @@ function renderVaultList() {
         <div class="pass-card" style="border-left:3px solid ${style.border}">
           <div class="pass-card-top">
             <div class="pass-label">
-              <span class="pass-icon">🔑</span>
+              <span class="pass-icon"><i class="ti ti-key"></i></span>
               <span class="pass-label-name">${escHtml(p.accountName)}</span>
               ${p.company ? `<span class="pass-type-badge" style="background:${style.bg};color:${style.fg};border-color:${style.border}">${escHtml(p.company)}</span>` : ''}
             </div>
@@ -17078,7 +17550,7 @@ function renderVaultList() {
       `;
       }).join('')}
       </div>
-    </div>
+    </section>
   `;
   }).join('');
   applyPanelSearchHighlights('passvault', vaultHighlightQuery);
