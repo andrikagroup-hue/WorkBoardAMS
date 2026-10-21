@@ -4981,24 +4981,24 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
 
           <div class="portfolio-quick-grid">
             <div class="portfolio-field">
-              <label class="portfolio-label" for="portfolio-reference">Nomor Dokumen / Reference *</label>
-              <input id="portfolio-reference" placeholder="RFQ / BOQ / PO / nomor penawaran" />
+              <label class="portfolio-label" for="portfolio-reference">Document / Reference No. *</label>
+              <input id="portfolio-reference" placeholder="RFQ / BOQ / PO / quotation number" />
             </div>
             <div class="portfolio-field span-2">
               <label class="portfolio-label" for="portfolio-title">Description *</label>
-              <input id="portfolio-title" placeholder="Ringkasan kebutuhan / nama proyek" />
+              <input id="portfolio-title" placeholder="Opportunity or project summary" />
             </div>
             <div class="portfolio-field">
               <label class="portfolio-label" for="portfolio-partner">Vendor</label>
-              <input id="portfolio-partner" placeholder="Nama vendor / supplier" />
+              <input id="portfolio-partner" placeholder="Vendor / supplier name" />
             </div>
             <div class="portfolio-field">
-              <label class="portfolio-label" for="portfolio-outcome">Keterangan</label>
+              <label class="portfolio-label" for="portfolio-outcome">Status</label>
               <select id="portfolio-outcome" onchange="syncPortfolioOutcomeFields()">
                 <option value="pending">Process</option>
-                <option value="won">Menang</option>
-                <option value="lost">Lose</option>
-                <option value="not_pursued">Tidak dilanjutkan</option>
+                <option value="won">Won</option>
+                <option value="lost">Lost</option>
+                <option value="not_pursued">Discontinued</option>
               </select>
             </div>
             <div class="portfolio-field">
@@ -5955,7 +5955,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
           <div class="mr-section-head"><div class="mr-section-title">📋 Portfolio Report</div><span class="mr-section-count" id="portfolio-report-count">0</span></div>
           <div style="overflow-x:auto">
             <table class="portfolio-report-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:760px">
-              <thead><tr style="text-align:left;background:var(--bg2)"><th style="padding:10px">Nomor</th><th style="padding:10px">Nomor Dokumen / Reference</th><th style="padding:10px">Description</th><th style="padding:10px">Vendor</th><th style="padding:10px">Keterangan</th><th style="padding:10px">Attachment</th></tr></thead>
+              <thead><tr style="text-align:left;background:var(--bg2)"><th style="padding:10px">No.</th><th style="padding:10px">Document / Reference No.</th><th style="padding:10px">Description</th><th style="padding:10px">Vendor</th><th style="padding:10px">Status</th><th style="padding:10px">Attachment</th></tr></thead>
               <tbody id="portfolio-report-body"><tr><td colspan="6" style="padding:14px;color:var(--text3)">Loading portfolio report...</td></tr></tbody>
             </table>
           </div>
@@ -8378,77 +8378,27 @@ function displayPortfolio(rows = portfolioCache) {
     if (ad !== bd) return ad.localeCompare(bd);
     return String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''));
   });
-  list.innerHTML = sorted.map(row => {
-    const typeLabel = PORTFOLIO_TYPE_LABEL[row.entry_type] || row.entry_type || 'Project';
-    const sourceLabel = PORTFOLIO_SOURCE_LABEL[row.source_type] || row.source_type || '—';
-    const outcome = portfolioOutcome(row);
-    const outcomeLabel = PORTFOLIO_OUTCOME_LABEL[outcome] || outcome;
+  const statusLabels = {pending:'Process',won:'Won',lost:'Lost',not_pursued:'Discontinued',cancelled:'Discontinued'};
+  const stageLabels = {incoming:'New Inquiry / Incoming',review:'Under Review',vendor_sourcing:'Vendor / Costing',boq_review:'BOQ Review',quotation:'Quotation / SPH Submitted',awaiting_customer:'Awaiting Customer',negotiation:'Negotiation',closed:'Closed'};
+  list.innerHTML = `<div style="width:100%;overflow-x:auto;grid-column:1/-1"><table class="portfolio-report-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:1050px"><thead><tr style="text-align:left;background:var(--bg2)"><th style="padding:10px">No.</th><th style="padding:10px">Document / Reference No.</th><th style="padding:10px">Description</th><th style="padding:10px">Vendor</th><th style="padding:10px">Status</th><th style="padding:10px">Current Stage</th><th style="padding:10px">Next Action</th><th style="padding:10px">Due Date</th><th style="padding:10px">Attachment</th><th style="padding:10px">Actions</th></tr></thead><tbody>${sorted.map((row,i) => {
+    const status = portfolioOutcome(row);
     const stage = portfolioStage(row);
-    const stageLabel = PORTFOLIO_STAGE_LABEL[stage] || stage || '—';
-    const reasonLabel = PORTFOLIO_OUTCOME_REASON_LABEL[row.outcome_reason] || row.outcome_reason || '';
-    const dateText = row.entry_date ? new Date(row.entry_date + 'T00:00:00').toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'numeric'}) : 'No date';
-    const nextDateText = row.next_action_date ? new Date(row.next_action_date + 'T00:00:00').toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'numeric'}) : '';
-    const due = !!row.next_action_date && row.next_action_date <= todayStr();
-    const waiting = portfolioIsWaitingState(row) && !portfolioIsClosed(row);
+    const due = row.next_action_date ? new Date(row.next_action_date + 'T00:00:00').toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const attachments = portfolioAttachmentHtml(row) || (Array.isArray(row.attachments) && row.attachments.length ? row.attachments.map(a => escHtml(a.name || a.filename || 'Attachment')).join(', ') : '—');
     const canModify = canModifySharedRow(row);
-    const picLine = [row.customer_pic, row.customer_contact].filter(Boolean).join(' · ');
-    const displayName = row.customer_name || row.title || 'Untitled';
-    const secondary = row.customer_name && row.title ? row.title : typeLabel;
-    let attentionLabel = 'Next Action';
-    let attentionText = row.next_action || 'No next action — set one so this opportunity cannot disappear.';
-    if (waiting) attentionLabel = portfolioWaitingReviewDue(row) ? 'Waiting — review due' : 'Waiting';
-    else if (due) attentionLabel = 'Action due';
-    const primaryButtons = !canModify ? '<span style="font-size:10px;color:var(--text3)"><i class="ti ti-lock"></i> Read only</span>' : portfolioIsClosed(row) ? '' : waiting ? `
-      <button class="focus-mini-btn btn-primary" onclick="portfolioFollowUpNow('${row.id}')">Needs Action Today</button>
-      <button class="focus-mini-btn today-action-wait" onclick="portfolioMarkWaiting('${row.id}')">Change Review Date</button>
-      ${row.next_action ? `<button class="focus-mini-btn today-action-done" onclick="portfolioCompleteAction('${row.id}')">Done</button>` : `<button class="focus-mini-btn" onclick="portfolioSetNextAction('${row.id}')">Set Next Action</button>`}
-      <button class="focus-mini-btn" onclick="openPortfolioForm('${row.id}')">Edit</button>` : `
-      ${row.next_action ? `<button class="focus-mini-btn today-action-done" onclick="portfolioCompleteAction('${row.id}')">Done</button>` : `<button class="focus-mini-btn" onclick="portfolioSetNextAction('${row.id}')">Set Next Action</button>`}
-      <button class="focus-mini-btn today-action-wait" onclick="portfolioMarkWaiting('${row.id}')">Waiting</button>
-      ${row.next_action ? `<button class="focus-mini-btn today-action-tomorrow" onclick="portfolioTomorrow('${row.id}')">Tomorrow</button>` : ''}
-      <button class="focus-mini-btn" onclick="openPortfolioForm('${row.id}')">Edit</button>`;
-    return `
-      <article class="portfolio-card outcome-${escAttr(outcome)}">
-        <div class="portfolio-card-head">
-          <div style="min-width:0">
-            <div class="portfolio-card-title">${escHtml(displayName)}</div>
-            <div class="portfolio-card-sub">${escHtml(secondary)}${row.is_private ? ' · 🔒 Private' : ''}</div>
-          </div>
-          <span class="portfolio-badge type">${escHtml(typeLabel)}</span>
-        </div>
-        <div class="portfolio-badges">
-          <span class="portfolio-badge stage">${escHtml(stageLabel)}</span>
-          ${outcome !== 'pending' ? `<span class="portfolio-badge ${escAttr(outcome)}">${escHtml(outcomeLabel)}</span>` : ''}
-        </div>
-        <div class="portfolio-attention-line ${due ? 'due' : ''} ${waiting ? 'waiting' : ''}">
-          <div class="portfolio-attention-label">${escHtml(attentionLabel)}</div>
-          <div class="portfolio-attention-text">${escHtml(attentionText)}</div>
-          ${nextDateText ? `<div class="portfolio-card-sub" style="margin-top:3px">${due ? 'Due' : 'Scheduled'} · ${escHtml(nextDateText)}</div>` : ''}
-        </div>
-        <div class="portfolio-card-actions-primary">${primaryButtons}</div>
-        <details class="portfolio-card-more">
-          <summary>More Details</summary>
-          <div class="portfolio-card-more-body">
-            <div class="portfolio-meta-grid">
-              <div class="portfolio-meta"><strong>Entry:</strong> ${escHtml(dateText)}</div>
-              <div class="portfolio-meta"><strong>Source:</strong> ${escHtml(sourceLabel)}${row.source_detail ? ' — ' + escHtml(row.source_detail) : ''}</div>
-              <div class="portfolio-meta"><strong>Partner / Vendor:</strong> ${escHtml(row.partner_vendor || '—')}</div>
-              <div class="portfolio-meta"><strong>Customer PIC:</strong> ${escHtml(picLine || '—')}</div>
-              <div class="portfolio-meta"><strong>Reference:</strong> ${escHtml(row.reference_no || '—')}</div>
-              ${reasonLabel ? `<div class="portfolio-meta" style="grid-column:1/-1"><strong>Loss / Stop Reason:</strong> ${escHtml(reasonLabel)}</div>` : ''}
-            </div>
-            ${portfolioValuesHtml(row)}
-            ${row.notes ? `<div class="portfolio-notes">${escHtml(row.notes)}</div>` : ''}
-            ${portfolioAttachmentHtml(row)}
-            <div class="portfolio-card-sub" style="margin-top:9px">Added by ${escHtml(row.created_by || '—')}</div>
-            ${canModify ? `<div class="portfolio-actions">
-              <button class="btn-sm" type="button" onclick="openPortfolioForm('${row.id}')"><i class="ti ti-pencil"></i> Edit Full Record</button>
-              <button class="btn-sm" type="button" style="color:var(--danger);border-color:var(--danger)" onclick="deletePortfolio('${row.id}')"><i class="ti ti-trash"></i> Delete</button>
-            </div>` : ''}
-          </div>
-        </details>
-      </article>`;
-  }).join('');
+    return `<tr style="border-top:1px solid var(--border2)">
+      <td style="padding:10px;white-space:nowrap">${i+1}</td>
+      <td style="padding:10px;min-width:150px">${escHtml(row.reference_no || '—')}</td>
+      <td style="padding:10px;min-width:220px">${escHtml(row.title || row.customer_name || '—')}</td>
+      <td style="padding:10px;min-width:130px">${escHtml(row.partner_vendor || '—')}</td>
+      <td style="padding:8px;min-width:145px"><select aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(row.id)}',this.value)" style="max-width:140px;width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text1)"><option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option></select></td>
+      <td style="padding:10px;min-width:150px">${escHtml(stageLabels[stage] || stage || '—')}</td>
+      <td style="padding:10px;min-width:220px">${escHtml(row.next_action || '—')}</td>
+      <td style="padding:10px;white-space:nowrap">${escHtml(due)}</td>
+      <td style="padding:10px;min-width:140px">${attachments}</td>
+      <td style="padding:8px;white-space:nowrap">${canModify ? `<button class="btn-sm" type="button" onclick="openPortfolioForm('${escAttr(row.id)}')">Edit</button> <button class="btn-sm" type="button" onclick="deletePortfolio('${escAttr(row.id)}')">Delete</button>` : '—'}</td>
+    </tr>`;
+  }).join('')}</tbody></table></div>`;
   applyPanelSearchHighlights('portfolio', panelSearchInput('portfolio')?.value || '');
 }
 
@@ -12109,10 +12059,10 @@ async function renderPortfolioReportTable() {
     const count = document.getElementById('portfolio-report-count');
     if (count) count.textContent = rows.length;
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="6" style="padding:14px;color:var(--text3)">Belum ada data portfolio. Tambahkan melalui menu Projects; report akan terisi otomatis.</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" style="padding:14px;color:var(--text3)">No portfolio records yet. Add an entry in Projects; this report will update automatically.</td></tr>';
       return;
     }
-    const labels = {won:'Menang',pending:'Process',lost:'Lose',not_pursued:'Tidak dilanjutkan',cancelled:'Tidak dilanjutkan'};
+    const labels = {won:'Won',pending:'Process',lost:'Lost',not_pursued:'Discontinued',cancelled:'Discontinued'};
     body.innerHTML = rows.map((r,i) => {
       const status = portfolioOutcome(r);
       const attachment = Array.isArray(r.attachments) && r.attachments.length
@@ -12124,13 +12074,13 @@ async function renderPortfolioReportTable() {
         <td style="padding:10px;min-width:200px">${escHtml(r.title || '—')}</td>
         <td style="padding:10px">${escHtml(r.partner_vendor || '—')}</td>
         <td style="padding:8px;min-width:150px"><select aria-label="Keterangan ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(r.id)}',this.value)" style="max-width:145px;width:100%">
-          <option value="won" ${status==='won'?'selected':''}>Menang</option><option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="lost" ${status==='lost'?'selected':''}>Lose</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Tidak dilanjutkan</option>
+          <option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option>
         </select></td>
         <td style="padding:10px;min-width:150px">${portfolioAttachmentHtml(r) || attachment}</td>
       </tr>`;
     }).join('');
   } catch (err) {
-    body.innerHTML = `<tr><td colspan="6" style="padding:14px;color:var(--danger)">Gagal memuat report: ${escHtml(err.message || String(err))}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" style="padding:14px;color:var(--danger)">Failed to load report: ${escHtml(err.message || String(err))}</td></tr>`;
   }
 }
 
@@ -12139,7 +12089,7 @@ async function updatePortfolioReportOutcome(id, outcome) {
   const row = portfolioCache.find(r => r.id === id);
   const stage = row ? portfolioStage(row) : 'incoming';
   const { error } = await sb.from('project_portfolio').update({ outcome:mapped, decision:portfolioLegacyDecision(mapped,stage), updated_at:new Date().toISOString() }).eq('id',id);
-  if (error) { alert('Status tidak berhasil diperbarui: ' + (error.message || error)); await renderPortfolioReportTable(); return; }
+  if (error) { alert('Could not update status: ' + (error.message || error)); await renderPortfolioReportTable(); return; }
   await renderPortfolio();
   await renderPortfolioReportTable();
 }
