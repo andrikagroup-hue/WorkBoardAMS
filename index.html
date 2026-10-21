@@ -2153,7 +2153,7 @@ body.mobile-hub-open { overflow:hidden; }
 .portfolio-quick-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
 .portfolio-quick-grid .span-2 { grid-column:1/-1; }
 .portfolio-form-help { font-size:10px; color:var(--text3); margin:-2px 0 9px; }
-.portfolio-more-details { margin-top:10px; border-top:1px dashed var(--border2); padding-top:8px; }
+.portfolio-more-details { display:none !important; }
 .portfolio-more-details summary { cursor:pointer; font-size:11px; font-weight:800; color:var(--text2); }
 .portfolio-view-tabs { display:flex; gap:6px; flex-wrap:wrap; margin:9px 0 10px; }
 .portfolio-view-tab { border:1px solid var(--border2); background:var(--surface); color:var(--text2); border-radius:999px; padding:6px 10px; font-size:10.5px; cursor:pointer; }
@@ -2250,6 +2250,24 @@ body.authenticated .auth-gate { display:none !important; }
 .portfolio-report-table th { color:var(--text2);font-weight:800;border-bottom:1px solid var(--border2); }
 .portfolio-report-table td { vertical-align:top; }
 .portfolio-report-table select { padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text1); }
+
+/* Unified portfolio status palette across all tables and dropdowns */
+.portfolio-simple-filter { display:flex; align-items:center; gap:8px; margin:8px 0 12px; padding:9px 10px; border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+.portfolio-filter-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--text2); }
+.portfolio-simple-filter select { min-width:170px; width:auto; }
+.portfolio-report-table .portfolio-status-row.outcome-pending td { background:#EEF4F7; }
+.portfolio-report-table .portfolio-status-row.outcome-won td { background:#EDF5EB; }
+.portfolio-report-table .portfolio-status-row.outcome-lost td { background:#F9ECEC; }
+.portfolio-report-table .portfolio-status-row.outcome-not_pursued td,
+.portfolio-report-table .portfolio-status-row.outcome-cancelled td { background:#F7F0E4; }
+.portfolio-status-select { border:1px solid var(--border2) !important; border-radius:8px !important; padding:6px 8px !important; font:inherit; font-size:12px !important; color:#34413E !important; }
+.portfolio-status-select.outcome-pending { background:#E5EFF4 !important; border-color:#B9CFDA !important; }
+.portfolio-status-select.outcome-won { background:#E4F0E1 !important; border-color:#B8D0B3 !important; }
+.portfolio-status-select.outcome-lost { background:#F6E2E2 !important; border-color:#DDB6B6 !important; }
+.portfolio-status-select.outcome-not_pursued,
+.portfolio-status-select.outcome-cancelled { background:#F3E8D5 !important; border-color:#DCC69D !important; }
+@media(max-width:760px) { .portfolio-simple-filter { align-items:stretch; flex-wrap:wrap; } .portfolio-simple-filter select { width:100%; } }
+
 </style>
 
 <style id="v132-desktop-visual-refresh">
@@ -5137,52 +5155,17 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
           <button type="button" class="portfolio-view-tab" data-portfolio-view="all" onclick="setPortfolioView('all',this)">📁 All Opportunities</button>
         </div>
 
-        <details class="portfolio-filter-details">
-          <summary>Filters — optional</summary>
-          <div class="portfolio-filter-row">
-          <select id="portfolio-type-filter" onchange="applyPortfolioFilters()">
-            <option value="">All Types</option>
-            <option value="project">Project</option>
-            <option value="boq">BOQ</option>
-            <option value="order">Order</option>
-          </select>
+        <div class="portfolio-filter-row portfolio-simple-filter" aria-label="Filter portfolio by status">
+          <label for="portfolio-outcome-filter" class="portfolio-filter-label">Status</label>
           <select id="portfolio-outcome-filter" onchange="applyPortfolioFilters()">
-            <option value="">All Outcomes</option>
-            <option value="pending">Pending</option>
-            <option value="won">Won / Approved</option>
+            <option value="">All Statuses</option>
+            <option value="pending">Process</option>
+            <option value="won">Won</option>
             <option value="lost">Lost</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="not_pursued">Not Pursued</option>
+            <option value="not_pursued">Discontinued</option>
           </select>
-          <select id="portfolio-stage-filter" onchange="applyPortfolioFilters()">
-            <option value="">All Stages</option>
-            <option value="incoming">New Inquiry / Incoming</option>
-            <option value="review">Under Review</option>
-            <option value="vendor_sourcing">Vendor / Costing</option>
-            <option value="boq_review">BOQ Review</option>
-            <option value="quotation">Quotation / SPH Submitted</option>
-            <option value="awaiting_customer">Awaiting Customer</option>
-            <option value="negotiation">Negotiation</option>
-            <option value="on_hold">On Hold</option>
-            <option value="po_received">PO / Order Received</option>
-            <option value="execution">In Progress / Execution</option>
-            <option value="completed">Completed</option>
-            <option value="closed">Closed</option>
-          </select>
-          <select id="portfolio-source-filter" onchange="applyPortfolioFilters()">
-            <option value="">All Sources</option>
-            <option value="padi_umkm">PaDi UMKM</option>
-            <option value="direct_company">Direct Company / Inquiry</option>
-            <option value="existing_customer">Existing Customer / Repeat</option>
-            <option value="individual_referral">Individual / Referral</option>
-            <option value="tender_procurement">Tender / Procurement Portal</option>
-            <option value="website">Website</option>
-            <option value="marketplace">Marketplace</option>
-            <option value="exhibition_event">Exhibition / Event</option>
-            <option value="other">Other / Unknown</option>
-          </select>
+          <button type="button" class="btn-sm" onclick="document.getElementById('portfolio-outcome-filter').value=''; applyPortfolioFilters();">Reset</button>
         </div>
-        </details>
 
         <div class="portfolio-grid" id="portfolio-list">
           <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading portfolio...</div>
@@ -8386,12 +8369,12 @@ function displayPortfolio(rows = portfolioCache) {
     const due = row.next_action_date ? new Date(row.next_action_date + 'T00:00:00').toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}) : '—';
     const attachments = portfolioAttachmentHtml(row) || (Array.isArray(row.attachments) && row.attachments.length ? row.attachments.map(a => escHtml(a.name || a.filename || 'Attachment')).join(', ') : '—');
     const canModify = canModifySharedRow(row);
-    return `<tr style="border-top:1px solid var(--border2)">
+    return `<tr class="portfolio-status-row outcome-${escAttr(status)}" style="border-top:1px solid var(--border2)">
       <td style="padding:10px;white-space:nowrap">${i+1}</td>
       <td style="padding:10px;min-width:150px">${escHtml(row.reference_no || '—')}</td>
       <td style="padding:10px;min-width:220px">${escHtml(row.title || row.customer_name || '—')}</td>
       <td style="padding:10px;min-width:130px">${escHtml(row.partner_vendor || '—')}</td>
-      <td style="padding:8px;min-width:145px"><select aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(row.id)}',this.value)" style="max-width:140px;width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text1)"><option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option></select></td>
+      <td style="padding:8px;min-width:145px"><select class="portfolio-status-select outcome-${escAttr(status)}" aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(row.id)}',this.value)" style="max-width:140px;width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text1)"><option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option></select></td>
       <td style="padding:10px;min-width:150px">${escHtml(stageLabels[stage] || stage || '—')}</td>
       <td style="padding:10px;min-width:220px">${escHtml(row.next_action || '—')}</td>
       <td style="padding:10px;white-space:nowrap">${escHtml(due)}</td>
@@ -12068,12 +12051,12 @@ async function renderPortfolioReportTable() {
       const attachment = Array.isArray(r.attachments) && r.attachments.length
         ? r.attachments.map(a => `<span class="portfolio-report-attachment">${escHtml(a.name || a.filename || 'Lampiran')}</span>`).join(', ')
         : '—';
-      return `<tr style="border-top:1px solid var(--border2)">
+      return `<tr class="portfolio-status-row outcome-${escAttr(status)}" style="border-top:1px solid var(--border2)">
         <td style="padding:10px;white-space:nowrap">${i+1}</td>
         <td style="padding:10px">${escHtml(r.reference_no || '—')}</td>
         <td style="padding:10px;min-width:200px">${escHtml(r.title || '—')}</td>
         <td style="padding:10px">${escHtml(r.partner_vendor || '—')}</td>
-        <td style="padding:8px;min-width:150px"><select aria-label="Keterangan ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(r.id)}',this.value)" style="max-width:145px;width:100%">
+        <td style="padding:8px;min-width:150px"><select class="portfolio-status-select outcome-${escAttr(status)}" aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(r.id)}',this.value)" style="max-width:145px;width:100%">
           <option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option>
         </select></td>
         <td style="padding:10px;min-width:150px">${portfolioAttachmentHtml(r) || attachment}</td>
