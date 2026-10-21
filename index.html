@@ -592,6 +592,7 @@ textarea { resize: vertical; }
   display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin-bottom:12px;
 }
 .portfolio-stat {
+  cursor:pointer; transition:transform .15s ease, box-shadow .15s ease;
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
   padding:12px 14px; box-shadow:0 2px 8px rgba(80,60,70,.04);
 }
@@ -601,6 +602,8 @@ textarea { resize: vertical; }
 .portfolio-stat:nth-child(4) { background:#F7F1E7; border-color:#DED1BC; }
 .portfolio-stat:nth-child(5) { background:#F8EEF1; border-color:#E1C8CF; }
 .portfolio-stat:nth-child(6) { background:#F3EFF6; border-color:#D4C7DC; }
+.portfolio-stat:hover { transform:translateY(-2px); box-shadow:0 5px 14px rgba(80,60,70,.10); }
+.portfolio-stat:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 .portfolio-stat-label { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.04em; font-weight:700; }
 .portfolio-stat-value { font-size:23px; font-weight:800; color:var(--text1); margin-top:2px; }
 .portfolio-form {
@@ -8289,10 +8292,11 @@ function portfolioNeedsAttention(row) {
   return row.next_action_date <= todayStr();
 }
 function portfolioIsUpcoming(row) {
-  return !portfolioIsClosed(row) && !portfolioIsWaitingState(row) && !!row.next_action_date && row.next_action_date > todayStr();
+  // Upcoming is an explicit portfolio status; do not infer it only from the due date.
+  return !portfolioIsClosed(row) && portfolioOutcome(row) === 'upcoming';
 }
 function setPortfolioView(mode, btn) {
-  portfolioViewMode = ['attention','waiting','upcoming','all'].includes(mode) ? mode : 'attention';
+  portfolioViewMode = ['attention','waiting','upcoming','active','won','all'].includes(mode) ? mode : 'attention';
   document.querySelectorAll('[data-portfolio-view]').forEach(el => el.classList.toggle('active', el === btn || el.dataset.portfolioView === portfolioViewMode));
   displayPortfolio(portfolioCache);
 }
@@ -8307,12 +8311,12 @@ function renderPortfolioStats(rows = portfolioCache) {
   const active = data.filter(x => !portfolioIsClosed(x)).length;
   const won = data.filter(x => portfolioOutcome(x) === 'won').length;
   wrap.innerHTML = `
-    <div class="portfolio-stat"><div class="portfolio-stat-label">Total Entries</div><div class="portfolio-stat-value">${total}</div></div>
-    <div class="portfolio-stat"><div class="portfolio-stat-label">Needs Action</div><div class="portfolio-stat-value">${attention}</div></div>
-    <div class="portfolio-stat"><div class="portfolio-stat-label">Waiting</div><div class="portfolio-stat-value">${waiting}</div></div>
-    <div class="portfolio-stat"><div class="portfolio-stat-label">Upcoming</div><div class="portfolio-stat-value">${upcoming}</div></div>
-    <div class="portfolio-stat"><div class="portfolio-stat-label">Active</div><div class="portfolio-stat-value">${active}</div></div>
-    <div class="portfolio-stat"><div class="portfolio-stat-label">Won / Approved</div><div class="portfolio-stat-value">${won}</div></div>`;
+    <div class="portfolio-stat" role="button" tabindex="0" onclick="setPortfolioView('all')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setPortfolioView('all')}"><div class="portfolio-stat-label">Total Entries</div><div class="portfolio-stat-value">${total}</div></div>
+    <div class="portfolio-stat" role="button" tabindex="0" onclick="setPortfolioView('attention')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setPortfolioView('attention')}"><div class="portfolio-stat-label">Needs Action</div><div class="portfolio-stat-value">${attention}</div></div>
+    <div class="portfolio-stat" role="button" tabindex="0" onclick="setPortfolioView('waiting')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setPortfolioView('waiting')}"><div class="portfolio-stat-label">Waiting</div><div class="portfolio-stat-value">${waiting}</div></div>
+    <div class="portfolio-stat" role="button" tabindex="0" onclick="setPortfolioView('upcoming')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setPortfolioView('upcoming')}"><div class="portfolio-stat-label">Upcoming</div><div class="portfolio-stat-value">${upcoming}</div></div>
+    <div class="portfolio-stat" role="button" tabindex="0" onclick="setPortfolioView('active')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setPortfolioView('active')}"><div class="portfolio-stat-label">Active</div><div class="portfolio-stat-value">${active}</div></div>
+    <div class="portfolio-stat" role="button" tabindex="0" onclick="setPortfolioView('won')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setPortfolioView('won')}"><div class="portfolio-stat-label">Won / Approved</div><div class="portfolio-stat-value">${won}</div></div>`;
 }
 function portfolioFilteredRows(rows) {
   const type = document.getElementById('portfolio-type-filter')?.value || '';
@@ -8323,6 +8327,8 @@ function portfolioFilteredRows(rows) {
   if (portfolioViewMode === 'attention') base = base.filter(portfolioNeedsAttention);
   else if (portfolioViewMode === 'waiting') base = base.filter(x => portfolioIsWaitingState(x) && !portfolioIsClosed(x));
   else if (portfolioViewMode === 'upcoming') base = base.filter(portfolioIsUpcoming);
+  else if (portfolioViewMode === 'active') base = base.filter(x => !portfolioIsClosed(x));
+  else if (portfolioViewMode === 'won') base = base.filter(x => portfolioOutcome(x) === 'won');
   return base.filter(row =>
     (!type || row.entry_type === type) &&
     (!outcome || portfolioOutcome(row) === outcome) &&
