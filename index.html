@@ -4763,6 +4763,11 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
           <div id="focus-capture-status" style="font-size:10.5px;color:var(--text3);margin-top:6px"></div>
         </div>
 
+        <div class="focus-card focus-card-today today-list-card" id="focus-added-today-card" style="margin-bottom:14px">
+          <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-list-check"></i></span><span>Added for Today</span></span><span class="focus-badge-count" id="focus-added-today-count">0</span></div>
+          <div id="focus-added-today-list"><div class="focus-empty">Your added tasks will appear here.</div></div>
+        </div>
+
         <div class="focus-grid today-primary-grid">
           <div class="focus-card focus-card-now">
             <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-target-arrow"></i></span><span>One Thing Now</span></span><span class="focus-badge-count" id="today-active-count">0</span></div>
@@ -11150,6 +11155,12 @@ async function renderTodayFocus() {
     if(todoRes.error)throw todoRes.error;
     todoCache=applyOwner(todoRes.data||[]);
     const allTodos=todoCache;
+    // Render every active task explicitly captured in Today, independent of One Thing Now / Up Next ranking.
+    const addedToday=allTodos.filter(t=>!t.is_done && /^\s*\[Today\]/i.test(String(t.text||'')) && !todoMarker(t.text,'Cancelled'));
+    const addedTodayList=document.getElementById('focus-added-today-list');
+    const addedTodayCount=document.getElementById('focus-added-today-count');
+    if(addedTodayCount) addedTodayCount.textContent=addedToday.length;
+    if(addedTodayList) addedTodayList.innerHTML=addedToday.length?addedToday.map(t=>todayItemHtml({_src:'todo',_kind:'task',id:t.id,title:stripTodoInternalMarkers(t.text),raw:t})).join(''):'<div class=\"focus-empty\">Your added tasks will appear here.</div>';
     todayLogCache=applyPrivacy(logRes.data||[]).filter(l=>String(l.created_by||'')===String(user||''));
     const active=[], waiting=[], legacyLogReminders=[];
 
