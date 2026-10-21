@@ -2550,6 +2550,18 @@ body.authenticated .auth-gate { display:none !important; }
   }
   .today-mini-sub { margin-top:3px; font-size:10.5px; }
 
+
+
+  #focus-card-followups, #focus-card-waiting, #today-completed-details { border-radius:14px; overflow:hidden; }
+  #focus-card-followups summary, #focus-card-waiting summary, #today-completed-details summary { min-height:58px; padding:12px 16px; gap:12px; }
+  #focus-card-followups .today-collapsible-body, #focus-card-waiting .today-collapsible-body, #today-completed-details .today-collapsible-body { padding:0 14px 14px; }
+  .today-capture-overview-grid { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr); gap:14px; align-items:stretch; margin:12px 0; }
+  .today-capture-overview-grid .today-quick-shell { margin:0; min-width:0; }
+  .today-glance-card { min-width:0; margin:0; }
+  .today-glance-card .focus-card-title { margin-bottom:8px; }
+  #focus-card-captured { margin-bottom:14px; }
+  #focus-card-followups, #focus-card-waiting, #today-completed-details { margin-top:10px; }
+  @media (max-width:900px) { .today-capture-overview-grid { grid-template-columns:1fr; } }
   /* ── Quick Capture: prominent but calm ── */
   .today-focus-hero.today-quick-shell {
     padding:15px;
@@ -4746,19 +4758,37 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
           </div>
         </div>
 
-        <div class="today-focus-hero today-quick-shell">
-          <div class="quick-capture">
-            <input id="focus-quick-input" name="workboard_capture_text_202608" autocomplete="off" autocapitalize="sentences" spellcheck="true" data-lpignore="true" data-1p-ignore onfocus="prepareFocusQuickCaptureInput(this)" placeholder="Write a task to add to today..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
-            <button class="btn-sm btn-primary" id="focus-quick-btn" onclick="quickCaptureTodo()"><i class="ti ti-plus"></i> Add for Today</button>
-            <button class="btn-sm" id="focus-done-now-btn" onclick="quickCaptureDoneNow()" title="Log a task you just finished without adding it to the plan"><i class="ti ti-check"></i> Done Now</button>
+        <div id="focus-top3" hidden></div>
+        <div class="today-capture-overview-grid">
+          <div class="today-focus-hero today-quick-shell">
+            <div class="quick-capture">
+              <input id="focus-quick-input" name="workboard_capture_text_202608" autocomplete="off" autocapitalize="sentences" spellcheck="true" data-lpignore="true" data-1p-ignore onfocus="prepareFocusQuickCaptureInput(this)" placeholder="Write a task to add to today..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
+              <button class="btn-sm btn-primary" id="focus-quick-btn" onclick="quickCaptureTodo()"><i class="ti ti-plus"></i> Add for Today</button>
+              <button class="btn-sm" id="focus-done-now-btn" onclick="quickCaptureDoneNow()" title="Log a task you just finished without adding it to the plan"><i class="ti ti-check"></i> Done Now</button>
+            </div>
+            <div class="focus-capture-actions" aria-label="Quick capture type">
+              <button class="focus-mode-btn active" data-focus-mode="today" onclick="setFocusCaptureMode('today',this)">Today</button>
+              <button class="focus-mode-btn" data-focus-mode="followup" onclick="setFocusCaptureMode('followup',this)">Follow Up</button>
+              <button class="focus-mode-btn" data-focus-mode="waiting" onclick="setFocusCaptureMode('waiting',this)">Waiting Reply</button>
+              <button class="focus-mode-btn" data-focus-mode="project" onclick="setFocusCaptureMode('project',this)">Project</button>
+            </div>
+            <div class="focus-capture-hint">Add a task here to place it in your Added for Today list.</div>
+            <div id="focus-capture-status" style="font-size:10.5px;color:var(--text3);margin-top:6px"></div>
           </div>
-          <div class="focus-capture-hint">Add a task here to place it in your Added for Today list.</div>
-          <div id="focus-capture-status" style="font-size:10.5px;color:var(--text3);margin-top:6px"></div>
+          <div class="focus-card focus-card-overview today-glance-card">
+            <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-sparkles"></i></span><span>Today at a Glance</span></span></div>
+            <div id="focus-overview"><div class="loading-msg">Loading...</div></div>
+          </div>
         </div>
 
-        <div class="focus-card" id="focus-added-today-card" style="margin-top:12px">
+        <div class="focus-card focus-card-today today-list-card" id="focus-added-today-card" style="margin-bottom:14px">
           <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-list-check"></i></span><span>Added for Today</span></span><span class="focus-badge-count" id="focus-added-today-count">0</span></div>
           <div id="focus-added-today-list"><div class="focus-empty">Your added tasks will appear here.</div></div>
+        </div>
+
+        <div class="focus-card focus-card-today today-list-card" id="focus-card-captured">
+          <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-bolt"></i></span><span>Up Next</span></span><span class="focus-badge-count" id="focus-today-count">0</span></div>
+          <div id="focus-captured-today"><div class="focus-empty">Your unfinished tasks for today will appear here.</div></div>
         </div>
 
         <details class="today-collapsible" id="focus-card-followups">
@@ -4769,11 +4799,6 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
         <details class="today-collapsible" id="focus-card-waiting">
           <summary><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-hourglass"></i></span><span>Waiting</span></span><span class="focus-badge-count" id="focus-wait-count">0</span></summary>
           <div class="today-collapsible-body" id="focus-waiting"></div>
-        </details>
-
-        <details class="today-collapsible" id="focus-card-inbox">
-          <summary><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-bulb"></i></span><span>Brain Dump</span></span><span class="focus-badge-count" id="focus-inbox-count">0</span></summary>
-          <div class="today-collapsible-body" id="focus-inbox"></div>
         </details>
 
         <details class="today-collapsible" id="today-completed-details">
@@ -5889,7 +5914,6 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
       <!-- ── Result ─────────────────────────────── -->
       <div class="panel" id="panel-result">
 
-        <div style="font-size:22px;font-weight:850;color:var(--text);margin:0 0 12px;padding:4px 2px">Today's Achievement</div>
         <div class="management-report-hero">
           <div class="mr-head">
             <div>
@@ -7138,7 +7162,6 @@ async function switchPanel(id, el) {
   if (id === 'result' && !hasManagementAccess()) { alert('Management Report is available only to Management and Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
   if (id === 'adminusers' && !isOwner()) { alert('Users & Access is available only to Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
   if (id === 'adminleave' && !hasManagementAccess()) { alert('Leave Management is available only to Management and Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
-  if (id === 'todo') { id = 'focus'; el = document.getElementById('nsub-focus'); }
   if (id === 'brain' || id === 'followup') {
     id = 'focus';
     el = document.getElementById('nsub-focus');
@@ -11089,9 +11112,6 @@ function showAfterDonePrompt(title, context={}) {
 async function renderTodayAttendanceSummary(){
   const card=document.getElementById('today-attendance-card'); if(!card)return;
   const user=getUser(), today=todayStr();
-  const renderToken=String(Date.now())+'-'+Math.random().toString(36).slice(2);
-  card.dataset.loadToken=renderToken;
-  const loadingFallback=setTimeout(()=>{ if(card.dataset.loadToken===renderToken && /Loading/i.test(card.textContent||'')){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Unable to load attendance</div><div class="today-mini-sub">Check connection or attendance table access, then refresh.</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="renderTodayAttendanceSummary()">Retry</button><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; } },6000);
   try{
     const [{data,error},{data:leaveData}]=await Promise.all([
       withTimeout(sb.from('attendance').select('*').eq('user_name',user).eq('tanggal',today).order('created_at',{ascending:false}).limit(1).maybeSingle()),
@@ -11105,8 +11125,7 @@ async function renderTodayAttendanceSummary(){
     if(data.clock_in && !data.clock_out){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">🟢 Clocked in ${focusEscape(absenTimeStr(data.clock_in))}</div><div class="today-mini-sub">${data.terlambat_menit>0?data.terlambat_menit+' min late':'Workday active'}</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="todayAttendanceAction('out','${data.id}')">Clock Out</button></div>`; return; }
     const dur=Math.max(0,Math.round((new Date(data.clock_out)-new Date(data.clock_in))/60000));
     card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">✅ Workday complete</div><div class="today-mini-sub">${focusEscape(absenTimeStr(data.clock_in))}–${focusEscape(absenTimeStr(data.clock_out))} · ${Math.floor(dur/60)}h ${dur%60}m</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Details</button></div>`;
-  }catch(e){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Could not load</div><div class="today-mini-sub">${focusEscape(e.message)}</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="renderTodayAttendanceSummary()">Retry</button><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; }
-  finally { clearTimeout(loadingFallback); if(card.dataset.loadToken===renderToken) card.dataset.loadToken=''; }
+  }catch(e){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Could not load</div><div class="today-mini-sub">${focusEscape(e.message)}</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; }
 }
 window._returnToTodayAfterAttendance=false;
 async function todayAttendanceAction(mode,id){ window._returnToTodayAfterAttendance=true; await switchPanel('absen',document.getElementById('nsub-absen')); if(mode==='in')await doClockIn(); else if(mode==='out')await doClockOut(id); }
@@ -11138,26 +11157,15 @@ async function renderTodayFocus() {
     if(todoRes.error)throw todoRes.error;
     todoCache=applyOwner(todoRes.data||[]);
     const allTodos=todoCache;
-    // Dedicated list of tasks explicitly added through Add for Today. This list is not limited to Up Next's top two items.
-    // Show every task explicitly marked [Today]. Do not apply due-date, semantic
-    // follow-up/waiting heuristics or creator filtering here: those could hide a task
-    // that the user just added through this input.
-    // Use the raw successful todos result for this dedicated capture list. The generic
-    // applyOwner filter is intended for the main personal To Do view and can hide a
-    // freshly captured row if a legacy created_by value differs from the current label.
-    const addedToday=(todoRes.data||[]).filter(t=>
-      String(t.created_by||'')===String(user||'') &&
-      /^\s*\[Today\]/i.test(String(t.text||'')) &&
-      !todoMarker(t.text,'Cancelled')
-    );
+    // Render every active task explicitly captured in Today, independent of One Thing Now / Up Next ranking.
+    const addedToday=(todoRes.data||[]).filter(t=>{
+      const text=String(t.text||'');
+      return String(t.created_by||'')===String(user||'') && /^\s*\[Today\]/i.test(text) && !t.is_done && !todoMarker(text,'Cancelled');
+    });
     const addedTodayList=document.getElementById('focus-added-today-list');
     const addedTodayCount=document.getElementById('focus-added-today-count');
     if(addedTodayCount) addedTodayCount.textContent=addedToday.length;
-    if(addedTodayList) addedTodayList.innerHTML=addedToday.length ? addedToday.map((t,i)=>{
-      const label=focusEscape(stripTodoInternalMarkers(t.text));
-      const isDone=!!t.is_done;
-      return `<div class="today-completed-item" style="align-items:center;gap:10px"><span style="min-width:24px;color:var(--text3);font-weight:700">${i+1}.</span><div style="flex:1;min-width:0"><strong style="${isDone?'text-decoration:line-through;opacity:.65':''}">${label}</strong><div class="today-task-source">${isDone?'Completed':'Planned for today'}</div></div>${isDone?'<span aria-label="Completed">✓</span>':`<button class="focus-mini-btn" onclick="focusDone('${String(t.id).replace(/'/g, '')}')">Done</button>`}</div>`;
-    }).join('') : '<div class="focus-empty">No tasks added yet. Add a task above and it will appear here.</div>';
+    if(addedTodayList) addedTodayList.innerHTML=addedToday.length?addedToday.map(t=>todayItemHtml({_src:'todo',_kind:'task',id:t.id,title:stripTodoInternalMarkers(t.text),raw:t})).join(''):'<div class=\"focus-empty\">Your added tasks will appear here.</div>';
     todayLogCache=applyPrivacy(logRes.data||[]).filter(l=>String(l.created_by||'')===String(user||''));
     const active=[], waiting=[], legacyLogReminders=[];
 
@@ -11218,7 +11226,7 @@ async function renderTodayFocus() {
     const legacyScheduleCutoff=addDaysStr(today,-7);
     const schedAll=applyPrivacy(schedRes.data||[]).filter(e=>String(e.created_by||'')===String(user||'') && e.event_date>=legacyScheduleCutoff);
     const sched=schedAll.filter(e=>e.category!=='green' && !scheduleHandled.has(String(e.id)));
-    // Daily Schedule is independent; it never auto-populates the Today task list. Add tasks manually above if needed.
+    sched.forEach(e=>{ const item={_src:'schedule',id:e.id,title:e.title,due_date:e.event_date,time:(e.time_start||'').slice(0,5),priority:e.category==='red'?'high':e.category==='amber'?'med':'medium',_kind:e.event_date<today?'carry':'schedule',raw:e,meta:e.location||''}; if(!isTodayItemSnoozed('schedule',e.id))pushActive(item); });
     if(!trackRes.error){
       const tracks=applyPrivacy(trackRes.data||[]).filter(todayBelongsToUser);
       tracks.forEach(t=>{ const status=ptEffectiveStatus(t); const due=t.due_date||null; const item={_src:'tracker',id:t.id,title:t.subject||'Untitled tracker item',due_date:due,priority:t.priority||'medium',status:t.status||'not_started',_kind:status==='on_hold'?'waiting':'tracker',raw:t,meta:t.assignment||t.category||''}; if(status==='on_hold' && (!due||due>today)){waiting.push(item);return;} if(t.status==='in_progress'||(due&&due<=today)){if(!isTodayItemSnoozed('tracker',t.id))pushActive(item);} });
@@ -11243,20 +11251,24 @@ async function renderTodayFocus() {
     const sameAsNow=x=>!!nowTask && x._src===nowTask._src && String(x.id)===String(nowTask.id);
     const followupsAll=active.filter(x=>x._kind==='followup');
     const followups=followupsAll.filter(x=>!sameAsNow(x));
-    const upNext=active.filter(x=>!sameAsNow(x) && x._kind!=='followup').slice(0,2);
-    top.innerHTML=nowTask?`<div class="focus-one-now">${todayItemHtml(nowTask,1)}</div><div class="focus-soft-note">Only one thing deserves the spotlight. Finish or move it, then WorkBoard will surface the next one.</div>`:'<div class="focus-empty">Nothing needs action right now. Capture one small next step above.</div>';
+    const upNext=addedToday.map(t=>({_src:'todo',_kind:'task',id:t.id,title:stripTodoInternalMarkers(t.text),due_date:t.due_date||today,priority:t.priority||'med',raw:t}));
+    if(top) top.innerHTML='';
     document.getElementById('focus-captured-today').innerHTML=upNext.length?upNext.map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">No additional items need attention.</div>';
-    const legacyReminderNote=legacyLogReminders.length?`<details class="focus-next-details"><summary>${legacyLogReminders.length} old Logbook reminder${legacyLogReminders.length===1?'':'s'} hidden from Today</summary><div class="focus-soft-note">These generic “Daily Activity Report” reminders came from the old Logbook suggestion flow. They are retained in the task data but no longer compete with real follow-ups.</div></details>`:'';
+    const legacyReminderNote=legacyLogReminders.length?`<details class="focus-next-details"><summary>${legacyLogReminders.length} old Logbook reminder${legacyLogReminders.length===1?'':'s'} hidden from Today</summary><div class="focus-soft-note">These generic “Daily Activity Report” reminders came from the old Logbook suggestion flow. They are kept in To Do so no data is deleted, but they no longer compete with real follow-ups.</div><button class="focus-mini-btn" onclick="switchPanel('todo',document.getElementById('nsub-todo'))">Review in To Do</button></details>`:'';
     document.getElementById('focus-followups').innerHTML=(followups.length?followups.map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">No follow-ups are due.</div>')+legacyReminderNote;
     document.getElementById('focus-waiting').innerHTML=waiting.length?waiting.slice(0,12).map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">Nothing is waiting for a reply.</div>';
     const inbox=allTodos.filter(t=>!t.is_done&&focusIsInbox(t));
-    document.getElementById('focus-inbox').innerHTML=inbox.length?inbox.slice(0,12).map(t=>`<div class="brain-item"><div class="brain-item-text">${focusEscape(stripTodoInternalMarkers(t.text))}</div><div class="brain-item-actions"><button class="brain-action" onclick="organizeBrainItem('${t.id}','today')">Today</button><button class="brain-action" onclick="organizeBrainItem('${t.id}','followup')">Follow Up</button><button class="brain-action" onclick="focusOpenTodo('${t.id}')">Open</button><button class="brain-action" onclick="focusDone('${t.id}')">Archive</button></div></div>`).join(''):'<div class="focus-empty">Brain Dump is empty.</div>';
+
     const completedTodayRows=todayLogCache.filter(l=>!(l.tags||[]).includes('waiting')&&!(l.tags||[]).includes('cancelled')&&!(l.tags||[]).includes('carried-forward'));
     const completedList=document.getElementById('today-completed-list');
     if(completedList) completedList.innerHTML=completedTodayRows.length?completedTodayRows.slice(0,20).map(l=>`<div class="today-completed-item"><span>✅</span><div><strong>${focusEscape(l.title||'Activity')}</strong>${l.tags?.includes('unplanned')?'<span class="today-task-source carry">Unplanned</span>':''}</div><span class="today-completed-time">${l.created_at?new Date(l.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):''}</span></div>`).join(''):'<div class="focus-empty">No completed activity yet.</div>';
+    const planned=schedAll.filter(e=>e.event_date===today).length;
+    const plannedDone=schedAll.filter(e=>e.event_date===today && e.category==='green').length;
     const completed=completedTodayRows.length;
     const waitingCount=waiting.length; const followCount=followupsAll.length;
-    document.getElementById('today-completed-count').textContent=completedTodayRows.length;
+    const pct=planned?Math.min(100,Math.round(plannedDone/planned*100)):0;
+    document.getElementById('focus-overview').innerHTML=`<div class="today-overview-wrap"><div class="today-donut" style="--done-pct:${pct}%"><div class="today-donut-center"><strong>${pct}%</strong><span>planned done</span></div></div><div class="today-stat-grid"><div class="today-stat-chip"><span>Planned</span><strong>${planned}</strong></div><div class="today-stat-chip"><span>Completed</span><strong>${completed}</strong></div><div class="today-stat-chip"><span>Follow-up due</span><strong>${followCount}</strong></div><div class="today-stat-chip"><span>Waiting</span><strong>${waitingCount}</strong></div></div></div>`;
+    const activeCount=document.getElementById('today-active-count'); if(activeCount)activeCount.textContent=active.length; document.getElementById('focus-today-count').textContent=upNext.length; document.getElementById('focus-follow-count').textContent=followCount; document.getElementById('focus-wait-count').textContent=waitingCount; const inboxCount=document.getElementById('focus-inbox-count'); if(inboxCount)inboxCount.textContent=inbox.length; document.getElementById('today-completed-count').textContent=completedTodayRows.length;
     const badge=document.getElementById('badge-focus'); if(badge)badge.textContent=Math.min(99,active.length); const brainBadge=document.getElementById('badge-brain'); if(brainBadge)brainBadge.textContent=inbox.length; const followBadge=document.getElementById('badge-followup'); if(followBadge)followBadge.textContent=followCount+waitingCount;
   }catch(e){ top.innerHTML=`<div class="empty-msg" style="color:var(--danger)">Could not load Today: ${focusEscape(e.message)}</div>`; }
 }
@@ -11268,41 +11280,12 @@ async function quickCaptureProject(raw){
   return {ok:true};
 }
 async function quickCaptureTodo() {
-  const input=document.getElementById('focus-quick-input'), btn=document.getElementById('focus-quick-btn'), status=document.getElementById('focus-capture-status');
-  const raw=(input?.value||'').trim(); if(!raw){input?.focus();return;}
-  if(!btn || !status){ console.error('Quick capture controls are missing'); return; }
+  const input=document.getElementById('focus-quick-input'), btn=document.getElementById('focus-quick-btn'), status=document.getElementById('focus-capture-status'); const raw=(input?.value||'').trim(); if(!raw){input?.focus();return;}
   btn.disabled=true; status.textContent='Saving...';
-  try {
-    if(focusCaptureMode==='project'){
-      const r=await quickCaptureProject(raw);
-      btn.disabled=false; input.value='';
-      status.textContent=r.ok?'Project saved ✓':'Project table unavailable; item was sent to Brain Dump if permitted.';
-      await renderTodayFocus(); return;
-    }
-    let text='[Today] '+raw, dueDate=todayStr();
-    if(focusCaptureMode==='followup')text='[Follow Up] '+raw;
-    if(focusCaptureMode==='waiting'){
-      text='[Waiting] '+raw; dueDate=await askTodayDate('Review this waiting item on',addDaysStr(todayStr(),3));
-      if(!dueDate){status.textContent='';return;}
-    }
-    if(focusCaptureMode==='inbox'){text='[Inbox] '+raw;dueDate=null;}
-    const captureIsPrivate=focusCaptureMode==='inbox';
-    const {data,error}=await sb.from('todos').insert({text,priority:'med',due_date:dueDate,assigned_to:null,is_private:captureIsPrivate,created_by:getUser()}).select('id,text,created_by').single();
-    if(error)throw error;
-    input.value='';
-    const savedLabel=focusCaptureMode==='today'?'Added for today ✓':focusCaptureMode==='followup'?'Follow-up saved ✓':focusCaptureMode==='waiting'?'Waiting item saved ✓':'Brain Dump saved ✓';
-    status.textContent=savedLabel;
-    await renderTodayFocus(); updateDailyProgress();
-    // Keep a clear success state if the refresh did not return the new row.
-    if(focusCaptureMode==='today' && data?.id){
-      const list=document.getElementById('focus-added-today-list');
-      const visible=list && list.textContent.includes(raw);
-      if(!visible) status.textContent='Saved to database, but the list did not refresh. Check table access and reload.';
-    }
-  } catch(e) {
-    console.error('Quick capture failed:',e);
-    status.textContent='Could not save: '+(e?.message||String(e));
-  } finally { btn.disabled=false; }
+  if(focusCaptureMode==='project'){ const r=await quickCaptureProject(raw); btn.disabled=false; input.value=''; status.textContent=r.ok?'Project saved ✓':'Project table was unavailable — saved safely to Brain Dump ✓'; setTimeout(()=>{status.textContent='';},3000); await renderTodayFocus(); return; }
+  let text='[Today] '+raw, dueDate=todayStr(); if(focusCaptureMode==='followup')text='[Follow Up] '+raw; if(focusCaptureMode==='waiting'){text='[Waiting] '+raw;dueDate=await askTodayDate('Review this waiting item on',addDaysStr(todayStr(),3)); if(!dueDate){btn.disabled=false;status.textContent='';return;}} if(focusCaptureMode==='inbox'){text='[Inbox] '+raw;dueDate=null;}
+  const captureIsPrivate=focusCaptureMode==='inbox';
+  const {error}=await sb.from('todos').insert({text,priority:'med',due_date:dueDate,assigned_to:null,is_private:captureIsPrivate,created_by:getUser()}); btn.disabled=false; if(error){status.textContent='Failed: '+error.message;return;} input.value=''; const savedLabel=focusCaptureMode==='today'?'Added for today ✓':focusCaptureMode==='followup'?'Follow-up saved ✓':focusCaptureMode==='waiting'?'Waiting item saved ✓':'Brain Dump saved ✓'; status.textContent=savedLabel; setTimeout(()=>{if(status.textContent===savedLabel)status.textContent='';},2500); await renderTodayFocus(); updateDailyProgress();
 }
 async function quickCaptureDoneNow(){
   const input=document.getElementById('focus-quick-input'), status=document.getElementById('focus-capture-status'); const raw=(input?.value||'').trim(); if(!raw){input?.focus();return;} status.textContent='Logging completed activity...'; const ok=await autoLogActivity({title:raw,tags:['unplanned'],isPrivate:false}); if(!ok){status.textContent='Could not log activity.';return;} input.value=''; status.textContent='Unplanned activity logged ✓'; showAfterDonePrompt(raw); await renderTodayFocus(); updateDailyProgress();
@@ -15459,6 +15442,7 @@ restoreTodoDraft();
         <div class="mobile-hub-label">Personal</div>
         <div class="mobile-hub-grid">
           <button class="mobile-hub-item" onclick="mobileHubNavigate('notes')"><i class="ti ti-notes"></i><span>Notes<small>Private reference notes</small></span></button>
+          <button class="mobile-hub-item" onclick="mobileHubNavigate('todo')"><i class="ti ti-checkbox"></i><span>To Do<small>Full task list</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('notepad')"><i class="ti ti-notebook"></i><span>Notepad<small>Long-form writing</small></span></button>
         </div>
       </div>
