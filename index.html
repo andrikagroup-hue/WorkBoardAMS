@@ -5387,12 +5387,172 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
       </div>
 
       <!-- ── Kanban Board ────────────────────── -->
+      <div class="panel" id="panel-kanban">
+        <div class="module-premium-hero theme-blue">
+          <div class="module-premium-icon"><i class="ti ti-layout-kanban"></i></div>
+          <div class="module-premium-copy">
+            <div class="module-premium-eyebrow">Flow view</div>
+            <div class="module-premium-title">Kanban Board</div>
+            <div class="module-premium-sub">Move work through stages with a clean visual picture of current progress.</div>
+          </div>
+        </div>
+        <div id="kanban-board" class="kanban-board">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading Kanban...</div>
+        </div>
+      </div>
 
       <!-- ── Gantt Chart ──────────────────────── -->
+      <div class="panel" id="panel-gantt">
+        <div class="module-premium-hero theme-gold">
+          <div class="module-premium-icon"><i class="ti ti-chart-bar"></i></div>
+          <div class="module-premium-copy">
+            <div class="module-premium-eyebrow">Timeline view</div>
+            <div class="module-premium-title">Gantt Timeline</div>
+            <div class="module-premium-sub">Understand timing, overlap, and project sequence without digging through lists.</div>
+          </div>
+        </div>
+        <div class="gantt-toolbar">
+          <div class="gantt-month-nav">
+            <button onclick="ganttChangeMonth(-1)" aria-label="Previous month" title="Previous month"><i class="ti ti-chevron-left"></i></button>
+            <span class="gantt-month-label" id="gantt-month-label">-</span>
+            <button onclick="ganttChangeMonth(1)" aria-label="Next month" title="Next month"><i class="ti ti-chevron-right"></i></button>
+          </div>
+          <button onclick="ganttGoToday()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;font-size:12px">Today</button>
+          <select class="global-filter" id="gantt-status-filter" onchange="displayGanttFromCache()">
+            <option value="">All Statuses</option>
+            <option value="not_started">⬜ Not Started</option>
+            <option value="in_progress">🔵 In Progress</option>
+            <option value="on_hold">⏸️ On Hold</option>
+            <option value="overdue">🔴 Overdue</option>
+            <option value="skipped">⏭️ Skipped</option>
+            <option value="done">✅ Done</option>
+          </select>
+        </div>
+        <div class="gantt-scroll">
+          <div id="gantt-grid" class="gantt-grid">
+            <div class="gantt-empty"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading Gantt Chart...</div>
+          </div>
+        </div>
+        <div class="gantt-legend">
+          <span><i style="background:#94A3B8"></i> Not Started</span>
+          <span><i style="background:#2F6364"></i> In Progress</span>
+          <span><i style="background:#F97316"></i> On Hold</span>
+          <span><i style="background:#EF4444"></i> Overdue</span>
+          <span><i style="background:#8B5CF6"></i> Skipped</span>
+          <span><i style="background:#22C55E"></i> Done</span>
+        </div>
+        <div class="gantt-nodate-box" id="gantt-nodate-box" style="display:none">
+          <div class="gantt-nodate-title">📌 No Date (not shown on timeline)</div>
+          <div id="gantt-nodate-list"></div>
+        </div>
+      </div>
 
       <!-- ── Decision Matrix ──────────────────── -->
+      <div class="panel" id="panel-matrix">
+        <div class="module-premium-hero theme-purple">
+          <div class="module-premium-icon"><i class="ti ti-grid-dots"></i></div>
+          <div class="module-premium-copy">
+            <div class="module-premium-eyebrow">Decision support</div>
+            <div class="module-premium-title">Priority Matrix</div>
+            <div class="module-premium-sub">Separate urgent from important so the next choice is easier.</div>
+          </div>
+        </div>
+        <div style="background:#E8F1EF;border:1px solid #A8CAC6;border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;font-size:11.5px;color:#1F4443">
+          🎯 <strong>Decision Matrix (Eisenhower)</strong> — Combined incomplete To Do + Time Plan Tracker items. Tap the 🔥 Urgent / ⭐ Important button on each card to move it to a different quadrant.
+        </div>
+        <div class="matrix-grid" id="matrix-grid">
+          <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading Decision Matrix...</div>
+        </div>
+      </div>
 
       <!-- ── Recurring Task ──────────────────── -->
+      <div class="panel" id="panel-recurring">
+        <div class="module-premium-hero theme-teal">
+          <div class="module-premium-icon"><i class="ti ti-repeat"></i></div>
+          <div class="module-premium-copy">
+            <div class="module-premium-eyebrow">Routine system</div>
+            <div class="module-premium-title">Recurring Tasks</div>
+            <div class="module-premium-sub">Keep repeat work consistent without rebuilding the same task every time.</div>
+          </div>
+        </div>
+        <div id="rt-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
+          ⚠️ <strong>Setup required:</strong> The <code>recurring_templates</code> table doesn't exist in the database yet. Run the SQL provided in chat in the <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh the page.
+          <button onclick="document.getElementById('rt-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e;display:block">Close</button>
+        </div>
+
+        <div class="panel-add-toolbar">
+          <button class="btn-sm btn-primary" onclick="handleAdd()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Add Recurring Task
+          </button>
+        </div>
+        <div class="form-box" id="rt-form" style="display:none">
+          <div class="log-form-grid">
+            <div class="log-form-col">
+              <label class="log-form-label">Type</label>
+              <select id="rt-target" onchange="toggleRecurringFieldsVisibility()">
+                <option value="schedule">📅 Daily Schedule</option>
+                <option value="tracker">📋 Time Plan Tracker</option>
+              </select>
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Frequency</label>
+              <select id="rt-frequency">
+                <option value="daily">Daily</option>
+                <option value="weekly" selected>Weekly</option>
+                <option value="biweekly">Biweekly</option>
+                <option value="monthly4week">Every 4 Weeks</option>
+                <option value="monthly">Monthly</option>
+                <option value="bimonthly">Every 2 Months</option>
+                <option value="quarterly">Quarterly (3 Months)</option>
+                <option value="biannual">Biannual (6 Months)</option>
+                <option value="annual">Annual</option>
+              </select>
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Start Date</label>
+              <input type="date" id="rt-start-date" />
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Privacy</label>
+              <select id="rt-privacy">
+                <option value="false">🌐 Public</option>
+                <option value="true">🔒 Private</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="rt-fields-schedule" class="form-row" style="margin-top:8px">
+            <input id="rt-sch-time" type="time" value="08:00" style="max-width:110px" />
+            <input id="rt-sch-title" placeholder="Recurring activity title..." style="flex:2" />
+            <input id="rt-sch-loc" placeholder="Location / platform" />
+            <select id="rt-sch-cat">
+              <option value="blue">🔵 General</option>
+              <option value="amber">🟡 Important</option>
+              <option value="green">🟢 Done</option>
+              <option value="purple">🟣 Meeting</option>
+              <option value="red">🔴 Urgent</option>
+            </select>
+          </div>
+          <div id="rt-fields-tracker" class="form-row" style="margin-top:8px;display:none">
+            <input id="rt-trk-subject" placeholder="Recurring activity / subject..." style="flex:2" />
+            <input id="rt-trk-assign" placeholder="PIC / Assignment" />
+            <input id="rt-trk-schedule" placeholder="Schedule (e.g: 3-5 days)" />
+            <input id="rt-trk-notes" placeholder="Notes..." style="flex:2" />
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-sm" onclick="closeRecurringForm()">Cancel</button>
+            <button class="btn-sm btn-primary" id="rt-save-btn" onclick="saveRecurringTemplate()">Save Template</button>
+          </div>
+        </div>
+
+        <div id="rt-list-wrap">
+          <table class="rt-table">
+            <thead><tr><th>Type</th><th>Title / Activity</th><th>Frequency</th><th>Next Generation</th><th>Active</th><th></th></tr></thead>
+            <tbody id="rt-tbody"><tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
 
       <!-- ── Logbook ─────────────────────────── -->
       <div class="panel" id="panel-logbook">
@@ -6847,6 +7007,10 @@ async function refreshCurrentPanel() {
   else if (currentPanel === 'schedule') await renderSchedule();
   else if (currentPanel === 'portfolio') await renderPortfolio();
   else if (currentPanel === 'tracker') { await renderTracker(); await renderProjectTracker(); }
+  else if (currentPanel === 'kanban') await renderKanban();
+  else if (currentPanel === 'gantt') await renderGantt();
+  else if (currentPanel === 'matrix') await renderMatrix();
+  else if (currentPanel === 'recurring') await renderRecurring();
   else if (currentPanel === 'logbook') await renderLogbook();
   else if (currentPanel === 'notes') await renderNotes();
   else if (currentPanel === 'todo') await renderTodo();
@@ -7020,6 +7184,10 @@ async function switchPanel(id, el) {
     schedule: 'Daily Schedule',
     portfolio: 'Projects',
     tracker: 'Projects',
+    kanban: 'Projects',
+    gantt: 'Projects',
+    matrix: 'Projects',
+    recurring: 'Projects',
     logbook: 'Logbook',
     notes: 'Notes',
     todo: 'To Do',
@@ -7046,6 +7214,10 @@ async function switchPanel(id, el) {
   else if (id === 'schedule') await renderSchedule();
   else if (id === 'portfolio') await renderPortfolio();
   else if (id === 'tracker') { await renderTracker(); await renderProjectTracker(); }
+  else if (id === 'kanban') await renderKanban();
+  else if (id === 'gantt') await renderGantt();
+  else if (id === 'matrix') await renderMatrix();
+  else if (id === 'recurring') await renderRecurring();
   else if (id === 'logbook') await renderLogbook();
   else if (id === 'notes') await renderNotes();
   else if (id === 'todo') await renderTodo();
@@ -7284,6 +7456,30 @@ const PANEL_LOCAL_SEARCH_CONFIG = {
   portfolio: {
     mode: 'global', placeholder: 'Type any word from project, customer, PIC, source, vendor, next action, notes, status, value, reference, or attachment...',
     hint: 'Search every loaded portfolio field'
+  },
+  kanban: {
+    mode: 'data', placeholder: 'Search project, PIC, notes, status, or due date...',
+    hint: 'Search Kanban cards', source: () => kanbanCache, display: displayKanban,
+    text: t => [t.subject,t.assignment,t.notes,t.status,t.category,t.due_date,t.created_by]
+  },
+  gantt: {
+    mode: 'data', placeholder: 'Search task, PIC, notes, status, or date...',
+    hint: 'Search this timeline', source: () => ganttCache, display: displayGantt,
+    text: t => [t.subject,t.assignment,t.notes,t.status,t.category,t.start_date,t.due_date,t.created_by]
+  },
+  matrix: {
+    mode: 'data', placeholder: 'Search task, source, PIC, notes, or due date...',
+    hint: 'Search all quadrants', source: () => matrixCache, display: displayMatrix,
+    text: t => [t._title,t._src,t.assignment,t.notes,t.status,t.due_date,t.created_by]
+  },
+  recurring: {
+    mode: 'data', placeholder: 'Search recurring task, destination, frequency, or next run...',
+    hint: 'Search recurring templates', source: () => recurringCache, display: displayRecurringTemplates,
+    text: t => {
+      const d = t.template_data || {};
+      return [t.target_table,t.frequency,t.next_run,t.is_active ? 'active enabled' : 'inactive disabled',
+        d.title,d.subject,d.assignment,d.location,d.notes,d.schedule_duration,d.category];
+    }
   },
   logbook: {
     mode: 'global', placeholder: 'Type any word from the title, full content, tags, date, or attachment...',
@@ -7731,12 +7927,14 @@ async function handleAdd() {
   const formMap = {
     schedule: 'sched-form',
     logbook: 'log-form',
-    notes: 'note-form'
+    notes: 'note-form',
+    recurring: 'rt-form'
   };
   const resetMap = {
     schedule: resetScheduleForm,
     logbook: resetLogForm,
-    notes: resetNoteForm
+    notes: resetNoteForm,
+    recurring: resetRecurringForm
   };
   const formId = formMap[currentPanel];
   if (formId) {
@@ -7749,6 +7947,7 @@ async function handleAdd() {
       maybeRestoreLogDraft();
     }
     if (willOpen && currentPanel === 'notes') restoreNoteDraft();
+    if (willOpen && currentPanel === 'recurring') resetRecurringForm();
   }
 
 }
@@ -9698,6 +9897,9 @@ function escAttr(s) { return escHtml(s == null ? '' : s).replace(/"/g, '&quot;')
 
 async function ptRefreshAllViews() {
   await Promise.all([renderTracker(), renderProjectTracker()]);
+  if (currentPanel === 'kanban') await renderKanban();
+  if (currentPanel === 'gantt') await renderGantt();
+  if (currentPanel === 'matrix') await renderMatrix();
 }
 
 async function ptQuickStatus(id, status) {
@@ -10539,7 +10741,8 @@ async function delNote(id) {
 // ── TODAY FOCUS ─────────────────────────────
 
 const PROJECT_VIEWS = ['portfolio','tracker'];
-let lastProjectView = localStorage.getItem('wb_last_project_view') || 'tracker';
+const savedProjectView = localStorage.getItem('wb_last_project_view');
+let lastProjectView = PROJECT_VIEWS.includes(savedProjectView) ? savedProjectView : 'tracker';
 function syncProjectWorkspaceTabs(id) {
   const bar = document.getElementById('project-workspace-tabs');
   const isProject = PROJECT_VIEWS.includes(id);
@@ -12692,6 +12895,8 @@ function setupRealtime() {
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'time_plan_tracker' }, () => {
       if (currentPanel === 'tracker' && editingProjectId === null) renderProjectTracker();
+      if (currentPanel === 'kanban') renderKanban();
+      if (currentPanel === 'gantt') renderGantt();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'logbook_entries' }, () => {
       if (currentPanel === 'logbook') debouncedRenderLogbook();
@@ -12762,7 +12967,7 @@ function toggleNavGroup(groupId) {
 function openNavGroupForPanel(panelId) {
   const map = {
     schedule: 'ng-daily', logbook: 'ng-daily',
-    portfolio: 'ng-projects', tracker: 'ng-projects',
+    portfolio: 'ng-projects', tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects', recurring: 'ng-projects',
     notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
     absen: 'ng-hr', adminleave: 'ng-hr',
@@ -15255,7 +15460,7 @@ restoreTodoDraft();
 <script>
 const MOBILE_PANEL_BUCKET = {
   focus:'capture', schedule:'daily', logbook:'daily',
-  portfolio:'projects', tracker:'projects',
+  portfolio:'projects', tracker:'projects', kanban:'projects', gantt:'projects', matrix:'projects', recurring:'projects',
   result:'report',
   brain:'capture', followup:'capture'
 };
