@@ -2256,12 +2256,14 @@ body.authenticated .auth-gate { display:none !important; }
 .portfolio-filter-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--text2); }
 .portfolio-simple-filter select { min-width:170px; width:auto; }
 .portfolio-report-table .portfolio-status-row.outcome-pending td { background:#EEF4F7; }
+.portfolio-status-row.outcome-upcoming td { background:#F7F0E4; }
 .portfolio-report-table .portfolio-status-row.outcome-won td { background:#EDF5EB; }
 .portfolio-report-table .portfolio-status-row.outcome-lost td { background:#F9ECEC; }
 .portfolio-report-table .portfolio-status-row.outcome-not_pursued td,
 .portfolio-report-table .portfolio-status-row.outcome-cancelled td { background:#F7F0E4; }
 .portfolio-status-select { border:1px solid var(--border2) !important; border-radius:8px !important; padding:6px 8px !important; font:inherit; font-size:12px !important; color:#34413E !important; }
 .portfolio-status-select.outcome-pending { background:#E5EFF4 !important; border-color:#B9CFDA !important; }
+.portfolio-status-select.outcome-upcoming { background:#F3E8D5 !important; border-color:#DCC69D !important; }
 .portfolio-status-select.outcome-won { background:#E4F0E1 !important; border-color:#B8D0B3 !important; }
 .portfolio-status-select.outcome-lost { background:#F6E2E2 !important; border-color:#DDB6B6 !important; }
 .portfolio-status-select.outcome-not_pursued,
@@ -5014,6 +5016,7 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
               <label class="portfolio-label" for="portfolio-outcome">Status</label>
               <select id="portfolio-outcome" onchange="syncPortfolioOutcomeFields()">
                 <option value="pending">Process</option>
+                <option value="upcoming">Upcoming</option>
                 <option value="won">Won</option>
                 <option value="lost">Lost</option>
                 <option value="not_pursued">Discontinued</option>
@@ -5160,6 +5163,7 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
           <select id="portfolio-outcome-filter" onchange="applyPortfolioFilters()">
             <option value="">All Statuses</option>
             <option value="pending">Process</option>
+            <option value="upcoming">Upcoming</option>
             <option value="won">Won</option>
             <option value="lost">Lost</option>
             <option value="not_pursued">Discontinued</option>
@@ -8361,7 +8365,7 @@ function displayPortfolio(rows = portfolioCache) {
     if (ad !== bd) return ad.localeCompare(bd);
     return String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''));
   });
-  const statusLabels = {pending:'Process',won:'Won',lost:'Lost',not_pursued:'Discontinued',cancelled:'Discontinued'};
+  const statusLabels = {pending:'Process',upcoming:'Upcoming',won:'Won',lost:'Lost',not_pursued:'Discontinued',cancelled:'Discontinued'};
   const stageLabels = {incoming:'New Inquiry / Incoming',review:'Under Review',vendor_sourcing:'Vendor / Costing',boq_review:'BOQ Review',quotation:'Quotation / SPH Submitted',awaiting_customer:'Awaiting Customer',negotiation:'Negotiation',closed:'Closed'};
   list.innerHTML = `<div style="width:100%;overflow-x:auto;grid-column:1/-1"><table class="portfolio-report-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:1050px"><thead><tr style="text-align:left;background:var(--bg2)"><th style="padding:10px">No.</th><th style="padding:10px">Document / Reference No.</th><th style="padding:10px">Description</th><th style="padding:10px">Vendor</th><th style="padding:10px">Status</th><th style="padding:10px">Current Stage</th><th style="padding:10px">Next Action</th><th style="padding:10px">Due Date</th><th style="padding:10px">Attachment</th><th style="padding:10px">Actions</th></tr></thead><tbody>${sorted.map((row,i) => {
     const status = portfolioOutcome(row);
@@ -8374,7 +8378,7 @@ function displayPortfolio(rows = portfolioCache) {
       <td style="padding:10px;min-width:150px">${escHtml(row.reference_no || '—')}</td>
       <td style="padding:10px;min-width:220px">${escHtml(row.title || row.customer_name || '—')}</td>
       <td style="padding:10px;min-width:130px">${escHtml(row.partner_vendor || '—')}</td>
-      <td style="padding:8px;min-width:145px"><select class="portfolio-status-select outcome-${escAttr(status)}" aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(row.id)}',this.value)" style="max-width:140px;width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text1)"><option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option></select></td>
+      <td style="padding:8px;min-width:145px"><select class="portfolio-status-select outcome-${escAttr(status)}" aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(row.id)}',this.value)" style="max-width:140px;width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text1)"><option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="upcoming" ${status==='upcoming'?'selected':''}>Upcoming</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option></select></td>
       <td style="padding:10px;min-width:150px">${escHtml(stageLabels[stage] || stage || '—')}</td>
       <td style="padding:10px;min-width:220px">${escHtml(row.next_action || '—')}</td>
       <td style="padding:10px;white-space:nowrap">${escHtml(due)}</td>
@@ -12057,7 +12061,7 @@ async function renderPortfolioReportTable() {
         <td style="padding:10px;min-width:200px">${escHtml(r.title || '—')}</td>
         <td style="padding:10px">${escHtml(r.partner_vendor || '—')}</td>
         <td style="padding:8px;min-width:150px"><select class="portfolio-status-select outcome-${escAttr(status)}" aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(r.id)}',this.value)" style="max-width:145px;width:100%">
-          <option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option>
+          <option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="upcoming" ${status==='upcoming'?'selected':''}>Upcoming</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option>
         </select></td>
         <td style="padding:10px;min-width:150px">${portfolioAttachmentHtml(r) || attachment}</td>
       </tr>`;
@@ -12068,7 +12072,7 @@ async function renderPortfolioReportTable() {
 }
 
 async function updatePortfolioReportOutcome(id, outcome) {
-  const mapped = ['won','pending','lost','not_pursued'].includes(outcome) ? outcome : 'pending';
+  const mapped = ['won','pending','upcoming','lost','not_pursued'].includes(outcome) ? outcome : 'pending';
   const row = portfolioCache.find(r => r.id === id);
   const stage = row ? portfolioStage(row) : 'incoming';
   const { error } = await sb.from('project_portfolio').update({ outcome:mapped, decision:portfolioLegacyDecision(mapped,stage), updated_at:new Date().toISOString() }).eq('id',id);
