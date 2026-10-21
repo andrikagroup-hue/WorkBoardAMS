@@ -4500,10 +4500,6 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
             <i class="ti ti-notes"></i> Notes
             <span class="nav-badge badge-blue" id="badge-notes">0</span>
           </button>
-          <button class="nav-sub-item" id="nsub-todo" onclick="switchPanel('todo',this)">
-            <i class="ti ti-checkbox"></i> To Do
-            <span class="nav-badge badge-red" id="badge-todo">0</span>
-          </button>
           <button class="nav-sub-item" id="nsub-notepad" onclick="switchPanel('notepad',this)">
             <i class="ti ti-notebook"></i> Notepad
             <span class="nav-badge badge-blue" id="badge-notepad">0</span>
@@ -7142,6 +7138,7 @@ async function switchPanel(id, el) {
   if (id === 'result' && !hasManagementAccess()) { alert('Management Report is available only to Management and Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
   if (id === 'adminusers' && !isOwner()) { alert('Users & Access is available only to Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
   if (id === 'adminleave' && !hasManagementAccess()) { alert('Leave Management is available only to Management and Owner.'); id='focus'; el=document.getElementById('nsub-focus'); }
+  if (id === 'todo') { id = 'focus'; el = document.getElementById('nsub-focus'); }
   if (id === 'brain' || id === 'followup') {
     id = 'focus';
     el = document.getElementById('nsub-focus');
@@ -11092,6 +11089,9 @@ function showAfterDonePrompt(title, context={}) {
 async function renderTodayAttendanceSummary(){
   const card=document.getElementById('today-attendance-card'); if(!card)return;
   const user=getUser(), today=todayStr();
+  const renderToken=String(Date.now())+'-'+Math.random().toString(36).slice(2);
+  card.dataset.loadToken=renderToken;
+  const loadingFallback=setTimeout(()=>{ if(card.dataset.loadToken===renderToken && /Loading/i.test(card.textContent||'')){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Unable to load attendance</div><div class="today-mini-sub">Check connection or attendance table access, then refresh.</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="renderTodayAttendanceSummary()">Retry</button><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; } },6000);
   try{
     const [{data,error},{data:leaveData}]=await Promise.all([
       withTimeout(sb.from('attendance').select('*').eq('user_name',user).eq('tanggal',today).order('created_at',{ascending:false}).limit(1).maybeSingle()),
@@ -11105,7 +11105,8 @@ async function renderTodayAttendanceSummary(){
     if(data.clock_in && !data.clock_out){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">🟢 Clocked in ${focusEscape(absenTimeStr(data.clock_in))}</div><div class="today-mini-sub">${data.terlambat_menit>0?data.terlambat_menit+' min late':'Workday active'}</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="todayAttendanceAction('out','${data.id}')">Clock Out</button></div>`; return; }
     const dur=Math.max(0,Math.round((new Date(data.clock_out)-new Date(data.clock_in))/60000));
     card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">✅ Workday complete</div><div class="today-mini-sub">${focusEscape(absenTimeStr(data.clock_in))}–${focusEscape(absenTimeStr(data.clock_out))} · ${Math.floor(dur/60)}h ${dur%60}m</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Details</button></div>`;
-  }catch(e){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Could not load</div><div class="today-mini-sub">${focusEscape(e.message)}</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; }
+  }catch(e){ card.innerHTML=`<div class="today-mini-main"><div class="today-mini-label">Attendance</div><div class="today-mini-value">Could not load</div><div class="today-mini-sub">${focusEscape(e.message)}</div></div><div class="today-mini-actions"><button class="btn-sm" onclick="renderTodayAttendanceSummary()">Retry</button><button class="btn-sm" onclick="switchPanel('absen',document.getElementById('nsub-absen'))">Open</button></div>`; }
+  finally { clearTimeout(loadingFallback); if(card.dataset.loadToken===renderToken) card.dataset.loadToken=''; }
 }
 window._returnToTodayAfterAttendance=false;
 async function todayAttendanceAction(mode,id){ window._returnToTodayAfterAttendance=true; await switchPanel('absen',document.getElementById('nsub-absen')); if(mode==='in')await doClockIn(); else if(mode==='out')await doClockOut(id); }
@@ -11138,11 +11139,10 @@ async function renderTodayFocus() {
     todoCache=applyOwner(todoRes.data||[]);
     const allTodos=todoCache;
     // Dedicated list of tasks explicitly added through Add for Today. This list is not limited to Up Next's top two items.
-    // Show every task explicitly marked [Today] and due today. Do not apply semantic
+    // Show every task explicitly marked [Today]. Do not apply due-date, semantic
     // follow-up/waiting heuristics or creator filtering here: those could hide a task
     // that the user just added through this input.
-    const addedToday=allTodos.filter(t=>/^\s*\[Today\]/i.test(String(t.text||'')) &&
-      String(t.due_date||'').slice(0,10)===String(today).slice(0,10) && !todoMarker(t.text,'Cancelled'));
+    const addedToday=allTodos.filter(t=>/^\s*\[Today\]/i.test(String(t.text||'')) && !todoMarker(t.text,'Cancelled'));
     const addedTodayList=document.getElementById('focus-added-today-list');
     const addedTodayCount=document.getElementById('focus-added-today-count');
     if(addedTodayCount) addedTodayCount.textContent=addedToday.length;
@@ -11239,7 +11239,7 @@ async function renderTodayFocus() {
     const upNext=active.filter(x=>!sameAsNow(x) && x._kind!=='followup').slice(0,2);
     top.innerHTML=nowTask?`<div class="focus-one-now">${todayItemHtml(nowTask,1)}</div><div class="focus-soft-note">Only one thing deserves the spotlight. Finish or move it, then WorkBoard will surface the next one.</div>`:'<div class="focus-empty">Nothing needs action right now. Capture one small next step above.</div>';
     document.getElementById('focus-captured-today').innerHTML=upNext.length?upNext.map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">No additional items need attention.</div>';
-    const legacyReminderNote=legacyLogReminders.length?`<details class="focus-next-details"><summary>${legacyLogReminders.length} old Logbook reminder${legacyLogReminders.length===1?'':'s'} hidden from Today</summary><div class="focus-soft-note">These generic “Daily Activity Report” reminders came from the old Logbook suggestion flow. They are kept in To Do so no data is deleted, but they no longer compete with real follow-ups.</div><button class="focus-mini-btn" onclick="switchPanel('todo',document.getElementById('nsub-todo'))">Review in To Do</button></details>`:'';
+    const legacyReminderNote=legacyLogReminders.length?`<details class="focus-next-details"><summary>${legacyLogReminders.length} old Logbook reminder${legacyLogReminders.length===1?'':'s'} hidden from Today</summary><div class="focus-soft-note">These generic “Daily Activity Report” reminders came from the old Logbook suggestion flow. They are retained in the task data but no longer compete with real follow-ups.</div></details>`:'';
     document.getElementById('focus-followups').innerHTML=(followups.length?followups.map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">No follow-ups are due.</div>')+legacyReminderNote;
     document.getElementById('focus-waiting').innerHTML=waiting.length?waiting.slice(0,12).map(x=>todayItemHtml(x)).join(''):'<div class="focus-empty">Nothing is waiting for a reply.</div>';
     const inbox=allTodos.filter(t=>!t.is_done&&focusIsInbox(t));
@@ -15423,7 +15423,6 @@ restoreTodoDraft();
         <div class="mobile-hub-label">Personal</div>
         <div class="mobile-hub-grid">
           <button class="mobile-hub-item" onclick="mobileHubNavigate('notes')"><i class="ti ti-notes"></i><span>Notes<small>Private reference notes</small></span></button>
-          <button class="mobile-hub-item" onclick="mobileHubNavigate('todo')"><i class="ti ti-checkbox"></i><span>To Do<small>Full task list</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('notepad')"><i class="ti ti-notebook"></i><span>Notepad<small>Long-form writing</small></span></button>
         </div>
       </div>
