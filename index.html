@@ -4767,6 +4767,11 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
           <div id="focus-capture-status" style="font-size:10.5px;color:var(--text3);margin-top:6px"></div>
         </div>
 
+        <div class="focus-card" id="focus-added-today-card" style="margin-top:12px">
+          <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-list-check"></i></span><span>Added for Today</span></span><span class="focus-badge-count" id="focus-added-today-count">0</span></div>
+          <div id="focus-added-today-list"><div class="focus-empty">Your added tasks will appear here.</div></div>
+        </div>
+
         <div class="focus-grid today-primary-grid">
           <div class="focus-card focus-card-now">
             <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-target-arrow"></i></span><span>One Thing Now</span></span><span class="focus-badge-count" id="today-active-count">0</span></div>
@@ -5019,6 +5024,7 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
               <label class="portfolio-label" for="portfolio-outcome">Status</label>
               <select id="portfolio-outcome" onchange="syncPortfolioOutcomeFields()">
                 <option value="pending">Process</option>
+                <option value="waiting">Waiting</option>
                 <option value="upcoming">Upcoming</option>
                 <option value="won">Won</option>
                 <option value="lost">Lost</option>
@@ -5166,6 +5172,7 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
           <select id="portfolio-outcome-filter" onchange="applyPortfolioFilters()">
             <option value="">All Statuses</option>
             <option value="pending">Process</option>
+            <option value="waiting">Waiting</option>
             <option value="upcoming">Upcoming</option>
             <option value="won">Won</option>
             <option value="lost">Lost</option>
@@ -7994,6 +8001,8 @@ const PORTFOLIO_STAGE_LABEL = {
 };
 
 function portfolioOutcome(row) {
+  if (row?.outcome && row.outcome !== 'pending') return row.outcome;
+  if (row && ['awaiting_customer','on_hold'].includes(row.stage)) return 'waiting';
   if (row?.outcome) return row.outcome;
   if (row?.decision === 'continue') return 'won';
   if (row?.decision === 'not_proceed') return 'not_pursued';
@@ -8273,7 +8282,7 @@ function portfolioIsClosed(row) {
   return ['lost','cancelled','not_pursued'].includes(outcome) || ['completed','closed'].includes(stage);
 }
 function portfolioIsWaitingState(row) {
-  return ['awaiting_customer','on_hold'].includes(portfolioStage(row));
+  return portfolioOutcome(row) === 'waiting' || ['awaiting_customer','on_hold'].includes(portfolioStage(row));
 }
 function portfolioWaitingReviewDue(row) {
   if (!portfolioIsWaitingState(row) || portfolioIsClosed(row)) return false;
@@ -8371,9 +8380,9 @@ function displayPortfolio(rows = portfolioCache) {
     if (ad !== bd) return ad.localeCompare(bd);
     return String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''));
   });
-  const statusLabels = {pending:'Process',upcoming:'Upcoming',won:'Won',lost:'Lost',not_pursued:'Discontinued',cancelled:'Discontinued'};
+  const statusLabels = {pending:'Process',waiting:'Waiting',upcoming:'Upcoming',won:'Won',lost:'Lost',not_pursued:'Discontinued',cancelled:'Discontinued'};
   const stageLabels = {incoming:'New Inquiry / Incoming',review:'Under Review',vendor_sourcing:'Vendor / Costing',boq_review:'BOQ Review',quotation:'Quotation / SPH Submitted',awaiting_customer:'Awaiting Customer',negotiation:'Negotiation',closed:'Closed'};
-  list.innerHTML = `<div style="width:100%;overflow-x:auto;grid-column:1/-1"><table class="portfolio-report-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:1050px"><thead><tr style="text-align:left;background:var(--bg2)"><th style="padding:10px">No.</th><th style="padding:10px">Document / Reference No.</th><th style="padding:10px">Description</th><th style="padding:10px">Vendor</th><th style="padding:10px">Next Action</th><th style="padding:10px">Due Date</th><th style="padding:10px">Status</th><th style="padding:10px">Attachment</th><th style="padding:10px">Actions</th></tr></thead><tbody>${sorted.map((row,i) => {
+  list.innerHTML = `<div style="width:100%;overflow-x:auto;grid-column:1/-1"><table class="portfolio-report-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:1050px"><thead><tr style="text-align:left;background:var(--bg2)"><th style="padding:10px">No.</th><th style="padding:10px">Document / Reference No.</th><th style="padding:10px">Description</th><th style="padding:10px">Vendor</th><th style="padding:10px">Status</th><th style="padding:10px">Next Action</th><th style="padding:10px">Due Date</th><th style="padding:10px">Attachment</th><th style="padding:10px">Actions</th></tr></thead><tbody>${sorted.map((row,i) => {
     const status = portfolioOutcome(row);
     const stage = portfolioStage(row);
     const due = row.next_action_date ? new Date(row.next_action_date + 'T00:00:00').toLocaleDateString('en-US',{day:'2-digit',month:'short',year:'numeric'}) : '—';
@@ -8384,9 +8393,9 @@ function displayPortfolio(rows = portfolioCache) {
       <td style="padding:10px;min-width:150px">${escHtml(row.reference_no || '—')}</td>
       <td style="padding:10px;min-width:220px">${escHtml(row.title || row.customer_name || '—')}</td>
       <td style="padding:10px;min-width:130px">${escHtml(row.partner_vendor || '—')}</td>
+      <td style="padding:8px;min-width:145px"><select class="portfolio-status-select outcome-${escAttr(status)}" aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(row.id)}',this.value)" style="max-width:140px;width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text1)"><option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="waiting" ${status==='waiting'?'selected':''}>Waiting</option><option value="upcoming" ${status==='upcoming'?'selected':''}>Upcoming</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option></select></td>
       <td style="padding:10px;min-width:220px">${escHtml(row.next_action || '—')}</td>
       <td style="padding:10px;white-space:nowrap">${escHtml(due)}</td>
-      <td style="padding:8px;min-width:145px"><select class="portfolio-status-select outcome-${escAttr(status)}" aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(row.id)}',this.value)" style="max-width:140px;width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text1)"><option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="upcoming" ${status==='upcoming'?'selected':''}>Upcoming</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option></select></td>
       <td style="padding:10px;min-width:140px">${attachments}</td>
       <td style="padding:8px;white-space:nowrap">${canModify ? `<button class="btn-sm" type="button" onclick="openPortfolioForm('${escAttr(row.id)}')">Edit</button> <button class="btn-sm" type="button" onclick="deletePortfolio('${escAttr(row.id)}')">Delete</button>` : '—'}</td>
     </tr>`;
@@ -11150,6 +11159,17 @@ async function renderTodayFocus() {
     if(todoRes.error)throw todoRes.error;
     todoCache=applyOwner(todoRes.data||[]);
     const allTodos=todoCache;
+    // Dedicated list of tasks explicitly added through Add for Today. This list is not limited to Up Next's top two items.
+    const addedToday=allTodos.filter(t=>!focusIsInbox(t) && !focusIsFollowUp(t) && !focusIsWaiting(t) &&
+      String(t.text||'').startsWith('[Today] ') && String(t.due_date||'')===today && String(t.created_by||'')===String(user||''));
+    const addedTodayList=document.getElementById('focus-added-today-list');
+    const addedTodayCount=document.getElementById('focus-added-today-count');
+    if(addedTodayCount) addedTodayCount.textContent=addedToday.length;
+    if(addedTodayList) addedTodayList.innerHTML=addedToday.length ? addedToday.map((t,i)=>{
+      const label=focusEscape(stripTodoInternalMarkers(t.text));
+      const isDone=!!t.is_done;
+      return `<div class="today-completed-item" style="align-items:center;gap:10px"><span style="min-width:24px;color:var(--text3);font-weight:700">${i+1}.</span><div style="flex:1;min-width:0"><strong style="${isDone?'text-decoration:line-through;opacity:.65':''}">${label}</strong><div class="today-task-source">${isDone?'Completed':'Planned for today'}</div></div>${isDone?'<span aria-label="Completed">✓</span>':`<button class="focus-mini-btn" onclick="focusDone('${String(t.id).replace(/'/g, '')}')">Done</button>`}</div>`;
+    }).join('') : '<div class="focus-empty">No tasks added yet. Add a task above and it will appear here.</div>';
     todayLogCache=applyPrivacy(logRes.data||[]).filter(l=>String(l.created_by||'')===String(user||''));
     const active=[], waiting=[], legacyLogReminders=[];
 
@@ -12066,7 +12086,7 @@ async function renderPortfolioReportTable() {
         <td style="padding:10px;min-width:200px">${escHtml(r.title || '—')}</td>
         <td style="padding:10px">${escHtml(r.partner_vendor || '—')}</td>
         <td style="padding:8px;min-width:150px"><select class="portfolio-status-select outcome-${escAttr(status)}" aria-label="Status ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(r.id)}',this.value)" style="max-width:145px;width:100%">
-          <option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="upcoming" ${status==='upcoming'?'selected':''}>Upcoming</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option>
+          <option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="waiting" ${status==='waiting'?'selected':''}>Waiting</option><option value="upcoming" ${status==='upcoming'?'selected':''}>Upcoming</option><option value="won" ${status==='won'?'selected':''}>Won</option><option value="lost" ${status==='lost'?'selected':''}>Lost</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Discontinued</option>
         </select></td>
         <td style="padding:10px;min-width:150px">${portfolioAttachmentHtml(r) || attachment}</td>
       </tr>`;
@@ -12077,10 +12097,11 @@ async function renderPortfolioReportTable() {
 }
 
 async function updatePortfolioReportOutcome(id, outcome) {
-  const mapped = ['won','pending','upcoming','lost','not_pursued'].includes(outcome) ? outcome : 'pending';
+  const mapped = ['won','pending','waiting','upcoming','lost','not_pursued'].includes(outcome) ? outcome : 'pending';
   const row = portfolioCache.find(r => r.id === id);
-  const stage = row ? portfolioStage(row) : 'incoming';
-  const { error } = await sb.from('project_portfolio').update({ outcome:mapped, decision:portfolioLegacyDecision(mapped,stage), updated_at:new Date().toISOString() }).eq('id',id);
+  const stage = mapped === 'waiting' ? 'on_hold' : (row && ['on_hold','awaiting_customer'].includes(portfolioStage(row)) ? 'incoming' : (row ? portfolioStage(row) : 'incoming'));
+  const decision = mapped === 'waiting' ? 'hold' : portfolioLegacyDecision(mapped,stage);
+  const { error } = await sb.from('project_portfolio').update({ outcome:mapped, stage, decision, updated_at:new Date().toISOString() }).eq('id',id);
   if (error) { alert('Could not update status: ' + (error.message || error)); await renderPortfolioReportTable(); return; }
   await renderPortfolio();
   await renderPortfolioReportTable();
