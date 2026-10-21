@@ -4752,40 +4752,17 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
 
         <div class="today-focus-hero today-quick-shell">
           <div class="quick-capture">
-            <input id="focus-quick-input" name="workboard_capture_text_202608" autocomplete="off" autocapitalize="sentences" spellcheck="true" data-lpignore="true" data-1p-ignore onfocus="prepareFocusQuickCaptureInput(this)" placeholder="Write it once — task, follow-up, waiting item, project, or thought..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
+            <input id="focus-quick-input" name="workboard_capture_text_202608" autocomplete="off" autocapitalize="sentences" spellcheck="true" data-lpignore="true" data-1p-ignore onfocus="prepareFocusQuickCaptureInput(this)" placeholder="Write a task to add to today..." onkeydown="if(event.key==='Enter')quickCaptureTodo()" />
             <button class="btn-sm btn-primary" id="focus-quick-btn" onclick="quickCaptureTodo()"><i class="ti ti-plus"></i> Add for Today</button>
             <button class="btn-sm" id="focus-done-now-btn" onclick="quickCaptureDoneNow()" title="Log a task you just finished without adding it to the plan"><i class="ti ti-check"></i> Done Now</button>
           </div>
-          <div class="focus-capture-actions" aria-label="Quick capture type">
-            <button class="focus-mode-btn active" data-focus-mode="today" onclick="setFocusCaptureMode('today',this)">Today</button>
-            <button class="focus-mode-btn" data-focus-mode="followup" onclick="setFocusCaptureMode('followup',this)">Follow Up</button>
-            <button class="focus-mode-btn" data-focus-mode="waiting" onclick="setFocusCaptureMode('waiting',this)">Waiting Reply</button>
-            <button class="focus-mode-btn" data-focus-mode="project" onclick="setFocusCaptureMode('project',this)">Project</button>
-            <button class="focus-mode-btn" data-focus-mode="inbox" onclick="setFocusCaptureMode('inbox',this)">Brain Dump</button>
-          </div>
-          <div class="focus-capture-hint">Capture first. Details can be added later. Brain Dump stays private and never becomes a management activity unless you turn it into work.</div>
+          <div class="focus-capture-hint">Add a task here to place it in your Added for Today list.</div>
           <div id="focus-capture-status" style="font-size:10.5px;color:var(--text3);margin-top:6px"></div>
         </div>
 
         <div class="focus-card" id="focus-added-today-card" style="margin-top:12px">
           <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-list-check"></i></span><span>Added for Today</span></span><span class="focus-badge-count" id="focus-added-today-count">0</span></div>
           <div id="focus-added-today-list"><div class="focus-empty">Your added tasks will appear here.</div></div>
-        </div>
-
-        <div class="focus-grid today-primary-grid">
-          <div class="focus-card focus-card-now">
-            <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-target-arrow"></i></span><span>One Thing Now</span></span><span class="focus-badge-count" id="today-active-count">0</span></div>
-            <div id="focus-top3"><div class="loading-msg">Choosing one thing...</div></div>
-          </div>
-          <div class="focus-card focus-card-overview">
-            <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-sparkles"></i></span><span>Today at a Glance</span></span></div>
-            <div id="focus-overview"><div class="loading-msg">Loading...</div></div>
-          </div>
-        </div>
-
-        <div class="focus-card focus-card-today today-list-card" id="focus-card-captured">
-          <div class="focus-card-title"><span class="focus-title-label"><span class="today-section-icon"><i class="ti ti-bolt"></i></span><span>Up Next</span></span><span class="focus-badge-count" id="focus-today-count">0</span></div>
-          <div id="focus-captured-today"></div>
         </div>
 
         <details class="today-collapsible" id="focus-card-followups">
@@ -5916,6 +5893,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
       <!-- ── Result ─────────────────────────────── -->
       <div class="panel" id="panel-result">
 
+        <div style="font-size:22px;font-weight:850;color:var(--text);margin:0 0 12px;padding:4px 2px">Today's Achievement</div>
         <div class="management-report-hero">
           <div class="mr-head">
             <div>
@@ -11230,7 +11208,7 @@ async function renderTodayFocus() {
     const legacyScheduleCutoff=addDaysStr(today,-7);
     const schedAll=applyPrivacy(schedRes.data||[]).filter(e=>String(e.created_by||'')===String(user||'') && e.event_date>=legacyScheduleCutoff);
     const sched=schedAll.filter(e=>e.category!=='green' && !scheduleHandled.has(String(e.id)));
-    sched.forEach(e=>{ const item={_src:'schedule',id:e.id,title:e.title,due_date:e.event_date,time:(e.time_start||'').slice(0,5),priority:e.category==='red'?'high':e.category==='amber'?'med':'medium',_kind:e.event_date<today?'carry':'schedule',raw:e,meta:e.location||''}; if(!isTodayItemSnoozed('schedule',e.id))pushActive(item); });
+    // Daily Schedule is independent; it never auto-populates the Today task list. Add tasks manually above if needed.
     if(!trackRes.error){
       const tracks=applyPrivacy(trackRes.data||[]).filter(todayBelongsToUser);
       tracks.forEach(t=>{ const status=ptEffectiveStatus(t); const due=t.due_date||null; const item={_src:'tracker',id:t.id,title:t.subject||'Untitled tracker item',due_date:due,priority:t.priority||'medium',status:t.status||'not_started',_kind:status==='on_hold'?'waiting':'tracker',raw:t,meta:t.assignment||t.category||''}; if(status==='on_hold' && (!due||due>today)){waiting.push(item);return;} if(t.status==='in_progress'||(due&&due<=today)){if(!isTodayItemSnoozed('tracker',t.id))pushActive(item);} });
@@ -11266,13 +11244,9 @@ async function renderTodayFocus() {
     const completedTodayRows=todayLogCache.filter(l=>!(l.tags||[]).includes('waiting')&&!(l.tags||[]).includes('cancelled')&&!(l.tags||[]).includes('carried-forward'));
     const completedList=document.getElementById('today-completed-list');
     if(completedList) completedList.innerHTML=completedTodayRows.length?completedTodayRows.slice(0,20).map(l=>`<div class="today-completed-item"><span>✅</span><div><strong>${focusEscape(l.title||'Activity')}</strong>${l.tags?.includes('unplanned')?'<span class="today-task-source carry">Unplanned</span>':''}</div><span class="today-completed-time">${l.created_at?new Date(l.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}):''}</span></div>`).join(''):'<div class="focus-empty">No completed activity yet.</div>';
-    const planned=schedAll.filter(e=>e.event_date===today).length;
-    const plannedDone=schedAll.filter(e=>e.event_date===today && e.category==='green').length;
     const completed=completedTodayRows.length;
     const waitingCount=waiting.length; const followCount=followupsAll.length;
-    const pct=planned?Math.min(100,Math.round(plannedDone/planned*100)):0;
-    document.getElementById('focus-overview').innerHTML=`<div class="today-overview-wrap"><div class="today-donut" style="--done-pct:${pct}%"><div class="today-donut-center"><strong>${pct}%</strong><span>planned done</span></div></div><div class="today-stat-grid"><div class="today-stat-chip"><span>Planned</span><strong>${planned}</strong></div><div class="today-stat-chip"><span>Completed</span><strong>${completed}</strong></div><div class="today-stat-chip"><span>Follow-up due</span><strong>${followCount}</strong></div><div class="today-stat-chip"><span>Waiting</span><strong>${waitingCount}</strong></div></div></div>`;
-    document.getElementById('today-active-count').textContent=active.length; document.getElementById('focus-today-count').textContent=upNext.length; document.getElementById('focus-follow-count').textContent=followCount; document.getElementById('focus-wait-count').textContent=waitingCount; document.getElementById('focus-inbox-count').textContent=inbox.length; document.getElementById('today-completed-count').textContent=completedTodayRows.length;
+    document.getElementById('today-completed-count').textContent=completedTodayRows.length;
     const badge=document.getElementById('badge-focus'); if(badge)badge.textContent=Math.min(99,active.length); const brainBadge=document.getElementById('badge-brain'); if(brainBadge)brainBadge.textContent=inbox.length; const followBadge=document.getElementById('badge-followup'); if(followBadge)followBadge.textContent=followCount+waitingCount;
   }catch(e){ top.innerHTML=`<div class="empty-msg" style="color:var(--danger)">Could not load Today: ${focusEscape(e.message)}</div>`; }
 }
