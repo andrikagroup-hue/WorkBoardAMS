@@ -11156,7 +11156,13 @@ async function renderTodayFocus() {
     todoCache=applyOwner(todoRes.data||[]);
     const allTodos=todoCache;
     // Render every active task explicitly captured in Today, independent of One Thing Now / Up Next ranking.
-    const addedToday=allTodos.filter(t=>!t.is_done && /^\s*\[Today\]/i.test(String(t.text||'')) && !todoMarker(t.text,'Cancelled'));
+    const addedToday=allTodos.filter(t=>{
+      const text=String(t.text||'');
+      const explicitlyToday=/^\s*\[Today\]/i.test(text);
+      const dueToday=String(t.due_date||'').slice(0,10)===today;
+      const isOtherCapture=/^\s*\[(?:Follow Up|Waiting|Inbox|Carry|Cancelled)\]/i.test(text);
+      return !t.is_done && !todoMarker(text,'Cancelled') && !isOtherCapture && (explicitlyToday || dueToday);
+    });
     const addedTodayList=document.getElementById('focus-added-today-list');
     const addedTodayCount=document.getElementById('focus-added-today-count');
     if(addedTodayCount) addedTodayCount.textContent=addedToday.length;
