@@ -2246,7 +2246,11 @@ body.authenticated .auth-gate { display:none !important; }
   .owner-access-row .btn-sm { width:100%; justify-content:center; }
 }
 
-  </style>
+  
+.portfolio-report-table th { color:var(--text2);font-weight:800;border-bottom:1px solid var(--border2); }
+.portfolio-report-table td { vertical-align:top; }
+.portfolio-report-table select { padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text1); }
+</style>
 
 <style id="v132-desktop-visual-refresh">
 /* ============================================================
@@ -4976,21 +4980,31 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
           <div class="portfolio-form-help">Save the essentials first. Everything else can be completed later.</div>
 
           <div class="portfolio-quick-grid">
+            <div class="portfolio-field">
+              <label class="portfolio-label" for="portfolio-reference">Nomor Dokumen / Reference *</label>
+              <input id="portfolio-reference" placeholder="RFQ / BOQ / PO / nomor penawaran" />
+            </div>
             <div class="portfolio-field span-2">
-              <label class="portfolio-label" for="portfolio-title">Opportunity / Project *</label>
-              <input id="portfolio-title" placeholder="e.g. Foam Chamber requirement" />
+              <label class="portfolio-label" for="portfolio-title">Description *</label>
+              <input id="portfolio-title" placeholder="Ringkasan kebutuhan / nama proyek" />
             </div>
             <div class="portfolio-field">
-              <label class="portfolio-label" for="portfolio-customer">Customer / Requester</label>
-              <input id="portfolio-customer" placeholder="e.g. Multitek Jaya Sukses" />
+              <label class="portfolio-label" for="portfolio-partner">Vendor</label>
+              <input id="portfolio-partner" placeholder="Nama vendor / supplier" />
             </div>
             <div class="portfolio-field">
-              <label class="portfolio-label" for="portfolio-next-action">Next Action</label>
-              <input id="portfolio-next-action" placeholder="e.g. Request vendor quotation" />
+              <label class="portfolio-label" for="portfolio-outcome">Keterangan</label>
+              <select id="portfolio-outcome" onchange="syncPortfolioOutcomeFields()">
+                <option value="pending">Process</option>
+                <option value="won">Menang</option>
+                <option value="lost">Lose</option>
+                <option value="not_pursued">Tidak dilanjutkan</option>
+              </select>
             </div>
             <div class="portfolio-field">
-              <label class="portfolio-label" for="portfolio-next-action-date">Follow-up / Action Date</label>
-              <input type="date" id="portfolio-next-action-date" />
+              <label class="portfolio-label" for="portfolio-files">Attachment (PDF / Excel)</label>
+              <input type="file" id="portfolio-files" multiple accept=".pdf,.xls,.xlsx,.csv,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" onchange="handlePortfolioFileSelect()" />
+              <div id="portfolio-file-preview" class="portfolio-file-preview"></div>
             </div>
           </div>
 
@@ -5026,16 +5040,7 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
                   <option value="closed">Closed</option>
                 </select>
               </div>
-              <div class="portfolio-field">
-                <label class="portfolio-label" for="portfolio-outcome">Outcome</label>
-                <select id="portfolio-outcome" onchange="syncPortfolioOutcomeFields()">
-                  <option value="pending">Pending / Not Decided Yet</option>
-                  <option value="won">Won / Approved</option>
-                  <option value="lost">Lost</option>
-                  <option value="cancelled">Cancelled by Customer</option>
-                  <option value="not_pursued">Not Pursued by AMS</option>
-                </select>
-              </div>
+              <div class="portfolio-field" style="display:none"></div>
               <div class="portfolio-field">
                 <label class="portfolio-label" for="portfolio-outcome-reason">Loss / Stop Reason</label>
                 <input id="portfolio-outcome-reason" list="portfolio-outcome-reason-list" placeholder="Choose a suggestion or type your own reason" />
@@ -5077,18 +5082,12 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
                 <label class="portfolio-label" for="portfolio-source-detail">Source Detail</label>
                 <input id="portfolio-source-detail" placeholder="Person, company, platform, referral, etc." />
               </div>
-              <div class="portfolio-field">
-                <label class="portfolio-label" for="portfolio-partner">Partner / Vendor</label>
-                <input id="portfolio-partner" placeholder="Vendor, supplier, or collaboration partner" />
-              </div>
+              <div class="portfolio-field" style="display:none"></div>
               <div class="portfolio-field span-3">
                 <label class="portfolio-label" for="portfolio-notes">Notes</label>
                 <textarea id="portfolio-notes" placeholder="Important context or history."></textarea>
               </div>
-              <div class="portfolio-field">
-                <label class="portfolio-label" for="portfolio-reference">Reference No.</label>
-                <input id="portfolio-reference" placeholder="BOQ / RFQ / PO / Quotation no." />
-              </div>
+              <div class="portfolio-field" style="display:none"></div>
               <div class="portfolio-field">
                 <label class="portfolio-label" for="portfolio-value">Estimated Opportunity Value (IDR)</label>
                 <input id="portfolio-value" inputmode="numeric" placeholder="e.g. 327.166.950" onblur="normalizePortfolioMoneyInput(this)" />
@@ -5112,14 +5111,7 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
                   <option value="true">Private (only me)</option>
                 </select>
               </div>
-              <div class="portfolio-field span-3">
-                <label class="portfolio-label" for="portfolio-files">Attachments</label>
-                <input type="file" id="portfolio-files" multiple
-                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                  onchange="handlePortfolioFileSelect()" />
-                <div style="font-size:9.5px;color:var(--text3);margin-top:3px">PDF, image, Word, Excel/CSV, or PowerPoint · max 20 MB per file.</div>
-                <div class="portfolio-file-preview" id="portfolio-file-preview"></div>
-              </div>
+              
             </div>
           </details>
 
@@ -5958,6 +5950,16 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
             <button class="btn-sm btn-primary" type="button" onclick="resultReportToday()" style="height:34px;justify-content:center"><i class="ti ti-calendar"></i> Today</button>
           </div>
         </div>
+
+        <section class="mr-section" style="margin:14px 0;overflow:hidden">
+          <div class="mr-section-head"><div class="mr-section-title">📋 Portfolio Report</div><span class="mr-section-count" id="portfolio-report-count">0</span></div>
+          <div style="overflow-x:auto">
+            <table class="portfolio-report-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:760px">
+              <thead><tr style="text-align:left;background:var(--bg2)"><th style="padding:10px">Nomor</th><th style="padding:10px">Nomor Dokumen / Reference</th><th style="padding:10px">Description</th><th style="padding:10px">Vendor</th><th style="padding:10px">Keterangan</th><th style="padding:10px">Attachment</th></tr></thead>
+              <tbody id="portfolio-report-body"><tr><td colspan="6" style="padding:14px;color:var(--text3)">Loading portfolio report...</td></tr></tbody>
+            </table>
+          </div>
+        </section>
 
         <div class="mr-summary" id="result-management-summary">
           <div class="mr-stat planned"><div class="label">Planned</div><div class="value">—</div></div>
@@ -8495,7 +8497,9 @@ async function savePortfolio() {
   const existing = editingPortfolioId ? portfolioCache.find(x => x.id === editingPortfolioId) : null;
   if (editingPortfolioId && !requireSharedRowModify(existing)) return;
   const title = document.getElementById('portfolio-title')?.value.trim() || '';
-  if (!title) return alert('Project / Order Name is required.');
+  const referenceNo = document.getElementById('portfolio-reference')?.value.trim() || '';
+  if (!referenceNo) return alert('Nomor Dokumen / Reference wajib diisi.');
+  if (!title) return alert('Description wajib diisi.');
 
   const saveBtn = document.getElementById('portfolio-save-btn');
   const originalText = saveBtn?.textContent || 'Save Portfolio Entry';
@@ -8554,6 +8558,7 @@ async function savePortfolio() {
 
     closePortfolioForm();
     await renderPortfolio();
+    await renderPortfolioReportTable();
   } catch (error) {
     const msg = String(error?.message || error);
     if (isPortfolioSchemaError(error)) {
@@ -12094,9 +12099,55 @@ async function renderManagementReport() {
   }
 }
 
+async function renderPortfolioReportTable() {
+  const body = document.getElementById('portfolio-report-body');
+  if (!body) return;
+  try {
+    const { data, error } = await sb.from('project_portfolio').select('*').order('entry_date', { ascending:false }).order('created_at', { ascending:false });
+    if (error) throw error;
+    const rows = applyPrivacy(data || []).filter(r => !r.is_private || r.created_by === getUser());
+    const count = document.getElementById('portfolio-report-count');
+    if (count) count.textContent = rows.length;
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="6" style="padding:14px;color:var(--text3)">Belum ada data portfolio. Tambahkan melalui menu Projects; report akan terisi otomatis.</td></tr>';
+      return;
+    }
+    const labels = {won:'Menang',pending:'Process',lost:'Lose',not_pursued:'Tidak dilanjutkan',cancelled:'Tidak dilanjutkan'};
+    body.innerHTML = rows.map((r,i) => {
+      const status = portfolioOutcome(r);
+      const attachment = Array.isArray(r.attachments) && r.attachments.length
+        ? r.attachments.map(a => `<span class="portfolio-report-attachment">${escHtml(a.name || a.filename || 'Lampiran')}</span>`).join(', ')
+        : '—';
+      return `<tr style="border-top:1px solid var(--border2)">
+        <td style="padding:10px;white-space:nowrap">${i+1}</td>
+        <td style="padding:10px">${escHtml(r.reference_no || '—')}</td>
+        <td style="padding:10px;min-width:200px">${escHtml(r.title || '—')}</td>
+        <td style="padding:10px">${escHtml(r.partner_vendor || '—')}</td>
+        <td style="padding:8px;min-width:150px"><select aria-label="Keterangan ${i+1}" onchange="updatePortfolioReportOutcome('${escAttr(r.id)}',this.value)" style="max-width:145px;width:100%">
+          <option value="won" ${status==='won'?'selected':''}>Menang</option><option value="pending" ${status==='pending'?'selected':''}>Process</option><option value="lost" ${status==='lost'?'selected':''}>Lose</option><option value="not_pursued" ${['not_pursued','cancelled'].includes(status)?'selected':''}>Tidak dilanjutkan</option>
+        </select></td>
+        <td style="padding:10px;min-width:150px">${portfolioAttachmentHtml(r) || attachment}</td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="6" style="padding:14px;color:var(--danger)">Gagal memuat report: ${escHtml(err.message || String(err))}</td></tr>`;
+  }
+}
+
+async function updatePortfolioReportOutcome(id, outcome) {
+  const mapped = ['won','pending','lost','not_pursued'].includes(outcome) ? outcome : 'pending';
+  const row = portfolioCache.find(r => r.id === id);
+  const stage = row ? portfolioStage(row) : 'incoming';
+  const { error } = await sb.from('project_portfolio').update({ outcome:mapped, decision:portfolioLegacyDecision(mapped,stage), updated_at:new Date().toISOString() }).eq('id',id);
+  if (error) { alert('Status tidak berhasil diperbarui: ' + (error.message || error)); await renderPortfolioReportTable(); return; }
+  await renderPortfolio();
+  await renderPortfolioReportTable();
+}
+
 async function renderResult() {
   if (!hasManagementAccess()) return alert('Management Report is available only to Management and Owner.');
   await renderManagementReport();
+  await renderPortfolioReportTable();
   // ── Set default bulan ke bulan ini jika belum dipilih ──
   const monthInput = document.getElementById('result-month-input');
   if (monthInput && !monthInput.value) monthInput.value = todayStr().substring(0, 7);
