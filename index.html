@@ -11138,8 +11138,11 @@ async function renderTodayFocus() {
     todoCache=applyOwner(todoRes.data||[]);
     const allTodos=todoCache;
     // Dedicated list of tasks explicitly added through Add for Today. This list is not limited to Up Next's top two items.
-    const addedToday=allTodos.filter(t=>!focusIsInbox(t) && !focusIsFollowUp(t) && !focusIsWaiting(t) &&
-      String(t.text||'').startsWith('[Today] ') && String(t.due_date||'')===today && String(t.created_by||'')===String(user||''));
+    // Show every task explicitly marked [Today] and due today. Do not apply semantic
+    // follow-up/waiting heuristics or creator filtering here: those could hide a task
+    // that the user just added through this input.
+    const addedToday=allTodos.filter(t=>/^\s*\[Today\]/i.test(String(t.text||'')) &&
+      String(t.due_date||'').slice(0,10)===String(today).slice(0,10) && !todoMarker(t.text,'Cancelled'));
     const addedTodayList=document.getElementById('focus-added-today-list');
     const addedTodayCount=document.getElementById('focus-added-today-count');
     if(addedTodayCount) addedTodayCount.textContent=addedToday.length;
