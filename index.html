@@ -3847,9 +3847,6 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
 #panel-matrix .matrix-quad-header { font-family:var(--wb-font-heading,'Plus Jakarta Sans',sans-serif); font-weight:800; }
 #panel-matrix .matrix-card { border-radius:13px; padding:12px; background:rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(45,58,54,.055); }
 
-/* ---------- Recurring ---------- */
-#panel-recurring .form-box { border-radius:18px; }
-#panel-recurring .rt-table { border-radius:16px; overflow:hidden; box-shadow:0 8px 20px rgba(45,58,54,.045); }
 
 /* ---------- Logbook ---------- */
 #panel-logbook .binder-tabs-row { gap:7px; }
@@ -5452,95 +5449,6 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
         </div>
       </div>
 
-      <!-- ── Recurring Task ──────────────────── -->
-      <div class="panel" id="panel-recurring">
-        <div class="module-premium-hero theme-teal">
-          <div class="module-premium-icon"><i class="ti ti-repeat"></i></div>
-          <div class="module-premium-copy">
-            <div class="module-premium-eyebrow">Routine system</div>
-            <div class="module-premium-title">Recurring Tasks</div>
-            <div class="module-premium-sub">Keep repeat work consistent without rebuilding the same task every time.</div>
-          </div>
-        </div>
-        <div id="rt-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
-          ⚠️ <strong>Setup required:</strong> The <code>recurring_templates</code> table doesn't exist in the database yet. Run the SQL provided in chat in the <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh the page.
-          <button onclick="document.getElementById('rt-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e;display:block">Close</button>
-        </div>
-
-        <div class="panel-add-toolbar">
-          <button class="btn-sm btn-primary" onclick="handleAdd()">
-            <i class="ti ti-plus" aria-hidden="true"></i> Add Recurring Task
-          </button>
-        </div>
-        <div class="form-box" id="rt-form" style="display:none">
-          <div class="log-form-grid">
-            <div class="log-form-col">
-              <label class="log-form-label">Type</label>
-              <select id="rt-target" onchange="toggleRecurringFieldsVisibility()">
-                <option value="schedule">📅 Daily Schedule</option>
-                <option value="tracker">📋 Time Plan Tracker</option>
-              </select>
-            </div>
-            <div class="log-form-col">
-              <label class="log-form-label">Frequency</label>
-              <select id="rt-frequency">
-                <option value="daily">Daily</option>
-                <option value="weekly" selected>Weekly</option>
-                <option value="biweekly">Biweekly</option>
-                <option value="monthly4week">Every 4 Weeks</option>
-                <option value="monthly">Monthly</option>
-                <option value="bimonthly">Every 2 Months</option>
-                <option value="quarterly">Quarterly (3 Months)</option>
-                <option value="biannual">Biannual (6 Months)</option>
-                <option value="annual">Annual</option>
-              </select>
-            </div>
-            <div class="log-form-col">
-              <label class="log-form-label">Start Date</label>
-              <input type="date" id="rt-start-date" />
-            </div>
-            <div class="log-form-col">
-              <label class="log-form-label">Privacy</label>
-              <select id="rt-privacy">
-                <option value="false">🌐 Public</option>
-                <option value="true">🔒 Private</option>
-              </select>
-            </div>
-          </div>
-
-          <div id="rt-fields-schedule" class="form-row" style="margin-top:8px">
-            <input id="rt-sch-time" type="time" value="08:00" style="max-width:110px" />
-            <input id="rt-sch-title" placeholder="Recurring activity title..." style="flex:2" />
-            <input id="rt-sch-loc" placeholder="Location / platform" />
-            <select id="rt-sch-cat">
-              <option value="blue">🔵 General</option>
-              <option value="amber">🟡 Important</option>
-              <option value="green">🟢 Done</option>
-              <option value="purple">🟣 Meeting</option>
-              <option value="red">🔴 Urgent</option>
-            </select>
-          </div>
-          <div id="rt-fields-tracker" class="form-row" style="margin-top:8px;display:none">
-            <input id="rt-trk-subject" placeholder="Recurring activity / subject..." style="flex:2" />
-            <input id="rt-trk-assign" placeholder="PIC / Assignment" />
-            <input id="rt-trk-schedule" placeholder="Schedule (e.g: 3-5 days)" />
-            <input id="rt-trk-notes" placeholder="Notes..." style="flex:2" />
-          </div>
-
-          <div class="form-actions">
-            <button class="btn-sm" onclick="closeRecurringForm()">Cancel</button>
-            <button class="btn-sm btn-primary" id="rt-save-btn" onclick="saveRecurringTemplate()">Save Template</button>
-          </div>
-        </div>
-
-        <div id="rt-list-wrap">
-          <table class="rt-table">
-            <thead><tr><th>Type</th><th>Title / Activity</th><th>Frequency</th><th>Next Generation</th><th>Active</th><th></th></tr></thead>
-            <tbody id="rt-tbody"><tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
       <!-- ── Logbook ─────────────────────────── -->
       <div class="panel" id="panel-logbook">
         <div class="module-premium-hero theme-purple">
@@ -7007,7 +6915,6 @@ async function refreshCurrentPanel() {
   else if (currentPanel === 'kanban') await renderKanban();
   else if (currentPanel === 'gantt') await renderGantt();
   else if (currentPanel === 'matrix') await renderMatrix();
-  else if (currentPanel === 'recurring') await renderRecurring();
   else if (currentPanel === 'logbook') await renderLogbook();
   else if (currentPanel === 'notes') await renderNotes();
   else if (currentPanel === 'todo') await renderTodo();
@@ -7064,11 +6971,7 @@ async function initializeWorkBoardAfterAuth() {
   if (getRole() === 'management') await switchPanel('result', document.getElementById('nsub-result'));
   else await switchPanel('focus', document.getElementById('nsub-focus'));
 
-  generateDueRecurringTasks().then(() => {
-    if (currentPanel === 'schedule') renderSchedule();
-    if (currentPanel === 'focus') renderTodayFocus();
-    if (currentPanel === 'result' && hasManagementAccess()) renderManagementReport();
-  }).catch(() => {});
+  // Recurring Task automatic generation disabled; manual Daily Schedule entries remain unchanged.
   updateDailyProgress();
   loadChatLastRead();
   refreshChatUnreadBadge();
@@ -7184,7 +7087,6 @@ async function switchPanel(id, el) {
     kanban: 'Projects',
     gantt: 'Projects',
     matrix: 'Projects',
-    recurring: 'Projects',
     logbook: 'Logbook',
     notes: 'Notes',
     todo: 'To Do',
@@ -7214,7 +7116,6 @@ async function switchPanel(id, el) {
   else if (id === 'kanban') await renderKanban();
   else if (id === 'gantt') await renderGantt();
   else if (id === 'matrix') await renderMatrix();
-  else if (id === 'recurring') await renderRecurring();
   else if (id === 'logbook') await renderLogbook();
   else if (id === 'notes') await renderNotes();
   else if (id === 'todo') await renderTodo();
@@ -7468,15 +7369,6 @@ const PANEL_LOCAL_SEARCH_CONFIG = {
     mode: 'data', placeholder: 'Search task, source, PIC, notes, or due date...',
     hint: 'Search all quadrants', source: () => matrixCache, display: displayMatrix,
     text: t => [t._title,t._src,t.assignment,t.notes,t.status,t.due_date,t.created_by]
-  },
-  recurring: {
-    mode: 'data', placeholder: 'Search recurring task, destination, frequency, or next run...',
-    hint: 'Search recurring templates', source: () => recurringCache, display: displayRecurringTemplates,
-    text: t => {
-      const d = t.template_data || {};
-      return [t.target_table,t.frequency,t.next_run,t.is_active ? 'active enabled' : 'inactive disabled',
-        d.title,d.subject,d.assignment,d.location,d.notes,d.schedule_duration,d.category];
-    }
   },
   logbook: {
     mode: 'global', placeholder: 'Type any word from the title, full content, tags, date, or attachment...',
@@ -7909,14 +7801,13 @@ function syncLogTypeTabs() {
 }
 
 function hideAllForms() {
-  ['sched-form','log-form','note-form','rt-form','portfolio-form'].forEach(id => {
+  ['sched-form','log-form','note-form','portfolio-form'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
   resetScheduleForm();
   // Draft-enabled forms keep their current values while switching panels.
   resetTrackerForm();
-  resetRecurringForm();
   resetPortfolioForm();
 }
 
@@ -7925,13 +7816,11 @@ async function handleAdd() {
     schedule: 'sched-form',
     logbook: 'log-form',
     notes: 'note-form',
-    recurring: 'rt-form'
   };
   const resetMap = {
     schedule: resetScheduleForm,
     logbook: resetLogForm,
     notes: resetNoteForm,
-    recurring: resetRecurringForm
   };
   const formId = formMap[currentPanel];
   if (formId) {
@@ -7944,7 +7833,6 @@ async function handleAdd() {
       maybeRestoreLogDraft();
     }
     if (willOpen && currentPanel === 'notes') restoreNoteDraft();
-    if (willOpen && currentPanel === 'recurring') resetRecurringForm();
   }
 
 }
@@ -12976,7 +12864,7 @@ function toggleNavGroup(groupId) {
 function openNavGroupForPanel(panelId) {
   const map = {
     schedule: 'ng-daily', logbook: 'ng-daily',
-    portfolio: 'ng-projects', tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects', recurring: 'ng-projects',
+    portfolio: 'ng-projects', tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects',
     notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
     absen: 'ng-hr', adminleave: 'ng-hr',
@@ -15469,7 +15357,7 @@ restoreTodoDraft();
 <script>
 const MOBILE_PANEL_BUCKET = {
   focus:'capture', schedule:'daily', logbook:'daily',
-  portfolio:'projects', tracker:'projects', kanban:'projects', gantt:'projects', matrix:'projects', recurring:'projects',
+  portfolio:'projects', tracker:'projects', kanban:'projects', gantt:'projects', matrix:'projects',
   result:'report',
   brain:'capture', followup:'capture'
 };
