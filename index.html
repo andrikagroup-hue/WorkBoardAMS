@@ -8508,10 +8508,11 @@ async function renderSchedule() {
   let _s, _se;
   try { ({data:_s,error:_se} = await withTimeout(sb.from('schedule_events').select('*').eq('event_date',scheduleDate).order('time_start'))); }
   catch(e) { document.getElementById('sched-grid').innerHTML='<div class="empty-msg" style="color:#e53e3e">⚠️ '+e.message+'</div>'; return; }
-  const data = applyPrivacy(_s); const error = _se;
-  scheduleEvents = data || [];
-  document.getElementById('badge-sched').textContent = (data || []).length;
-  displaySchedule(data || []);
+  const data = (applyPrivacy(_s) || []).filter(e => !e.recurring_template_id);
+  const error = _se;
+  scheduleEvents = data;
+  document.getElementById('badge-sched').textContent = data.length;
+  displaySchedule(data);
   reapplyPanelSearch('schedule');
   renderScheduleWeekGlance(scheduleDate);
 }
@@ -8563,7 +8564,7 @@ async function renderScheduleWeekGlance(baseDateStr) {
   let data = [];
   try {
     const { data: rows } = await withTimeout(sb.from('schedule_events').select('*').gte('event_date', startStr).lte('event_date', endStr).order('time_start'));
-    data = applyPrivacy(rows) || [];
+    data = (applyPrivacy(rows) || []).filter(e => !e.recurring_template_id);
   } catch (e) { /* biarkan kosong kalau gagal, jangan blokir panel utama */ }
   listEl.innerHTML = days.map(d => {
     const dStr = toStr(d);
