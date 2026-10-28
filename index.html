@@ -15850,26 +15850,44 @@ const AMS_ATTENDANCE_RADIUS_METERS = 100; // batas radius absensi dari titik kan
 function getGPS() {
   return new Promise((resolve, reject) => {
     if (!window.isSecureContext && location.hostname !== 'localhost') {
-      return reject(new Error('GPS memerlukan koneksi HTTPS. Buka WorkBoard melalui alamat HTTPS.'));
+      reject(new Error('GPS memerlukan koneksi HTTPS. Buka WorkBoard melalui alamat HTTPS.'));
+      return;
     }
     if (!navigator.geolocation) {
-      return reject(new Error('Perangkat/browser ini tidak mendukung GPS lokasi.'));
+      reject(new Error('Browser ini tidak mendukung pengambilan lokasi. Buka WorkBoard di Chrome/Edge dan izinkan Location.'));
+      return;
     }
+
+    const toCoordinates = pos => ({
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      accuracy: pos.coords.accuracy
+    });
+
+    // Percobaan pertama memakai GPS akurasi tinggi dengan waktu tunggu lebih panjang.
     navigator.geolocation.getCurrentPosition(
-      pos => resolve({
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        accuracy: pos.coords.accuracy
-      }),
+      pos => resolve(toCoordinates(pos)),
       err => {
-        const messages = {
-          1: 'Izin lokasi ditolak. Aktifkan Location permission untuk WorkBoard, lalu coba lagi.',
-          2: 'Lokasi perangkat tidak tersedia. Aktifkan GPS dan coba di area terbuka.',
-          3: 'Pengambilan GPS melewati batas waktu. Coba lagi.'
-        };
-        reject(new Error(messages[err.code] || 'Gagal membaca GPS perangkat.'));
+        if (err.code === 1) {
+          reject(new Error('Izin lokasi ditolak. Aktifkan Location permission untuk situs WorkBoard di pengaturan browser, lalu coba lagi.'));
+          return;
+        }
+
+        // Fallback: gunakan lokasi jaringan/Wi-Fi jika GPS akurasi tinggi timeout/tidak tersedia.
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve(toCoordinates(pos)),
+          fallbackErr => {
+            const messages = {
+              1: 'Izin lokasi ditolak. Aktifkan Location permission untuk situs WorkBoard di pengaturan browser.',
+              2: 'Lokasi perangkat belum tersedia. Aktifkan Location Services pada Windows, izinkan lokasi untuk browser, lalu coba di dekat jendela atau area terbuka.',
+              3: 'GPS belum merespons setelah dua percobaan. Aktifkan Location Services Windows dan izin lokasi browser, lalu coba lagi.'
+            };
+            reject(new Error(messages[fallbackErr.code] || 'Gagal membaca lokasi perangkat.'));
+          },
+          { enableHighAccuracy: false, timeout: 25000, maximumAge: 15000 }
+        );
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
     );
   });
 }
