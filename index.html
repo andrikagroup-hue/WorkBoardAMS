@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v136 — Resources UX Premium — 21 Aug 2026 -->
+<!-- WorkBoard AMS v136 — Intranet preparation — 24 Oct 2026 -->
 
 <html lang="en">
 <head>
@@ -3847,6 +3847,9 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
 #panel-matrix .matrix-quad-header { font-family:var(--wb-font-heading,'Plus Jakarta Sans',sans-serif); font-weight:800; }
 #panel-matrix .matrix-card { border-radius:13px; padding:12px; background:rgba(255,255,255,.92); box-shadow:0 6px 14px rgba(45,58,54,.055); }
 
+/* ---------- Recurring ---------- */
+#panel-recurring .form-box { border-radius:18px; }
+#panel-recurring .rt-table { border-radius:16px; overflow:hidden; box-shadow:0 8px 20px rgba(45,58,54,.045); }
 
 /* ---------- Logbook ---------- */
 #panel-logbook .binder-tabs-row { gap:7px; }
@@ -4508,6 +4511,10 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
           <button class="nav-sub-item" id="nsub-notes" onclick="switchPanel('notes',this)">
             <i class="ti ti-notes"></i> Notes
             <span class="nav-badge badge-blue" id="badge-notes">0</span>
+          </button>
+          <button class="nav-sub-item" id="nsub-todo" onclick="switchPanel('todo',this)">
+            <i class="ti ti-checkbox"></i> To Do
+            <span class="nav-badge badge-blue" id="badge-todo">0</span>
           </button>
           <button class="nav-sub-item" id="nsub-notepad" onclick="switchPanel('notepad',this)">
             <i class="ti ti-notebook"></i> Notepad
@@ -5446,6 +5453,95 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
         </div>
         <div class="matrix-grid" id="matrix-grid">
           <div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading Decision Matrix...</div>
+        </div>
+      </div>
+
+      <!-- ── Recurring Task ──────────────────── -->
+      <div class="panel" id="panel-recurring">
+        <div class="module-premium-hero theme-teal">
+          <div class="module-premium-icon"><i class="ti ti-repeat"></i></div>
+          <div class="module-premium-copy">
+            <div class="module-premium-eyebrow">Routine system</div>
+            <div class="module-premium-title">Recurring Tasks</div>
+            <div class="module-premium-sub">Keep repeat work consistent without rebuilding the same task every time.</div>
+          </div>
+        </div>
+        <div id="rt-migration-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
+          ⚠️ <strong>Setup required:</strong> The <code>recurring_templates</code> table doesn't exist in the database yet. Run the SQL provided in chat in the <a href="https://supabase.com/dashboard/project/xcmpsmydlgtvegqtokez/sql/new" target="_blank" style="color:#b45309;font-weight:600">Supabase SQL Editor</a>, then refresh the page.
+          <button onclick="document.getElementById('rt-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e;display:block">Close</button>
+        </div>
+
+        <div class="panel-add-toolbar">
+          <button class="btn-sm btn-primary" onclick="handleAdd()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Add Recurring Task
+          </button>
+        </div>
+        <div class="form-box" id="rt-form" style="display:none">
+          <div class="log-form-grid">
+            <div class="log-form-col">
+              <label class="log-form-label">Type</label>
+              <select id="rt-target" onchange="toggleRecurringFieldsVisibility()">
+                <option value="schedule">📅 Daily Schedule</option>
+                <option value="tracker">📋 Time Plan Tracker</option>
+              </select>
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Frequency</label>
+              <select id="rt-frequency">
+                <option value="daily">Daily</option>
+                <option value="weekly" selected>Weekly</option>
+                <option value="biweekly">Biweekly</option>
+                <option value="monthly4week">Every 4 Weeks</option>
+                <option value="monthly">Monthly</option>
+                <option value="bimonthly">Every 2 Months</option>
+                <option value="quarterly">Quarterly (3 Months)</option>
+                <option value="biannual">Biannual (6 Months)</option>
+                <option value="annual">Annual</option>
+              </select>
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Start Date</label>
+              <input type="date" id="rt-start-date" />
+            </div>
+            <div class="log-form-col">
+              <label class="log-form-label">Privacy</label>
+              <select id="rt-privacy">
+                <option value="false">🌐 Public</option>
+                <option value="true">🔒 Private</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="rt-fields-schedule" class="form-row" style="margin-top:8px">
+            <input id="rt-sch-time" type="time" value="08:00" style="max-width:110px" />
+            <input id="rt-sch-title" placeholder="Recurring activity title..." style="flex:2" />
+            <input id="rt-sch-loc" placeholder="Location / platform" />
+            <select id="rt-sch-cat">
+              <option value="blue">🔵 General</option>
+              <option value="amber">🟡 Important</option>
+              <option value="green">🟢 Done</option>
+              <option value="purple">🟣 Meeting</option>
+              <option value="red">🔴 Urgent</option>
+            </select>
+          </div>
+          <div id="rt-fields-tracker" class="form-row" style="margin-top:8px;display:none">
+            <input id="rt-trk-subject" placeholder="Recurring activity / subject..." style="flex:2" />
+            <input id="rt-trk-assign" placeholder="PIC / Assignment" />
+            <input id="rt-trk-schedule" placeholder="Schedule (e.g: 3-5 days)" />
+            <input id="rt-trk-notes" placeholder="Notes..." style="flex:2" />
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-sm" onclick="closeRecurringForm()">Cancel</button>
+            <button class="btn-sm btn-primary" id="rt-save-btn" onclick="saveRecurringTemplate()">Save Template</button>
+          </div>
+        </div>
+
+        <div id="rt-list-wrap">
+          <table class="rt-table">
+            <thead><tr><th>Type</th><th>Title / Activity</th><th>Frequency</th><th>Next Generation</th><th>Active</th><th></th></tr></thead>
+            <tbody id="rt-tbody"><tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading...</td></tr></tbody>
+          </table>
         </div>
       </div>
 
@@ -6700,8 +6796,19 @@ async function authGoogle(mode = 'login') {
   } else {
     localStorage.removeItem('wb_oauth_onboarding');
   }
-  const { error } = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:authRedirectUrl() } });
-  if (error) setAuthMessage(error.message || 'Google sign in failed.', 'error');
+  const { data, error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: authRedirectUrl() }
+  });
+  if (error) {
+    setAuthMessage('Google OAuth gagal: ' + (error.message || 'Periksa konfigurasi Google provider di Supabase.'), 'error');
+    return;
+  }
+  // Supabase normally redirects the browser. If no redirect URL is returned,
+  // surface a clear configuration hint instead of leaving the user guessing.
+  if (!data?.url) {
+    setAuthMessage('Google OAuth belum mengembalikan URL login. Periksa apakah Google provider aktif di Supabase.', 'error');
+  }
 }
 async function authCompleteOnboarding() {
   const name = (document.getElementById('auth-onboarding-name')?.value || '').trim();
@@ -6915,6 +7022,7 @@ async function refreshCurrentPanel() {
   else if (currentPanel === 'kanban') await renderKanban();
   else if (currentPanel === 'gantt') await renderGantt();
   else if (currentPanel === 'matrix') await renderMatrix();
+  else if (currentPanel === 'recurring') await renderRecurring();
   else if (currentPanel === 'logbook') await renderLogbook();
   else if (currentPanel === 'notes') await renderNotes();
   else if (currentPanel === 'todo') await renderTodo();
@@ -6971,7 +7079,8 @@ async function initializeWorkBoardAfterAuth() {
   if (getRole() === 'management') await switchPanel('result', document.getElementById('nsub-result'));
   else await switchPanel('focus', document.getElementById('nsub-focus'));
 
-  // Recurring Task automatic generation disabled; manual Daily Schedule entries remain unchanged.
+  // Recurring Task automation is intentionally paused for the AMS intranet rollout.
+  // Keep historical templates and occurrences untouched; do not create or update records here.
   updateDailyProgress();
   loadChatLastRead();
   refreshChatUnreadBadge();
@@ -7087,6 +7196,7 @@ async function switchPanel(id, el) {
     kanban: 'Projects',
     gantt: 'Projects',
     matrix: 'Projects',
+    recurring: 'Projects',
     logbook: 'Logbook',
     notes: 'Notes',
     todo: 'To Do',
@@ -7116,6 +7226,7 @@ async function switchPanel(id, el) {
   else if (id === 'kanban') await renderKanban();
   else if (id === 'gantt') await renderGantt();
   else if (id === 'matrix') await renderMatrix();
+  else if (id === 'recurring') await renderRecurring();
   else if (id === 'logbook') await renderLogbook();
   else if (id === 'notes') await renderNotes();
   else if (id === 'todo') await renderTodo();
@@ -7369,6 +7480,15 @@ const PANEL_LOCAL_SEARCH_CONFIG = {
     mode: 'data', placeholder: 'Search task, source, PIC, notes, or due date...',
     hint: 'Search all quadrants', source: () => matrixCache, display: displayMatrix,
     text: t => [t._title,t._src,t.assignment,t.notes,t.status,t.due_date,t.created_by]
+  },
+  recurring: {
+    mode: 'data', placeholder: 'Search recurring task, destination, frequency, or next run...',
+    hint: 'Search recurring templates', source: () => recurringCache, display: displayRecurringTemplates,
+    text: t => {
+      const d = t.template_data || {};
+      return [t.target_table,t.frequency,t.next_run,t.is_active ? 'active enabled' : 'inactive disabled',
+        d.title,d.subject,d.assignment,d.location,d.notes,d.schedule_duration,d.category];
+    }
   },
   logbook: {
     mode: 'global', placeholder: 'Type any word from the title, full content, tags, date, or attachment...',
@@ -7801,13 +7921,14 @@ function syncLogTypeTabs() {
 }
 
 function hideAllForms() {
-  ['sched-form','log-form','note-form','portfolio-form'].forEach(id => {
+  ['sched-form','log-form','note-form','rt-form','portfolio-form'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
   resetScheduleForm();
   // Draft-enabled forms keep their current values while switching panels.
   resetTrackerForm();
+  resetRecurringForm();
   resetPortfolioForm();
 }
 
@@ -7816,11 +7937,13 @@ async function handleAdd() {
     schedule: 'sched-form',
     logbook: 'log-form',
     notes: 'note-form',
+    recurring: 'rt-form'
   };
   const resetMap = {
     schedule: resetScheduleForm,
     logbook: resetLogForm,
     notes: resetNoteForm,
+    recurring: resetRecurringForm
   };
   const formId = formMap[currentPanel];
   if (formId) {
@@ -7833,6 +7956,7 @@ async function handleAdd() {
       maybeRestoreLogDraft();
     }
     if (willOpen && currentPanel === 'notes') restoreNoteDraft();
+    if (willOpen && currentPanel === 'recurring') resetRecurringForm();
   }
 
 }
@@ -8508,11 +8632,10 @@ async function renderSchedule() {
   let _s, _se;
   try { ({data:_s,error:_se} = await withTimeout(sb.from('schedule_events').select('*').eq('event_date',scheduleDate).order('time_start'))); }
   catch(e) { document.getElementById('sched-grid').innerHTML='<div class="empty-msg" style="color:#e53e3e">⚠️ '+e.message+'</div>'; return; }
-  const data = (applyPrivacy(_s) || []).filter(e => !e.recurring_template_id);
-  const error = _se;
-  scheduleEvents = data;
-  document.getElementById('badge-sched').textContent = data.length;
-  displaySchedule(data);
+  const data = applyPrivacy(_s); const error = _se;
+  scheduleEvents = data || [];
+  document.getElementById('badge-sched').textContent = (data || []).length;
+  displaySchedule(data || []);
   reapplyPanelSearch('schedule');
   renderScheduleWeekGlance(scheduleDate);
 }
@@ -8564,7 +8687,7 @@ async function renderScheduleWeekGlance(baseDateStr) {
   let data = [];
   try {
     const { data: rows } = await withTimeout(sb.from('schedule_events').select('*').gte('event_date', startStr).lte('event_date', endStr).order('time_start'));
-    data = (applyPrivacy(rows) || []).filter(e => !e.recurring_template_id);
+    data = applyPrivacy(rows) || [];
   } catch (e) { /* biarkan kosong kalau gagal, jangan blokir panel utama */ }
   listEl.innerHTML = days.map(d => {
     const dStr = toStr(d);
@@ -9160,9 +9283,8 @@ function displayGantt(allData) {
 }
 
 // ── Recurring Task ──────────────────────────────────────────────
-// Template disimpan di tabel recurring_templates. Setiap kali app dibuka (sekali per hari),
-// generateDueRecurringTasks() cek template yang jadwalnya sudah lewat/hari ini, lalu bikin
-// entri asli otomatis di Daily Schedule / Time Plan Tracker, dan majukan next_run.
+// Legacy Recurring Task code is retained for historical compatibility.
+// Automatic generation is paused for the AMS intranet rollout; historical data is not changed.
 const RT_FREQ_LABEL = {
   daily: 'Daily', weekly: 'Weekly', biweekly: 'Biweekly', monthly4week: 'Every 4 Weeks',
   monthly: 'Monthly', bimonthly: 'Every 2 Months', quarterly: 'Quarterly', biannual: 'Biannual', annual: 'Annual'
@@ -9423,28 +9545,11 @@ async function generateOneRecurringOccurrence(tpl, dateStr) {
 // template aktif yang next_run-nya sudah jatuh tempo, generate entri asli, lalu majukan next_run.
 // Kalau app sempat beberapa hari tidak dibuka, ini otomatis "kejar" semua tanggal yang terlewat.
 async function generateDueRecurringTasks() {
-  const todayKey = todayStr();
-  let lastCheck;
-  try { lastCheck = localStorage.getItem('wb_recurring_last_check'); } catch (e) { lastCheck = null; }
-  if (lastCheck === todayKey) return;
-  try {
-    const { data: templates, error } = await sb.from('recurring_templates')
-      .select('*').eq('is_active', true).lte('next_run', todayKey);
-    if (!error && templates && templates.length) {
-      const manageableTemplates = templates.filter(canModifySharedRow);
-      for (const tpl of manageableTemplates) {
-        let nextRun = tpl.next_run;
-        let guard = 0;
-        while (nextRun <= todayKey && guard < 60) {
-          await generateOneRecurringOccurrence(tpl, nextRun);
-          nextRun = computeNextRunDate(nextRun, tpl.frequency);
-          guard++;
-        }
-        await sb.from('recurring_templates').update({ next_run: nextRun }).eq('id', tpl.id);
-      }
-    }
-  } catch (e) { /* diamkan — jangan sampai bikin app gagal load cuma karena ini */ }
-  try { localStorage.setItem('wb_recurring_last_check', todayKey); } catch (e) {}
+  // Intentionally disabled for the AMS intranet rollout.
+  // This legacy function remains as a no-op for compatibility with any old caller.
+  // Do not read recurring_templates, create schedule_events/time_plan_tracker rows,
+  // or advance next_run until recurring automation is explicitly re-approved.
+  return false;
 }
 
 async function renderProjectTracker() {
@@ -10660,7 +10765,8 @@ async function organizeBrainItem(id, mode) {
   let text='[Today] '+raw, due=todayStr();
   if (mode==='followup') text='[Follow Up] '+raw;
   if (mode==='waiting') { text='[Waiting] '+raw; due=null; }
-  const {error:updateError}=await sb.from('todos').update({text,due_date:due,is_private:false}).eq('id',id);
+  // Preserve the item's existing privacy; organizing an Inbox item must not silently share it.
+  const {error:updateError}=await sb.from('todos').update({text,due_date:due,is_private:data.is_private}).eq('id',id);
   if (updateError) return alert('Failed: '+updateError.message);
   await renderBrainDump();
   await renderTodayFocus();
@@ -11498,7 +11604,8 @@ async function toggleTodo(id, isDone) {
 }
 
 async function delTodo(id) {
-  await sb.from('todos').delete().eq('id', id);
+  const {error}=await sb.from('todos').delete().eq('id', id);
+  if(error) return alert('Failed to delete task: '+error.message);
   await renderTodo();
 }
 
@@ -12865,7 +12972,7 @@ function toggleNavGroup(groupId) {
 function openNavGroupForPanel(panelId) {
   const map = {
     schedule: 'ng-daily', logbook: 'ng-daily',
-    portfolio: 'ng-projects', tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects',
+    portfolio: 'ng-projects', tracker: 'ng-projects', kanban: 'ng-projects', gantt: 'ng-projects', matrix: 'ng-projects', recurring: 'ng-projects',
     notes: 'ng-tasks', todo: 'ng-tasks', notepad: 'ng-tasks',
     chat: 'ng-comm',
     absen: 'ng-hr', adminleave: 'ng-hr',
@@ -15330,7 +15437,7 @@ restoreTodoDraft();
         <div class="mobile-hub-label">Personal</div>
         <div class="mobile-hub-grid">
           <button class="mobile-hub-item" onclick="mobileHubNavigate('notes')"><i class="ti ti-notes"></i><span>Notes<small>Private reference notes</small></span></button>
-          <button class="mobile-hub-item" style="display:none" aria-hidden="true" tabindex="-1" onclick="mobileHubNavigate('todo')"><i class="ti ti-checkbox"></i><span>To Do<small>Full task list</small></span></button>
+          <button class="mobile-hub-item" onclick="mobileHubNavigate('todo')"><i class="ti ti-checkbox"></i><span>To Do<small>Full task list</small></span></button>
           <button class="mobile-hub-item" onclick="mobileHubNavigate('notepad')"><i class="ti ti-notebook"></i><span>Notepad<small>Long-form writing</small></span></button>
         </div>
       </div>
@@ -15358,7 +15465,7 @@ restoreTodoDraft();
 <script>
 const MOBILE_PANEL_BUCKET = {
   focus:'capture', schedule:'daily', logbook:'daily',
-  portfolio:'projects', tracker:'projects', kanban:'projects', gantt:'projects', matrix:'projects',
+  portfolio:'projects', tracker:'projects', kanban:'projects', gantt:'projects', matrix:'projects', recurring:'projects',
   result:'report',
   brain:'capture', followup:'capture'
 };
@@ -15579,11 +15686,21 @@ BEGIN
     RAISE EXCEPTION 'A valid Clock In and Clock Out are required.';
   END IF;
 
-  IF NEW.lat_out IS NOT NULL AND (NEW.lat_out < -90 OR NEW.lat_out > 90) THEN
+  IF NEW.lat_out IS NULL OR NEW.lng_out IS NULL THEN
+    RAISE EXCEPTION 'GPS location is required for Clock Out.';
+  END IF;
+  IF NEW.lat_out < -90 OR NEW.lat_out > 90 THEN
     RAISE EXCEPTION 'Invalid clock-out latitude.';
   END IF;
-  IF NEW.lng_out IS NOT NULL AND (NEW.lng_out < -180 OR NEW.lng_out > 180) THEN
+  IF NEW.lng_out < -180 OR NEW.lng_out > 180 THEN
     RAISE EXCEPTION 'Invalid clock-out longitude.';
+  END IF;
+  IF 6371000 * 2 * asin(sqrt(least(1.0,
+       power(sin(radians(NEW.lat_out - (-6.2336263)) / 2), 2)
+       + cos(radians(-6.2336263)) * cos(radians(NEW.lat_out))
+       * power(sin(radians(NEW.lng_out - 106.6790673) / 2), 2)
+     ))) > 100 THEN
+    RAISE EXCEPTION 'Clock Out is only allowed within 100 meters of the AMS office.';
   END IF;
 
   -- Use database time so a browser cannot rewrite the official Clock Out timestamp.
@@ -15627,8 +15744,18 @@ BEGIN
   IF coalesce(trim(v_name), '') = '' THEN
     RAISE EXCEPTION 'WorkBoard profile name is unavailable.';
   END IF;
-  IF p_lat IS NOT NULL AND (p_lat < -90 OR p_lat > 90) THEN RAISE EXCEPTION 'Invalid latitude.'; END IF;
-  IF p_lng IS NOT NULL AND (p_lng < -180 OR p_lng > 180) THEN RAISE EXCEPTION 'Invalid longitude.'; END IF;
+  IF p_lat IS NULL OR p_lng IS NULL THEN
+    RAISE EXCEPTION 'GPS location is required for Clock In.';
+  END IF;
+  IF p_lat < -90 OR p_lat > 90 THEN RAISE EXCEPTION 'Invalid latitude.'; END IF;
+  IF p_lng < -180 OR p_lng > 180 THEN RAISE EXCEPTION 'Invalid longitude.'; END IF;
+  IF 6371000 * 2 * asin(sqrt(least(1.0,
+       power(sin(radians(p_lat - (-6.2336263)) / 2), 2)
+       + cos(radians(-6.2336263)) * cos(radians(p_lat))
+       * power(sin(radians(p_lng - 106.6790673) / 2), 2)
+     ))) > 100 THEN
+    RAISE EXCEPTION 'Clock In is only allowed within 100 meters of the AMS office.';
+  END IF;
 
   v_local := v_now AT TIME ZONE 'Asia/Jakarta';
   v_date := v_local::date;
@@ -15715,16 +15842,56 @@ function absenStatusColor(status) {
   return map[status] || '#94A3B8';
 }
 
-// Get GPS koordinat
+// Referensi kantor AMS dari pin Google Maps yang diberikan Ratu.
+const AMS_OFFICE_LOCATION = Object.freeze({ lat: -6.2336263, lng: 106.6790673 });
+const AMS_ATTENDANCE_RADIUS_METERS = 100; // batas radius absensi dari titik kantor
+
+// Ambil GPS aktual perangkat. Absensi ditolak bila GPS tidak tersedia/diizinkan.
 function getGPS() {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) return resolve({lat: null, lng: null});
+  return new Promise((resolve, reject) => {
+    if (!window.isSecureContext && location.hostname !== 'localhost') {
+      return reject(new Error('GPS memerlukan koneksi HTTPS. Buka WorkBoard melalui alamat HTTPS.'));
+    }
+    if (!navigator.geolocation) {
+      return reject(new Error('Perangkat/browser ini tidak mendukung GPS lokasi.'));
+    }
     navigator.geolocation.getCurrentPosition(
-      pos => resolve({lat: pos.coords.latitude, lng: pos.coords.longitude}),
-      () => resolve({lat: null, lng: null}),
-      {timeout: 8000}
+      pos => resolve({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy
+      }),
+      err => {
+        const messages = {
+          1: 'Izin lokasi ditolak. Aktifkan Location permission untuk WorkBoard, lalu coba lagi.',
+          2: 'Lokasi perangkat tidak tersedia. Aktifkan GPS dan coba di area terbuka.',
+          3: 'Pengambilan GPS melewati batas waktu. Coba lagi.'
+        };
+        reject(new Error(messages[err.code] || 'Gagal membaca GPS perangkat.'));
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
+}
+
+function distanceFromAmsOfficeMeters(lat, lng) {
+  const rad = value => value * Math.PI / 180;
+  const dLat = rad(lat - AMS_OFFICE_LOCATION.lat);
+  const dLng = rad(lng - AMS_OFFICE_LOCATION.lng);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(rad(AMS_OFFICE_LOCATION.lat)) * Math.cos(rad(lat)) * Math.sin(dLng / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function getVerifiedOfficeGPS() {
+  const gps = await getGPS();
+  const distance = distanceFromAmsOfficeMeters(gps.lat, gps.lng);
+  if (distance > AMS_ATTENDANCE_RADIUS_METERS) {
+    throw new Error(
+      `Absensi hanya dapat dilakukan di area kantor AMS. Lokasi perangkat terdeteksi sekitar ${Math.round(distance)} meter dari titik kantor (batas ${AMS_ATTENDANCE_RADIUS_METERS} meter).`
+    );
+  }
+  return gps;
 }
 
 // Ambil foto selfie via kamera
@@ -15925,8 +16092,15 @@ async function _doClockInProcess(user, now, today, terlambatMenit, status, keter
   const btnEl = document.getElementById('absen-action-btns');
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Taking selfie...</span>';
   const foto = await takeSelfie();
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Getting GPS location...</span>';
-  const gps = await getGPS();
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Verifying GPS and office area...</span>';
+  let gps;
+  try {
+    gps = await getVerifiedOfficeGPS();
+  } catch (e) {
+    alert(e.message || 'Lokasi kantor tidak dapat diverifikasi. Absensi tidak disimpan.');
+    cancelClockIn();
+    return;
+  }
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Saving...</span>';
 
   let note = keterangan || null;
@@ -15968,8 +16142,15 @@ async function doClockOut(recordId) {
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Taking selfie...</span>';
 
   const foto = await takeSelfie();
-  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Getting GPS location...</span>';
-  const gps = await getGPS();
+  btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Verifying GPS and office area...</span>';
+  let gps;
+  try {
+    gps = await getVerifiedOfficeGPS();
+  } catch (e) {
+    alert(e.message || 'Lokasi kantor tidak dapat diverifikasi. Clock Out tidak disimpan.');
+    await renderAbsen();
+    return;
+  }
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">💾 Saving...</span>';
 
   const { data: updatedRow, error } = await withTimeout(sb.from('attendance').update({
