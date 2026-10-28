@@ -4358,6 +4358,34 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
   #panel-passvault .pass-card { min-height:0; }
   .vault-result-count { align-self:flex-start; }
 }
+
+/* ── KPI Dashboard ───────────────────────────── */
+.kpi-intro-note{padding:12px 14px;margin:0 0 12px;background:#F7F1E7;border:1px solid #DED1BC;border-radius:10px;color:#66563E;font-size:11.5px;line-height:1.55}
+.kpi-role-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.kpi-role-btn{border:1px solid var(--border2);border-radius:999px;background:var(--surface);color:var(--text2);padding:9px 13px;font-size:12px;font-weight:750;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.kpi-role-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.kpi-role-panel{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:12px}
+.kpi-role-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.kpi-role-title{font-size:17px;font-weight:850;color:var(--text1)}
+.kpi-role-sub{font-size:11.5px;color:var(--text2);margin-top:4px;line-height:1.5}
+.kpi-period-chip{font-size:10px;font-weight:800;background:#EEF3F6;color:#375665;border-radius:999px;padding:5px 9px;white-space:nowrap}
+.kpi-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:14px}
+.kpi-stat-card{background:#F4F1EC;border:1px solid #DED6C8;border-radius:9px;padding:11px;min-width:0}
+.kpi-stat-card:nth-child(2){background:#EEF3F6;border-color:#C8D6DE}.kpi-stat-card:nth-child(3){background:#EFF5EE;border-color:#C9D8C5}.kpi-stat-card:nth-child(4){background:#F8EEF1;border-color:#E1C8CF}
+.kpi-stat-card span{display:block;font-size:10px;color:var(--text2);font-weight:750;text-transform:uppercase;letter-spacing:.03em}
+.kpi-stat-card strong{display:block;font-size:17px;color:var(--text1);margin-top:5px;line-height:1.3}
+.kpi-stat-card small{display:block;font-size:10px;color:var(--text3);margin-top:4px;line-height:1.4}
+.kpi-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:9px}
+.kpi-table{width:100%;border-collapse:collapse;min-width:760px;background:#fff}
+.kpi-table th{background:#2F6364;color:#fff;text-align:left;padding:10px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.kpi-table td{padding:10px;border-bottom:1px solid #EAE5DC;font-size:11px;vertical-align:top;line-height:1.45;color:var(--text2)}
+.kpi-table tr:last-child td{border-bottom:none}.kpi-table tbody tr:nth-child(even){background:#FAF8F4}
+.kpi-table td:first-child{min-width:175px;color:var(--text1)}.kpi-table td strong{font-size:11.5px}.kpi-table td small{display:block;font-size:10px;color:var(--text3);margin-top:3px}
+.kpi-success-note{margin-top:12px;padding:11px 13px;background:#EFF5EE;border:1px solid #C9D8C5;border-radius:9px;color:#416044;font-size:11px;line-height:1.5}
+.kpi-footer-note{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:10px 2px;font-size:10.5px;color:var(--text3);line-height:1.5}
+.kpi-footer-note i{font-size:15px;flex-shrink:0}
+@media(max-width:760px){.kpi-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi-role-head{flex-direction:column}.kpi-period-chip{white-space:normal}}
+
 </style>
 
 </head>
@@ -4826,6 +4854,66 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
         <span class="project-workspace-label">Projects</span>
         <button class="project-tab" data-project-view="portfolio" onclick="switchProjectView('portfolio')"><i class="ti ti-briefcase"></i> Portfolio</button>
         <button class="project-tab" data-project-view="tracker" onclick="switchProjectView('tracker')"><i class="ti ti-clock"></i> Tracker</button>
+        <button class="project-tab" data-project-view="kpi" onclick="switchProjectView('kpi')"><i class="ti ti-chart-bar"></i> KPI Dashboard</button>
+      </div>
+
+
+      <!-- ── KPI Dashboard: Marketing Roles ──────────────── -->
+      <div class="panel" id="panel-kpi">
+        <div class="module-premium-hero theme-blue">
+          <div class="module-premium-icon"><i class="ti ti-chart-bar"></i></div>
+          <div class="module-premium-copy">
+            <div class="module-premium-eyebrow">Performance & outcomes</div>
+            <div class="module-premium-title">KPI Dashboard — Marketing</div>
+            <div class="module-premium-sub">Target, measurement formula, weight, and review cadence for B2B Marketing and Admin Digital Marketing.</div>
+          </div>
+        </div>
+        <div class="kpi-intro-note"><strong>Scoring method:</strong> Achievement (%) = actual ÷ target × 100. Weighted score = achievement capped at 120% × KPI weight. Total role score = sum of weighted scores. Review monthly; targets below are proposed starting points and should be calibrated after the first month of baseline data.</div>
+        <div class="kpi-role-tabs" role="tablist" aria-label="KPI role">
+          <button type="button" class="kpi-role-btn active" data-kpi-role="b2b" onclick="switchKpiRole('b2b')"><i class="ti ti-target-arrow"></i> B2B Marketing</button>
+          <button type="button" class="kpi-role-btn" data-kpi-role="admin" onclick="switchKpiRole('admin')"><i class="ti ti-device-desktop-analytics"></i> Admin Digital Marketing</button>
+        </div>
+        <section class="kpi-role-panel" id="kpi-role-b2b">
+          <div class="kpi-role-head"><div><div class="kpi-role-title">B2B Marketing</div><div class="kpi-role-sub">Fokus: prospecting, qualified leads, sales pipeline, follow-up, dan kontribusi penjualan.</div></div><span class="kpi-period-chip">Review bulanan</span></div>
+          <div class="kpi-stat-grid">
+            <div class="kpi-stat-card"><span>Prospek baru</span><strong>≥ 40 / bulan</strong><small>Target awal</small></div>
+            <div class="kpi-stat-card"><span>Qualified leads</span><strong>≥ 12 / bulan</strong><small>Sesuai ICP dan kebutuhan terverifikasi</small></div>
+            <div class="kpi-stat-card"><span>Meeting / konsultasi</span><strong>≥ 4 / bulan</strong><small>Dengan calon pelanggan relevan</small></div>
+            <div class="kpi-stat-card"><span>Follow-up tepat waktu</span><strong>≥ 90%</strong><small>Semua follow-up jatuh tempo</small></div>
+          </div>
+          <div class="kpi-table-wrap"><table class="kpi-table"><thead><tr><th>KPI</th><th>Target awal</th><th>Pengukuran</th><th>Bobot</th><th>Frekuensi</th></tr></thead><tbody>
+            <tr><td><strong>Prospecting & outreach</strong><small>Daftar prospek yang relevan dan terhubung</small></td><td>40 prospek baru/bulan</td><td>Jumlah prospek baru yang tercatat dengan perusahaan dan PIC</td><td>15%</td><td>Mingguan</td></tr>
+            <tr><td><strong>Qualified leads</strong><small>Kebutuhan, kecocokan, dan PIC teridentifikasi</small></td><td>12 lead/bulan</td><td>Lead yang memenuhi kriteria kualifikasi AMS</td><td>20%</td><td>Mingguan</td></tr>
+            <tr><td><strong>Meeting / konsultasi</strong></td><td>4 meeting/bulan</td><td>Meeting terlaksana dengan prospek yang relevan</td><td>15%</td><td>Bulanan</td></tr>
+            <tr><td><strong>Quotation / proposal support</strong></td><td>≥ 4/bulan atau sesuai lead</td><td>Penawaran yang diminta dan dikirim sesuai kebutuhan prospek</td><td>10%</td><td>Bulanan</td></tr>
+            <tr><td><strong>Follow-up discipline</strong></td><td>≥ 90% tepat waktu</td><td>Follow-up selesai tepat waktu ÷ follow-up yang jatuh tempo × 100%</td><td>15%</td><td>Mingguan</td></tr>
+            <tr><td><strong>Pipeline value</strong></td><td>Target ditetapkan bersama atasan</td><td>Total nilai peluang aktif yang punya nilai, tahap, dan next action</td><td>10%</td><td>Bulanan</td></tr>
+            <tr><td><strong>Conversion to order</strong></td><td>Baseline bulan 1; naik bertahap</td><td>Peluang menjadi order ÷ peluang yang diputuskan × 100%</td><td>10%</td><td>Bulanan</td></tr>
+            <tr><td><strong>CRM / activity reporting</strong></td><td>100% data inti terisi</td><td>Kelengkapan update prospek, PIC, status, hasil, dan next action</td><td>5%</td><td>Mingguan</td></tr>
+          </tbody></table></div>
+          <div class="kpi-success-note"><strong>Definisi hasil:</strong> KPI menilai aktivitas yang menghasilkan peluang bisnis, bukan sekadar jumlah pesan terkirim. Order/revenue dievaluasi bersama siklus penjualan dan kontribusi tim.</div>
+        </section>
+        <section class="kpi-role-panel" id="kpi-role-admin" style="display:none">
+          <div class="kpi-role-head"><div><div class="kpi-role-title">Admin Digital Marketing</div><div class="kpi-role-sub">Fokus: konsistensi konten, kualitas publikasi, performa kanal digital, leads, dan pelaporan.</div></div><span class="kpi-period-chip">Review bulanan</span></div>
+          <div class="kpi-stat-grid">
+            <div class="kpi-stat-card"><span>Konten terbit</span><strong>≥ 12 / bulan</strong><small>Target awal lintas kanal</small></div>
+            <div class="kpi-stat-card"><span>On-time publishing</span><strong>≥ 95%</strong><small>Sesuai content calendar</small></div>
+            <div class="kpi-stat-card"><span>Data & link QA</span><strong>100%</strong><small>Dicek sebelum publikasi</small></div>
+            <div class="kpi-stat-card"><span>Monthly report</span><strong>100% tepat waktu</strong><small>Dengan insight dan next action</small></div>
+          </div>
+          <div class="kpi-table-wrap"><table class="kpi-table"><thead><tr><th>KPI</th><th>Target awal</th><th>Pengukuran</th><th>Bobot</th><th>Frekuensi</th></tr></thead><tbody>
+            <tr><td><strong>Content delivery</strong><small>Konten yang disetujui dan dipublikasikan</small></td><td>12 konten/bulan</td><td>Jumlah konten terbit dibanding content calendar yang disetujui</td><td>20%</td><td>Mingguan</td></tr>
+            <tr><td><strong>Publishing consistency</strong></td><td>≥ 95% tepat waktu</td><td>Konten terbit sesuai jadwal ÷ konten terjadwal × 100%</td><td>15%</td><td>Mingguan</td></tr>
+            <tr><td><strong>Content quality & QA</strong></td><td>100% checklist selesai</td><td>Pemeriksaan caption, visual, CTA, link, ejaan, brand, dan approval sebelum tayang</td><td>15%</td><td>Setiap publikasi</td></tr>
+            <tr><td><strong>Reach & engagement tracking</strong></td><td>100% data dicatat</td><td>Reach, impressions, engagement rate, clicks dan perubahan vs periode sebelumnya</td><td>10%</td><td>Mingguan</td></tr>
+            <tr><td><strong>Digital leads / inquiries</strong></td><td>Baseline bulan 1; target disepakati</td><td>Jumlah inquiry masuk dari kanal digital yang tercatat sumbernya</td><td>15%</td><td>Bulanan</td></tr>
+            <tr><td><strong>Response & routing</strong></td><td>≥ 90% sesuai SLA internal</td><td>Inquiry ditanggapi/diteruskan ke PIC terkait sesuai standar waktu AMS</td><td>10%</td><td>Mingguan</td></tr>
+            <tr><td><strong>Website / catalog hygiene</strong></td><td>100% task prioritas selesai sesuai tenggat</td><td>Update produk, tautan, kontak, katalog, dan koreksi informasi yang ditugaskan</td><td>5%</td><td>Bulanan</td></tr>
+            <tr><td><strong>Monthly performance report</strong></td><td>100% tepat waktu</td><td>Laporan berisi output, metrik, insight, kendala, dan rekomendasi aksi berikutnya</td><td>10%</td><td>Bulanan</td></tr>
+          </tbody></table></div>
+          <div class="kpi-success-note"><strong>Catatan:</strong> Target reach, engagement, dan leads perlu dikalibrasi dari baseline kanal AMS/VIDAFOR; jangan menetapkan angka pertumbuhan sebelum data awal tersedia.</div>
+        </section>
+        <div class="kpi-footer-note"><i class="ti ti-info-circle"></i> Dashboard ini adalah kerangka KPI awal. Target, bobot, dan definisi lead/order perlu disetujui atasan sebelum dipakai untuk penilaian resmi. Angka target pada halaman ini belum terhubung ke data aktual atau database penilaian karyawan.</div>
       </div>
 
       <!-- ── Daily Schedule ─────────────────── -->
@@ -7193,6 +7281,7 @@ async function switchPanel(id, el) {
     schedule: 'Daily Schedule',
     portfolio: 'Projects',
     tracker: 'Projects',
+    kpi: 'Projects — KPI Dashboard',
     kanban: 'Projects',
     gantt: 'Projects',
     matrix: 'Projects',
@@ -7223,6 +7312,7 @@ async function switchPanel(id, el) {
   else if (id === 'schedule') await renderSchedule();
   else if (id === 'portfolio') await renderPortfolio();
   else if (id === 'tracker') { await renderTracker(); await renderProjectTracker(); }
+  else if (id === 'kpi') switchKpiRole('b2b');
   else if (id === 'kanban') await renderKanban();
   else if (id === 'gantt') await renderGantt();
   else if (id === 'matrix') await renderMatrix();
@@ -10688,7 +10778,13 @@ async function delNote(id) {
 
 // ── TODAY FOCUS ─────────────────────────────
 
-const PROJECT_VIEWS = ['portfolio','tracker'];
+function switchKpiRole(role) {
+  const valid = role === 'admin' ? 'admin' : 'b2b';
+  document.querySelectorAll('[data-kpi-role]').forEach(btn => btn.classList.toggle('active', btn.dataset.kpiRole === valid));
+  document.querySelectorAll('.kpi-role-panel').forEach(panel => panel.style.display = panel.id === 'kpi-role-' + valid ? 'block' : 'none');
+}
+
+const PROJECT_VIEWS = ['portfolio','tracker','kpi'];
 const savedProjectView = localStorage.getItem('wb_last_project_view');
 let lastProjectView = PROJECT_VIEWS.includes(savedProjectView) ? savedProjectView : 'tracker';
 function syncProjectWorkspaceTabs(id) {
@@ -15696,9 +15792,9 @@ BEGIN
     RAISE EXCEPTION 'Invalid clock-out longitude.';
   END IF;
   IF 6371000 * 2 * asin(sqrt(least(1.0,
-       power(sin(radians(NEW.lat_out - (-6.233616783557334)) / 2), 2)
-       + cos(radians(-6.233616783557334)) * cos(radians(NEW.lat_out))
-       * power(sin(radians(NEW.lng_out - 106.67907387538723) / 2), 2)
+       power(sin(radians(NEW.lat_out - (-6.233613)) / 2), 2)
+       + cos(radians(-6.233613)) * cos(radians(NEW.lat_out))
+       * power(sin(radians(NEW.lng_out - 106.679085) / 2), 2)
      ))) > 100 THEN
     RAISE EXCEPTION 'Clock Out is only allowed within 100 meters of the AMS office.';
   END IF;
@@ -15750,9 +15846,9 @@ BEGIN
   IF p_lat < -90 OR p_lat > 90 THEN RAISE EXCEPTION 'Invalid latitude.'; END IF;
   IF p_lng < -180 OR p_lng > 180 THEN RAISE EXCEPTION 'Invalid longitude.'; END IF;
   IF 6371000 * 2 * asin(sqrt(least(1.0,
-       power(sin(radians(p_lat - (-6.233616783557334)) / 2), 2)
-       + cos(radians(-6.233616783557334)) * cos(radians(p_lat))
-       * power(sin(radians(p_lng - 106.67907387538723) / 2), 2)
+       power(sin(radians(p_lat - (-6.233613)) / 2), 2)
+       + cos(radians(-6.233613)) * cos(radians(p_lat))
+       * power(sin(radians(p_lng - 106.679085) / 2), 2)
      ))) > 100 THEN
     RAISE EXCEPTION 'Clock In is only allowed within 100 meters of the AMS office.';
   END IF;
@@ -15843,7 +15939,7 @@ function absenStatusColor(status) {
 }
 
 // Referensi kantor AMS dari pin Google Maps yang diberikan Ratu.
-const AMS_OFFICE_LOCATION = Object.freeze({ lat: -6.233616783557334, lng: 106.67907387538723 });
+const AMS_OFFICE_LOCATION = Object.freeze({ lat: -6.233613, lng: 106.679085 });
 const AMS_ATTENDANCE_RADIUS_METERS = 100; // batas radius absensi dari titik kantor
 
 // Ambil GPS aktual perangkat. Absensi ditolak bila GPS tidak tersedia/diizinkan.
