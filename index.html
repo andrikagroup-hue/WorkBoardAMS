@@ -4858,62 +4858,46 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
       </div>
 
 
-      <!-- ── KPI Dashboard: Marketing Roles ──────────────── -->
+      <!-- ── KPI Dashboard: Employee self-report ──────────────── -->
       <div class="panel" id="panel-kpi">
         <div class="module-premium-hero theme-blue">
-          <div class="module-premium-icon"><i class="ti ti-chart-bar"></i></div>
+          <div class="module-premium-icon"><i class="ti ti-chart-donut"></i></div>
           <div class="module-premium-copy">
-            <div class="module-premium-eyebrow">Performance & outcomes</div>
-            <div class="module-premium-title">KPI Dashboard — Marketing</div>
-            <div class="module-premium-sub">Target, measurement formula, weight, and review cadence for B2B Marketing and Admin Digital Marketing.</div>
+            <div class="module-premium-eyebrow">Employee KPI self-report</div>
+            <div class="module-premium-title">KPI — Input Realisasi</div>
+            <div class="module-premium-sub">Isi realisasi KPI setiap bulan. Persentase capaian dan donut dihitung otomatis.</div>
           </div>
         </div>
-        <div class="kpi-intro-note"><strong>Scoring method:</strong> Achievement (%) = actual ÷ target × 100. Weighted score = achievement capped at 120% × KPI weight. Total role score = sum of weighted scores. Review monthly; targets below are proposed starting points and should be calibrated after the first month of baseline data.</div>
-        <div class="kpi-role-tabs" role="tablist" aria-label="KPI role">
-          <button type="button" class="kpi-role-btn active" data-kpi-role="b2b" onclick="switchKpiRole('b2b')"><i class="ti ti-target-arrow"></i> B2B Marketing</button>
-          <button type="button" class="kpi-role-btn" data-kpi-role="admin" onclick="switchKpiRole('admin')"><i class="ti ti-device-desktop-analytics"></i> Admin Digital Marketing</button>
+        <div class="kpi-entry-toolbar">
+          <label>Periode
+            <input type="month" id="kpi-period" />
+          </label>
+          <label>Jabatan
+            <select id="kpi-role-select" onchange="switchKpiRole(this.value)">
+              <option value="b2b">B2B Marketing</option>
+              <option value="admin">Admin Digital Marketing</option>
+            </select>
+          </label>
+          <button class="btn-sm" type="button" onclick="loadKpiEntry()"><i class="ti ti-refresh"></i> Muat data</button>
+          <button class="btn-sm btn-primary" type="button" onclick="saveKpiEntry()"><i class="ti ti-device-floppy"></i> Simpan KPI</button>
         </div>
-        <section class="kpi-role-panel" id="kpi-role-b2b">
-          <div class="kpi-role-head"><div><div class="kpi-role-title">B2B Marketing</div><div class="kpi-role-sub">Fokus: prospecting, qualified leads, sales pipeline, follow-up, dan kontribusi penjualan.</div></div><span class="kpi-period-chip">Review bulanan</span></div>
-          <div class="kpi-stat-grid">
-            <div class="kpi-stat-card"><span>Prospek baru</span><strong>≥ 40 / bulan</strong><small>Target awal</small></div>
-            <div class="kpi-stat-card"><span>Qualified leads</span><strong>≥ 12 / bulan</strong><small>Sesuai ICP dan kebutuhan terverifikasi</small></div>
-            <div class="kpi-stat-card"><span>Meeting / konsultasi</span><strong>≥ 4 / bulan</strong><small>Dengan calon pelanggan relevan</small></div>
-            <div class="kpi-stat-card"><span>Follow-up tepat waktu</span><strong>≥ 90%</strong><small>Semua follow-up jatuh tempo</small></div>
+        <div id="kpi-entry-status" class="kpi-entry-status">Isi angka realisasi pada kolom yang tersedia, lalu simpan.</div>
+        <div class="kpi-entry-summary">
+          <div class="kpi-donut" id="kpi-donut" style="--kpi-pct:0"><div><strong id="kpi-total-pct">0%</strong><span>Capaian KPI</span></div></div>
+          <div class="kpi-summary-copy">
+            <strong id="kpi-summary-title">Belum ada realisasi</strong>
+            <p id="kpi-summary-sub">Isi data KPI untuk melihat persentase capaian berbobot.</p>
+            <div class="kpi-progress-track"><div id="kpi-progress-fill" style="width:0%"></div></div>
+            <small>Skor berbobot berdasarkan bobot KPI; capaian tiap KPI dibatasi maksimal 120%.</small>
           </div>
-          <div class="kpi-table-wrap"><table class="kpi-table"><thead><tr><th>KPI</th><th>Target awal</th><th>Pengukuran</th><th>Bobot</th><th>Frekuensi</th></tr></thead><tbody>
-            <tr><td><strong>Prospecting & outreach</strong><small>Daftar prospek yang relevan dan terhubung</small></td><td>40 prospek baru/bulan</td><td>Jumlah prospek baru yang tercatat dengan perusahaan dan PIC</td><td>15%</td><td>Mingguan</td></tr>
-            <tr><td><strong>Qualified leads</strong><small>Kebutuhan, kecocokan, dan PIC teridentifikasi</small></td><td>12 lead/bulan</td><td>Lead yang memenuhi kriteria kualifikasi AMS</td><td>20%</td><td>Mingguan</td></tr>
-            <tr><td><strong>Meeting / konsultasi</strong></td><td>4 meeting/bulan</td><td>Meeting terlaksana dengan prospek yang relevan</td><td>15%</td><td>Bulanan</td></tr>
-            <tr><td><strong>Quotation / proposal support</strong></td><td>≥ 4/bulan atau sesuai lead</td><td>Penawaran yang diminta dan dikirim sesuai kebutuhan prospek</td><td>10%</td><td>Bulanan</td></tr>
-            <tr><td><strong>Follow-up discipline</strong></td><td>≥ 90% tepat waktu</td><td>Follow-up selesai tepat waktu ÷ follow-up yang jatuh tempo × 100%</td><td>15%</td><td>Mingguan</td></tr>
-            <tr><td><strong>Pipeline value</strong></td><td>Target ditetapkan bersama atasan</td><td>Total nilai peluang aktif yang punya nilai, tahap, dan next action</td><td>10%</td><td>Bulanan</td></tr>
-            <tr><td><strong>Conversion to order</strong></td><td>Baseline bulan 1; naik bertahap</td><td>Peluang menjadi order ÷ peluang yang diputuskan × 100%</td><td>10%</td><td>Bulanan</td></tr>
-            <tr><td><strong>CRM / activity reporting</strong></td><td>100% data inti terisi</td><td>Kelengkapan update prospek, PIC, status, hasil, dan next action</td><td>5%</td><td>Mingguan</td></tr>
-          </tbody></table></div>
-          <div class="kpi-success-note"><strong>Definisi hasil:</strong> KPI menilai aktivitas yang menghasilkan peluang bisnis, bukan sekadar jumlah pesan terkirim. Order/revenue dievaluasi bersama siklus penjualan dan kontribusi tim.</div>
-        </section>
-        <section class="kpi-role-panel" id="kpi-role-admin" style="display:none">
-          <div class="kpi-role-head"><div><div class="kpi-role-title">Admin Digital Marketing</div><div class="kpi-role-sub">Fokus: konsistensi konten, kualitas publikasi, performa kanal digital, leads, dan pelaporan.</div></div><span class="kpi-period-chip">Review bulanan</span></div>
-          <div class="kpi-stat-grid">
-            <div class="kpi-stat-card"><span>Konten terbit</span><strong>≥ 12 / bulan</strong><small>Target awal lintas kanal</small></div>
-            <div class="kpi-stat-card"><span>On-time publishing</span><strong>≥ 95%</strong><small>Sesuai content calendar</small></div>
-            <div class="kpi-stat-card"><span>Data & link QA</span><strong>100%</strong><small>Dicek sebelum publikasi</small></div>
-            <div class="kpi-stat-card"><span>Monthly report</span><strong>100% tepat waktu</strong><small>Dengan insight dan next action</small></div>
-          </div>
-          <div class="kpi-table-wrap"><table class="kpi-table"><thead><tr><th>KPI</th><th>Target awal</th><th>Pengukuran</th><th>Bobot</th><th>Frekuensi</th></tr></thead><tbody>
-            <tr><td><strong>Content delivery</strong><small>Konten yang disetujui dan dipublikasikan</small></td><td>12 konten/bulan</td><td>Jumlah konten terbit dibanding content calendar yang disetujui</td><td>20%</td><td>Mingguan</td></tr>
-            <tr><td><strong>Publishing consistency</strong></td><td>≥ 95% tepat waktu</td><td>Konten terbit sesuai jadwal ÷ konten terjadwal × 100%</td><td>15%</td><td>Mingguan</td></tr>
-            <tr><td><strong>Content quality & QA</strong></td><td>100% checklist selesai</td><td>Pemeriksaan caption, visual, CTA, link, ejaan, brand, dan approval sebelum tayang</td><td>15%</td><td>Setiap publikasi</td></tr>
-            <tr><td><strong>Reach & engagement tracking</strong></td><td>100% data dicatat</td><td>Reach, impressions, engagement rate, clicks dan perubahan vs periode sebelumnya</td><td>10%</td><td>Mingguan</td></tr>
-            <tr><td><strong>Digital leads / inquiries</strong></td><td>Baseline bulan 1; target disepakati</td><td>Jumlah inquiry masuk dari kanal digital yang tercatat sumbernya</td><td>15%</td><td>Bulanan</td></tr>
-            <tr><td><strong>Response & routing</strong></td><td>≥ 90% sesuai SLA internal</td><td>Inquiry ditanggapi/diteruskan ke PIC terkait sesuai standar waktu AMS</td><td>10%</td><td>Mingguan</td></tr>
-            <tr><td><strong>Website / catalog hygiene</strong></td><td>100% task prioritas selesai sesuai tenggat</td><td>Update produk, tautan, kontak, katalog, dan koreksi informasi yang ditugaskan</td><td>5%</td><td>Bulanan</td></tr>
-            <tr><td><strong>Monthly performance report</strong></td><td>100% tepat waktu</td><td>Laporan berisi output, metrik, insight, kendala, dan rekomendasi aksi berikutnya</td><td>10%</td><td>Bulanan</td></tr>
-          </tbody></table></div>
-          <div class="kpi-success-note"><strong>Catatan:</strong> Target reach, engagement, dan leads perlu dikalibrasi dari baseline kanal AMS/VIDAFOR; jangan menetapkan angka pertumbuhan sebelum data awal tersedia.</div>
-        </section>
-        <div class="kpi-footer-note"><i class="ti ti-info-circle"></i> Dashboard ini adalah kerangka KPI awal. Target, bobot, dan definisi lead/order perlu disetujui atasan sebelum dipakai untuk penilaian resmi. Angka target pada halaman ini belum terhubung ke data aktual atau database penilaian karyawan.</div>
+        </div>
+        <div class="kpi-entry-table-wrap">
+          <table class="kpi-entry-table">
+            <thead><tr><th>KPI</th><th>Target</th><th>Realisasi aktual</th><th>Capaian</th><th>Bobot</th></tr></thead>
+            <tbody id="kpi-entry-rows"></tbody>
+          </table>
+        </div>
+        <div class="kpi-entry-note"><strong>Catatan:</strong> Target dapat disesuaikan bila disepakati atasan. Pipeline value, conversion, dan digital leads perlu menggunakan target yang disepakati. Data disimpan per pengguna dan per bulan.</div>
       </div>
 
       <!-- ── Daily Schedule ─────────────────── -->
@@ -10778,11 +10762,102 @@ async function delNote(id) {
 
 // ── TODAY FOCUS ─────────────────────────────
 
+const KPI_DEFS = {
+  b2b: [
+    {key:'prospects',name:'Prospecting & outreach',desc:'Prospek baru yang tercatat',target:40,weight:15,unit:'prospek'},
+    {key:'qualified',name:'Qualified leads',desc:'Lead yang memenuhi kriteria AMS',target:12,weight:20,unit:'lead'},
+    {key:'meetings',name:'Meeting / konsultasi',desc:'Meeting dengan prospek relevan',target:4,weight:15,unit:'meeting'},
+    {key:'quotations',name:'Quotation / proposal support',desc:'Penawaran yang dikirim',target:4,weight:10,unit:'penawaran'},
+    {key:'followup',name:'Follow-up discipline',desc:'Persentase follow-up tepat waktu',target:90,weight:15,unit:'%'},
+    {key:'pipeline',name:'Pipeline value',desc:'Nilai pipeline sesuai target atasan',target:1,weight:10,unit:'nilai (isi satuan yang disepakati)'},
+    {key:'conversion',name:'Conversion to order',desc:'Rasio konversi peluang menjadi order',target:1,weight:10,unit:'% (target isi sesuai kesepakatan)'},
+    {key:'crm',name:'CRM / activity reporting',desc:'Kelengkapan data inti',target:100,weight:5,unit:'%'}
+  ],
+  admin: [
+    {key:'content',name:'Content delivery',desc:'Konten yang disetujui dan dipublikasikan',target:12,weight:20,unit:'konten'},
+    {key:'publishing',name:'Publishing consistency',desc:'Konten terbit tepat waktu',target:95,weight:15,unit:'%'},
+    {key:'qa',name:'Content quality & QA',desc:'Checklist QA selesai',target:100,weight:15,unit:'%'},
+    {key:'tracking',name:'Reach & engagement tracking',desc:'Kelengkapan pencatatan metrik',target:100,weight:10,unit:'%'},
+    {key:'leads',name:'Digital leads / inquiries',desc:'Inquiry dari kanal digital',target:1,weight:15,unit:'lead (target kalibrasi)'},
+    {key:'response',name:'Response & routing',desc:'Inquiry ditangani sesuai SLA',target:90,weight:10,unit:'%'},
+    {key:'website',name:'Website / catalog hygiene',desc:'Tugas prioritas selesai',target:100,weight:5,unit:'%'},
+    {key:'report',name:'Monthly performance report',desc:'Laporan tepat waktu',target:100,weight:10,unit:'%'}
+  ]
+};
+let kpiValues = {};
 function switchKpiRole(role) {
   const valid = role === 'admin' ? 'admin' : 'b2b';
-  document.querySelectorAll('[data-kpi-role]').forEach(btn => btn.classList.toggle('active', btn.dataset.kpiRole === valid));
-  document.querySelectorAll('.kpi-role-panel').forEach(panel => panel.style.display = panel.id === 'kpi-role-' + valid ? 'block' : 'none');
+  const select = document.getElementById('kpi-role-select');
+  if (select && select.value !== valid) select.value = valid;
+  renderKpiEntryRows();
+  updateKpiScore();
 }
+function renderKpiEntryRows() {
+  const body = document.getElementById('kpi-entry-rows');
+  if (!body) return;
+  body.innerHTML = KPI_DEFS[document.getElementById('kpi-role-select')?.value || 'b2b'].map((k,i) => {
+    const v = kpiValues[k.key] || {};
+    const target = v.target ?? k.target, actual = v.actual ?? '';
+    return `<tr><td><span class="kpi-metric-name">${k.name}</span><small>${k.desc}</small></td>
+      <td><input type="number" min="0" step="any" aria-label="Target ${k.name}" id="kpi-target-${k.key}" value="${target}" onchange="updateKpiScore()"><small>${k.unit}</small></td>
+      <td><input type="number" min="0" step="any" aria-label="Realisasi ${k.name}" id="kpi-actual-${k.key}" value="${actual}" placeholder="Isi aktual" onchange="updateKpiScore()"></td>
+      <td class="kpi-achievement" id="kpi-ach-${k.key}">—</td><td>${k.weight}%</td></tr>`;
+  }).join('');
+}
+function updateKpiScore() {
+  const role = document.getElementById('kpi-role-select')?.value || 'b2b';
+  const defs = KPI_DEFS[role]; let weighted = 0, totalWeight = 0, entered = 0;
+  defs.forEach(k => {
+    const t = Number(document.getElementById('kpi-target-'+k.key)?.value || 0);
+    const raw = document.getElementById('kpi-actual-'+k.key)?.value;
+    const a = raw === '' || raw == null ? null : Number(raw);
+    if (a !== null && Number.isFinite(a) && t > 0) { weighted += Math.min(120, Math.max(0,a/t*100))*k.weight; entered++; }
+    totalWeight += k.weight;
+    const el = document.getElementById('kpi-ach-'+k.key);
+    if (el) el.textContent = a === null || !Number.isFinite(a) || t <= 0 ? '—' : Math.round(a/t*100)+'%';
+    kpiValues[k.key] = {target:t,actual:a === null ? '' : a};
+  });
+  const score = totalWeight ? weighted/totalWeight : 0;
+  const pct = Math.round(score);
+  document.getElementById('kpi-donut').style.setProperty('--kpi-pct', Math.min(100,pct));
+  document.getElementById('kpi-total-pct').textContent = pct+'%';
+  document.getElementById('kpi-progress-fill').style.width = Math.min(100,pct)+'%';
+  document.getElementById('kpi-summary-title').textContent = entered ? `Capaian berbobot ${pct}%` : 'Belum ada realisasi';
+  document.getElementById('kpi-summary-sub').textContent = entered ? `${entered} dari ${defs.length} KPI sudah diisi. Skor memakai bobot seluruh KPI; yang belum diisi dihitung 0%.` : 'Isi realisasi aktual di tabel untuk melihat persentase capaian.';
+}
+async function loadKpiEntry() {
+  const status = document.getElementById('kpi-entry-status');
+  const period = document.getElementById('kpi-period').value;
+  const role = document.getElementById('kpi-role-select').value;
+  if (!period) { status.textContent='Pilih periode terlebih dahulu.'; status.className='kpi-entry-status error'; return; }
+  status.textContent='Memuat data…'; status.className='kpi-entry-status';
+  const {data:{user}} = await sb.auth.getUser();
+  if (!user) { status.textContent='Silakan login ke WorkBoard terlebih dahulu.'; status.className='kpi-entry-status error'; return; }
+  const {data,error} = await sb.from('workboard_kpi_entries').select('values').eq('user_id',user.id).eq('period',period).eq('role_key',role).maybeSingle();
+  if (error) { status.textContent='Belum dapat memuat data. Pastikan tabel workboard_kpi_entries sudah dibuat di Supabase.'; status.className='kpi-entry-status error'; return; }
+  kpiValues = data?.values || {};
+  renderKpiEntryRows(); updateKpiScore();
+  status.textContent=data ? 'Data tersimpan berhasil dimuat.' : 'Belum ada data untuk periode ini. Silakan isi realisasi.';
+  status.className='kpi-entry-status';
+}
+async function saveKpiEntry() {
+  const status = document.getElementById('kpi-entry-status');
+  const period = document.getElementById('kpi-period').value;
+  const role = document.getElementById('kpi-role-select').value;
+  if (!period) { status.textContent='Pilih periode terlebih dahulu.'; status.className='kpi-entry-status error'; return; }
+  updateKpiScore();
+  const {data:{user}} = await sb.auth.getUser();
+  if (!user) { status.textContent='Silakan login ke WorkBoard terlebih dahulu.'; status.className='kpi-entry-status error'; return; }
+  status.textContent='Menyimpan…'; status.className='kpi-entry-status';
+  const payload={user_id:user.id,period,role_key:role,values:kpiValues,updated_at:new Date().toISOString()};
+  const {error}=await sb.from('workboard_kpi_entries').upsert(payload,{onConflict:'user_id,period,role_key'});
+  if(error){status.textContent='Gagal menyimpan. Jalankan SQL setup KPI di Supabase terlebih dahulu.';status.className='kpi-entry-status error';return;}
+  status.textContent='Tersimpan. Data KPI ini hanya dapat dibaca dan diubah oleh akun Anda.';status.className='kpi-entry-status saved';
+}
+
+const kpiMonthEl = document.getElementById('kpi-period');
+if (kpiMonthEl) kpiMonthEl.value = new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+renderKpiEntryRows(); updateKpiScore();
 
 const PROJECT_VIEWS = ['portfolio','tracker','kpi'];
 const savedProjectView = localStorage.getItem('wb_last_project_view');
