@@ -15696,9 +15696,9 @@ BEGIN
     RAISE EXCEPTION 'Invalid clock-out longitude.';
   END IF;
   IF 6371000 * 2 * asin(sqrt(least(1.0,
-       power(sin(radians(NEW.lat_out - (-6.2336263)) / 2), 2)
-       + cos(radians(-6.2336263)) * cos(radians(NEW.lat_out))
-       * power(sin(radians(NEW.lng_out - 106.6790673) / 2), 2)
+       power(sin(radians(NEW.lat_out - (-6.233616783557334)) / 2), 2)
+       + cos(radians(-6.233616783557334)) * cos(radians(NEW.lat_out))
+       * power(sin(radians(NEW.lng_out - 106.67907387538723) / 2), 2)
      ))) > 100 THEN
     RAISE EXCEPTION 'Clock Out is only allowed within 100 meters of the AMS office.';
   END IF;
@@ -15750,9 +15750,9 @@ BEGIN
   IF p_lat < -90 OR p_lat > 90 THEN RAISE EXCEPTION 'Invalid latitude.'; END IF;
   IF p_lng < -180 OR p_lng > 180 THEN RAISE EXCEPTION 'Invalid longitude.'; END IF;
   IF 6371000 * 2 * asin(sqrt(least(1.0,
-       power(sin(radians(p_lat - (-6.2336263)) / 2), 2)
-       + cos(radians(-6.2336263)) * cos(radians(p_lat))
-       * power(sin(radians(p_lng - 106.6790673) / 2), 2)
+       power(sin(radians(p_lat - (-6.233616783557334)) / 2), 2)
+       + cos(radians(-6.233616783557334)) * cos(radians(p_lat))
+       * power(sin(radians(p_lng - 106.67907387538723) / 2), 2)
      ))) > 100 THEN
     RAISE EXCEPTION 'Clock In is only allowed within 100 meters of the AMS office.';
   END IF;
@@ -15843,7 +15843,7 @@ function absenStatusColor(status) {
 }
 
 // Referensi kantor AMS dari pin Google Maps yang diberikan Ratu.
-const AMS_OFFICE_LOCATION = Object.freeze({ lat: -6.2336263, lng: 106.6790673 });
+const AMS_OFFICE_LOCATION = Object.freeze({ lat: -6.233616783557334, lng: 106.67907387538723 });
 const AMS_ATTENDANCE_RADIUS_METERS = 100; // batas radius absensi dari titik kantor
 
 // Ambil GPS aktual perangkat. Absensi ditolak bila GPS tidak tersedia/diizinkan.
