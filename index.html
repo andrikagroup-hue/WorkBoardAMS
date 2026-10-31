@@ -13736,19 +13736,63 @@ function selectAllDisplayedLogbook(checked){
 }
 async function deleteLogbookIds(ids,label){
   const unique=[...new Set((ids||[]).map(String))];
-  if(!unique.length){alert('Tidak ada Logbook yang dapat dihapus dari pilihan ini.');return;}
-  const rows=(logbookCache||[]); const permitted=unique.filter(id=>{const row=rows.find(r=>String(r.id)===id);return row&&canModifySharedRow(row);});
-  if(!permitted.length){alert('Tidak ada catatan yang memiliki izin hapus untuk akun ini.');return;}
+  if(!unique.length){alert('Tidak ada Logbook yang dipilih untuk dihapus.');return;}
+  const rows=(logbookCache||[]);
+  const permitted=unique.filter(id=>{
+    const row=rows.find(r=>String(r.id)===id);
+    return row&&canModifySharedRow(row);
+  });
+  if(!permitted.length){
+    alert('Catatan yang dipilih tidak memiliki izin hapus untuk akun ini.');
+    return;
+  }
+
   const phrase=`HAPUS ${permitted.length}`;
-  const typed=prompt(`Konfirmasi ${label}. Sebanyak ${permitted.length} catatan Logbook akan dihapus permanen.\nKetik persis: ${phrase}`,'');
-  if(typed!==phrase){if(typed!==null)alert('Konfirmasi tidak cocok. Tidak ada data yang dihapus.');return;}
+  const typed=prompt(
+    `Konfirmasi ${label}.\n${permitted.length} catatan Logbook akan dihapus permanen.\n\nKetik persis: ${phrase}`,
+    ''
+  );
+  if(typed!==phrase){
+    if(typed!==null) alert('Konfirmasi tidak cocok. Tidak ada data yang dihapus.');
+    return;
+  }
+
+  const statusEl=document.getElementById('logbook-selection-status');
+  if(statusEl) statusEl.textContent='Sedang menghapus...';
+  let deletedIds=[];
   try{
-    for(let i=0;i<permitted.length;i+=100){const batch=permitted.slice(i,i+100);const {error}=await sb.from('logbook_entries').delete().in('id',batch);if(error)throw error;}
-    permitted.forEach(id=>selectedLogbookIds.delete(id));
-    alert(`${permitted.length} catatan berhasil dihapus.`);
+    for(let i=0;i<permitted.length;i+=50){
+      const batch=permitted.slice(i,i+50);
+      const {data,error}=await withTimeout(
+        sb.from('logbook_entries').delete().in('id',batch).select('id')
+      );
+      if(error) throw error;
+      deletedIds.push(...(data||[]).map(r=>String(r.id)));
+    }
+
+    const deletedSet=new Set(deletedIds);
+    const notDeleted=permitted.filter(id=>!deletedSet.has(id));
+    if(notDeleted.length){
+      selectedLogbookIds=new Set([...selectedLogbookIds].filter(id=>!deletedSet.has(id)));
+      await renderLogbook();
+      const remaining=notDeleted.length;
+      alert(
+        `${deletedIds.length} catatan berhasil dihapus, tetapi ${remaining} catatan tidak terhapus.\n\n`+
+        `Kemungkinan akun ini tidak memiliki izin DELETE pada data tersebut. Catatan yang belum terhapus tetap ada.`
+      );
+      return;
+    }
+
+    selectedLogbookIds=new Set([...selectedLogbookIds].filter(id=>!deletedSet.has(id)));
     await renderLogbook();
-  }catch(e){console.error(e);alert('Penghapusan belum selesai: '+(e.message||e));await renderLogbook();}
+    alert(`${deletedIds.length} catatan berhasil dihapus dan sudah diverifikasi dari database.`);
+  }catch(e){
+    console.error('Logbook delete failed:',e);
+    await renderLogbook();
+    alert('Penghapusan gagal: '+(e?.message||String(e))+'\n\nData yang gagal dihapus tetap tersimpan.');
+  }
 }
+
 async function deleteSelectedLogbook(){await deleteLogbookIds([...selectedLogbookIds],'Delete Selected');}
 async function deleteAllLogbook(){
   if(!isOwner()){alert('Fitur Delete All hanya tersedia untuk Owner. Untuk catatan milik sendiri, gunakan Delete Selected.');return;}
