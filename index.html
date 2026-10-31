@@ -18327,6 +18327,90 @@ async function exportAbsenMonthlyExcel() {
     wb.creator = 'WorkBoard AMS';
     wb.created = new Date();
     wb.subject = `Attendance archive ${monthValue}`;
+    // Formal monthly report sheet (summary + daily attendance table).
+    const report = wb.addWorksheet('Laporan Absensi', { views: [{ state:'frozen', ySplit:8, showGridLines:false }] });
+    report.properties.defaultRowHeight = 21;
+    report.mergeCells('A1:I1');
+    report.getCell('A1').value = 'LAPORAN ABSENSI KEHADIRAN KARYAWAN';
+    report.getCell('A1').font = { name:'Arial', bold:true, size:16, color:{argb:'FF222222'} };
+    report.getCell('A1').alignment = { horizontal:'center', vertical:'middle' };
+    report.getRow(1).height = 32;
+    report.mergeCells('A2:I2');
+    report.getCell('A2').value = 'PT. ANDRIKA MITRA SOLUSI';
+    report.getCell('A2').font = { name:'Arial', bold:true, size:11, color:{argb:'FF555555'} };
+    report.getCell('A2').alignment = { horizontal:'center' };
+    report.mergeCells('A4:B4'); report.getCell('A4').value = 'Periode';
+    report.getCell('C4').value = monthValue;
+    report.mergeCells('A5:B5'); report.getCell('A5').value = 'Tanggal cetak';
+    report.mergeCells('C5:D5'); report.getCell('C5').value = new Date().toLocaleDateString('id-ID');
+    report.mergeCells('F4:G4'); report.getCell('F4').value = 'RINGKASAN KEHADIRAN';
+    report.mergeCells('F4:I4');
+    const reportStatus = rows.reduce((acc, r) => { const s=(r.status||'Tidak diketahui').toString(); acc[s]=(acc[s]||0)+1; return acc; }, {});
+    const reportPeople = new Set(rows.map(r => r.user_name).filter(Boolean)).size;
+    const summaryItems = [
+      ['Jumlah Karyawan', reportPeople],
+      ['Total Catatan Absensi', rows.length],
+      ['Hadir', reportStatus.hadir || 0],
+      ['Terlambat', reportStatus.terlambat || 0],
+      ['Izin / Sakit / Cuti', (reportStatus.izin||0)+(reportStatus.sakit||0)+(reportStatus.cuti||0)],
+      ['Alpa', reportStatus.alpa || 0]
+    ];
+    summaryItems.forEach((item, i) => {
+      const rr = 5 + Math.floor(i/2), left = i % 2 === 0;
+      const labelCol = left ? 'F' : 'H', valueCol = left ? 'G' : 'I';
+      report.getCell(`${labelCol}${rr}`).value = item[0];
+      report.getCell(`${valueCol}${rr}`).value = item[1];
+    });
+    report.mergeCells('A8:I8');
+    report.getCell('A8').value = 'DAFTAR KEHADIRAN HARIAN';
+    report.getCell('A8').font = { bold:true, size:11, color:{argb:'FFFFFFFF'} };
+    report.getCell('A8').fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFB5121B'} };
+    report.getCell('A8').alignment = { vertical:'middle' };
+    const reportHeaders = ['No','Tanggal','Nama Karyawan','Jam Masuk','Jam Pulang','Total Jam','Terlambat (menit)','Status','Keterangan'];
+    reportHeaders.forEach((h, i) => {
+      const c = report.getCell(9, i+1); c.value = h;
+      c.font = { bold:true, color:{argb:'FFFFFFFF'}, size:9 };
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFB5121B'} };
+      c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+      c.border = { top:{style:'thin',color:{argb:'FF8E1118'}}, bottom:{style:'thin',color:{argb:'FF8E1118'}} };
+    });
+    report.getRow(9).height = 34;
+    rows.forEach((r, index) => {
+      const duration = r.clock_in && r.clock_out ? Math.max(0, Math.round((new Date(r.clock_out)-new Date(r.clock_in))/60000)) : null;
+      const rr = report.addRow([
+        index+1, r.tanggal || '', r.user_name || '',
+        r.clock_in ? new Date(r.clock_in).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-',
+        r.clock_out ? new Date(r.clock_out).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-',
+        duration == null ? '-' : `${Math.floor(duration/60)}j ${duration%60}m`,
+        r.terlambat_menit || 0, r.status || '-', r.keterangan || ''
+      ]);
+      rr.eachCell((cell, col) => {
+        cell.font = { name:'Arial', size:9, color:{argb:'FF222222'} };
+        cell.alignment = { vertical:'middle', wrapText:true, horizontal: col===1 || col===7 ? 'center' : 'left' };
+        cell.border = { bottom:{style:'hair',color:{argb:'FFD8D8D8'}} };
+        if (index % 2 === 1) cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF7F7'} };
+      });
+      rr.height = 24;
+    });
+    [7,14,25,13,13,13,17,15,34].forEach((w,i)=>report.getColumn(i+1).width=w);
+    report.autoFilter = { from:{row:9,column:1}, to:{row:9+rows.length,column:9} };
+    report.mergeCells(`A${10+rows.length}:I${10+rows.length}`);
+    report.getCell(`A${10+rows.length}`).value = 'Catatan: Foto clock-in dan clock-out tersedia pada sheet Attendance Detail. Data GPS dan foto tetap disimpan pada sheet detail.';
+    report.getCell(`A${10+rows.length}`).font = { italic:true, size:9, color:{argb:'FF666666'} };
+    report.getCell(`A${10+rows.length}`).alignment = { wrapText:true };
+    report.getRow(10+rows.length).height = 28;
+    report.pageSetup = { orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, paperSize:report.PAPER_A4, margins:{left:0.25,right:0.25,top:0.5,bottom:0.5,header:0.2,footer:0.2} };
+    report.printArea = `A1:I${11+rows.length}`;
+    report.getCell('F4').font = { bold:true, color:{argb:'FFFFFFFF'}, size:10 };
+    report.getCell('F4').fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFB5121B'} };
+    for (let rr=4; rr<=7; rr++) {
+      for (let cc=1; cc<=9; cc++) {
+        const c=report.getCell(rr,cc);
+        if (!c.font || !c.font.bold) c.font={name:'Arial',size:9,color:{argb:'FF333333'}};
+        c.alignment={vertical:'middle',wrapText:true};
+      }
+    }
+
     const ws = wb.addWorksheet('Attendance Detail', { views: [{ state: 'frozen', ySplit: 1 }] });
     ws.columns = [
       { header:'Employee', key:'user_name', width:24 }, { header:'Date', key:'tanggal', width:14 },
