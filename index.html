@@ -18258,13 +18258,16 @@ function absenMonthBounds(monthValue) {
 
 async function fetchAllAttendanceForMonth(start, end) {
   const all = [];
-  const pageSize = 500;
+  // Small pages reduce response size because attendance rows may contain photo data URLs.
+  const pageSize = 100;
   for (let from = 0; ; from += pageSize) {
     const to = from + pageSize - 1;
-    const { data, error } = await withTimeout(
-      sb.from('attendance').select('*').gte('tanggal', start).lt('tanggal', end)
-        .order('tanggal', { ascending: true }).order('clock_in', { ascending: true }).range(from, to)
-    );
+    const query = sb.from('attendance')
+      .select('id,user_name,tanggal,clock_in,clock_out,status,terlambat_menit,lat_in,lng_in,lat_out,lng_out,foto_in,foto_out,keterangan,created_at')
+      .gte('tanggal', start).lt('tanggal', end)
+      .order('tanggal', { ascending: true }).order('clock_in', { ascending: true })
+      .range(from, to);
+    const { data, error } = await withTimeout(query, 60000);
     if (error) throw error;
     all.push(...(data || []));
     if (!data || data.length < pageSize) break;
@@ -18275,12 +18278,12 @@ async function fetchAllAttendanceForMonth(start, end) {
 async function fetchAllLeaveForMonth(start, end) {
   const lastDay = new Date(new Date(end + 'T00:00:00Z').getTime() - 86400000).toISOString().slice(0,10);
   const all = [];
-  const pageSize = 500;
+  const pageSize = 100;
   for (let from = 0; ; from += pageSize) {
-    const { data, error } = await withTimeout(
-      sb.from('leave_requests').select('*').lte('dari_tanggal', lastDay).gte('sampai_tanggal', start)
-        .order('dari_tanggal', { ascending: true }).range(from, from + pageSize - 1)
-    );
+    const query = sb.from('leave_requests').select('*')
+      .lte('dari_tanggal', lastDay).gte('sampai_tanggal', start)
+      .order('dari_tanggal', { ascending: true }).range(from, from + pageSize - 1);
+    const { data, error } = await withTimeout(query, 60000);
     if (error) throw error;
     all.push(...(data || []));
     if (!data || data.length < pageSize) break;
@@ -18311,10 +18314,9 @@ async function exportAbsenMonthlyExcel() {
     const { start, end } = absenMonthBounds(monthValue);
     if (statusEl) statusEl.textContent = 'Loading monthly attendance records...';
     if (button) button.disabled = true;
-    [rows, leaveRows] = await Promise.all([
-      fetchAllAttendanceForMonth(start, end),
-      fetchAllLeaveForMonth(start, end)
-    ]);
+    rows = await fetchAllAttendanceForMonth(start, end);
+    if (statusEl) statusEl.textContent = `Loaded ${rows.length} attendance records. Loading leave requests...`;
+    leaveRows = await fetchAllLeaveForMonth(start, end);
     if (!rows.length && !leaveRows.length) {
       if (statusEl) statusEl.textContent = 'No records found for this month.';
       alert('Tidak ada data attendance maupun leave request pada bulan tersebut.');
@@ -18405,8 +18407,8 @@ async function exportAbsenMonthlyExcel() {
     }
   } catch (error) {
     console.error('Monthly attendance export failed:', error);
-    if (statusEl) statusEl.textContent = 'Export failed. No attendance data was deleted.';
-    alert('Export Excel gagal. Tidak ada data yang dihapus. Detail: ' + (error.message || error));
+    if (statusEl) statusEl.textContent = 'Export gagal. Data absensi tidak dihapus.';
+    alert('Export gagal. Data absensi TIDAK dihapus. Coba ulangi saat koneksi stabil. Detail: ' + (error.message || error));
   } finally {
     if (button) button.disabled = false;
   }
