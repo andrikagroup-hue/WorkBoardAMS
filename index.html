@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v140 — Attendance export merge fix — 01 Nov 2026 -->
+<!-- WorkBoard AMS v141 — Quiet export + formula report — 01 Nov 2026 -->
 
 <html lang="en">
 <head>
@@ -18294,6 +18294,13 @@ async function fetchAllLeaveForMonth(start, end) {
   return all;
 }
 
+function excelClockFraction(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return (d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds()) / 86400;
+}
+
 function excelImagePayload(dataUrl) {
   if (!dataUrl || typeof dataUrl !== 'string') return null;
   const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,([\s\S]+)$/i);
@@ -18330,6 +18337,7 @@ async function exportAbsenMonthlyExcel() {
     wb.creator = 'WorkBoard AMS';
     wb.created = new Date();
     wb.subject = `Attendance archive ${monthValue}`;
+    wb.calcProperties = { calcMode:'auto', fullCalcOnLoad:true, forceFullCalc:true };
     // Formal monthly report sheet (summary + daily attendance table).
     const report = wb.addWorksheet('Laporan Absensi', { views: [{ state:'frozen', ySplit:8, showGridLines:false }] });
     report.properties.defaultRowHeight = 21;
@@ -18348,21 +18356,19 @@ async function exportAbsenMonthlyExcel() {
     report.mergeCells('C5:D5'); report.getCell('C5').value = new Date().toLocaleDateString('id-ID');
     report.mergeCells('F4:I4');
     report.getCell('F4').value = 'RINGKASAN KEHADIRAN';
-    const reportStatus = rows.reduce((acc, r) => { const s=(r.status||'Tidak diketahui').toString(); acc[s]=(acc[s]||0)+1; return acc; }, {});
-    const reportPeople = new Set(rows.map(r => r.user_name).filter(Boolean)).size;
     const summaryItems = [
-      ['Jumlah Karyawan', reportPeople],
-      ['Total Catatan Absensi', rows.length],
-      ['Hadir', reportStatus.hadir || 0],
-      ['Terlambat', reportStatus.terlambat || 0],
-      ['Izin / Sakit / Cuti', (reportStatus.izin||0)+(reportStatus.sakit||0)+(reportStatus.cuti||0)],
-      ['Alpa', reportStatus.alpa || 0]
+      ['Jumlah Karyawan', null],
+      ['Total Catatan Absensi', null],
+      ['Hadir', null],
+      ['Terlambat', null],
+      ['Izin / Sakit / Cuti', null],
+      ['Alpa', null]
     ];
     summaryItems.forEach((item, i) => {
       const rr = 5 + Math.floor(i/2), left = i % 2 === 0;
       const labelCol = left ? 'F' : 'H', valueCol = left ? 'G' : 'I';
       report.getCell(`${labelCol}${rr}`).value = item[0];
-      report.getCell(`${valueCol}${rr}`).value = item[1];
+      report.getCell(`${valueCol}${rr}`).value = 0; // formulas assigned after detail rows are written
     });
     report.mergeCells('A8:I8');
     report.getCell('A8').value = 'DAFTAR KEHADIRAN HARIAN';
@@ -18380,13 +18386,18 @@ async function exportAbsenMonthlyExcel() {
     report.getRow(9).height = 34;
     rows.forEach((r, index) => {
       const duration = r.clock_in && r.clock_out ? Math.max(0, Math.round((new Date(r.clock_out)-new Date(r.clock_in))/60000)) : null;
+      const excelRow = 10 + index;
       const rr = report.addRow([
-        index+1, r.tanggal || '', r.user_name || '',
-        r.clock_in ? new Date(r.clock_in).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-',
-        r.clock_out ? new Date(r.clock_out).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-',
-        duration == null ? '-' : `${Math.floor(duration/60)}j ${duration%60}m`,
+        index+1, r.tanggal ? new Date(`${r.tanggal}T00:00:00`) : '',
+        r.user_name || '', excelClockFraction(r.clock_in) ?? '',
+        excelClockFraction(r.clock_out) ?? '',
+        { formula:`IF(OR(D${excelRow}="",E${excelRow}=""),"",MOD(E${excelRow}-D${excelRow},1))` },
         r.terlambat_menit || 0, r.status || '-', r.keterangan || ''
       ]);
+      rr.getCell(2).numFmt = 'dd mmm yyyy';
+      rr.getCell(4).numFmt = 'hh:mm';
+      rr.getCell(5).numFmt = 'hh:mm';
+      rr.getCell(6).numFmt = '[h]"j "mm"m"';
       rr.eachCell((cell, col) => {
         cell.font = { name:'Arial', size:9, color:{argb:'FF222222'} };
         cell.alignment = { vertical:'middle', wrapText:true, horizontal: col===1 || col===7 ? 'center' : 'left' };
@@ -18395,6 +18406,27 @@ async function exportAbsenMonthlyExcel() {
       });
       rr.height = 24;
     });
+    const firstDataRow = 10, lastDataRow = 9 + rows.length;
+    const dataRange = `10:${lastDataRow}`;
+    const dateRange = `B${firstDataRow}:B${lastDataRow}`;
+    const nameRange = `C${firstDataRow}:C${lastDataRow}`;
+    const statusRange = `H${firstDataRow}:H${lastDataRow}`;
+    const lateRange = `G${firstDataRow}:G${lastDataRow}`;
+    if (rows.length) {
+      report.getCell('G5').value = { formula:`IFERROR(SUMPRODUCT((${nameRange}<>"")/COUNTIF(${nameRange},${nameRange}&"")),0)` };
+      report.getCell('I5').value = { formula:`COUNTA(${dateRange})` };
+      report.getCell('G6').value = { formula:`COUNTIF(${statusRange},"hadir")` };
+      report.getCell('I6').value = { formula:`COUNTIF(${statusRange},"terlambat")` };
+      report.getCell('G7').value = { formula:`COUNTIF(${statusRange},"izin")+COUNTIF(${statusRange},"sakit")+COUNTIF(${statusRange},"cuti")` };
+      report.getCell('I7').value = { formula:`COUNTIF(${statusRange},"alpa")` };
+    } else {
+      ['G5','I5','G6','I6','G7','I7'].forEach(ref => report.getCell(ref).value = 0);
+    }
+    for (const cellRef of ['G5','I5','G6','I6','G7','I7']) {
+      report.getCell(cellRef).font = { name:'Arial', bold:true, size:10, color:{argb:'FF222222'} };
+      report.getCell(cellRef).alignment = { horizontal:'center', vertical:'middle' };
+      report.getCell(cellRef).numFmt = '0';
+    }
     [7,14,25,13,13,13,17,15,34].forEach((w,i)=>report.getColumn(i+1).width=w);
     report.autoFilter = { from:{row:9,column:1}, to:{row:9+rows.length,column:9} };
     report.mergeCells(`A${10+rows.length}:I${10+rows.length}`);
@@ -18429,9 +18461,9 @@ async function exportAbsenMonthlyExcel() {
       const duration = r.clock_in && r.clock_out ? Math.max(0, Math.round((new Date(r.clock_out)-new Date(r.clock_in))/60000)) : null;
       const row = ws.addRow({
         user_name:r.user_name || '', tanggal:r.tanggal || '', status:r.status || '',
-        clock_in:r.clock_in ? new Date(r.clock_in).toLocaleString('id-ID') : '-',
-        clock_out:r.clock_out ? new Date(r.clock_out).toLocaleString('id-ID') : '-',
-        total:duration == null ? '-' : `${Math.floor(duration/60)}h ${duration%60}m`,
+        clock_in:r.clock_in ? new Date(r.clock_in) : '',
+        clock_out:r.clock_out ? new Date(r.clock_out) : '',
+        total:'',
         late:r.terlambat_menit || 0,
         gps_in:r.lat_in != null && r.lng_in != null ? `${r.lat_in}, ${r.lng_in}` : '-',
         gps_out:r.lat_out != null && r.lng_out != null ? `${r.lat_out}, ${r.lng_out}` : '-',
@@ -18440,6 +18472,13 @@ async function exportAbsenMonthlyExcel() {
       });
       row.height = 58;
       row.alignment = { vertical:'middle', wrapText:true };
+      const detailRow = index + 2;
+      row.getCell(4).numFmt = 'dd/mm/yyyy hh:mm:ss';
+      row.getCell(5).numFmt = 'dd/mm/yyyy hh:mm:ss';
+      row.getCell(6).value = r.clock_in && r.clock_out
+        ? { formula:`IF(OR(D${detailRow}="",E${detailRow}=""),"",E${detailRow}-D${detailRow})` }
+        : '';
+      row.getCell(6).numFmt = '[h]"h "mm"m"';
       const imageIn = excelImagePayload(r.foto_in);
       const imageOut = excelImagePayload(r.foto_out);
       if (imageIn) {
@@ -18488,10 +18527,9 @@ async function exportAbsenMonthlyExcel() {
     // Keep exact month + count in memory for the explicit archive-delete step.
     absenMonthlyArchiveReady = { monthValue, start, end, exportedCount:rows.length, generatedAt:Date.now() };
     if (statusEl) statusEl.textContent = `Excel generated (${rows.length} attendance rows; ${leaveRows.length} leave requests). Verify the downloaded file before deleting archived attendance.`;
-    if (rows.length) {
-      const confirmed = confirm(`File Excel sudah dibuat untuk ${monthValue} dengan ${rows.length} baris attendance dan foto yang tersedia.\n\nPastikan file sudah selesai diunduh dan bisa dibuka. Hanya setelah itu, apakah kamu ingin menghapus ${rows.length} baris attendance bulan ini dari Supabase?\n\nLeave Requests tidak akan dihapus.`);
-      if (confirmed) await deleteArchivedAttendanceMonth();
-    }
+    // Successful export must not trigger a popup or delete anything.
+    // Supabase attendance remains intact until a separate, explicit Owner archive action is added.
+    if (statusEl) statusEl.textContent = `Export selesai: ${rows.length} catatan absensi dan ${leaveRows.length} leave request. File Excel sudah diunduh. Data Supabase tetap aman dan tidak dihapus.`;
   } catch (error) {
     console.error('Monthly attendance export failed:', error);
     if (statusEl) statusEl.textContent = 'Export gagal. Data absensi tidak dihapus.';
