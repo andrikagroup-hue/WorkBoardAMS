@@ -18770,12 +18770,13 @@ function absenMonthBounds(monthValue) {
 
 async function fetchAllAttendanceForMonth(start, end) {
   const all = [];
-  // Small pages reduce response size because attendance rows may contain photo data URLs.
-  const pageSize = 100;
+  // Fetch metadata only. Photo data URLs are large and were causing Supabase statement timeouts.
+  // Photos are intentionally excluded from the monthly list/export query.
+  const pageSize = 50;
   for (let from = 0; ; from += pageSize) {
     const to = from + pageSize - 1;
     const query = sb.from('attendance')
-      .select('id,user_name,tanggal,clock_in,clock_out,status,terlambat_menit,lat_in,lng_in,lat_out,lng_out,foto_in,foto_out,keterangan,created_at')
+      .select('id,user_name,tanggal,clock_in,clock_out,status,terlambat_menit,lat_in,lng_in,lat_out,lng_out,keterangan,created_at')
       .gte('tanggal', start).lt('tanggal', end)
       .order('tanggal', { ascending: true }).order('clock_in', { ascending: true })
       .range(from, to);
@@ -19027,7 +19028,7 @@ async function exportAbsenMonthlyExcel() {
         late:r.terlambat_menit || 0,
         gps_in:r.lat_in != null && r.lng_in != null ? `${r.lat_in}, ${r.lng_in}` : '-',
         gps_out:r.lat_out != null && r.lng_out != null ? `${r.lat_out}, ${r.lng_out}` : '-',
-        photo_in:r.foto_in ? 'Embedded below' : '-', photo_out:r.foto_out ? 'Embedded below' : '-',
+        photo_in:'Not included in monthly export', photo_out:'Not included in monthly export',
         notes:r.keterangan || '', job_title:attendanceJobTitle(r.user_name)
       });
       row.height = 58;
@@ -19069,7 +19070,7 @@ async function exportAbsenMonthlyExcel() {
       ['WORKBOARD AMS — MONTHLY ATTENDANCE ARCHIVE'],
       ['Month', monthValue], ['Attendance records', rows.length], ['Leave request records overlapping month', leaveRows.length],
       ['Generated at', new Date().toLocaleString('id-ID')],
-      ['Photo note', 'Clock In / Clock Out photos are embedded in Attendance Detail when stored as PNG or JPEG.'],
+      ['Photo note', 'Photo files are excluded from this monthly export to prevent Supabase timeout. Attendance metadata and timestamps are included.'],
       ['Archive deletion', 'Attendance rows only. Leave Requests are not deleted by the archive cleanup.']
     ]);
     summary.getColumn(1).width = 48; summary.getColumn(2).width = 95;
