@@ -16279,22 +16279,67 @@ async function getVerifiedOfficeGPS() {
   return gps;
 }
 
-// Ambil foto selfie via kamera
+// Capture selfie with bounded waits so Attendance cannot remain stuck forever.
 function takeSelfie() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
     input.capture = 'user';
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return resolve(null);
-      const reader = new FileReader();
-      reader.onload = (ev) => resolve(ev.target.result); // base64
-      reader.readAsDataURL(file);
+
+    let settled = false;
+    let selectionTimer = null;
+    let readerTimer = null;
+
+    const cleanup = () => {
+      if (selectionTimer) clearTimeout(selectionTimer);
+      if (readerTimer) clearTimeout(readerTimer);
+      input.onchange = null;
+      input.oncancel = null;
+      input.remove();
     };
-    input.oncancel = () => resolve(null);
-    input.click();
+
+    const finish = (value, error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (error) reject(error);
+      else resolve(value);
+    };
+
+    input.onchange = () => {
+      const file = input.files && input.files[0];
+      if (!file) return finish(null);
+
+      if (selectionTimer) clearTimeout(selectionTimer);
+      selectionTimer = null;
+
+      const reader = new FileReader();
+      reader.onload = () => finish(reader.result || null);
+      reader.onerror = () => finish(null, new Error('The selfie could not be read. Please try again.'));
+      reader.onabort = () => finish(null, new Error('Selfie reading was interrupted. Please try again.'));
+      readerTimer = setTimeout(() => {
+        try { reader.abort(); } catch (_) {}
+        finish(null, new Error('Reading the selfie took too long. Please try again.'));
+      }, 30000);
+
+      try {
+        reader.readAsDataURL(file);
+      } catch (error) {
+        finish(null, new Error('The selfie could not be opened. Please try again.'));
+      }
+    };
+
+    input.oncancel = () => finish(null);
+    selectionTimer = setTimeout(() => {
+      finish(null, new Error('The camera did not respond within 2 minutes. Please try Clock In again.'));
+    }, 120000);
+
+    try {
+      input.click();
+    } catch (error) {
+      finish(null, new Error('The camera could not be opened. Check your browser permission and try again.'));
+    }
   });
 }
 
@@ -16476,7 +16521,19 @@ async function proceedClockIn(terlambatMenit, status, today) {
 async function _doClockInProcess(user, now, today, terlambatMenit, status, keterangan) {
   const btnEl = document.getElementById('absen-action-btns');
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Taking selfie...</span>';
-  const foto = await takeSelfie();
+  let foto;
+  try {
+    foto = await takeSelfie();
+  } catch (e) {
+    alert(e.message || 'Selfie capture failed. Please try again.');
+    cancelClockIn();
+    return;
+  }
+  if (!foto) {
+    alert('Selfie was not captured. Clock In was cancelled. Please try again.');
+    cancelClockIn();
+    return;
+  }
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Verifying GPS and office area...</span>';
   let gps;
   try {
@@ -16526,7 +16583,19 @@ async function doClockOut(recordId) {
   const btnEl = document.getElementById('absen-action-btns');
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📸 Taking selfie...</span>';
 
-  const foto = await takeSelfie();
+  let foto;
+  try {
+    foto = await takeSelfie();
+  } catch (e) {
+    alert(e.message || 'Selfie capture failed. Please try again.');
+    await renderAbsen();
+    return;
+  }
+  if (!foto) {
+    alert('Selfie was not captured. Clock Out was cancelled. Please try again.');
+    await renderAbsen();
+    return;
+  }
   btnEl.innerHTML = '<span style="font-size:12px;color:var(--text3)">📍 Verifying GPS and office area...</span>';
   let gps;
   try {
