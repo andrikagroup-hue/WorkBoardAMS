@@ -6369,7 +6369,7 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
           <strong style="font-size:12px">Monthly Attendance View</strong>
           <input type="month" id="absen-archive-month" style="font-size:12px" title="Pilih bulan untuk menampilkan seluruh absensi bulan tersebut" />
           <button id="absen-archive-export-btn" class="btn-sm btn-primary" onclick="exportAbsenMonthlyExcel()"><i class="ti ti-file-spreadsheet"></i> Export Excel</button>
-          <button id="absen-archive-delete-btn" class="btn-sm" style="display:none;background:#FEE2E2;border-color:#E8B4B4;color:#991B1B" onclick="deleteArchivedAttendanceMonth()"><i class="ti ti-trash"></i> Delete All Attendance (Supabase)</button>
+          <button id="absen-archive-delete-btn" class="btn-sm" style="display:inline-flex;background:#FEE2E2;border-color:#E8B4B4;color:#991B1B" onclick="deleteArchivedAttendanceMonth()"><i class="ti ti-trash"></i> Delete All Attendance</button>
           <span id="absen-archive-status" style="font-size:11px;color:var(--text3)">Export bulan yang dipilih terlebih dahulu. Setelah file berhasil diunduh, tombol Delete All akan aktif untuk menghapus attendance bulan tersebut dari Supabase.</span>
         </div>
         <div class="form-box" id="absen-leave-form" style="display:none;margin-bottom:12px">
@@ -18750,7 +18750,7 @@ document.addEventListener('change', (event) => {
   if (event.target?.id === 'absen-archive-month') {
     absenMonthlyArchiveReady = null;
     const deleteBtn = document.getElementById('absen-archive-delete-btn');
-    if (deleteBtn) deleteBtn.style.display = 'none';
+    if (deleteBtn) deleteBtn.style.display = 'inline-flex';
     // Selecting a month immediately loads every attendance record for that month.
     if (typeof renderAbsenRekap === 'function') renderAbsenRekap();
   }
@@ -18850,12 +18850,12 @@ async function exportAbsenMonthlyExcel() {
     // Formal monthly report sheet (summary + daily attendance table).
     const report = wb.addWorksheet('Laporan Absensi', { views: [{ state:'frozen', ySplit:8, showGridLines:false }] });
     report.properties.defaultRowHeight = 21;
-    report.mergeCells('A1:I1');
+    report.mergeCells('A1:J1');
     report.getCell('A1').value = 'LAPORAN ABSENSI KEHADIRAN KARYAWAN';
     report.getCell('A1').font = { name:'Arial', bold:true, size:16, color:{argb:'FF222222'} };
     report.getCell('A1').alignment = { horizontal:'center', vertical:'middle' };
     report.getRow(1).height = 32;
-    report.mergeCells('A2:I2');
+    report.mergeCells('A2:J2');
     report.getCell('A2').value = 'PT. ANDRIKA MITRA SOLUSI';
     report.getCell('A2').font = { name:'Arial', bold:true, size:11, color:{argb:'FF555555'} };
     report.getCell('A2').alignment = { horizontal:'center' };
@@ -18884,7 +18884,7 @@ async function exportAbsenMonthlyExcel() {
     report.getCell('A8').font = { bold:true, size:11, color:{argb:'FFFFFFFF'} };
     report.getCell('A8').fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFB5121B'} };
     report.getCell('A8').alignment = { vertical:'middle' };
-    const reportHeaders = ['No','Tanggal','Nama Karyawan','Jam Masuk','Jam Pulang','Total Jam','Terlambat (menit)','Status','Keterangan'];
+    const reportHeaders = ['No','Tanggal','Nama Karyawan','Jam Masuk','Jam Pulang','Total Jam','Terlambat (menit)','Status','Keterangan','Jabatan'];
     reportHeaders.forEach((h, i) => {
       const c = report.getCell(9, i+1); c.value = h;
       c.font = { bold:true, color:{argb:'FFFFFFFF'}, size:9 };
@@ -18901,7 +18901,7 @@ async function exportAbsenMonthlyExcel() {
         r.user_name || '', excelClockFraction(r.clock_in) ?? '',
         excelClockFraction(r.clock_out) ?? '',
         { formula:`IF(OR(D${excelRow}="",E${excelRow}=""),"",MOD(E${excelRow}-D${excelRow},1))` },
-        r.terlambat_menit || 0, r.status || '-', r.keterangan || ''
+        r.terlambat_menit || 0, r.status || '-', r.keterangan || '', attendanceJobTitle(r.user_name)
       ]);
       rr.getCell(2).numFmt = 'dd mmm yyyy';
       rr.getCell(4).numFmt = 'hh:mm';
@@ -18936,19 +18936,19 @@ async function exportAbsenMonthlyExcel() {
       report.getCell(cellRef).alignment = { horizontal:'center', vertical:'middle' };
       report.getCell(cellRef).numFmt = '0';
     }
-    [7,14,25,13,13,13,17,15,34].forEach((w,i)=>report.getColumn(i+1).width=w);
-    report.autoFilter = { from:{row:9,column:1}, to:{row:9+rows.length,column:9} };
-    report.mergeCells(`A${10+rows.length}:I${10+rows.length}`);
+    [7,14,25,13,13,13,17,15,34,27].forEach((w,i)=>report.getColumn(i+1).width=w);
+    report.autoFilter = { from:{row:9,column:1}, to:{row:9+rows.length,column:10} };
+    report.mergeCells(`A${10+rows.length}:J${10+rows.length}`);
     report.getCell(`A${10+rows.length}`).value = 'Catatan: Foto clock-in dan clock-out tersedia pada sheet Attendance Detail. Data GPS dan foto tetap disimpan pada sheet detail.';
     report.getCell(`A${10+rows.length}`).font = { italic:true, size:9, color:{argb:'FF666666'} };
     report.getCell(`A${10+rows.length}`).alignment = { wrapText:true };
     report.getRow(10+rows.length).height = 28;
     report.pageSetup = { orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, paperSize:report.PAPER_A4, margins:{left:0.25,right:0.25,top:0.5,bottom:0.5,header:0.2,footer:0.2} };
-    report.printArea = `A1:I${11+rows.length}`;
+    report.printArea = `A1:J${11+rows.length}`;
     report.getCell('F4').font = { bold:true, color:{argb:'FFFFFFFF'}, size:10 };
     report.getCell('F4').fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFB5121B'} };
     for (let rr=4; rr<=7; rr++) {
-      for (let cc=1; cc<=9; cc++) {
+      for (let cc=1; cc<=10; cc++) {
         const c=report.getCell(rr,cc);
         if (!c.font || !c.font.bold) c.font={name:'Arial',size:9,color:{argb:'FF333333'}};
         c.alignment={vertical:'middle',wrapText:true};
@@ -18959,20 +18959,20 @@ async function exportAbsenMonthlyExcel() {
     const empNames = [...new Set(rows.map(r => (r.user_name || '').trim()).filter(Boolean))]
       .sort((a,b) => a.localeCompare(b, 'id'));
     const emp = wb.addWorksheet('Rekap per Karyawan', { views:[{state:'frozen', ySplit:5, showGridLines:false}] });
-    emp.mergeCells('A1:K1');
+    emp.mergeCells('A1:L1');
     emp.getCell('A1').value = 'REKAP ABSENSI PER KARYAWAN';
     emp.getCell('A1').font = { name:'Arial', bold:true, size:16, color:{argb:'FF222222'} };
     emp.getCell('A1').alignment = { horizontal:'center', vertical:'middle' };
     emp.getRow(1).height = 30;
-    emp.mergeCells('A2:K2');
+    emp.mergeCells('A2:L2');
     emp.getCell('A2').value = 'PT. ANDRIKA MITRA SOLUSI';
     emp.getCell('A2').font = { name:'Arial', bold:true, size:11, color:{argb:'FF555555'} };
     emp.getCell('A2').alignment = { horizontal:'center' };
     emp.mergeCells('A3:B3'); emp.getCell('A3').value = 'Periode';
     emp.getCell('C3').value = monthValue;
-    emp.mergeCells('E3:K3'); emp.getCell('E3').value = 'Perhitungan otomatis menggunakan formula Excel';
+    emp.mergeCells('E3:L3'); emp.getCell('E3').value = 'Perhitungan otomatis menggunakan formula Excel';
     emp.getCell('E3').font = { italic:true, size:9, color:{argb:'FF666666'} };
-    const empHeaders = ['No','Nama Karyawan','Total Catatan','Hadir','Terlambat','Izin','Sakit','Cuti','Alpa','Total Menit Terlambat','Total Jam Kerja'];
+    const empHeaders = ['No','Nama Karyawan','Jabatan','Total Catatan','Hadir','Terlambat','Izin','Sakit','Cuti','Alpa','Total Menit Terlambat','Total Jam Kerja'];
     empHeaders.forEach((h,i) => {
       const c=emp.getCell(5,i+1); c.value=h;
       c.font={bold:true,color:{argb:'FFFFFFFF'},size:9};
@@ -18985,24 +18985,25 @@ async function exportAbsenMonthlyExcel() {
       const r=i+6;
       emp.getCell(r,1).value=i+1;
       emp.getCell(r,2).value=name;
-      emp.getCell(r,3).value={formula:`COUNTIF('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r})`};
+      emp.getCell(r,3).value=attendanceJobTitle(name);
+      emp.getCell(r,4).value={formula:`COUNTIF('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r})`};
       ['hadir','terlambat','izin','sakit','cuti','alpa'].forEach((status,j) => {
-        emp.getCell(r,4+j).value={formula:`COUNTIFS('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r},'Laporan Absensi'!$H$10:$H$${lastDataRow},"${status}")`};
+        emp.getCell(r,5+j).value={formula:`COUNTIFS('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r},'Laporan Absensi'!$H$10:$H$${lastDataRow},"${status}")`};
       });
-      emp.getCell(r,10).value={formula:`SUMIF('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r},'Laporan Absensi'!$G$10:$G$${lastDataRow})`};
-      emp.getCell(r,11).value={formula:`SUMIF('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r},'Laporan Absensi'!$F$10:$F$${lastDataRow})`};
-      for(let c=1;c<=11;c++){
+      emp.getCell(r,11).value={formula:`SUMIF('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r},'Laporan Absensi'!$G$10:$G$${lastDataRow})`};
+      emp.getCell(r,12).value={formula:`SUMIF('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r},'Laporan Absensi'!$F$10:$F$${lastDataRow})`};
+      for(let c=1;c<=12;c++){
         const cell=emp.getCell(r,c);
         cell.font={name:'Arial',size:9,color:{argb:'FF222222'}};
         cell.alignment={vertical:'middle',horizontal:c===2?'left':'center',wrapText:true};
         cell.border={bottom:{style:'hair',color:{argb:'FFD8D8D8'}}};
         if(i%2===1) cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF7F7'}};
       }
-      emp.getCell(r,11).numFmt='[h]"j "mm"m"';
+      emp.getCell(r,12).numFmt='[h]"j "mm"m"';
       emp.getRow(r).height=22;
     });
-    [7,27,16,12,14,10,10,10,10,21,18].forEach((w,i)=>emp.getColumn(i+1).width=w);
-    if(empNames.length) emp.autoFilter={from:{row:5,column:1},to:{row:5+empNames.length,column:11}};
+    [7,25,27,16,12,14,10,10,10,10,21,18].forEach((w,i)=>emp.getColumn(i+1).width=w);
+    if(empNames.length) emp.autoFilter={from:{row:5,column:1},to:{row:5+empNames.length,column:12}};
     emp.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:emp.PAPER_A4};
 
     const ws = wb.addWorksheet('Attendance Detail', { views: [{ state: 'frozen', ySplit: 1 }] });
@@ -19012,7 +19013,7 @@ async function exportAbsenMonthlyExcel() {
       { header:'Clock Out', key:'clock_out', width:22 }, { header:'Total Hours', key:'total', width:16 },
       { header:'Late (minutes)', key:'late', width:16 }, { header:'Clock In GPS', key:'gps_in', width:28 },
       { header:'Clock Out GPS', key:'gps_out', width:28 }, { header:'Clock In Photo', key:'photo_in', width:20 },
-      { header:'Clock Out Photo', key:'photo_out', width:20 }, { header:'Notes', key:'notes', width:36 }
+      { header:'Clock Out Photo', key:'photo_out', width:20 }, { header:'Notes', key:'notes', width:36 }, { header:'Jabatan', key:'job_title', width:27 }
     ];
     ws.getRow(1).font = { bold:true, color:{ argb:'FFFFFFFF' } };
     ws.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF2F6364' } };
@@ -19027,7 +19028,7 @@ async function exportAbsenMonthlyExcel() {
         gps_in:r.lat_in != null && r.lng_in != null ? `${r.lat_in}, ${r.lng_in}` : '-',
         gps_out:r.lat_out != null && r.lng_out != null ? `${r.lat_out}, ${r.lng_out}` : '-',
         photo_in:r.foto_in ? 'Embedded below' : '-', photo_out:r.foto_out ? 'Embedded below' : '-',
-        notes:r.keterangan || ''
+        notes:r.keterangan || '', job_title:attendanceJobTitle(r.user_name)
       });
       row.height = 58;
       row.alignment = { vertical:'middle', wrapText:true };
@@ -19049,7 +19050,7 @@ async function exportAbsenMonthlyExcel() {
         ws.addImage(id, { tl:{ col:10, row:index+1, nativeCol:10, nativeRow:index+1 }, br:{ col:11, row:index+2, nativeCol:11, nativeRow:index+2 }, editAs:'oneCell' });
       }
     });
-    ws.autoFilter = { from:{ row:1, column:1 }, to:{ row:1, column:12 } };
+    ws.autoFilter = { from:{ row:1, column:1 }, to:{ row:1, column:13 } };
 
     const lw = wb.addWorksheet('Leave Requests', { views: [{ state:'frozen', ySplit:1 }] });
     lw.columns = [
@@ -19152,8 +19153,8 @@ async function deleteArchivedAttendanceMonth() {
   } finally {
     if (button) {
       button.disabled = false;
-      button.style.display = absenMonthlyArchiveReady ? 'inline-flex' : 'none';
-      button.innerHTML = '<i class="ti ti-trash"></i> Delete All Attendance (Supabase)';
+      button.style.display = 'inline-flex';
+      button.innerHTML = '<i class="ti ti-trash"></i> Delete All Attendance';
     }
   }
 }
