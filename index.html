@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v142 — Employee recap + explicit archive deletion — 01 Nov 2026 -->
+<!-- WorkBoard AMS v143 — Monthly attendance table view — 01 Nov 2026 -->
 
 <html lang="en">
 <head>
@@ -6328,8 +6328,8 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
           <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Request Leave / Sick / Time Off</button>
         </div>
         <div id="absen-monthly-tools" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px;margin:0 0 12px">
-          <strong style="font-size:12px">Monthly Archive</strong>
-          <input type="month" id="absen-archive-month" style="font-size:12px" />
+          <strong style="font-size:12px">Monthly Attendance View</strong>
+          <input type="month" id="absen-archive-month" style="font-size:12px" title="Pilih bulan untuk menampilkan seluruh absensi bulan tersebut" />
           <button id="absen-archive-export-btn" class="btn-sm btn-primary" onclick="exportAbsenMonthlyExcel()"><i class="ti ti-file-spreadsheet"></i> Export Excel</button>
           <button id="absen-archive-delete-btn" class="btn-sm" style="display:none;background:#FEE2E2;border-color:#E8B4B4;color:#991B1B" onclick="deleteArchivedAttendanceMonth()"><i class="ti ti-trash"></i> Hapus Data Terarsip</button>
           <span id="absen-archive-status" style="font-size:11px;color:var(--text3)">Export dulu. Tombol hapus baru muncul setelah file Excel berhasil dibuat. Pastikan file sudah diperiksa sebelum menghapus.</span>
@@ -16699,74 +16699,103 @@ let absenRekapCache = [];
 async function renderAbsenRekap() {
   const container = document.getElementById('absen-rekap-table');
   const filterDate = document.getElementById('absen-filter-date')?.value || absenDateStr();
+  const monthValue = document.getElementById('absen-archive-month')?.value || '';
   const filterStatus = document.getElementById('absen-filter-status')?.value || '';
+  const isMonthlyView = /^\d{4}-\d{2}$/.test(monthValue);
 
-  container.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading summary...</div>';
+  container.innerHTML = '<div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading attendance...</div>';
 
   try {
-    // Query attendance (clock in/out)
-    let q = sb.from('attendance').select('*').eq('tanggal', filterDate).order('clock_in', {ascending: true});
-    if (filterStatus && !['izin','sakit','cuti'].includes(filterStatus)) q = q.eq('status', filterStatus);
-    const { data: attData, error: attErr } = await withTimeout(q);
-    if (attErr) throw attErr;
+    let attData = [];
+    let leaveData = [];
+    let displayPeriod = '';
 
-    // Query leave_requests yang mencakup tanggal ini
-    const { data: leaveData } = await withTimeout(
-      sb.from('leave_requests').select('*').eq('status', 'approved').lte('dari_tanggal', filterDate).gte('sampai_tanggal', filterDate)
-    );
+    if (isMonthlyView) {
+      const { start, end } = absenMonthBounds(monthValue);
+      [attData, leaveData] = await Promise.all([
+        fetchAllAttendanceForMonth(start, end),
+        fetchAllLeaveForMonth(start, end)
+      ]);
+      const [yy, mm] = monthValue.split('-').map(Number);
+      displayPeriod = new Date(yy, mm - 1, 1).toLocaleDateString('id-ID', { month:'long', year:'numeric' });
+    } else {
+      let q = sb.from('attendance').select('*').eq('tanggal', filterDate).order('clock_in', {ascending: true});
+      if (filterStatus && !['izin','sakit','cuti'].includes(filterStatus)) q = q.eq('status', filterStatus);
+      const { data, error } = await withTimeout(q);
+      if (error) throw error;
+      attData = data || [];
+      const { data: leaves, error: leaveErr } = await withTimeout(
+        sb.from('leave_requests').select('*').eq('status', 'approved').lte('dari_tanggal', filterDate).gte('sampai_tanggal', filterDate)
+      );
+      if (leaveErr) throw leaveErr;
+      leaveData = leaves || [];
+      displayPeriod = new Date(filterDate + 'T00:00:00').toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'});
+    }
 
-    // Gabungkan: semua user dari attendance
-    const combined = [...(attData || [])];
-    // Tambahkan user dari leave_requests yang BELUM ada di attendance hari ini
-    for (const lv of (leaveData || [])) {
-      const alreadyInAtt = combined.some(a => a.user_name === lv.user_name);
-      if (!alreadyInAtt) {
-        // Buat virtual row untuk leave
-        combined.push({
-          id: 'leave_' + lv.id,        // prefix supaya bisa dibedakan saat delete
-          _leaveId: lv.id,
-          user_name: lv.user_name,
-          tanggal: filterDate,
-          status: lv.tipe,             // izin | sakit | cuti
-          clock_in: null,
-          clock_out: null,
-          terlambat_menit: 0,
+    const combined = [...attData];
+    // Add approved leave requests that have no attendance record for the relevant date.
+    if (isMonthlyView) {
+      for (const lv of leaveData) {
+        const from = lv.dari_tanggal;
+        const to = lv.sampai_tanggal;
+        const cursor = new Date(from + 'T00:00:00');
+        const last = new Date(to + 'T00:00:00');
+        while (cursor <= last) {
+          const dateStr = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
+          if (dateStr.startsWith(monthValue) && !combined.some(a => a.user_name === lv.user_name && a.tanggal === dateStr)) {
+            combined.push({
+              id: 'leave_' + lv.id + '_' + dateStr,
+              _leaveId: lv.id, _isLeave: true,
+              user_name: lv.user_name, tanggal: dateStr, status: lv.tipe,
+              clock_in: null, clock_out: null, terlambat_menit: 0,
+              lat_in: null, lng_in: null, lat_out: null, lng_out: null,
+              foto_in: null, foto_out: null, keterangan: lv.alasan || ''
+            });
+          }
+          cursor.setDate(cursor.getDate()+1);
+        }
+      }
+    } else {
+      for (const lv of leaveData) {
+        const alreadyInAtt = combined.some(a => a.user_name === lv.user_name);
+        if (!alreadyInAtt) combined.push({
+          id: 'leave_' + lv.id, _leaveId: lv.id, _isLeave: true,
+          user_name: lv.user_name, tanggal: filterDate, status: lv.tipe,
+          clock_in: null, clock_out: null, terlambat_menit: 0,
           lat_in: null, lng_in: null, lat_out: null, lng_out: null,
-          foto_in: null, foto_out: null,
-          keterangan: lv.alasan || '',
-          _isLeave: true
+          foto_in: null, foto_out: null, keterangan: lv.alasan || ''
         });
       }
     }
 
-    // Filter status jika perlu (untuk izin/sakit/cuti yang dari leave)
-    const filtered = filterStatus
-      ? combined.filter(r => r.status === filterStatus)
-      : combined;
-
-    // Sort: attendance dulu (ada clock_in), baru leave
-    filtered.sort((a, b) => {
+    const filtered = filterStatus ? combined.filter(r => r.status === filterStatus) : combined;
+    filtered.sort((a,b) => {
+      const dateCompare = String(a.tanggal || '').localeCompare(String(b.tanggal || ''));
+      if (dateCompare) return dateCompare;
       if (a.clock_in && b.clock_in) return new Date(a.clock_in) - new Date(b.clock_in);
       if (a.clock_in) return -1;
       if (b.clock_in) return 1;
-      return a.user_name.localeCompare(b.user_name);
+      return String(a.user_name || '').localeCompare(String(b.user_name || ''));
     });
 
     absenRekapCache = filtered;
-
     if (!filtered.length) {
       container.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:16px 0">
-        Belum ada data absensi pada tanggal <strong>${escHtml(filterDate)}</strong>.
-        <span style="display:block;font-size:11px;margin-top:4px">Bagian ini mengikuti filter tanggal di atas. Untuk melihat data 1 bulan, pilih tanggal yang memiliki absensi atau gunakan Monthly Archive → Export.</span>
+        Belum ada data absensi ${isMonthlyView ? `pada bulan <strong>${escHtml(displayPeriod)}</strong>` : `pada tanggal <strong>${escHtml(filterDate)}</strong>`}.
+        <span style="display:block;font-size:11px;margin-top:4px">${isMonthlyView ? 'Pilih bulan lain atau kosongkan pilihan bulan untuk kembali ke tampilan harian.' : 'Bagian ini mengikuti filter tanggal di atas.'}</span>
       </div>`;
       return;
     }
 
-    const currentUser = getUser();
     const isAdmin = isOwner();
+    const monthlyHeading = isMonthlyView ? `<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:9px;padding:10px 12px;background:#F8EEF1;border:1px solid #E1C8CF;border-radius:9px">
+      <strong style="font-size:13px;color:#6E3F4B">Rekap Absensi ${escHtml(displayPeriod)}</strong>
+      <span style="font-size:11px;color:#6E3F4B">${filtered.length} catatan · ${new Set(filtered.map(r=>r.user_name)).size} karyawan</span>
+    </div>` : '';
 
-    let html = `<table class="task-table" style="min-width:600px">
+    let tableHtml = `${monthlyHeading}<div style="overflow-x:auto"><table class="task-table" style="min-width:${isMonthlyView ? '850px' : '600px'}">
       <thead><tr>
+        ${isMonthlyView ? '<th>Date</th>' : ''}
         <th>Name</th><th>Status</th><th>Clock In</th><th>Clock Out</th>
         <th>Late</th><th>Location</th><th>Photo</th><th>Notes</th>
         ${isAdmin ? '<th>Action</th>' : ''}
@@ -16777,7 +16806,9 @@ async function renderAbsenRekap() {
         ? Math.round((new Date(row.clock_out) - new Date(row.clock_in)) / 60000)
         : null;
       const isLeaveRow = !!row._isLeave;
-      html += `<tr${isLeaveRow ? ' style="background:var(--bg2)"' : ''}>
+      const dateCell = isMonthlyView ? `<td style="white-space:nowrap">${escHtml(row.tanggal || '—')}</td>` : '';
+      tableHtml += `<tr${isLeaveRow ? ' style="background:var(--bg2)"' : ''}>
+        ${dateCell}
         <td style="font-weight:500">${escHtml(row.user_name)}</td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${absenStatusColor(row.status)}22;color:${absenStatusColor(row.status)};font-weight:600">${escHtml(absenStatusLabel(row.status))}</span></td>
         <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : absenTimeStr(row.clock_in)}</td>
@@ -16791,16 +16822,12 @@ async function renderAbsenRekap() {
           ${row.foto_in ? `<img src="${escAttr(row.foto_in)}" style="width:36px;height:36px;border-radius:6px;object-fit:cover" title="Clock-in photo" />` : ''}
           ${row.foto_out ? `<img src="${escAttr(row.foto_out)}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;margin-left:2px" title="Clock-out photo" />` : ''}
         </td>
-        <td style="font-size:11px;color:var(--text2)">
-          ${row.keterangan ? (row.terlambat_menit > 0 ? `<span style="color:#92400E">⚠️ ${escHtml(row.keterangan)}</span>` : escHtml(row.keterangan)) : '—'}
-        </td>
-        ${isAdmin ? `<td>
-          <button class="btn-sm" style="color:var(--danger);padding:2px 8px" onclick="adminDeleteAbsen('${row.id}','${isLeaveRow ? row._leaveId : ''}')" title="Delete"><i class="ti ti-trash"></i></button>
-        </td>` : ''}
+        <td style="font-size:11px;color:var(--text2)">${row.keterangan ? (row.terlambat_menit > 0 ? `<span style="color:#92400E">⚠️ ${escHtml(row.keterangan)}</span>` : escHtml(row.keterangan)) : '—'}</td>
+        ${isAdmin ? `<td><button class="btn-sm" style="color:var(--danger);padding:2px 8px" onclick="adminDeleteAbsen('${row.id}','${isLeaveRow ? row._leaveId : ''}')" title="Delete"><i class="ti ti-trash"></i></button></td>` : ''}
       </tr>`;
     }
-    html += '</tbody></table>';
-    container.innerHTML = html;
+    tableHtml += '</tbody></table></div>';
+    container.innerHTML = tableHtml;
   } catch (e) {
     container.innerHTML = `<span style="color:var(--danger);font-size:12px">Error: ${escHtml(e.message)}</span>`;
   }
@@ -18253,6 +18280,8 @@ document.addEventListener('change', (event) => {
     absenMonthlyArchiveReady = null;
     const deleteBtn = document.getElementById('absen-archive-delete-btn');
     if (deleteBtn) deleteBtn.style.display = 'none';
+    // Selecting a month immediately loads every attendance record for that month.
+    if (typeof renderAbsenRekap === 'function') renderAbsenRekap();
   }
 });
 
