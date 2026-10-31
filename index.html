@@ -5000,6 +5000,12 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
           </div>
         </div>
         <div class="panel-add-toolbar">
+          <button class="btn-sm" onclick="exportLogbookDisplayed()" title="Download only the Logbook entries currently shown after search/filter">
+            <i class="ti ti-download"></i> Download Displayed
+          </button>
+          <button class="btn-sm" onclick="exportLogbookAll()" title="Download every Logbook entry">
+            <i class="ti ti-download"></i> Download All
+          </button>
           <button class="btn-sm btn-primary" onclick="handleAdd()">
             <i class="ti ti-plus" aria-hidden="true"></i> Add Schedule
           </button>
@@ -13591,6 +13597,102 @@ function logbookDayLabel(dayKey, longForm=false) {
     : { day:'2-digit', month:'short', year:'numeric' });
 }
 
+
+// ── Logbook export: complete content, all records / currently displayed / one record ──
+function logbookExportPlainText(value) {
+  const html = String(value || '');
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('br').forEach(el => el.replaceWith('\n'));
+  doc.querySelectorAll('p,div,li,h1,h2,h3,h4,blockquote').forEach(el => {
+    if (el.tagName === 'LI') el.insertAdjacentText('afterend', '\n');
+    else el.insertAdjacentText('afterend', '\n');
+  });
+  return (doc.body.textContent || '').replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function logbookExportRows(rows) {
+  return (rows || []).map(r => ({
+    'Tanggal': r.entry_date || '',
+    'Waktu dibuat': r.created_at || '',
+    'Judul': r.title || '',
+    'Kategori': r.type || '',
+    'Isi Lengkap': logbookExportPlainText(r.body || ''),
+    'Tags': Array.isArray(r.tags) ? r.tags.join(', ') : (r.tags || ''),
+    'Dibuat oleh': r.created_by || '',
+    'Privat': r.is_private ? 'Ya' : 'Tidak',
+    'Tracker ID': r.tracker_item_id || '',
+    'Lampiran': Array.isArray(r.attachments) ? r.attachments.map(a => [a.name || a.filename || 'Lampiran', a.path || a.url || ''].filter(Boolean).join(' — ')).join('\n') : '',
+    'ID Logbook': r.id || ''
+  }));
+}
+
+function writeLogbookExport(rows, suffix) {
+  if (!Array.isArray(rows) || !rows.length) {
+    alert('Tidak ada data Logbook untuk diunduh.');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    alert('Fitur Excel belum tersedia. Muat ulang halaman lalu coba lagi.');
+    return;
+  }
+  const data = logbookExportRows(rows);
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [
+    {wch:14},{wch:22},{wch:38},{wch:14},{wch:70},{wch:28},
+    {wch:24},{wch:10},{wch:38},{wch:45},{wch:38}
+  ];
+  ws['!rows'] = data.map(r => ({ hpt: Math.min(300, Math.max(24, String(r['Isi Lengkap'] || '').split('\n').length * 16)) }));
+  // Wrap long content so the full Logbook text remains readable in Excel.
+  Object.keys(ws).filter(k => !k.startsWith('!')).forEach(k => {
+    if (ws[k] && typeof ws[k].v === 'string') ws[k].s = { alignment: { vertical: 'top', wrapText: true } };
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Logbook');
+  XLSX.writeFile(wb, `AMS-Logbook-${suffix}-${todayStr()}.xlsx`);
+}
+
+async function fetchAllLogbookForExport() {
+  const pageSize = 500;
+  let from = 0, all = [];
+  while (true) {
+    const { data, error } = await sb.from('logbook_entries').select('*')
+      .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    const batch = data || [];
+    all = all.concat(batch);
+    if (batch.length < pageSize) break;
+    from += pageSize;
+  }
+  return logbookVisibleRows(applyPrivacy(all));
+}
+
+async function exportLogbookAll() {
+  try {
+    const rows = await fetchAllLogbookForExport();
+    writeLogbookExport(rows, 'Semua');
+  } catch (e) {
+    console.error('Logbook full export failed', e);
+    alert('Gagal mengunduh semua Logbook: ' + (e.message || e));
+  }
+}
+
+function exportLogbookDisplayed() {
+  // logbookViewCache is the exact set currently rendered after search and category filtering.
+  writeLogbookExport(logbookViewCache || [], 'Yang-Tampil');
+}
+
+function exportSingleLogbook(id) {
+  const rows = [...(logbookCache || []), ...(logbookViewCache || [])];
+  const row = rows.find(r => String(r.id) === String(id));
+  if (!row) {
+    alert('Catatan Logbook tidak ditemukan. Muat ulang menu Logbook lalu coba lagi.');
+    return;
+  }
+  writeLogbookExport([row], 'Satu-Catatan');
+}
+
 function displayLogbook(data) {
   logbookViewCache = Array.isArray(data) ? data : [];
   const typeLabel = {meeting:'Meeting',report:'Report',note:'Note',issue:'Issue'};
@@ -13668,6 +13770,7 @@ function displayLogbook(data) {
           </div>
         </div>
         <div class="np-page-actions">
+          <button class="ev-del" onclick="exportSingleLogbook('${active.id}')" title="Download this Logbook entry"><i class="ti ti-download"></i></button>
           ${canModifySharedRow(active) ? `<button class="ev-del" onclick="openWritingAssistant('logbook','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
           <button class="ev-del" onclick="editLog('${active.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
           <button class="ev-del" onclick="delLog('${active.id}')" title="Delete"><i class="ti ti-x"></i></button>` : '<span style="font-size:10px;color:var(--text3)"><i class="ti ti-lock"></i> Read only</span>'}
