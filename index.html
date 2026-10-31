@@ -16708,26 +16708,24 @@ async function compressAttendancePhoto(dataUrl, maxEdge = 640, quality = 0.52) {
   }
 }
 
-// Capture selfie with bounded waits so Attendance cannot remain stuck forever.
+// Capture attendance selfie directly from the browser camera (desktop + mobile).
+// Uses getUserMedia so desktop browsers show a live camera preview instead of a file picker.
 function takeSelfie() {
   return new Promise((resolve, reject) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'user';
-
+    let stream = null;
     let settled = false;
-    let selectionTimer = null;
-    let readerTimer = null;
+    let modal = null;
+    let video = null;
 
-    const cleanup = () => {
-      if (selectionTimer) clearTimeout(selectionTimer);
-      if (readerTimer) clearTimeout(readerTimer);
-      input.onchange = null;
-      input.oncancel = null;
-      input.remove();
+    const stopCamera = () => {
+      if (stream) stream.getTracks().forEach(track => { try { track.stop(); } catch (_) {} });
+      stream = null;
     };
-
+    const cleanup = () => {
+      stopCamera();
+      if (modal && modal.parentNode) modal.remove();
+      modal = null;
+    };
     const finish = (value, error) => {
       if (settled) return;
       settled = true;
@@ -16736,39 +16734,93 @@ function takeSelfie() {
       else resolve(value);
     };
 
-    input.onchange = () => {
-      const file = input.files && input.files[0];
-      if (!file) return finish(null);
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+      reject(new Error('Browser ini tidak mendukung akses kamera langsung. Buka WorkBoard melalui Chrome atau Edge versi terbaru dan pastikan menggunakan HTTPS.'));
+      return;
+    }
 
-      if (selectionTimer) clearTimeout(selectionTimer);
-      selectionTimer = null;
+    modal = document.createElement('div');
+    modal.id = 'attendance-camera-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,28,29,.82);display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.innerHTML = `
+      <div style="width:min(560px,100%);background:#FAF8F4;border:1px solid #C8D6DE;border-radius:16px;padding:16px;box-shadow:0 18px 55px rgba(0,0,0,.3)">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="font-size:16px;font-weight:800;color:#2A2622">📸 Selfie Absensi</div>
+          <button type="button" id="attendance-camera-close" class="btn-sm">Batal</button>
+        </div>
+        <div id="attendance-camera-status" style="font-size:12px;color:#6B6259;margin-bottom:10px">Menghubungkan kamera...</div>
+        <video id="attendance-camera-video" autoplay playsinline muted style="display:block;width:100%;max-height:58vh;min-height:220px;object-fit:cover;background:#182323;border-radius:10px;transform:scaleX(-1)"></video>
+        <canvas id="attendance-camera-canvas" style="display:none"></canvas>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+          <button type="button" id="attendance-camera-capture" class="btn-sm btn-primary" disabled>Ambil Foto</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    video = modal.querySelector('#attendance-camera-video');
+    const status = modal.querySelector('#attendance-camera-status');
+    const captureBtn = modal.querySelector('#attendance-camera-capture');
+    modal.querySelector('#attendance-camera-close').onclick = () => finish(null);
 
-      const reader = new FileReader();
-      reader.onload = async () => { try { finish(await compressAttendancePhoto(reader.result || null)); } catch (_) { finish(reader.result || null); } };
-      reader.onerror = () => finish(null, new Error('The selfie could not be read. Please try again.'));
-      reader.onabort = () => finish(null, new Error('Selfie reading was interrupted. Please try again.'));
-      readerTimer = setTimeout(() => {
-        try { reader.abort(); } catch (_) {}
-        finish(null, new Error('Reading the selfie took too long. Please try again.'));
-      }, 30000);
+    // Clicking outside the camera card cancels the attempt.
+    modal.addEventListener('click', ev => { if (ev.target === modal) finish(null); });
 
+    captureBtn.onclick = async () => {
       try {
-        reader.readAsDataURL(file);
-      } catch (error) {
-        finish(null, new Error('The selfie could not be opened. Please try again.'));
+        if (!video.videoWidth || !video.videoHeight) throw new Error('Kamera belum siap. Tunggu beberapa detik lalu coba lagi.');
+        const canvas = modal.querySelector('#attendance-camera-canvas');
+        const maxWidth = 1280;
+        const scale = Math.min(1, maxWidth / video.videoWidth);
+        canvas.width = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
+        const ctx = canvas.getContext('2d');
+        // Mirror the captured image to match the live selfie preview.
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const photo = canvas.toDataURL('image/jpeg', 0.82);
+        captureBtn.disabled = true;
+        captureBtn.textContent = 'Memproses...';
+        const compressed = await compressAttendancePhoto(photo);
+        finish(compressed || photo);
+      } catch (err) {
+        status.textContent = err.message || 'Foto tidak dapat diproses. Silakan coba lagi.';
+        captureBtn.disabled = false;
+        captureBtn.textContent = 'Ambil Foto';
       }
     };
 
-    input.oncancel = () => finish(null);
-    selectionTimer = setTimeout(() => {
-      finish(null, new Error('The camera did not respond within 2 minutes. Please try Clock In again.'));
-    }, 120000);
-
-    try {
-      input.click();
-    } catch (error) {
-      finish(null, new Error('The camera could not be opened. Check your browser permission and try again.'));
-    }
+    // getUserMedia is invoked directly from the Clock In/Out click flow.
+    navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+    }).then(mediaStream => {
+      if (settled) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      stream = mediaStream;
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play().then(() => {
+          status.textContent = 'Pastikan wajah terlihat jelas, lalu klik Ambil Foto.';
+          captureBtn.disabled = false;
+        }).catch(() => {
+          status.textContent = 'Kamera terbuka, tetapi preview belum dapat diputar. Periksa izin kamera browser.';
+        });
+      };
+    }).catch(err => {
+      let message = 'Kamera tidak dapat diakses.';
+      if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+        message = 'Izin kamera ditolak. Izinkan akses Camera untuk situs WorkBoard di pengaturan browser, lalu coba lagi.';
+      } else if (err && (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError')) {
+        message = 'Kamera tidak ditemukan pada laptop ini. Pastikan webcam terpasang dan terdeteksi Windows.';
+      } else if (err && (err.name === 'NotReadableError' || err.name === 'TrackStartError')) {
+        message = 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi kamera/video call lain, lalu coba lagi.';
+      } else if (err && (err.name === 'OverconstrainedError')) {
+        message = 'Kamera tidak mendukung pengaturan yang diminta. Coba gunakan webcam lain.';
+      }
+      finish(null, new Error(message));
+    });
   });
 }
 
