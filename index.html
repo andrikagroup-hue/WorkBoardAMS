@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v137 — Attendance photo compression + monthly archive — 01 Nov 2026 -->
+<!-- WorkBoard AMS v140 — Attendance export merge fix — 01 Nov 2026 -->
 
 <html lang="en">
 <head>
@@ -16754,7 +16754,10 @@ async function renderAbsenRekap() {
     absenRekapCache = filtered;
 
     if (!filtered.length) {
-      container.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:16px 0">No attendance data for this date.</div>';
+      container.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:16px 0">
+        Belum ada data absensi pada tanggal <strong>${escHtml(filterDate)}</strong>.
+        <span style="display:block;font-size:11px;margin-top:4px">Bagian ini mengikuti filter tanggal di atas. Untuk melihat data 1 bulan, pilih tanggal yang memiliki absensi atau gunakan Monthly Archive → Export.</span>
+      </div>`;
       return;
     }
 
@@ -18343,8 +18346,8 @@ async function exportAbsenMonthlyExcel() {
     report.getCell('C4').value = monthValue;
     report.mergeCells('A5:B5'); report.getCell('A5').value = 'Tanggal cetak';
     report.mergeCells('C5:D5'); report.getCell('C5').value = new Date().toLocaleDateString('id-ID');
-    report.mergeCells('F4:G4'); report.getCell('F4').value = 'RINGKASAN KEHADIRAN';
     report.mergeCells('F4:I4');
+    report.getCell('F4').value = 'RINGKASAN KEHADIRAN';
     const reportStatus = rows.reduce((acc, r) => { const s=(r.status||'Tidak diketahui').toString(); acc[s]=(acc[s]||0)+1; return acc; }, {});
     const reportPeople = new Set(rows.map(r => r.user_name).filter(Boolean)).size;
     const summaryItems = [
