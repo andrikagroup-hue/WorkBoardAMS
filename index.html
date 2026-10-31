@@ -5324,6 +5324,15 @@ create index if not exists idx_project_portfolio_next_action_date on project_por
           </div>
         </div>
 
+        <div class="portfolio-archive-toolbar" style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;margin:10px 0 12px;padding:10px;background:#F3EFF6;border:1px solid #D4C7DC;border-radius:10px">
+          <button type="button" class="btn-sm" onclick="exportPortfolioExcel()">↓ Download Excel</button>
+          <button type="button" class="btn-sm" onclick="selectAllPortfolioRows()">☑ Select All</button>
+          <button type="button" class="btn-sm" onclick="clearPortfolioSelection()">Clear Selection</button>
+          <button type="button" class="btn-sm" onclick="deleteSelectedPortfolioRows()" style="color:#A33B3B;border-color:#D9AAAA">Delete Selected</button>
+          <button type="button" class="btn-sm" onclick="deleteAllPortfolioRows()" style="color:#A33B3B;border-color:#D9AAAA">Delete All</button>
+          <span id="portfolio-selection-status" style="font-size:11px;color:#6B6259;align-self:center;margin-left:4px">0 selected</span>
+        </div>
+
         <div class="portfolio-summary" id="portfolio-summary">
           <div class="portfolio-stat"><div class="portfolio-stat-label">Total Entries</div><div class="portfolio-stat-value">—</div></div>
           <div class="portfolio-stat"><div class="portfolio-stat-label">Needs Action</div><div class="portfolio-stat-value">—</div></div>
@@ -6144,7 +6153,7 @@ ALTER TABLE chat_channels ADD COLUMN IF NOT EXISTS hidden_by jsonb DEFAULT '[]':
           <div class="mr-section-head"><div class="mr-section-title">📋 Portfolio Report</div><span class="mr-section-count" id="portfolio-report-count">0</span></div>
           <div style="overflow-x:auto">
             <table class="portfolio-report-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:760px">
-              <thead><tr style="text-align:left;background:var(--bg2)"><th style="padding:10px">No.</th><th style="padding:10px">Document / Reference No.</th><th style="padding:10px">Description</th><th style="padding:10px">Vendor</th><th style="padding:10px">Status</th><th style="padding:10px">Attachment</th></tr></thead>
+              <thead><tr style="text-align:left;background:var(--bg2)"><th style="padding:10px"><input type="checkbox" aria-label="Select all portfolio rows" onchange="togglePortfolioVisibleRows(this.checked)"></th><th style="padding:10px">No.</th><th style="padding:10px">Document / Reference No.</th><th style="padding:10px">Description</th><th style="padding:10px">Vendor</th><th style="padding:10px">Status</th><th style="padding:10px">Attachment</th></tr></thead>
               <tbody id="portfolio-report-body"><tr><td colspan="6" style="padding:14px;color:var(--text3)">Loading portfolio report...</td></tr></tbody>
             </table>
           </div>
@@ -8599,6 +8608,7 @@ function displayPortfolio(rows = portfolioCache) {
     const attachments = portfolioAttachmentHtml(row) || (Array.isArray(row.attachments) && row.attachments.length ? row.attachments.map(a => escHtml(a.name || a.filename || 'Attachment')).join(', ') : '—');
     const canModify = canModifySharedRow(row);
     return `<tr class="portfolio-status-row outcome-${escAttr(status)}" style="border-top:1px solid var(--border2)">
+      <td style="padding:10px"><input type="checkbox" class="portfolio-row-check" data-portfolio-id="${escAttr(row.id)}" onchange="togglePortfolioRowSelection('${escAttr(row.id)}',this.checked)" ${selectedPortfolioIds.has(String(row.id))?'checked':''} ${canModify?'':'disabled'}></td>
       <td style="padding:10px;white-space:nowrap">${i+1}</td>
       <td style="padding:10px;min-width:150px">${escHtml(row.reference_no || '—')}</td>
       <td style="padding:10px;min-width:220px">${escHtml(row.title || row.customer_name || '—')}</td>
@@ -8611,6 +8621,7 @@ function displayPortfolio(rows = portfolioCache) {
     </tr>`;
   }).join('')}</tbody></table></div>`;
   applyPanelSearchHighlights('portfolio', panelSearchInput('portfolio')?.value || '');
+  updatePortfolioSelectionStatus();
 }
 
 function applyPortfolioFilters() {
@@ -8623,6 +8634,160 @@ function isPortfolioSchemaError(error) {
   const msg = String(error?.message || error || '');
   return error?.code === '42P01' ||
     /project_portfolio|does not exist|schema cache|could not find.*column|column .* does not exist/i.test(msg);
+}
+
+
+// ── Portfolio archive: pastel Excel export + verified bulk deletion ──
+let selectedPortfolioIds = new Set();
+
+function updatePortfolioSelectionStatus(){
+  const el=document.getElementById('portfolio-selection-status');
+  if(el) el.textContent=`${selectedPortfolioIds.size} selected`;
+}
+function togglePortfolioRowSelection(id,checked){
+  const key=String(id);
+  if(checked) selectedPortfolioIds.add(key); else selectedPortfolioIds.delete(key);
+  updatePortfolioSelectionStatus();
+}
+function togglePortfolioVisibleRows(checked){
+  document.querySelectorAll('#portfolio-list .portfolio-row-check:not(:disabled)').forEach(el=>{
+    el.checked=checked;
+    const id=String(el.dataset.portfolioId);
+    if(checked) selectedPortfolioIds.add(id); else selectedPortfolioIds.delete(id);
+  });
+  updatePortfolioSelectionStatus();
+}
+function selectAllPortfolioRows(){
+  (portfolioCache||[]).forEach(row=>{if(canModifySharedRow(row))selectedPortfolioIds.add(String(row.id));});
+  displayPortfolio(portfolioCache); updatePortfolioSelectionStatus();
+}
+function clearPortfolioSelection(){
+  selectedPortfolioIds.clear(); displayPortfolio(portfolioCache); updatePortfolioSelectionStatus();
+}
+async function exportPortfolioExcel(){
+  if(typeof ExcelJS==='undefined') return alert('Library Excel belum termuat. Coba refresh WorkBoard lalu ulangi.');
+  const rows=[...(portfolioCache||[])];
+  if(!rows.length) return alert('Tidak ada data Portfolio untuk diunduh.');
+  const wb=new ExcelJS.Workbook();
+  wb.creator='WorkBoard AMS'; wb.subject='Project Portfolio Archive'; wb.title='AMS Project Portfolio';
+  wb.created=new Date();
+  const ws=wb.addWorksheet('Portfolio Data',{views:[{state:'frozen',ySplit:1}]});
+  const headers=[
+    'No.','Entry Date','Type','Reference No.','Description','Customer','Customer PIC','Customer Contact',
+    'Source Type','Source Detail','Vendor / Partner','Status','Stage','Decision','Outcome Reason',
+    'Next Action','Next Action Date','Estimated Value (IDR)','AMS Quote Value (IDR)',
+    'Vendor Value (IDR)','Final Order Value (IDR)','Notes','Attachments','Created By','Created At','Updated At','Record ID'
+  ];
+  ws.addRow(headers);
+  rows.forEach((r,i)=>ws.addRow([
+    i+1,r.entry_date||'',r.entry_type||'',r.reference_no||'',r.title||'',r.customer_name||'',
+    r.customer_pic||'',r.customer_contact||'',r.source_type||'',r.source_detail||'',
+    r.partner_vendor||'',portfolioOutcome(r),portfolioStage(r),r.decision||'',r.outcome_reason||'',
+    r.next_action||'',r.next_action_date||'',Number(r.estimated_value)||0,Number(r.ams_quote_value)||0,
+    Number(r.vendor_value)||0,Number(r.final_order_value)||0,r.notes||'',
+    Array.isArray(r.attachments)?r.attachments.map(a=>a.name||a.filename||'Attachment').join('; '):'',
+    r.created_by||'',r.created_at||'',r.updated_at||'',r.id||''
+  ]));
+  ws.columns=[
+    {width:7},{width:14},{width:14},{width:23},{width:38},{width:26},{width:22},{width:22},
+    {width:16},{width:28},{width:24},{width:16},{width:24},{width:16},{width:28},
+    {width:38},{width:16},{width:21},{width:21},{width:21},{width:22},{width:45},
+    {width:35},{width:22},{width:22},{width:22},{width:38}
+  ];
+  const header=ws.getRow(1);
+  header.height=30;
+  header.eachCell(c=>{c.font={bold:true,color:{argb:'FF344B50'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFDDE9EF'}};c.alignment={vertical:'middle',wrapText:true};c.border={bottom:{style:'medium',color:{argb:'FF9CB9C8'}}};});
+  for(let r=2;r<=ws.rowCount;r++){
+    const row=ws.getRow(r); row.height=28;
+    row.eachCell((c,col)=>{
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:r%2===0?'FFF8EEF1':'FFFAF8F4'}};
+      c.alignment={vertical:'top',wrapText:true};
+      c.border={bottom:{style:'thin',color:{argb:'FFE5DDD5'}}};
+      if(col>=18&&col<=21){c.numFmt='"Rp" #,##0;[Red]-"Rp" #,##0';}
+    });
+    const status=String(row.getCell(12).value||'').toLowerCase();
+    const fill=status==='Won'?'FFE6F0E3':status==='Lost'?'FFF6E3E3':status==='Waiting'?'FFE8F1F5':'FFFFF4E8';
+    row.getCell(12).fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}};
+  }
+  ws.autoFilter={from:{row:1,column:1},to:{row:1,column:headers.length}};
+  ws.getColumn(2).numFmt='dd mmm yyyy'; ws.getColumn(17).numFmt='dd mmm yyyy';
+
+  const sum=wb.addWorksheet('Executive Summary');
+  sum.columns=[{width:34},{width:22},{width:4},{width:34},{width:22}];
+  sum.mergeCells('A1:E1'); sum.getCell('A1').value='AMS | PROJECT PORTFOLIO SUMMARY';
+  sum.getCell('A1').font={bold:true,size:16,color:{argb:'FF344B50'}};
+  sum.getCell('A1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFDDE9EF'}};
+  sum.getRow(1).height=32;
+  sum.getCell('A3').value='Metric'; sum.getCell('B3').value='Value';
+  ['A3','B3'].forEach(a=>{sum.getCell(a).font={bold:true,color:{argb:'FF344B50'}};sum.getCell(a).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE5DDEC'}};});
+  const last=rows.length+1;
+  const metrics=[
+    ["Total Portfolio Entries",`=COUNTA('Portfolio Data'!E2:E${last})`],
+    ["Won / Approved",`=COUNTIF('Portfolio Data'!L2:L${last},"Won")`],
+    ["In Process",`=COUNTIF('Portfolio Data'!L2:L${last},"Process")`],
+    ["Waiting",`=COUNTIF('Portfolio Data'!L2:L${last},"Waiting")`],
+    ["Upcoming",`=COUNTIF('Portfolio Data'!L2:L${last},"Upcoming")`],
+    ["Lost / Discontinued",`=COUNTIF('Portfolio Data'!L2:L${last},"Lost")+COUNTIF('Portfolio Data'!L2:L${last},"Discontinued")`],
+    ["Total Estimated Value",`=SUM('Portfolio Data'!R2:R${last})`],
+    ["Total AMS Quotation Value",`=SUM('Portfolio Data'!S2:S${last})`],
+    ["Total Vendor Value",`=SUM('Portfolio Data'!T2:T${last})`],
+    ["Total Final Order Value",`=SUM('Portfolio Data'!U2:U${last})`]
+  ];
+  metrics.forEach((m,i)=>{
+    const rr=i+4;sum.getCell(rr,1).value=m[0];sum.getCell(rr,2).value={formula:m[1]};
+    [1,2].forEach(c=>{sum.getCell(rr,c).fill={type:'pattern',pattern:'solid',fgColor:{argb:i%2?'FFFAF8F4':'FFF0F5F0'}};sum.getCell(rr,c).border={bottom:{style:'thin',color:{argb:'FFE5DDD5'}}};});
+  });
+  [10,11,12,13].forEach(r=>sum.getCell(r,2).numFmt='"Rp" #,##0');
+  sum.getCell('D3').value='Export Information';sum.getCell('D3').font={bold:true,color:{argb:'FF344B50'}};
+  sum.getCell('D4').value='Generated';sum.getCell('E4').value=new Date();
+  sum.getCell('D5').value='Records included';sum.getCell('E5').value=rows.length;
+  sum.getCell('D6').value='Source';sum.getCell('E6').value='WorkBoard AMS / project_portfolio';
+  ['D3','D4','D5','D6'].forEach(a=>sum.getCell(a).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3EFF6'}});
+  sum.getCell('E4').numFmt='dd mmm yyyy hh:mm';
+  const buffer=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=`AMS_Project_Portfolio_${todayStr()}.xlsx`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  alert(`Excel berhasil dibuat: ${rows.length} data Portfolio.\nFile berisi detail lengkap dan Executive Summary dengan rumus.`);
+}
+async function deletePortfolioBatch(ids,label){
+  const rows=(portfolioCache||[]);
+  const allowed=[...new Set(ids.map(String))].filter(id=>{
+    const row=rows.find(r=>String(r.id)===id);
+    return row&&canModifySharedRow(row);
+  });
+  if(!allowed.length)return alert('Tidak ada data yang bisa dihapus oleh akun ini.');
+  const phrase=`HAPUS ${allowed.length} PORTFOLIO`;
+  const typed=prompt(`${label}\\n${allowed.length} data Portfolio akan dihapus permanen.\\n\\nKetik persis: ${phrase}`,'');
+  if(typed!==phrase){if(typed!==null)alert('Konfirmasi tidak cocok. Tidak ada data yang dihapus.');return;}
+  try{
+    let deleted=[];
+    for(let i=0;i<allowed.length;i+=50){
+      const {data,error}=await withTimeout(sb.from('project_portfolio').delete().in('id',allowed.slice(i,i+50)).select('id'));
+      if(error)throw error;
+      deleted.push(...(data||[]).map(x=>String(x.id)));
+    }
+    const done=new Set(deleted);
+    selectedPortfolioIds=new Set([...selectedPortfolioIds].filter(id=>!done.has(id)));
+    await renderPortfolio();
+    await renderPortfolioReportTable();
+    alert(`${deleted.length} dari ${allowed.length} data berhasil dihapus dan diverifikasi.`);
+  }catch(e){
+    console.error('Portfolio bulk delete failed',e);
+    await renderPortfolio();
+    alert('Penghapusan tidak selesai: '+(e?.message||String(e)));
+  }
+}
+function deleteSelectedPortfolioRows(){
+  const ids=[...selectedPortfolioIds];
+  if(!ids.length)return alert('Pilih data Portfolio yang akan dihapus terlebih dahulu.');
+  return deletePortfolioBatch(ids,'Hapus data yang dipilih');
+}
+function deleteAllPortfolioRows(){
+  const ids=(portfolioCache||[]).filter(r=>canModifySharedRow(r)).map(r=>String(r.id));
+  if(!ids.length)return alert('Tidak ada data Portfolio yang dapat dihapus.');
+  return deletePortfolioBatch(ids,'Hapus seluruh data Portfolio yang dapat diakses dan dikelola akun ini');
 }
 
 async function renderPortfolio() {
