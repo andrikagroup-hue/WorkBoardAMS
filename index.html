@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v136 — Intranet preparation — 24 Oct 2026 -->
+<!-- WorkBoard AMS v137 — Attendance photo compression + monthly archive — 01 Nov 2026 -->
 
 <html lang="en">
 <head>
@@ -25,6 +25,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Export: Excel, PDF, Screenshot -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
@@ -6325,6 +6326,12 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
             <option value="cuti">🏖️ Time Off</option>
           </select>
           <button class="btn-sm" onclick="document.getElementById('absen-leave-form').style.display='block'"><i class="ti ti-file-plus"></i> Request Leave / Sick / Time Off</button>
+        </div>
+        <div id="absen-monthly-tools" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px;margin:0 0 12px">
+          <strong style="font-size:12px">Monthly Archive</strong>
+          <input type="month" id="absen-archive-month" style="font-size:12px" />
+          <button class="btn-sm btn-primary" onclick="exportAbsenMonthlyExcel()"><i class="ti ti-file-spreadsheet"></i> Export Excel + Photos</button>
+          <span id="absen-archive-status" style="font-size:11px;color:var(--text3)">Monthly detail, GPS, notes, leave records and embedded selfies.</span>
         </div>
         <div class="form-box" id="absen-leave-form" style="display:none;margin-bottom:12px">
           <div style="font-size:13px;font-weight:600;margin-bottom:10px">📝 Request Leave / Sick / Time Off</div>
@@ -16279,6 +16286,35 @@ async function getVerifiedOfficeGPS() {
   return gps;
 }
 
+// Compress attendance selfie before it is sent to Supabase.
+// JPEG, max 640px on the longest edge, quality 0.52; preserve original if browser decoding fails.
+async function compressAttendancePhoto(dataUrl, maxEdge = 640, quality = 0.52) {
+  if (!dataUrl || !/^data:image\//i.test(dataUrl)) return dataUrl;
+  try {
+    const img = new Image();
+    img.src = dataUrl;
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+    const scale = Math.min(1, maxEdge / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+    canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return dataUrl;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const compressed = canvas.toDataURL('image/jpeg', quality);
+    canvas.width = 1; canvas.height = 1;
+    return compressed.length < dataUrl.length ? compressed : dataUrl;
+  } catch (error) {
+    console.warn('Attendance photo compression skipped:', error);
+    return dataUrl;
+  }
+}
+
 // Capture selfie with bounded waits so Attendance cannot remain stuck forever.
 function takeSelfie() {
   return new Promise((resolve, reject) => {
@@ -16315,7 +16351,7 @@ function takeSelfie() {
       selectionTimer = null;
 
       const reader = new FileReader();
-      reader.onload = () => finish(reader.result || null);
+      reader.onload = async () => { try { finish(await compressAttendancePhoto(reader.result || null)); } catch (_) { finish(reader.result || null); } };
       reader.onerror = () => finish(null, new Error('The selfie could not be read. Please try again.'));
       reader.onabort = () => finish(null, new Error('Selfie reading was interrupted. Please try again.'));
       readerTimer = setTimeout(() => {
@@ -16349,6 +16385,8 @@ async function renderAbsen() {
   const today = absenDateStr();
   const filterEl = document.getElementById('absen-filter-date');
   if (filterEl && !filterEl.value) filterEl.value = today;
+  const archiveMonthEl = document.getElementById('absen-archive-month');
+  if (archiveMonthEl && !archiveMonthEl.value) archiveMonthEl.value = today.slice(0, 7);
 
   const dateEl = document.getElementById('absen-today-date');
   if (dateEl) {
@@ -18205,6 +18243,201 @@ async function deletePass(id) {
 
 // Legacy plaintext Password Vault bulk-import code was removed for security.
 // Add credentials only through the encrypted Password Manager UI.
+
+// ── Monthly attendance archive: full detail + embedded photos ─────────────
+let absenMonthlyArchiveReady = null;
+
+function absenMonthBounds(monthValue) {
+  if (!/^\d{4}-\d{2}$/.test(monthValue || '')) throw new Error('Pilih bulan arsip terlebih dahulu.');
+  const [year, month] = monthValue.split('-').map(Number);
+  const start = `${year}-${String(month).padStart(2,'0')}-01`;
+  const endDate = new Date(Date.UTC(year, month, 1));
+  const end = `${endDate.getUTCFullYear()}-${String(endDate.getUTCMonth()+1).padStart(2,'0')}-${String(endDate.getUTCDate()).padStart(2,'0')}`;
+  return { start, end };
+}
+
+async function fetchAllAttendanceForMonth(start, end) {
+  const all = [];
+  const pageSize = 500;
+  for (let from = 0; ; from += pageSize) {
+    const to = from + pageSize - 1;
+    const { data, error } = await withTimeout(
+      sb.from('attendance').select('*').gte('tanggal', start).lt('tanggal', end)
+        .order('tanggal', { ascending: true }).order('clock_in', { ascending: true }).range(from, to)
+    );
+    if (error) throw error;
+    all.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return all;
+}
+
+async function fetchAllLeaveForMonth(start, end) {
+  const lastDay = new Date(new Date(end + 'T00:00:00Z').getTime() - 86400000).toISOString().slice(0,10);
+  const all = [];
+  const pageSize = 500;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await withTimeout(
+      sb.from('leave_requests').select('*').lte('dari_tanggal', lastDay).gte('sampai_tanggal', start)
+        .order('dari_tanggal', { ascending: true }).range(from, from + pageSize - 1)
+    );
+    if (error) throw error;
+    all.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return all;
+}
+
+function excelImagePayload(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== 'string') return null;
+  const match = dataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,([\s\S]+)$/i);
+  if (!match) return null;
+  let extension = match[1].toLowerCase();
+  if (extension === 'jpg') extension = 'jpeg';
+  // ExcelJS supports PNG/JPEG image embedding. Convert WEBP to JPEG in browser.
+  if (extension === 'webp') return null;
+  return { extension, base64: match[2] };
+}
+
+async function exportAbsenMonthlyExcel() {
+  if (!isOwner()) return alert('Monthly attendance archive is available to Owner only.');
+  const monthInput = document.getElementById('absen-archive-month');
+  const monthValue = monthInput?.value || '';
+  const statusEl = document.getElementById('absen-archive-status');
+  const button = document.querySelector('#absen-monthly-tools button');
+  if (!window.ExcelJS) return alert('Excel export library is not loaded. Check internet connection and reload WorkBoard.');
+  let rows = [], leaveRows = [];
+  try {
+    const { start, end } = absenMonthBounds(monthValue);
+    if (statusEl) statusEl.textContent = 'Loading monthly attendance records...';
+    if (button) button.disabled = true;
+    [rows, leaveRows] = await Promise.all([
+      fetchAllAttendanceForMonth(start, end),
+      fetchAllLeaveForMonth(start, end)
+    ]);
+    if (!rows.length && !leaveRows.length) {
+      if (statusEl) statusEl.textContent = 'No records found for this month.';
+      alert('Tidak ada data attendance maupun leave request pada bulan tersebut.');
+      return;
+    }
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'WorkBoard AMS';
+    wb.created = new Date();
+    wb.subject = `Attendance archive ${monthValue}`;
+    const ws = wb.addWorksheet('Attendance Detail', { views: [{ state: 'frozen', ySplit: 1 }] });
+    ws.columns = [
+      { header:'Employee', key:'user_name', width:24 }, { header:'Date', key:'tanggal', width:14 },
+      { header:'Status', key:'status', width:14 }, { header:'Clock In', key:'clock_in', width:22 },
+      { header:'Clock Out', key:'clock_out', width:22 }, { header:'Total Hours', key:'total', width:16 },
+      { header:'Late (minutes)', key:'late', width:16 }, { header:'Clock In GPS', key:'gps_in', width:28 },
+      { header:'Clock Out GPS', key:'gps_out', width:28 }, { header:'Clock In Photo', key:'photo_in', width:20 },
+      { header:'Clock Out Photo', key:'photo_out', width:20 }, { header:'Notes', key:'notes', width:36 }
+    ];
+    ws.getRow(1).font = { bold:true, color:{ argb:'FFFFFFFF' } };
+    ws.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF2F6364' } };
+    rows.forEach((r, index) => {
+      const duration = r.clock_in && r.clock_out ? Math.max(0, Math.round((new Date(r.clock_out)-new Date(r.clock_in))/60000)) : null;
+      const row = ws.addRow({
+        user_name:r.user_name || '', tanggal:r.tanggal || '', status:r.status || '',
+        clock_in:r.clock_in ? new Date(r.clock_in).toLocaleString('id-ID') : '-',
+        clock_out:r.clock_out ? new Date(r.clock_out).toLocaleString('id-ID') : '-',
+        total:duration == null ? '-' : `${Math.floor(duration/60)}h ${duration%60}m`,
+        late:r.terlambat_menit || 0,
+        gps_in:r.lat_in != null && r.lng_in != null ? `${r.lat_in}, ${r.lng_in}` : '-',
+        gps_out:r.lat_out != null && r.lng_out != null ? `${r.lat_out}, ${r.lng_out}` : '-',
+        photo_in:r.foto_in ? 'Embedded below' : '-', photo_out:r.foto_out ? 'Embedded below' : '-',
+        notes:r.keterangan || ''
+      });
+      row.height = 58;
+      row.alignment = { vertical:'middle', wrapText:true };
+      const imageIn = excelImagePayload(r.foto_in);
+      const imageOut = excelImagePayload(r.foto_out);
+      if (imageIn) {
+        const id = wb.addImage({ base64:imageIn.base64, extension:imageIn.extension });
+        ws.addImage(id, { tl:{ col:9, row:index+1, nativeCol:9, nativeRow:index+1 }, br:{ col:10, row:index+2, nativeCol:10, nativeRow:index+2 }, editAs:'oneCell' });
+      }
+      if (imageOut) {
+        const id = wb.addImage({ base64:imageOut.base64, extension:imageOut.extension });
+        ws.addImage(id, { tl:{ col:10, row:index+1, nativeCol:10, nativeRow:index+1 }, br:{ col:11, row:index+2, nativeCol:11, nativeRow:index+2 }, editAs:'oneCell' });
+      }
+    });
+    ws.autoFilter = { from:{ row:1, column:1 }, to:{ row:1, column:12 } };
+
+    const lw = wb.addWorksheet('Leave Requests', { views: [{ state:'frozen', ySplit:1 }] });
+    lw.columns = [
+      { header:'Employee', key:'user_name', width:24 }, { header:'Type', key:'tipe', width:14 },
+      { header:'From', key:'dari_tanggal', width:14 }, { header:'To', key:'sampai_tanggal', width:14 },
+      { header:'Status', key:'status', width:14 }, { header:'Reason', key:'alasan', width:40 },
+      { header:'Admin Notes', key:'catatan_admin', width:36 }
+    ];
+    lw.getRow(1).font = { bold:true, color:{argb:'FFFFFFFF'} };
+    lw.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF2F6364'} };
+    leaveRows.forEach(r => lw.addRow({ user_name:r.user_name, tipe:r.tipe, dari_tanggal:r.dari_tanggal, sampai_tanggal:r.sampai_tanggal, status:r.status, alasan:r.alasan || '', catatan_admin:r.catatan_admin || '' }));
+    lw.autoFilter = { from:{row:1,column:1}, to:{row:1,column:7} };
+
+    const summary = wb.addWorksheet('Archive Info');
+    summary.addRows([
+      ['WORKBOARD AMS — MONTHLY ATTENDANCE ARCHIVE'],
+      ['Month', monthValue], ['Attendance records', rows.length], ['Leave request records overlapping month', leaveRows.length],
+      ['Generated at', new Date().toLocaleString('id-ID')],
+      ['Photo note', 'Clock In / Clock Out photos are embedded in Attendance Detail when stored as PNG or JPEG.'],
+      ['Archive deletion', 'Attendance rows only. Leave Requests are not deleted by the archive cleanup.']
+    ]);
+    summary.getColumn(1).width = 48; summary.getColumn(2).width = 95;
+    summary.getRow(1).font = { bold:true, size:14 };
+
+    if (statusEl) statusEl.textContent = `Preparing Excel: ${rows.length} attendance rows, ${leaveRows.length} leave requests...`;
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url; link.download = `WorkBoard_AMS_Attendance_${monthValue}.xlsx`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+    // Keep exact month + count in memory for the explicit archive-delete step.
+    absenMonthlyArchiveReady = { monthValue, start, end, exportedCount:rows.length, generatedAt:Date.now() };
+    if (statusEl) statusEl.textContent = `Excel generated (${rows.length} attendance rows; ${leaveRows.length} leave requests). Verify the downloaded file before deleting archived attendance.`;
+    if (rows.length) {
+      const confirmed = confirm(`File Excel sudah dibuat untuk ${monthValue} dengan ${rows.length} baris attendance dan foto yang tersedia.\n\nPastikan file sudah selesai diunduh dan bisa dibuka. Hanya setelah itu, apakah kamu ingin menghapus ${rows.length} baris attendance bulan ini dari Supabase?\n\nLeave Requests tidak akan dihapus.`);
+      if (confirmed) await deleteArchivedAttendanceMonth();
+    }
+  } catch (error) {
+    console.error('Monthly attendance export failed:', error);
+    if (statusEl) statusEl.textContent = 'Export failed. No attendance data was deleted.';
+    alert('Export Excel gagal. Tidak ada data yang dihapus. Detail: ' + (error.message || error));
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function deleteArchivedAttendanceMonth() {
+  if (!isOwner()) return alert('Owner access required.');
+  const archive = absenMonthlyArchiveReady;
+  if (!archive) return alert('Belum ada export bulanan yang siap diarsipkan.');
+  const typed = prompt(`Ketik HAPUS ${archive.monthValue} untuk menghapus attendance bulan tersebut setelah memastikan file Excel aman.`);
+  if (typed !== `HAPUS ${archive.monthValue}`) return alert('Konfirmasi tidak cocok. Tidak ada data yang dihapus.');
+  const { count: currentCount, error: fetchError } = await withTimeout(
+    sb.from('attendance').select('id', { count:'exact', head:true }).gte('tanggal', archive.start).lt('tanggal', archive.end)
+  );
+  if (fetchError) return alert('Verifikasi data sebelum hapus gagal: ' + fetchError.message);
+  if (currentCount !== archive.exportedCount) {
+    absenMonthlyArchiveReady = null;
+    return alert(`Jumlah data berubah sejak export (${currentCount} saat ini vs ${archive.exportedCount} saat export). Penghapusan dibatalkan. Export ulang bulan tersebut.`);
+  }
+  const { count: deletedCount, error: deleteError } = await withTimeout(
+    sb.from('attendance').delete({ count:'exact' }).gte('tanggal', archive.start).lt('tanggal', archive.end).select('id')
+  );
+  if (deleteError) return alert('Penghapusan ditolak/gagal: ' + deleteError.message + '. Data tidak boleh dianggap terhapus.');
+  if (deletedCount !== archive.exportedCount) {
+    alert(`Peringatan: jumlah terhapus (${deletedCount}) tidak sama dengan jumlah export (${archive.exportedCount}). Periksa Supabase segera.`);
+  } else {
+    alert(`Arsip ${archive.monthValue} selesai. ${deletedCount} baris attendance dihapus setelah export. Leave Requests dan data bulan lain tetap utuh.`);
+  }
+  absenMonthlyArchiveReady = null;
+  await renderAbsenRekap();
+}
 
 // ── Export Excel absensi ────────────────────────────────────
 // Helper: hitung total jam kerja
