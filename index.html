@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v141 — Quiet export + formula report — 01 Nov 2026 -->
+<!-- WorkBoard AMS v142 — Employee recap + explicit archive deletion — 01 Nov 2026 -->
 
 <html lang="en">
 <head>
@@ -6330,8 +6330,9 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
         <div id="absen-monthly-tools" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px;margin:0 0 12px">
           <strong style="font-size:12px">Monthly Archive</strong>
           <input type="month" id="absen-archive-month" style="font-size:12px" />
-          <button class="btn-sm btn-primary" onclick="exportAbsenMonthlyExcel()"><i class="ti ti-file-spreadsheet"></i> Export</button>
-          <span id="absen-archive-status" style="font-size:11px;color:var(--text3)">Monthly detail, GPS, notes, leave records and embedded selfies.</span>
+          <button id="absen-archive-export-btn" class="btn-sm btn-primary" onclick="exportAbsenMonthlyExcel()"><i class="ti ti-file-spreadsheet"></i> Export Excel</button>
+          <button id="absen-archive-delete-btn" class="btn-sm" style="display:none;background:#FEE2E2;border-color:#E8B4B4;color:#991B1B" onclick="deleteArchivedAttendanceMonth()"><i class="ti ti-trash"></i> Hapus Data Terarsip</button>
+          <span id="absen-archive-status" style="font-size:11px;color:var(--text3)">Export dulu. Tombol hapus baru muncul setelah file Excel berhasil dibuat. Pastikan file sudah diperiksa sebelum menghapus.</span>
         </div>
         <div class="form-box" id="absen-leave-form" style="display:none;margin-bottom:12px">
           <div style="font-size:13px;font-weight:600;margin-bottom:10px">📝 Request Leave / Sick / Time Off</div>
@@ -18247,6 +18248,14 @@ async function deletePass(id) {
 // Legacy plaintext Password Vault bulk-import code was removed for security.
 // Add credentials only through the encrypted Password Manager UI.
 
+document.addEventListener('change', (event) => {
+  if (event.target?.id === 'absen-archive-month') {
+    absenMonthlyArchiveReady = null;
+    const deleteBtn = document.getElementById('absen-archive-delete-btn');
+    if (deleteBtn) deleteBtn.style.display = 'none';
+  }
+});
+
 // ── Monthly attendance archive: full detail + embedded photos ─────────────
 let absenMonthlyArchiveReady = null;
 
@@ -18317,7 +18326,7 @@ async function exportAbsenMonthlyExcel() {
   const monthInput = document.getElementById('absen-archive-month');
   const monthValue = monthInput?.value || '';
   const statusEl = document.getElementById('absen-archive-status');
-  const button = document.querySelector('#absen-monthly-tools button');
+  const button = document.getElementById('absen-archive-export-btn');
   if (!window.ExcelJS) return alert('Excel export library is not loaded. Check internet connection and reload WorkBoard.');
   let rows = [], leaveRows = [];
   try {
@@ -18446,6 +18455,56 @@ async function exportAbsenMonthlyExcel() {
       }
     }
 
+    // Employee-level monthly recap with live Excel formulas.
+    const empNames = [...new Set(rows.map(r => (r.user_name || '').trim()).filter(Boolean))]
+      .sort((a,b) => a.localeCompare(b, 'id'));
+    const emp = wb.addWorksheet('Rekap per Karyawan', { views:[{state:'frozen', ySplit:5, showGridLines:false}] });
+    emp.mergeCells('A1:K1');
+    emp.getCell('A1').value = 'REKAP ABSENSI PER KARYAWAN';
+    emp.getCell('A1').font = { name:'Arial', bold:true, size:16, color:{argb:'FF222222'} };
+    emp.getCell('A1').alignment = { horizontal:'center', vertical:'middle' };
+    emp.getRow(1).height = 30;
+    emp.mergeCells('A2:K2');
+    emp.getCell('A2').value = 'PT. ANDRIKA MITRA SOLUSI';
+    emp.getCell('A2').font = { name:'Arial', bold:true, size:11, color:{argb:'FF555555'} };
+    emp.getCell('A2').alignment = { horizontal:'center' };
+    emp.mergeCells('A3:B3'); emp.getCell('A3').value = 'Periode';
+    emp.getCell('C3').value = monthValue;
+    emp.mergeCells('E3:K3'); emp.getCell('E3').value = 'Perhitungan otomatis menggunakan formula Excel';
+    emp.getCell('E3').font = { italic:true, size:9, color:{argb:'FF666666'} };
+    const empHeaders = ['No','Nama Karyawan','Total Catatan','Hadir','Terlambat','Izin','Sakit','Cuti','Alpa','Total Menit Terlambat','Total Jam Kerja'];
+    empHeaders.forEach((h,i) => {
+      const c=emp.getCell(5,i+1); c.value=h;
+      c.font={bold:true,color:{argb:'FFFFFFFF'},size:9};
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFB5121B'}};
+      c.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+      c.border={bottom:{style:'thin',color:{argb:'FF8E1118'}}};
+    });
+    emp.getRow(5).height=34;
+    empNames.forEach((name,i) => {
+      const r=i+6;
+      emp.getCell(r,1).value=i+1;
+      emp.getCell(r,2).value=name;
+      emp.getCell(r,3).value={formula:`COUNTIF('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r})`};
+      ['hadir','terlambat','izin','sakit','cuti','alpa'].forEach((status,j) => {
+        emp.getCell(r,4+j).value={formula:`COUNTIFS('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r},'Laporan Absensi'!$H$10:$H$${lastDataRow},"${status}")`};
+      });
+      emp.getCell(r,10).value={formula:`SUMIF('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r},'Laporan Absensi'!$G$10:$G$${lastDataRow})`};
+      emp.getCell(r,11).value={formula:`SUMIF('Laporan Absensi'!$C$10:$C$${lastDataRow},B${r},'Laporan Absensi'!$F$10:$F$${lastDataRow})`};
+      for(let c=1;c<=11;c++){
+        const cell=emp.getCell(r,c);
+        cell.font={name:'Arial',size:9,color:{argb:'FF222222'}};
+        cell.alignment={vertical:'middle',horizontal:c===2?'left':'center',wrapText:true};
+        cell.border={bottom:{style:'hair',color:{argb:'FFD8D8D8'}}};
+        if(i%2===1) cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF7F7'}};
+      }
+      emp.getCell(r,11).numFmt='[h]"j "mm"m"';
+      emp.getRow(r).height=22;
+    });
+    [7,27,16,12,14,10,10,10,10,21,18].forEach((w,i)=>emp.getColumn(i+1).width=w);
+    if(empNames.length) emp.autoFilter={from:{row:5,column:1},to:{row:5+empNames.length,column:11}};
+    emp.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:emp.PAPER_A4};
+
     const ws = wb.addWorksheet('Attendance Detail', { views: [{ state: 'frozen', ySplit: 1 }] });
     ws.columns = [
       { header:'Employee', key:'user_name', width:24 }, { header:'Date', key:'tanggal', width:14 },
@@ -18530,6 +18589,8 @@ async function exportAbsenMonthlyExcel() {
     // Successful export must not trigger a popup or delete anything.
     // Supabase attendance remains intact until a separate, explicit Owner archive action is added.
     if (statusEl) statusEl.textContent = `Export selesai: ${rows.length} catatan absensi dan ${leaveRows.length} leave request. File Excel sudah diunduh. Data Supabase tetap aman dan tidak dihapus.`;
+    const deleteBtn = document.getElementById('absen-archive-delete-btn');
+    if (deleteBtn) deleteBtn.style.display = 'inline-flex';
   } catch (error) {
     console.error('Monthly attendance export failed:', error);
     if (statusEl) statusEl.textContent = 'Export gagal. Data absensi tidak dihapus.';
@@ -18563,6 +18624,10 @@ async function deleteArchivedAttendanceMonth() {
     alert(`Arsip ${archive.monthValue} selesai. ${deletedCount} baris attendance dihapus setelah export. Leave Requests dan data bulan lain tetap utuh.`);
   }
   absenMonthlyArchiveReady = null;
+  const deleteBtn = document.getElementById('absen-archive-delete-btn');
+  if (deleteBtn) deleteBtn.style.display = 'none';
+  const statusEl = document.getElementById('absen-archive-status');
+  if (statusEl) statusEl.textContent = 'Penghapusan arsip selesai. Leave Requests dan data bulan lain tetap utuh.';
   await renderAbsenRekap();
 }
 
