@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v144 — Logbook full archive export/delete — 01 Nov 2026 -->
+<!-- WorkBoard AMS v143 — Monthly attendance table view — 01 Nov 2026 -->
 
 <html lang="en">
 <head>
@@ -5725,19 +5725,10 @@ ALTER TABLE logbook_entries
           <button onclick="document.getElementById('logbook-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
 
-        <div class="panel-add-toolbar" style="justify-content:space-between;gap:8px;flex-wrap:wrap">
-          <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
-            <button class="btn-sm btn-primary" onclick="handleAdd()">
-              <i class="ti ti-plus" aria-hidden="true"></i> Add Logbook
-            </button>
-            <button class="btn-sm" onclick="exportAllLogbookExcel()">
-              <i class="ti ti-file-spreadsheet"></i> Download Semua Logbook
-            </button>
-            <button id="logbook-archive-delete-btn" class="btn-sm" style="display:none;background:#FEE2E2;border-color:#E8B4B4;color:#991B1B" onclick="deleteExportedLogbookArchive()">
-              <i class="ti ti-trash"></i> Hapus Logbook Terunduh
-            </button>
-          </div>
-          <span id="logbook-archive-status" style="font-size:10.5px;color:var(--text3)">Unduh arsip terlebih dahulu. Tombol hapus muncul setelah Excel berhasil dibuat.</span>
+        <div class="panel-add-toolbar">
+          <button class="btn-sm btn-primary" onclick="handleAdd()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Add Logbook
+          </button>
         </div>
         <!-- Binder divider tabs — filter entries by category (replaces the default "All" dropdown, specific to Logbook) -->
         <div class="binder-tabs-row" id="logbook-binder-tabs">
@@ -10147,170 +10138,6 @@ async function addProjectRow() {
   const more = document.getElementById('pt-new-more');
   if (more) more.open = false;
   await Promise.all([renderTracker(), renderProjectTracker()]);
-}
-
-
-// ── LOGBOOK ARCHIVE: full export, then explicitly delete exported rows ──
-let logbookArchiveReady = null;
-
-async function fetchAllLogbookForArchive() {
-  const all = [];
-  const pageSize = 200;
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await withTimeout(
-      sb.from('logbook_entries').select('*')
-        .order('entry_date', { ascending: true })
-        .order('created_at', { ascending: true })
-        .range(from, from + pageSize - 1), 60000
-    );
-    if (error) throw error;
-    all.push(...(data || []));
-    if (!data || data.length < pageSize) break;
-  }
-  return all;
-}
-
-function logbookArchiveCell(value) {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'object') {
-    try { return JSON.stringify(value); } catch (_) { return String(value); }
-  }
-  return String(value);
-}
-
-async function exportAllLogbookExcel() {
-  if (!isOwner()) return alert('Owner access required to export the full Logbook archive.');
-  const status = document.getElementById('logbook-archive-status');
-  const exportBtn = document.querySelector('#panel-logbook .panel-add-toolbar button[onclick="exportAllLogbookExcel()"]');
-  const deleteBtn = document.getElementById('logbook-archive-delete-btn');
-  if (logbookArchiveReady) logbookArchiveReady = null;
-  if (deleteBtn) deleteBtn.style.display = 'none';
-  if (exportBtn) { exportBtn.disabled = true; exportBtn.textContent = 'Preparing Excel...'; }
-  if (status) status.textContent = 'Mengambil seluruh data Logbook dari Supabase...';
-  try {
-    const rows = await fetchAllLogbookForArchive();
-    if (!rows.length) {
-      if (status) status.textContent = 'Tidak ada data Logbook yang dapat diarsipkan.';
-      alert('Tidak ada data Logbook yang dapat diarsipkan.');
-      return;
-    }
-    if (typeof ExcelJS === 'undefined') throw new Error('ExcelJS belum berhasil dimuat. Periksa koneksi internet lalu coba lagi.');
-
-    const wb = new ExcelJS.Workbook();
-    wb.creator = 'WorkBoard AMS';
-    wb.created = new Date();
-    wb.calcProperties = { calcMode:'auto' };
-
-    const ws = wb.addWorksheet('Logbook', { views:[{state:'frozen', ySplit:1, showGridLines:false}] });
-    const headers = ['No','Tanggal','Judul Aktivitas','Jenis','Isi / Deskripsi','Tags','Dibuat Oleh','Privasi','Tracker Item ID','Lampiran (JSON)','Created At','Updated At','ID'];
-    ws.addRow(headers);
-    const head = ws.getRow(1);
-    head.height = 32;
-    head.eachCell(c => {
-      c.font = { name:'Arial', bold:true, color:{argb:'FFFFFFFF'}, size:10 };
-      c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFB5121B'} };
-      c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
-      c.border = { bottom:{style:'thin',color:{argb:'FF8E1118'}} };
-    });
-    rows.forEach((r,i) => {
-      const row = ws.addRow([
-        i+1, r.entry_date || '', r.title || '', r.type || '', r.body || '',
-        logbookArchiveCell(r.tags), r.created_by || '', r.is_private ? 'Private' : 'Public',
-        r.tracker_item_id || '', logbookArchiveCell(r.attachments),
-        r.created_at || '', r.updated_at || '', r.id || ''
-      ]);
-      row.height = 30;
-      row.eachCell(c => {
-        c.font = { name:'Arial', size:9, color:{argb:'FF292522'} };
-        c.alignment = { vertical:'top', wrapText:true };
-        c.border = { bottom:{style:'hair',color:{argb:'FFE3DDD5'}} };
-      });
-      if (i % 2 === 1) row.eachCell(c => { c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF7F7'}}; });
-    });
-    [7,14,32,12,55,25,24,12,38,45,23,23,38].forEach((w,i)=>ws.getColumn(i+1).width=w);
-    ws.autoFilter = { from:{row:1,column:1}, to:{row:rows.length+1,column:headers.length} };
-    ws.getColumn(2).numFmt = 'dd mmm yyyy';
-    ws.getColumn(5).alignment = { vertical:'top', wrapText:true };
-    ws.pageSetup = { orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, paperSize:ws.PAPER_A4 };
-
-    const info = wb.addWorksheet('Archive Info');
-    info.addRows([
-      ['WORKBOARD AMS — LOGBOOK ARCHIVE'],
-      ['Tanggal export', new Date()],
-      ['Total baris diexport', rows.length],
-      ['Catatan', 'Isi/deskripsi dan metadata lampiran dicantumkan. File lampiran fisik yang tersimpan di storage tidak disalin ke dalam workbook; kolom Lampiran berisi metadata/tautan yang tersimpan pada record.'],
-      ['Peringatan', 'Pastikan file Excel tersimpan dan dapat dibuka sebelum menghapus record di Supabase.']
-    ]);
-    info.getColumn(1).width=28; info.getColumn(2).width=110;
-    info.getRow(1).font={bold:true,size:15};
-    info.getColumn(2).alignment={wrapText:true,vertical:'top'};
-
-    const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `WorkBoard_AMS_Logbook_Archive_${new Date().toISOString().slice(0,10)}.xlsx`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
-
-    // Keep only records the current Owner is authorized to delete:
-    // public team entries + own private entries. Other users' private entries remain protected.
-    const deletable = rows.filter(r => canModifySharedRow(r));
-    logbookArchiveReady = {
-      ids: deletable.map(r => r.id).filter(Boolean),
-      exportedCount: rows.length,
-      deletableCount: deletable.length,
-      createdAt: Date.now()
-    };
-    if (status) status.textContent = `Excel berhasil dibuat: ${rows.length} record. ${deletable.length} record dapat dihapus oleh Owner; private milik pengguna lain tetap dilindungi.`;
-    if (deleteBtn && deletable.length) deleteBtn.style.display = 'inline-flex';
-  } catch (e) {
-    logbookArchiveReady = null;
-    if (status) status.textContent = 'Export gagal. Data Logbook tetap aman dan tidak dihapus.';
-    alert('Export Logbook gagal: ' + (e?.message || e));
-  } finally {
-    if (exportBtn) { exportBtn.disabled = false; exportBtn.innerHTML = '<i class="ti ti-file-spreadsheet"></i> Download Semua Logbook'; }
-  }
-}
-
-async function deleteExportedLogbookArchive() {
-  if (!isOwner()) return alert('Owner access required.');
-  const archive = logbookArchiveReady;
-  if (!archive || !archive.ids?.length) return alert('Belum ada arsip Logbook yang berhasil diexport pada sesi ini. Export ulang terlebih dahulu.');
-  if (Date.now() - archive.createdAt > 30 * 60 * 1000) {
-    logbookArchiveReady = null;
-    const btn = document.getElementById('logbook-archive-delete-btn');
-    if (btn) btn.style.display = 'none';
-    return alert('Arsip export sudah lebih dari 30 menit. Silakan export ulang sebelum menghapus.');
-  }
-  const typed = prompt(`PERHATIAN: ${archive.deletableCount} record Logbook akan dihapus permanen dari Supabase. File Excel sudah harus tersimpan dan diperiksa.\\n\\nKetik HAPUS LOGBOOK untuk melanjutkan:`);
-  if (typed !== 'HAPUS LOGBOOK') return;
-  const status = document.getElementById('logbook-archive-status');
-  const btn = document.getElementById('logbook-archive-delete-btn');
-  if (btn) btn.disabled = true;
-  try {
-    // Recheck that each selected row still exists before deletion; delete in small batches.
-    let deleted = 0;
-    for (let i=0; i<archive.ids.length; i+=100) {
-      const batch = archive.ids.slice(i,i+100);
-      const { data, error } = await withTimeout(
-        sb.from('logbook_entries').delete().in('id', batch).select('id'), 60000
-      );
-      if (error) throw error;
-      deleted += (data || []).length;
-    }
-    logbookArchiveReady = null;
-    if (btn) btn.style.display = 'none';
-    if (status) status.textContent = `Selesai: ${deleted} record Logbook dihapus dari Supabase. File Excel tetap menjadi arsip lokal.`;
-    await renderLogbook();
-    alert(`Penghapusan selesai. ${deleted} record Logbook dihapus. Data di tabel lain tidak diubah.`);
-  } catch (e) {
-    if (status) status.textContent = 'Penghapusan tidak selesai seluruhnya. Periksa data sebelum mencoba lagi.';
-    alert('Penghapusan Logbook gagal/parsial: ' + (e?.message || e) + '. Jangan ulangi sebelum memeriksa data tersisa.');
-  } finally {
-    if (btn) btn.disabled = false;
-  }
 }
 
 // ── LOGBOOK ────────────────────────────────
