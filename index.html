@@ -3853,6 +3853,10 @@ input::placeholder, textarea::placeholder { color:#AAA298; }
 #panel-recurring .rt-table { border-radius:16px; overflow:hidden; box-shadow:0 8px 20px rgba(45,58,54,.045); }
 
 /* ---------- Logbook ---------- */
+#panel-logbook .logbook-select-check { width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:0 0 auto; }
+#panel-logbook .logbook-select-wrap { display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text3);margin-right:5px; }
+@media(max-width:760px){#panel-logbook .logbook-action-toolbar{justify-content:flex-start!important}#panel-logbook .logbook-action-toolbar .btn-sm{font-size:10px;padding:5px 7px}}
+
 #panel-logbook .binder-tabs-row { gap:7px; }
 #panel-logbook .binder-tab { border-radius:12px 12px 0 0; padding:9px 15px 10px; }
 #panel-logbook .logbook-binder { border-radius:0 18px 18px 18px; box-shadow:0 12px 30px rgba(45,58,54,.075); }
@@ -5725,17 +5729,30 @@ ALTER TABLE logbook_entries
           <button onclick="document.getElementById('logbook-migration-banner').style.display='none'" style="margin-top:6px;padding:2px 10px;font-size:11px;border:1px solid #f59e0b;border-radius:4px;background:transparent;cursor:pointer;color:#92400e">Close</button>
         </div>
 
-        <div class="panel-add-toolbar" style="justify-content:flex-end;gap:7px;flex-wrap:wrap">
-          <button class="btn-sm" onclick="exportLogbookDisplayed()" title="Download only the Logbook entries currently shown after search/filter">
+        <div class="panel-add-toolbar logbook-action-toolbar" style="justify-content:flex-end;gap:7px;flex-wrap:wrap">
+          <button class="btn-sm" onclick="exportLogbookDisplayed()" title="Unduh catatan sesuai hasil pencarian dan filter">
             <i class="ti ti-download"></i> Download Displayed
           </button>
-          <button class="btn-sm" onclick="exportLogbookAll()" title="Download every Logbook entry">
+          <button class="btn-sm" onclick="exportLogbookAll()" title="Unduh semua catatan Logbook yang dapat diakses akun ini">
             <i class="ti ti-download"></i> Download All
+          </button>
+          <button class="btn-sm" onclick="selectAllDisplayedLogbook(true)" title="Pilih semua catatan pada hasil filter saat ini">
+            <i class="ti ti-checkbox"></i> Select All
+          </button>
+          <button class="btn-sm" onclick="selectAllDisplayedLogbook(false)" title="Batalkan semua pilihan">
+            <i class="ti ti-square"></i> Clear Selection
+          </button>
+          <button class="btn-sm" onclick="deleteSelectedLogbook()" title="Hapus catatan yang dicentang">
+            <i class="ti ti-trash"></i> Delete Selected
+          </button>
+          <button class="btn-sm" style="color:#b42318;border-color:#e5b7b3" onclick="deleteAllLogbook()" title="Hapus semua catatan yang dapat dihapus oleh akun ini">
+            <i class="ti ti-trash-x"></i> Delete All
           </button>
           <button class="btn-sm btn-primary" onclick="handleAdd()">
             <i class="ti ti-plus" aria-hidden="true"></i> Add Logbook
           </button>
         </div>
+        <div id="logbook-selection-status" style="font-size:10.5px;color:var(--text3);text-align:right;margin:-5px 0 9px">0 catatan dipilih</div>
         <!-- Binder divider tabs — filter entries by category (replaces the default "All" dropdown, specific to Logbook) -->
         <div class="binder-tabs-row" id="logbook-binder-tabs">
           <button type="button" class="binder-tab bt-all active" onclick="logBinderFilter('', this)">All</button>
@@ -7149,6 +7166,7 @@ let scheduleEvents = [];
 let trackerCache = [];
 let logbookCache = [];
 let logbookViewCache = [];
+let selectedLogbookIds = new Set();
 let logActiveId = null;
 let notesCache = [];
 let notesViewCache = [];
@@ -13611,86 +13629,121 @@ function logbookExportPlainText(value) {
 }
 
 function logbookExportRows(rows) {
-  return (rows || []).map(r => ({
-    'Tanggal': r.entry_date || '',
-    'Waktu dibuat': r.created_at || '',
-    'Judul': r.title || '',
-    'Kategori': r.type || '',
-    'Isi Lengkap': logbookExportPlainText(r.body || ''),
-    'Tags': Array.isArray(r.tags) ? r.tags.join(', ') : (r.tags || ''),
-    'Dibuat oleh': r.created_by || '',
-    'Privat': r.is_private ? 'Ya' : 'Tidak',
-    'Tracker ID': r.tracker_item_id || '',
-    'Lampiran': Array.isArray(r.attachments) ? r.attachments.map(a => [a.name || a.filename || 'Lampiran', a.path || a.url || ''].filter(Boolean).join(' — ')).join('\n') : '',
-    'ID Logbook': r.id || ''
-  }));
+  return (rows || []).map(r => {
+    const savedBody = logbookExportPlainText(r.body || '');
+    const autoBody = !savedBody ? logbookExportPlainText(logbookAutoSummary(r) || '') : '';
+    return {
+      'Tanggal': r.entry_date || '',
+      'Waktu': r.created_at ? new Date(r.created_at).toLocaleString('id-ID') : '',
+      'Judul': r.title || '',
+      'Kategori': r.type || '',
+      'Isi Lengkap': savedBody || autoBody || '[Tidak ada isi catatan tersimpan; hanya judul/metadata yang tersedia]',
+      'Sumber Isi': savedBody ? 'Isi catatan tersimpan' : (autoBody ? 'Ringkasan otomatis dari metadata' : 'Judul/metadata saja'),
+      'Tags': Array.isArray(r.tags) ? r.tags.join(', ') : (r.tags || ''),
+      'Dibuat oleh': r.created_by || '',
+      'Privat': r.is_private ? 'Ya' : 'Tidak',
+      'Lampiran': Array.isArray(r.attachments) ? r.attachments.map(a => [a.name || a.filename || 'Lampiran', a.path || a.url || ''].filter(Boolean).join(' — ')).join('\n') : '',
+      'ID Logbook': r.id || ''
+    };
+  });
 }
 
-function writeLogbookExport(rows, suffix) {
-  if (!Array.isArray(rows) || !rows.length) {
-    alert('Tidak ada data Logbook untuk diunduh.');
-    return;
-  }
-  if (typeof XLSX === 'undefined') {
-    alert('Fitur Excel belum tersedia. Muat ulang halaman lalu coba lagi.');
-    return;
-  }
+async function writeLogbookExport(rows, suffix) {
+  if (!Array.isArray(rows) || !rows.length) { alert('Tidak ada data Logbook untuk diunduh.'); return; }
   const data = logbookExportRows(rows);
-  const ws = XLSX.utils.json_to_sheet(data);
-  ws['!cols'] = [
-    {wch:14},{wch:22},{wch:38},{wch:14},{wch:70},{wch:28},
-    {wch:24},{wch:10},{wch:38},{wch:45},{wch:38}
-  ];
-  ws['!rows'] = data.map(r => ({ hpt: Math.min(300, Math.max(24, String(r['Isi Lengkap'] || '').split('\n').length * 16)) }));
-  // Wrap long content so the full Logbook text remains readable in Excel.
-  Object.keys(ws).filter(k => !k.startsWith('!')).forEach(k => {
-    if (ws[k] && typeof ws[k].v === 'string') ws[k].s = { alignment: { vertical: 'top', wrapText: true } };
-  });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Logbook');
-  XLSX.writeFile(wb, `AMS-Logbook-${suffix}-${todayStr()}.xlsx`);
+  try {
+    if (typeof ExcelJS !== 'undefined') {
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'WorkBoard AMS'; wb.created = new Date();
+      const ws = wb.addWorksheet('Logbook Lengkap', { views:[{state:'frozen',ySplit:1}] });
+      ws.columns = [
+        {header:'Tanggal',key:'Tanggal',width:15},{header:'Waktu',key:'Waktu',width:23},
+        {header:'Judul',key:'Judul',width:38},{header:'Kategori',key:'Kategori',width:15},
+        {header:'Isi Lengkap',key:'Isi Lengkap',width:76},{header:'Sumber Isi',key:'Sumber Isi',width:31},
+        {header:'Tags',key:'Tags',width:28},{header:'Dibuat oleh',key:'Dibuat oleh',width:24},
+        {header:'Privat',key:'Privat',width:10},{header:'Lampiran',key:'Lampiran',width:42},{header:'ID Logbook',key:'ID Logbook',width:38}
+      ];
+      ws.addRows(data);
+      const header = ws.getRow(1);
+      header.height = 28;
+      header.eachCell(c => { c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2F6364'}}; c.alignment={vertical:'middle',horizontal:'center',wrapText:true}; });
+      ws.eachRow((row, n) => {
+        if (n===1) return;
+        row.alignment={vertical:'top',wrapText:true};
+        const body=String(row.getCell(5).value||'');
+        const lines=Math.max(1,body.split(/\n/).length,Math.ceil(body.length/95));
+        row.height=Math.min(180,Math.max(30,lines*16));
+        if(n%2===0) row.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F7F6'}};});
+      });
+      ws.autoFilter={from:'A1',to:'K'+(data.length+1)};
+      const info=wb.addWorksheet('Petunjuk');
+      info.columns=[{width:28},{width:100}];
+      info.addRow(['Jumlah catatan',data.length]);
+      info.addRow(['Dibuat pada',new Date().toLocaleString('id-ID')]);
+      info.addRow(['Catatan isi','Jika kolom Isi Lengkap berisi ringkasan otomatis, sumber aslinya tidak memiliki body tersimpan. Kolom Sumber Isi membedakannya.']);
+      info.getRow(1).font={bold:true};
+      const buffer=await wb.xlsx.writeBuffer();
+      const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a');
+      a.href=url; a.download=`AMS-Logbook-${suffix}-${todayStr()}.xlsx`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    } else if (typeof XLSX !== 'undefined') {
+      const ws=XLSX.utils.json_to_sheet(data); ws['!cols']=[{wch:15},{wch:23},{wch:38},{wch:15},{wch:76},{wch:31},{wch:28},{wch:24},{wch:10},{wch:42},{wch:38}];
+      const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Logbook Lengkap'); XLSX.writeFile(wb,`AMS-Logbook-${suffix}-${todayStr()}.xlsx`);
+    } else alert('Library Excel belum tersedia. Muat ulang WorkBoard lalu coba lagi.');
+  } catch(e) { console.error(e); alert('Gagal membuat Excel Logbook: '+(e.message||e)); }
 }
 
 async function fetchAllLogbookForExport() {
-  const pageSize = 500;
-  let from = 0, all = [];
-  while (true) {
-    const { data, error } = await sb.from('logbook_entries').select('*')
-      .order('entry_date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .range(from, from + pageSize - 1);
-    if (error) throw error;
-    const batch = data || [];
-    all = all.concat(batch);
-    if (batch.length < pageSize) break;
-    from += pageSize;
+  const pageSize=500; let from=0, all=[];
+  while(true){
+    const {data,error}=await sb.from('logbook_entries').select('*').order('entry_date',{ascending:false}).order('created_at',{ascending:false}).range(from,from+pageSize-1);
+    if(error) throw error; const batch=data||[]; all=all.concat(batch); if(batch.length<pageSize) break; from+=pageSize;
   }
   return logbookVisibleRows(applyPrivacy(all));
 }
+async function exportLogbookAll(){try{writeLogbookExport(await fetchAllLogbookForExport(),'Semua');}catch(e){console.error(e);alert('Gagal mengunduh semua Logbook: '+(e.message||e));}}
+function exportLogbookDisplayed(){writeLogbookExport(logbookViewCache||[],'Yang-Tampil');}
+function exportSingleLogbook(id){const row=[...(logbookCache||[]),...(logbookViewCache||[])].find(r=>String(r.id)===String(id));if(!row){alert('Catatan Logbook tidak ditemukan. Muat ulang menu Logbook lalu coba lagi.');return;}writeLogbookExport([row],'Satu-Catatan');}
 
-async function exportLogbookAll() {
-  try {
-    const rows = await fetchAllLogbookForExport();
-    writeLogbookExport(rows, 'Semua');
-  } catch (e) {
-    console.error('Logbook full export failed', e);
-    alert('Gagal mengunduh semua Logbook: ' + (e.message || e));
-  }
+function updateLogbookSelectionStatus(){
+  const el=document.getElementById('logbook-selection-status');
+  if(el) el.textContent=`${selectedLogbookIds.size} catatan dipilih`;
 }
-
-function exportLogbookDisplayed() {
-  // logbookViewCache is the exact set currently rendered after search and category filtering.
-  writeLogbookExport(logbookViewCache || [], 'Yang-Tampil');
+function toggleLogbookSelection(id,checked){
+  const row=[...(logbookCache||[])].find(r=>String(r.id)===String(id));
+  if(!row||!canModifySharedRow(row)) return;
+  if(checked) selectedLogbookIds.add(String(id)); else selectedLogbookIds.delete(String(id));
+  updateLogbookSelectionStatus();
 }
-
-function exportSingleLogbook(id) {
-  const rows = [...(logbookCache || []), ...(logbookViewCache || [])];
-  const row = rows.find(r => String(r.id) === String(id));
-  if (!row) {
-    alert('Catatan Logbook tidak ditemukan. Muat ulang menu Logbook lalu coba lagi.');
-    return;
-  }
-  writeLogbookExport([row], 'Satu-Catatan');
+function selectAllDisplayedLogbook(checked){
+  (logbookViewCache||[]).forEach(row=>{if(canModifySharedRow(row)){if(checked)selectedLogbookIds.add(String(row.id));else selectedLogbookIds.delete(String(row.id));}});
+  displayLogbook(logbookViewCache||[]); updateLogbookSelectionStatus();
+}
+async function deleteLogbookIds(ids,label){
+  const unique=[...new Set((ids||[]).map(String))];
+  if(!unique.length){alert('Tidak ada Logbook yang dapat dihapus dari pilihan ini.');return;}
+  const rows=(logbookCache||[]); const permitted=unique.filter(id=>{const row=rows.find(r=>String(r.id)===id);return row&&canModifySharedRow(row);});
+  if(!permitted.length){alert('Tidak ada catatan yang memiliki izin hapus untuk akun ini.');return;}
+  const phrase=`HAPUS ${permitted.length}`;
+  const typed=prompt(`Konfirmasi ${label}. Sebanyak ${permitted.length} catatan Logbook akan dihapus permanen.\nKetik persis: ${phrase}`,'');
+  if(typed!==phrase){if(typed!==null)alert('Konfirmasi tidak cocok. Tidak ada data yang dihapus.');return;}
+  try{
+    for(let i=0;i<permitted.length;i+=100){const batch=permitted.slice(i,i+100);const {error}=await sb.from('logbook_entries').delete().in('id',batch);if(error)throw error;}
+    permitted.forEach(id=>selectedLogbookIds.delete(id));
+    alert(`${permitted.length} catatan berhasil dihapus.`);
+    await renderLogbook();
+  }catch(e){console.error(e);alert('Penghapusan belum selesai: '+(e.message||e));await renderLogbook();}
+}
+async function deleteSelectedLogbook(){await deleteLogbookIds([...selectedLogbookIds],'Delete Selected');}
+async function deleteAllLogbook(){
+  if(!isOwner()){alert('Fitur Delete All hanya tersedia untuk Owner. Untuk catatan milik sendiri, gunakan Delete Selected.');return;}
+  try{
+    const rows=await fetchAllLogbookForExport();
+    const ids=rows.filter(canModifySharedRow).map(r=>r.id);
+    const previous=logbookCache; logbookCache=rows;
+    await deleteLogbookIds(ids,'Delete All');
+    logbookCache=previous;
+  }catch(e){console.error(e);alert('Gagal mengambil daftar Logbook: '+(e.message||e));}
 }
 
 function displayLogbook(data) {
@@ -13770,6 +13823,7 @@ function displayLogbook(data) {
           </div>
         </div>
         <div class="np-page-actions">
+          ${canModifySharedRow(active) ? `<label class="logbook-select-wrap" title="Pilih catatan ini"><input class="logbook-select-check" type="checkbox" ${selectedLogbookIds.has(String(active.id)) ? 'checked' : ''} onchange="toggleLogbookSelection('${active.id}', this.checked)"><span>Pilih</span></label>` : ''}
           <button class="ev-del" onclick="exportSingleLogbook('${active.id}')" title="Download this Logbook entry"><i class="ti ti-download"></i></button>
           ${canModifySharedRow(active) ? `<button class="ev-del" onclick="openWritingAssistant('logbook','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
           <button class="ev-del" onclick="editLog('${active.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
@@ -13794,6 +13848,7 @@ function displayLogbook(data) {
       <div class="log-day-entries">${entriesHtml}</div>
     </div>`;
   wbRefreshPrivateImagesSoon(list);
+  updateLogbookSelectionStatus();
 }
 
 function selectLogDay(dayKey) {
