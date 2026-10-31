@@ -2274,6 +2274,12 @@ body.authenticated .auth-gate { display:none !important; }
 .portfolio-status-select.outcome-cancelled { background:#F3E8D5 !important; border-color:#DCC69D !important; }
 @media(max-width:760px) { .portfolio-simple-filter { align-items:stretch; flex-wrap:wrap; } .portfolio-simple-filter select { width:100%; } }
 
+
+.log-day-select-wrap{display:flex;align-items:center;justify-content:center;flex:0 0 22px;margin-right:7px;cursor:pointer}
+.log-day-select-check{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.np-index-item{display:flex;align-items:center;gap:2px}
+.log-day-index-main{flex:1;min-width:0}
+.np-index-item .log-day-index-title,.np-index-item .log-day-index-count{overflow-wrap:anywhere}
 </style>
 
 <style id="v132-desktop-visual-refresh">
@@ -13715,6 +13721,15 @@ function toggleLogbookSelection(id,checked){
   if(checked) selectedLogbookIds.add(String(id)); else selectedLogbookIds.delete(String(id));
   updateLogbookSelectionStatus();
 }
+function toggleLogbookDaySelection(dayKey, checked) {
+  const rows = (logbookViewCache || []).filter(r => logbookDayKey(r) === dayKey && canModifySharedRow(r));
+  rows.forEach(row => {
+    if (checked) selectedLogbookIds.add(String(row.id));
+    else selectedLogbookIds.delete(String(row.id));
+  });
+  updateLogbookSelectionStatus();
+  displayLogbook(logbookViewCache || []);
+}
 function selectAllDisplayedLogbook(checked){
   (logbookViewCache||[]).forEach(row=>{if(canModifySharedRow(row)){if(checked)selectedLogbookIds.add(String(row.id));else selectedLogbookIds.delete(String(row.id));}});
   displayLogbook(logbookViewCache||[]); updateLogbookSelectionStatus();
@@ -13780,9 +13795,18 @@ function displayLogbook(data) {
     const typeCounts = {};
     g.rows.forEach(r => typeCounts[r.type] = (typeCounts[r.type] || 0) + 1);
     const typeSummary = Object.entries(typeCounts).map(([type,count]) => `${count} ${typeLabel[type] || type}`).join(' · ');
+    const selectableRows = g.rows.filter(r => canModifySharedRow(r));
+    const selectedCount = selectableRows.filter(r => selectedLogbookIds.has(String(r.id))).length;
+    const allSelected = selectableRows.length > 0 && selectedCount === selectableRows.length;
+    const partiallySelected = selectedCount > 0 && selectedCount < selectableRows.length;
     return `<div class="np-index-item ${c}${g.key === activeDay ? ' active' : ''}" onclick="selectLogDay('${g.key}')">
-      <div class="log-day-index-title">${escHtml(logbookDayLabel(g.key))}</div>
-      <div class="log-day-index-count">${g.rows.length} ${g.rows.length === 1 ? 'activity' : 'activities'}${typeSummary ? ` · ${escHtml(typeSummary)}` : ''}</div>
+      <label class="log-day-select-wrap" title="Pilih semua catatan pada tanggal ini" onclick="event.stopPropagation()">
+        <input type="checkbox" class="log-day-select-check" ${allSelected ? 'checked' : ''} ${partiallySelected ? 'data-indeterminate="true"' : ''} ${selectableRows.length ? '' : 'disabled'} onchange="toggleLogbookDaySelection('${g.key}', this.checked)">
+      </label>
+      <div class="log-day-index-main">
+        <div class="log-day-index-title">${escHtml(logbookDayLabel(g.key))}</div>
+        <div class="log-day-index-count">${g.rows.length} ${g.rows.length === 1 ? 'activity' : 'activities'}${typeSummary ? ` · ${escHtml(typeSummary)}` : ''}</div>
+      </div>
     </div>`;
   }).join('');
 
@@ -13823,7 +13847,7 @@ function displayLogbook(data) {
           </div>
         </div>
         <div class="np-page-actions">
-          ${canModifySharedRow(active) ? `<label class="logbook-select-wrap" title="Pilih catatan ini"><input class="logbook-select-check" type="checkbox" ${selectedLogbookIds.has(String(active.id)) ? 'checked' : ''} onchange="toggleLogbookSelection('${active.id}', this.checked)"><span>Pilih</span></label>` : ''}
+
           <button class="ev-del" onclick="exportSingleLogbook('${active.id}')" title="Download this Logbook entry"><i class="ti ti-download"></i></button>
           ${canModifySharedRow(active) ? `<button class="ev-del" onclick="openWritingAssistant('logbook','${active.id}')" title="Gemini Writing Assistant"><i class="ti ti-sparkles"></i></button>
           <button class="ev-del" onclick="editLog('${active.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
@@ -13847,6 +13871,7 @@ function displayLogbook(data) {
       </div>
       <div class="log-day-entries">${entriesHtml}</div>
     </div>`;
+  list.querySelectorAll('.log-day-select-check[data-indeterminate="true"]').forEach(el => { el.indeterminate = true; });
   wbRefreshPrivateImagesSoon(list);
   updateLogbookSelectionStatus();
 }
