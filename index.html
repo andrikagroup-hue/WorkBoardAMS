@@ -6369,8 +6369,8 @@ ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending
           <strong style="font-size:12px">Monthly Attendance View</strong>
           <input type="month" id="absen-archive-month" style="font-size:12px" title="Pilih bulan untuk menampilkan seluruh absensi bulan tersebut" />
           <button id="absen-archive-export-btn" class="btn-sm btn-primary" onclick="exportAbsenMonthlyExcel()"><i class="ti ti-file-spreadsheet"></i> Export Excel</button>
-          <button id="absen-archive-delete-btn" class="btn-sm" style="display:none;background:#FEE2E2;border-color:#E8B4B4;color:#991B1B" onclick="deleteArchivedAttendanceMonth()"><i class="ti ti-trash"></i> Hapus Data Terarsip</button>
-          <span id="absen-archive-status" style="font-size:11px;color:var(--text3)">Export dulu. Tombol hapus baru muncul setelah file Excel berhasil dibuat. Pastikan file sudah diperiksa sebelum menghapus.</span>
+          <button id="absen-archive-delete-btn" class="btn-sm" style="display:none;background:#FEE2E2;border-color:#E8B4B4;color:#991B1B" onclick="deleteArchivedAttendanceMonth()"><i class="ti ti-trash"></i> Delete All Attendance (Supabase)</button>
+          <span id="absen-archive-status" style="font-size:11px;color:var(--text3)">Export bulan yang dipilih terlebih dahulu. Setelah file berhasil diunduh, tombol Delete All akan aktif untuk menghapus attendance bulan tersebut dari Supabase.</span>
         </div>
         <div class="form-box" id="absen-leave-form" style="display:none;margin-bottom:12px">
           <div style="font-size:13px;font-weight:600;margin-bottom:10px">📝 Request Leave / Sick / Time Off</div>
@@ -17139,8 +17139,25 @@ async function submitLeave() {
 
 // ── Attendance summary for all employees ───────────────────────────
 let absenRekapCache = [];
+let absenRekapRequestSeq = 0;
+
+// Jabatan operasional ditampilkan terpisah dari access role (Owner/Management/Staff).
+// Tambahkan nama dan jabatan karyawan baru di mapping ini.
+function attendanceJobTitle(userName) {
+  const key = String(userName || '').trim().toLowerCase();
+  const titles = {
+    'ratu': 'Business Development',
+    'siti sa’diah azzahra': 'Business Development',
+    "siti sa'diah azzahra": 'Business Development',
+    'faldi haris': 'B2B Marketing',
+    'elsanty mulyasmi': 'Admin Digital Marketing',
+    'elsa': 'Admin Digital Marketing'
+  };
+  return titles[key] || 'Belum diatur';
+}
 
 async function renderAbsenRekap() {
+  const requestSeq = ++absenRekapRequestSeq;
   const container = document.getElementById('absen-rekap-table');
   const filterDate = document.getElementById('absen-filter-date')?.value || absenDateStr();
   const monthValue = document.getElementById('absen-archive-month')?.value || '';
@@ -17175,6 +17192,8 @@ async function renderAbsenRekap() {
       leaveData = leaves || [];
       displayPeriod = new Date(filterDate + 'T00:00:00').toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'});
     }
+
+    if (requestSeq !== absenRekapRequestSeq) return; // ignore stale response from an older filter/month request
 
     const combined = [...attData];
     // Add approved leave requests that have no attendance record for the relevant date.
@@ -17222,6 +17241,7 @@ async function renderAbsenRekap() {
       return String(a.user_name || '').localeCompare(String(b.user_name || ''));
     });
 
+    if (requestSeq !== absenRekapRequestSeq) return;
     absenRekapCache = filtered;
     if (!filtered.length) {
       container.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:16px 0">
@@ -17237,10 +17257,10 @@ async function renderAbsenRekap() {
       <span style="font-size:11px;color:#6E3F4B">${filtered.length} catatan · ${new Set(filtered.map(r=>r.user_name)).size} karyawan</span>
     </div>` : '';
 
-    let tableHtml = `${monthlyHeading}<div style="overflow-x:auto"><table class="task-table" style="min-width:${isMonthlyView ? '850px' : '600px'}">
+    let tableHtml = `${monthlyHeading}<div style="overflow-x:auto"><table class="task-table" style="min-width:${isMonthlyView ? '930px' : '680px'}">
       <thead><tr>
         ${isMonthlyView ? '<th>Date</th>' : ''}
-        <th>Name</th><th>Status</th><th>Clock In</th><th>Clock Out</th>
+        <th>Name</th><th>Jabatan</th><th>Status</th><th>Clock In</th><th>Clock Out</th>
         <th>Late</th><th>Location</th><th>Photo</th><th>Notes</th>
         ${isAdmin ? '<th>Action</th>' : ''}
       </tr></thead><tbody>`;
@@ -17254,6 +17274,7 @@ async function renderAbsenRekap() {
       tableHtml += `<tr${isLeaveRow ? ' style="background:var(--bg2)"' : ''}>
         ${dateCell}
         <td style="font-weight:500">${escHtml(row.user_name)}</td>
+        <td style="font-size:11px;color:var(--text2)">${escHtml(attendanceJobTitle(row.user_name))}</td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${absenStatusColor(row.status)}22;color:${absenStatusColor(row.status)};font-weight:600">${escHtml(absenStatusLabel(row.status))}</span></td>
         <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : absenTimeStr(row.clock_in)}</td>
         <td>${isLeaveRow ? '<span style="color:var(--text3);font-size:11px">—</span>' : (absenTimeStr(row.clock_out) + (dur ? `<br><span style="font-size:10px;color:var(--text3)">${Math.floor(dur/60)}h ${dur%60}m</span>` : ''))}</td>
@@ -17273,7 +17294,13 @@ async function renderAbsenRekap() {
     tableHtml += '</tbody></table></div>';
     container.innerHTML = tableHtml;
   } catch (e) {
-    container.innerHTML = `<span style="color:var(--danger);font-size:12px">Error: ${escHtml(e.message)}</span>`;
+    if (requestSeq !== absenRekapRequestSeq) return;
+    console.error('Attendance summary load failed:', e);
+    container.innerHTML = `<div style="padding:14px;border:1px solid #E8B4B4;border-radius:9px;background:#FFF7F7;color:#991B1B;font-size:12px">
+      <strong>Data attendance belum berhasil dimuat.</strong>
+      <div style="margin:5px 0 9px">${escHtml(e.message || 'Terjadi gangguan koneksi.')}</div>
+      <button class="btn-sm" onclick="renderAbsenRekap()"><i class="ti ti-refresh"></i> Coba Muat Ulang</button>
+    </div>`;
   }
 }
 
@@ -19076,32 +19103,59 @@ async function exportAbsenMonthlyExcel() {
 async function deleteArchivedAttendanceMonth() {
   if (!isOwner()) return alert('Owner access required.');
   const archive = absenMonthlyArchiveReady;
-  if (!archive) return alert('Belum ada export bulanan yang siap diarsipkan.');
-  const typed = prompt(`Ketik HAPUS ${archive.monthValue} untuk menghapus attendance bulan tersebut setelah memastikan file Excel aman.`);
-  if (typed !== `HAPUS ${archive.monthValue}`) return alert('Konfirmasi tidak cocok. Tidak ada data yang dihapus.');
-  const { count: currentCount, error: fetchError } = await withTimeout(
-    sb.from('attendance').select('id', { count:'exact', head:true }).gte('tanggal', archive.start).lt('tanggal', archive.end)
-  );
-  if (fetchError) return alert('Verifikasi data sebelum hapus gagal: ' + fetchError.message);
-  if (currentCount !== archive.exportedCount) {
-    absenMonthlyArchiveReady = null;
-    return alert(`Jumlah data berubah sejak export (${currentCount} saat ini vs ${archive.exportedCount} saat export). Penghapusan dibatalkan. Export ulang bulan tersebut.`);
-  }
-  const { count: deletedCount, error: deleteError } = await withTimeout(
-    sb.from('attendance').delete({ count:'exact' }).gte('tanggal', archive.start).lt('tanggal', archive.end).select('id')
-  );
-  if (deleteError) return alert('Penghapusan ditolak/gagal: ' + deleteError.message + '. Data tidak boleh dianggap terhapus.');
-  if (deletedCount !== archive.exportedCount) {
-    alert(`Peringatan: jumlah terhapus (${deletedCount}) tidak sama dengan jumlah export (${archive.exportedCount}). Periksa Supabase segera.`);
-  } else {
-    alert(`Arsip ${archive.monthValue} selesai. ${deletedCount} baris attendance dihapus setelah export. Leave Requests dan data bulan lain tetap utuh.`);
-  }
-  absenMonthlyArchiveReady = null;
-  const deleteBtn = document.getElementById('absen-archive-delete-btn');
-  if (deleteBtn) deleteBtn.style.display = 'none';
+  if (!archive) return alert('Export bulan yang dipilih terlebih dahulu. Tombol hapus hanya aktif setelah file Excel berhasil dibuat.');
+  const confirmation = `Ketik HAPUS SEMUA ${archive.monthValue} untuk menghapus ${archive.exportedCount} data attendance bulan tersebut dari Supabase.`;
+  const typed = prompt(confirmation);
+  if (typed !== `HAPUS SEMUA ${archive.monthValue}`) return alert('Konfirmasi tidak cocok. Tidak ada data yang dihapus.');
+
+  const button = document.getElementById('absen-archive-delete-btn');
   const statusEl = document.getElementById('absen-archive-status');
-  if (statusEl) statusEl.textContent = 'Penghapusan arsip selesai. Leave Requests dan data bulan lain tetap utuh.';
-  await renderAbsenRekap();
+  if (button) { button.disabled = true; button.innerHTML = '<i class="ti ti-loader-2"></i> Menghapus...'; }
+
+  try {
+    // Re-read exact record IDs immediately before deletion; never touch leave_requests.
+    const ids = [];
+    const pageSize = 200;
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await withTimeout(
+        sb.from('attendance').select('id').gte('tanggal', archive.start).lt('tanggal', archive.end)
+          .order('tanggal', {ascending:true}).range(from, from + pageSize - 1), 60000
+      );
+      if (error) throw error;
+      const batch = data || [];
+      ids.push(...batch.map(r => r.id));
+      if (batch.length < pageSize) break;
+    }
+    if (ids.length !== archive.exportedCount) {
+      absenMonthlyArchiveReady = null;
+      throw new Error(`Jumlah data saat ini ${ids.length}, sedangkan saat export ${archive.exportedCount}. Penghapusan dibatalkan. Silakan export ulang.`);
+    }
+    let deleted = 0;
+    for (let i = 0; i < ids.length; i += 100) {
+      const batchIds = ids.slice(i, i + 100);
+      const { data, error } = await withTimeout(
+        sb.from('attendance').delete().in('id', batchIds).select('id'), 60000
+      );
+      if (error) throw error;
+      deleted += (data || []).length;
+      if (statusEl) statusEl.textContent = `Menghapus attendance di Supabase: ${deleted}/${ids.length}...`;
+    }
+    if (deleted !== ids.length) throw new Error(`Terhapus ${deleted} dari ${ids.length} data. Periksa kembali rekap attendance.`);
+    absenMonthlyArchiveReady = null;
+    if (statusEl) statusEl.textContent = `${deleted} data attendance bulan ${archive.monthValue} berhasil dihapus dari Supabase. Leave Requests tidak dihapus.`;
+    alert(`${deleted} data attendance bulan ${archive.monthValue} berhasil dihapus dari Supabase. Data Leave Requests tetap ada.`);
+    await renderAbsenRekap();
+  } catch (error) {
+    console.error('Attendance archive deletion failed:', error);
+    alert('Penghapusan attendance tidak selesai: ' + (error.message || error));
+    if (statusEl) statusEl.textContent = 'Penghapusan belum terverifikasi selesai. Periksa rekap lalu export ulang bila diperlukan.';
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.style.display = absenMonthlyArchiveReady ? 'inline-flex' : 'none';
+      button.innerHTML = '<i class="ti ti-trash"></i> Delete All Attendance (Supabase)';
+    }
+  }
 }
 
 // ── Export Excel absensi ────────────────────────────────────
@@ -19121,6 +19175,7 @@ function exportAbsenToExcel() {
   const filterDate = document.getElementById('absen-filter-date')?.value || absenDateStr();
   const rows = absenRekapCache.map(r => ({
     'Name': r.user_name,
+    'Jabatan': attendanceJobTitle(r.user_name),
     'Date': r.tanggal,
     'Status': r.status,
     'Clock In': absenTimeStr(r.clock_in),
