@@ -1778,6 +1778,17 @@ body.mobile-hub-open { overflow:hidden; }
 .chat-image-thumb { display:block; width:100%; max-height:280px; object-fit:cover; background:#E7E2D8; }
 .chat-image-loading { min-height:120px; display:flex; align-items:center; justify-content:center; gap:6px; color:var(--text3); font-size:10px; }
 .chat-image-download { border:0 !important; border-radius:0 !important; border-top:0.5px solid var(--border) !important; box-shadow:none !important; }
+
+.chat-attach-chip { font-size:12.5px; padding:9px 11px; min-height:38px; gap:8px; }
+.chat-attach-chip span { white-space:normal; overflow-wrap:anywhere; line-height:1.4; }
+.chat-pdf-attachment { width:min(100%,760px); border:1px solid var(--border2); border-radius:11px; overflow:hidden; background:var(--surface); margin:6px 0; }
+.chat-pdf-heading { display:flex; align-items:center; gap:9px; padding:10px 13px; font-size:13px; font-weight:700; line-height:1.4; overflow-wrap:anywhere; }
+.chat-pdf-heading i { color:#B45309; font-size:20px; flex-shrink:0; }
+.chat-pdf-loading { padding:14px; font-size:12px; color:var(--text3); }
+.chat-pdf-frame { display:block; width:100%; height:520px; border:0; background:#E7E2D8; }
+.chat-pdf-download { border:0 !important; border-top:1px solid var(--border) !important; border-radius:0 !important; }
+@media (max-width:700px) { .chat-pdf-frame { height:min(68vh,480px); } }
+
 .chat-image-lightbox { position:fixed; inset:0; z-index:10050; background:rgba(20,18,16,.88); display:flex; align-items:center; justify-content:center; padding:30px; }
 .chat-image-lightbox img { max-width:min(1100px,96vw); max-height:90vh; object-fit:contain; border-radius:8px; box-shadow:0 16px 60px rgba(0,0,0,.45); }
 .chat-image-lightbox-close { position:absolute; top:14px; right:16px; width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.32); background:rgba(0,0,0,.3); color:#fff; cursor:pointer; font-size:20px; }
@@ -14490,6 +14501,7 @@ async function openChatChannel(channelId, isUserClick) {
         <div class="chat-header-name">${escHtml(chatChannelDisplayName(c))}</div>
         <div class="chat-header-sub${headerSub.online ? ' online' : ''}">${escHtml(headerSub.text)}</div>
       </div>
+      ${c.type === 'bagian' && canDeleteChatChannel(c) ? `<button class="chat-icon-btn" style="width:30px;height:30px" title="Edit group name" aria-label="Edit group name" onclick="renameChatChannel('${c.id}')"><i class="ti ti-pencil" style="font-size:13px"></i></button>` : ''}
       ${c.type !== 'umum' && canDeleteChatChannel(c) ? `<button class="chat-icon-btn" style="width:30px;height:30px" title="Delete permanently" aria-label="Delete conversation permanently" onclick="deleteChatChannel('${c.id}')"><i class="ti ti-trash" style="font-size:13px"></i></button>` : ''}
     </div>
     <div class="chat-thread" id="chat-thread"><div class="loading-msg"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading messages...</div></div>
@@ -14637,9 +14649,18 @@ function chatAttachmentStorageRef(a) {
 }
 
 function chatAttachmentHtml(a) {
-  if (!isChatImageAttachment(a)) return storedAttachmentHtml(a, 'chat-attach-chip');
-  const name = a?.name || 'Image';
+  const name = a?.name || 'Attachment';
   const ref = chatAttachmentStorageRef(a);
+  const isPdf = /\.pdf$/i.test(name) || String(a?.type || '').toLowerCase() === 'application/pdf';
+  if (isPdf && ref) {
+    return `<div class="chat-pdf-attachment">
+      <div class="chat-pdf-heading"><i class="ti ti-file-type-pdf"></i><span>${escHtml(name)}</span></div>
+      <div class="chat-pdf-loading">Preparing PDF preview…</div>
+      <iframe class="chat-pdf-frame" data-bucket="${escAttr(ref.bucket)}" data-path="${escAttr(ref.path)}" title="${escAttr(name)}" loading="lazy"></iframe>
+      ${storedAttachmentHtml(a, 'chat-attach-chip chat-pdf-download')}
+    </div>`;
+  }
+  if (!isChatImageAttachment(a)) return storedAttachmentHtml(a, 'chat-attach-chip');
   if (ref) {
     return `<div class="chat-image-attachment">
       <button type="button" class="chat-image-open" data-bucket="${escAttr(ref.bucket)}" data-path="${escAttr(ref.path)}" data-name="${escAttr(name)}" onclick="openChatImageLightbox(this)" aria-label="Preview ${escAttr(name)}">
@@ -14654,6 +14675,27 @@ function chatAttachmentHtml(a) {
     return `<div class="chat-image-attachment"><button type="button" class="chat-image-open" data-url="${escAttr(url)}" data-name="${escAttr(name)}" onclick="openChatImageLightbox(this)" aria-label="Preview ${escAttr(name)}"><img class="chat-image-thumb" src="${escAttr(url)}" alt="${escAttr(name)}"></button>${storedAttachmentHtml(a, 'chat-attach-chip chat-image-download')}</div>`;
   }
   return storedAttachmentHtml(a, 'chat-attach-chip');
+}
+
+async function hydrateChatPdfPreviews(root) {
+  if (!root) return;
+  const frames = Array.from(root.querySelectorAll('.chat-pdf-frame[data-bucket][data-path]'));
+  for (const frame of frames) {
+    if (frame.dataset.loading === '1' || frame.dataset.ready === '1') continue;
+    frame.dataset.loading = '1';
+    try {
+      const url = await wbCreateStorageSignedUrl(frame.dataset.bucket, frame.dataset.path);
+      frame.src = url + '#view=FitH&toolbar=1&navpanes=0';
+      frame.dataset.ready = '1';
+      const loading = frame.parentElement?.querySelector('.chat-pdf-loading');
+      if (loading) loading.remove();
+    } catch (error) {
+      const loading = frame.parentElement?.querySelector('.chat-pdf-loading');
+      if (loading) loading.textContent = 'PDF preview unavailable. Use Download to open the file.';
+    } finally {
+      delete frame.dataset.loading;
+    }
+  }
 }
 
 async function hydrateChatImagePreviews(root) {
@@ -14945,6 +14987,7 @@ function renderChatThread(messages, options={}) {
   });
   wrap.innerHTML = html.join('');
   hydrateChatImagePreviews(wrap).catch(() => {});
+  hydrateChatPdfPreviews(wrap).catch(() => {});
   if (options.prependAnchor) {
     const delta = Math.max(0, wrap.scrollHeight - Number(options.prependAnchor.scrollHeight || 0));
     wrap.scrollTop = Number(options.prependAnchor.scrollTop || 0) + delta;
@@ -14974,10 +15017,41 @@ function onChatInputKeydown(e) {
   }
 }
 
-function onChatFilesPicked(e) {
+async function compressChatImage(file) {
+  const ext = attachmentExtension(file.name);
+  if (!['jpg','jpeg','png'].includes(ext) || !String(file.type || '').startsWith('image/')) return file;
+  if (typeof createImageBitmap !== 'function') return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxSide = 1800;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { bitmap.close?.(); return file; }
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close?.();
+    // PNG keeps transparency; JPEG is recompressed at a practical quality level.
+    const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, mime, ext === 'png' ? undefined : 0.78));
+    if (!blob || blob.size >= file.size) return file;
+    const newName = ext === 'png' ? file.name : file.name.replace(/\.jpe?g$/i, '.jpg');
+    return new File([blob], newName, { type:mime, lastModified:file.lastModified });
+  } catch (error) {
+    console.warn('Work Talk image compression skipped:', error);
+    return file;
+  }
+}
+async function onChatFilesPicked(e) {
   const picked = filterSupportedAttachments(Array.from(e.target.files || []));
-  if (picked.length) chatAttachments = chatAttachments.concat(picked);
   e.target.value = '';
+  if (!picked.length) return;
+  const wrap = document.getElementById('chat-attach-preview');
+  if (wrap) wrap.innerHTML = '<div class="chat-compose-file-preview">Optimizing image attachments…</div>';
+  const optimized = await Promise.all(picked.map(compressChatImage));
+  chatAttachments = chatAttachments.concat(optimized);
   renderChatAttachPreview();
 }
 function removeChatAttachment(idx) {
@@ -15301,6 +15375,28 @@ async function createChatChannel() {
   chatChannels.push(data);
   renderChatChannelLists();
   await openChatChannel(data.id, true);
+}
+
+// Rename a department/team group without changing its ID or message history.
+async function renameChatChannel(id) {
+  const c = chatChannels.find(x => String(x.id) === String(id));
+  if (!c || c.type !== 'bagian') return;
+  if (!canDeleteChatChannel(c)) return alert('Only the group creator or Owner can rename this group.');
+  const currentName = String(c.name || '').trim();
+  const proposed = prompt('Edit group name:', currentName);
+  if (proposed === null) return;
+  const cleanName = proposed.trim();
+  if (!cleanName) return alert('Group name cannot be empty.');
+  if (cleanName === currentName) return;
+  const duplicate = chatChannels.find(x => x.id !== c.id && x.type === 'bagian' &&
+    String(x.name || '').trim().toLowerCase() === cleanName.toLowerCase());
+  if (duplicate) return alert('A group with this name already exists.');
+  const { data, error } = await sb.from('chat_channels')
+    .update({ name: cleanName }).eq('id', c.id).select().single();
+  if (error) return alert('Failed to rename group: ' + error.message);
+  Object.assign(c, data || { name: cleanName });
+  renderChatChannelLists();
+  if (activeChatChannelId === c.id) await openChatChannel(c.id, false);
 }
 
 // Permanent delete — for Department channels (everyone) or DM (disappears for both parties)
