@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- WorkBoard AMS v143 — Monthly attendance table view — 01 Nov 2026 -->
+<!-- WorkBoard AMS v144 — Logbook and Portfolio image compression — 07 Nov 2026 -->
 
 <html lang="en">
 <head>
@@ -8465,12 +8465,17 @@ function closePortfolioForm() {
   resetPortfolioForm();
 }
 
-function handlePortfolioFileSelect() {
+async function handlePortfolioFileSelect() {
   const input = document.getElementById('portfolio-files');
   if (!input) return;
   const picked = filterSupportedAttachments(Array.from(input.files || []));
-  if (picked.length) portfolioPendingFiles = [...portfolioPendingFiles, ...picked];
   input.value = '';
+  if (!picked.length) return;
+
+  // Reuse Work Talk's tested browser-side image optimizer.
+  // Documents remain byte-for-byte unchanged; PNG transparency is preserved.
+  const optimized = await Promise.all(picked.map(file => compressChatImage(file)));
+  portfolioPendingFiles = [...portfolioPendingFiles, ...optimized];
   renderPortfolioFilePreview();
 }
 
@@ -10734,11 +10739,16 @@ function removeLogAttachment(idx) {
 
 // Dipanggil begitu user memilih file di kotak "Choose files" — supaya langsung kelihatan
 // preview and can be canceled (X) BEFORE actually being uploaded on Save.
-function handleLogFileSelect() {
+async function handleLogFileSelect() {
   const input = document.getElementById('log-files');
+  if (!input) return;
   const picked = filterSupportedAttachments(Array.from(input.files || []));
-  if (picked.length) logPendingFiles = [...logPendingFiles, ...picked];
   input.value = ''; // reset supaya bisa pilih file lain lagi tanpa numpuk duplikat
+  if (!picked.length) return;
+
+  // Optimize JPG/PNG before upload; PDFs and Office files are left untouched.
+  const optimized = await Promise.all(picked.map(file => compressChatImage(file)));
+  logPendingFiles = [...logPendingFiles, ...optimized];
   renderAttachPreview();
 }
 
